@@ -76,6 +76,44 @@ Partial Class MainDashboard
         Application.Exit()
     End Sub
 
+    Private Sub AdministratorToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles AdministratorToolStripMenuItem.Click
+        Try
+            ' Close any existing dashboard forms
+            For Each childForm As Form In Me.MdiChildren
+                If TypeOf childForm Is DashboardForm Then
+                    childForm.Close()
+                End If
+            Next
+            
+            ' Open dashboard form
+            Dim dashboardForm As New DashboardForm()
+            dashboardForm.MdiParent = Me
+            dashboardForm.Show()
+            dashboardForm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Administrator dashboard: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub StockroomToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles StockroomToolStripMenuItem.Click
+        Try
+            ' Close any existing stockroom forms
+            For Each childForm As Form In Me.MdiChildren
+                If TypeOf childForm Is StockroomManagementForm Then
+                    childForm.Close()
+                End If
+            Next
+            
+            ' Open stockroom management form
+            Dim stockroomForm As New StockroomManagementForm(currentUser)
+            stockroomForm.MdiParent = Me
+            stockroomForm.Show()
+            stockroomForm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Stockroom management: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
     Private Sub OpenUserManagement()
         Dim userMgmtForm As New UserManagementForm()
         userMgmtForm.MdiParent = Me
@@ -142,26 +180,120 @@ Partial Class MainDashboard
         MyBase.OnFormClosed(e)
     End Sub
     
-    ' Stockroom Menu Event Handlers
-    Private Sub StockroomToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles StockroomToolStripMenuItem.Click
-        ' Create stockroom submenu dynamically
-        StockroomToolStripMenuItem.DropDownItems.Clear()
-        
-        Dim inventoryItem As New ToolStripMenuItem("Inventory")
-        AddHandler inventoryItem.Click, AddressOf InventoryMenuItem_Click
-        
-        Dim stockTransfersItem As New ToolStripMenuItem("Stock Transfers")
-        AddHandler stockTransfersItem.Click, AddressOf StockTransfersMenuItem_Click
-        
-        Dim stockAdjustmentsItem As New ToolStripMenuItem("Stock Adjustments")
-        AddHandler stockAdjustmentsItem.Click, AddressOf StockAdjustmentsMenuItem_Click
-        
-        Dim suppliersItem As New ToolStripMenuItem("Suppliers")
-        AddHandler suppliersItem.Click, AddressOf SuppliersMenuItem_Click
-        
-        StockroomToolStripMenuItem.DropDownItems.AddRange(New ToolStripItem() {
-            inventoryItem, stockTransfersItem, stockAdjustmentsItem, suppliersItem
-        })
+    ' Administrator Submenu Event Handlers
+    Private Sub DashboardToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles DashboardToolStripMenuItem.Click
+        Try
+            Dim dashboardForm As New DashboardForm()
+            dashboardForm.MdiParent = Me
+            dashboardForm.Show()
+            dashboardForm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Dashboard: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub UserManagementToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles UserManagementToolStripMenuItem.Click
+        Try
+            Dim userMgmtForm As New UserManagementForm()
+            userMgmtForm.MdiParent = Me
+            userMgmtForm.Show()
+            userMgmtForm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening User Management: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub BranchManagementToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles BranchManagementToolStripMenuItem.Click
+        Try
+            Dim branchMgmtForm As New BranchManagementForm()
+            branchMgmtForm.MdiParent = Me
+            branchMgmtForm.Show()
+            branchMgmtForm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Branch Management: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub AuditLogToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles AuditLogToolStripMenuItem.Click
+        Try
+            Dim auditLogForm As New AuditLogViewer()
+            auditLogForm.MdiParent = Me
+            auditLogForm.Show()
+            auditLogForm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Audit Log: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub SystemSettingsToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles SystemSettingsToolStripMenuItem.Click
+        Try
+            Dim systemSettingsForm As New SystemSettingsForm()
+            systemSettingsForm.MdiParent = Me
+            systemSettingsForm.Show()
+            systemSettingsForm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening System Settings: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ' Stockroom Submenu Event Handlers
+    Private Sub InventoryManagementToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles InventoryManagementToolStripMenuItem.Click
+        Try
+            Dim stockroomForm As New StockroomManagementForm(currentUser)
+            stockroomForm.MdiParent = Me
+            stockroomForm.Show()
+            stockroomForm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Inventory Management: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub SuppliersToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles SuppliersToolStripMenuItem.Click
+        Try
+            ' Open StockroomManagementForm and switch to Suppliers tab
+            Dim stockroomForm As New StockroomManagementForm(currentUser)
+            stockroomForm.MdiParent = Me
+            stockroomForm.Show()
+            stockroomForm.WindowState = FormWindowState.Maximized
+            ' TODO: Add method to switch to specific tab
+        Catch ex As Exception
+            MessageBox.Show("Error opening Suppliers: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub PurchaseOrdersToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles PurchaseOrdersToolStripMenuItem.Click
+        Try
+            ' Open StockroomManagementForm and switch to Purchase Orders tab
+            Dim stockroomForm As New StockroomManagementForm(currentUser)
+            stockroomForm.MdiParent = Me
+            stockroomForm.Show()
+            stockroomForm.WindowState = FormWindowState.Maximized
+            ' TODO: Add method to switch to specific tab
+        Catch ex As Exception
+            MessageBox.Show("Error opening Purchase Orders: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub StockTransfersToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles StockTransfersToolStripMenuItem.Click
+        Try
+            Dim stockTransferForm As New StockTransferForm(currentUser)
+            stockTransferForm.MdiParent = Me
+            stockTransferForm.Show()
+            stockTransferForm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Stock Transfers: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub StockAdjustmentsToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles StockAdjustmentsToolStripMenuItem.Click
+        Try
+            Dim stockAdjustmentForm As New StockAdjustmentForm(currentUser)
+            stockAdjustmentForm.MdiParent = Me
+            stockAdjustmentForm.Show()
+            stockAdjustmentForm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Stock Adjustments: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub InventoryMenuItem_Click(sender As Object, e As EventArgs)

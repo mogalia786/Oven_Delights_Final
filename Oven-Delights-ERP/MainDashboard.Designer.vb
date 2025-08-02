@@ -32,6 +32,21 @@ Partial Class MainDashboard
         Me.ReportingToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
         Me.BrandingToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
         Me.ExitToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
+        
+        ' Administrator Submenus
+        Me.DashboardToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
+        Me.UserManagementToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
+        Me.BranchManagementToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
+        Me.AuditLogToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
+        Me.SystemSettingsToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
+        
+        ' Stockroom Submenus
+        Me.InventoryManagementToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
+        Me.SuppliersToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
+        Me.PurchaseOrdersToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
+        Me.StockTransfersToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
+        Me.StockAdjustmentsToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
+        
         Me.MenuStrip1.SuspendLayout()
         Me.SuspendLayout()
         '
@@ -46,12 +61,14 @@ Partial Class MainDashboard
         '
         'AdministratorToolStripMenuItem
         '
+        Me.AdministratorToolStripMenuItem.DropDownItems.AddRange(New System.Windows.Forms.ToolStripItem() {Me.DashboardToolStripMenuItem, Me.UserManagementToolStripMenuItem, Me.BranchManagementToolStripMenuItem, Me.AuditLogToolStripMenuItem, Me.SystemSettingsToolStripMenuItem})
         Me.AdministratorToolStripMenuItem.Name = "AdministratorToolStripMenuItem"
         Me.AdministratorToolStripMenuItem.Size = New System.Drawing.Size(92, 20)
         Me.AdministratorToolStripMenuItem.Text = "Administrator"
         '
         'StockroomToolStripMenuItem
         '
+        Me.StockroomToolStripMenuItem.DropDownItems.AddRange(New System.Windows.Forms.ToolStripItem() {Me.InventoryManagementToolStripMenuItem, Me.SuppliersToolStripMenuItem, Me.PurchaseOrdersToolStripMenuItem, Me.StockTransfersToolStripMenuItem, Me.StockAdjustmentsToolStripMenuItem})
         Me.StockroomToolStripMenuItem.Name = "StockroomToolStripMenuItem"
         Me.StockroomToolStripMenuItem.Size = New System.Drawing.Size(78, 20)
         Me.StockroomToolStripMenuItem.Text = "Stockroom"
@@ -98,6 +115,66 @@ Partial Class MainDashboard
         Me.ExitToolStripMenuItem.Size = New System.Drawing.Size(38, 20)
         Me.ExitToolStripMenuItem.Text = "Exit"
         '
+        'DashboardToolStripMenuItem
+        '
+        Me.DashboardToolStripMenuItem.Name = "DashboardToolStripMenuItem"
+        Me.DashboardToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
+        Me.DashboardToolStripMenuItem.Text = "Dashboard"
+        '
+        'UserManagementToolStripMenuItem
+        '
+        Me.UserManagementToolStripMenuItem.Name = "UserManagementToolStripMenuItem"
+        Me.UserManagementToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
+        Me.UserManagementToolStripMenuItem.Text = "User Management"
+        '
+        'BranchManagementToolStripMenuItem
+        '
+        Me.BranchManagementToolStripMenuItem.Name = "BranchManagementToolStripMenuItem"
+        Me.BranchManagementToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
+        Me.BranchManagementToolStripMenuItem.Text = "Branch Management"
+        '
+        'AuditLogToolStripMenuItem
+        '
+        Me.AuditLogToolStripMenuItem.Name = "AuditLogToolStripMenuItem"
+        Me.AuditLogToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
+        Me.AuditLogToolStripMenuItem.Text = "Audit Log"
+        '
+        'SystemSettingsToolStripMenuItem
+        '
+        Me.SystemSettingsToolStripMenuItem.Name = "SystemSettingsToolStripMenuItem"
+        Me.SystemSettingsToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
+        Me.SystemSettingsToolStripMenuItem.Text = "System Settings"
+        '
+        'InventoryManagementToolStripMenuItem
+        '
+        Me.InventoryManagementToolStripMenuItem.Name = "InventoryManagementToolStripMenuItem"
+        Me.InventoryManagementToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
+        Me.InventoryManagementToolStripMenuItem.Text = "Inventory Management"
+        '
+        'SuppliersToolStripMenuItem
+        '
+        Me.SuppliersToolStripMenuItem.Name = "SuppliersToolStripMenuItem"
+        Me.SuppliersToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
+        Me.SuppliersToolStripMenuItem.Text = "Suppliers"
+        '
+        'PurchaseOrdersToolStripMenuItem
+        '
+        Me.PurchaseOrdersToolStripMenuItem.Name = "PurchaseOrdersToolStripMenuItem"
+        Me.PurchaseOrdersToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
+        Me.PurchaseOrdersToolStripMenuItem.Text = "Purchase Orders"
+        '
+        'StockTransfersToolStripMenuItem
+        '
+        Me.StockTransfersToolStripMenuItem.Name = "StockTransfersToolStripMenuItem"
+        Me.StockTransfersToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
+        Me.StockTransfersToolStripMenuItem.Text = "Stock Transfers"
+        '
+        'StockAdjustmentsToolStripMenuItem
+        '
+        Me.StockAdjustmentsToolStripMenuItem.Name = "StockAdjustmentsToolStripMenuItem"
+        Me.StockAdjustmentsToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
+        Me.StockAdjustmentsToolStripMenuItem.Text = "Stock Adjustments"
+        '
         'MainDashboard
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
@@ -126,4 +203,18 @@ Partial Class MainDashboard
     Friend WithEvents ReportingToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents BrandingToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents ExitToolStripMenuItem As ToolStripMenuItem
+    
+    ' Administrator Submenus
+    Friend WithEvents DashboardToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents UserManagementToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents BranchManagementToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents AuditLogToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents SystemSettingsToolStripMenuItem As ToolStripMenuItem
+    
+    ' Stockroom Submenus
+    Friend WithEvents InventoryManagementToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents SuppliersToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents PurchaseOrdersToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents StockTransfersToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents StockAdjustmentsToolStripMenuItem As ToolStripMenuItem
 End Class
