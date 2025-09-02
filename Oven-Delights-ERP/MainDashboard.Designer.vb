@@ -22,175 +22,262 @@ Partial Class MainDashboard
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
-        Me.MenuStrip1 = New System.Windows.Forms.MenuStrip()
-        Me.AdministratorToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        Me.StockroomToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        Me.ManufacturingToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        Me.RetailToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        Me.AccountingToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        Me.EcommerceToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        Me.ReportingToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        Me.BrandingToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        Me.ExitToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        
-        ' Administrator Submenus
-        Me.DashboardToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        Me.UserManagementToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        Me.BranchManagementToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        Me.AuditLogToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        Me.SystemSettingsToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        
-        ' Stockroom Submenus
-        Me.InventoryManagementToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        Me.SuppliersToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        Me.PurchaseOrdersToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        Me.StockTransfersToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        Me.StockAdjustmentsToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        
-        Me.MenuStrip1.SuspendLayout()
-        Me.SuspendLayout()
-        '
-        'MenuStrip1
-        '
-        Me.MenuStrip1.Items.AddRange(New System.Windows.Forms.ToolStripItem() {Me.AdministratorToolStripMenuItem, Me.StockroomToolStripMenuItem, Me.ManufacturingToolStripMenuItem, Me.RetailToolStripMenuItem, Me.AccountingToolStripMenuItem, Me.EcommerceToolStripMenuItem, Me.ReportingToolStripMenuItem, Me.BrandingToolStripMenuItem, Me.ExitToolStripMenuItem})
-        Me.MenuStrip1.Location = New System.Drawing.Point(0, 0)
-        Me.MenuStrip1.Name = "MenuStrip1"
-        Me.MenuStrip1.Size = New System.Drawing.Size(1200, 24)
-        Me.MenuStrip1.TabIndex = 0
-        Me.MenuStrip1.Text = "MenuStrip1"
-        '
-        'AdministratorToolStripMenuItem
-        '
-        Me.AdministratorToolStripMenuItem.DropDownItems.AddRange(New System.Windows.Forms.ToolStripItem() {Me.DashboardToolStripMenuItem, Me.UserManagementToolStripMenuItem, Me.BranchManagementToolStripMenuItem, Me.AuditLogToolStripMenuItem, Me.SystemSettingsToolStripMenuItem})
-        Me.AdministratorToolStripMenuItem.Name = "AdministratorToolStripMenuItem"
-        Me.AdministratorToolStripMenuItem.Size = New System.Drawing.Size(92, 20)
-        Me.AdministratorToolStripMenuItem.Text = "Administrator"
-        '
-        'StockroomToolStripMenuItem
-        '
-        Me.StockroomToolStripMenuItem.DropDownItems.AddRange(New System.Windows.Forms.ToolStripItem() {Me.InventoryManagementToolStripMenuItem, Me.SuppliersToolStripMenuItem, Me.PurchaseOrdersToolStripMenuItem, Me.StockTransfersToolStripMenuItem, Me.StockAdjustmentsToolStripMenuItem})
-        Me.StockroomToolStripMenuItem.Name = "StockroomToolStripMenuItem"
-        Me.StockroomToolStripMenuItem.Size = New System.Drawing.Size(78, 20)
-        Me.StockroomToolStripMenuItem.Text = "Stockroom"
-        '
-        'ManufacturingToolStripMenuItem
-        '
-        Me.ManufacturingToolStripMenuItem.Name = "ManufacturingToolStripMenuItem"
-        Me.ManufacturingToolStripMenuItem.Size = New System.Drawing.Size(101, 20)
-        Me.ManufacturingToolStripMenuItem.Text = "Manufacturing"
-        '
-        'RetailToolStripMenuItem
-        '
-        Me.RetailToolStripMenuItem.Name = "RetailToolStripMenuItem"
-        Me.RetailToolStripMenuItem.Size = New System.Drawing.Size(49, 20)
-        Me.RetailToolStripMenuItem.Text = "Retail"
-        '
-        'AccountingToolStripMenuItem
-        '
-        Me.AccountingToolStripMenuItem.Name = "AccountingToolStripMenuItem"
-        Me.AccountingToolStripMenuItem.Size = New System.Drawing.Size(81, 20)
-        Me.AccountingToolStripMenuItem.Text = "Accounting"
-        '
-        'EcommerceToolStripMenuItem
-        '
-        Me.EcommerceToolStripMenuItem.Name = "EcommerceToolStripMenuItem"
-        Me.EcommerceToolStripMenuItem.Size = New System.Drawing.Size(84, 20)
-        Me.EcommerceToolStripMenuItem.Text = "E-commerce"
-        '
-        'ReportingToolStripMenuItem
-        '
-        Me.ReportingToolStripMenuItem.Name = "ReportingToolStripMenuItem"
-        Me.ReportingToolStripMenuItem.Size = New System.Drawing.Size(71, 20)
-        Me.ReportingToolStripMenuItem.Text = "Reporting"
-        '
-        'BrandingToolStripMenuItem
-        '
-        Me.BrandingToolStripMenuItem.Name = "BrandingToolStripMenuItem"
-        Me.BrandingToolStripMenuItem.Size = New System.Drawing.Size(69, 20)
-        Me.BrandingToolStripMenuItem.Text = "Branding"
-        '
-        'ExitToolStripMenuItem
-        '
-        Me.ExitToolStripMenuItem.Name = "ExitToolStripMenuItem"
-        Me.ExitToolStripMenuItem.Size = New System.Drawing.Size(38, 20)
-        Me.ExitToolStripMenuItem.Text = "Exit"
-        '
-        'DashboardToolStripMenuItem
-        '
-        Me.DashboardToolStripMenuItem.Name = "DashboardToolStripMenuItem"
-        Me.DashboardToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
-        Me.DashboardToolStripMenuItem.Text = "Dashboard"
-        '
-        'UserManagementToolStripMenuItem
-        '
-        Me.UserManagementToolStripMenuItem.Name = "UserManagementToolStripMenuItem"
-        Me.UserManagementToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
-        Me.UserManagementToolStripMenuItem.Text = "User Management"
-        '
-        'BranchManagementToolStripMenuItem
-        '
-        Me.BranchManagementToolStripMenuItem.Name = "BranchManagementToolStripMenuItem"
-        Me.BranchManagementToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
-        Me.BranchManagementToolStripMenuItem.Text = "Branch Management"
-        '
-        'AuditLogToolStripMenuItem
-        '
-        Me.AuditLogToolStripMenuItem.Name = "AuditLogToolStripMenuItem"
-        Me.AuditLogToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
-        Me.AuditLogToolStripMenuItem.Text = "Audit Log"
-        '
-        'SystemSettingsToolStripMenuItem
-        '
-        Me.SystemSettingsToolStripMenuItem.Name = "SystemSettingsToolStripMenuItem"
-        Me.SystemSettingsToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
-        Me.SystemSettingsToolStripMenuItem.Text = "System Settings"
-        '
-        'InventoryManagementToolStripMenuItem
-        '
-        Me.InventoryManagementToolStripMenuItem.Name = "InventoryManagementToolStripMenuItem"
-        Me.InventoryManagementToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
-        Me.InventoryManagementToolStripMenuItem.Text = "Inventory Management"
-        '
-        'SuppliersToolStripMenuItem
-        '
-        Me.SuppliersToolStripMenuItem.Name = "SuppliersToolStripMenuItem"
-        Me.SuppliersToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
-        Me.SuppliersToolStripMenuItem.Text = "Suppliers"
-        '
-        'PurchaseOrdersToolStripMenuItem
-        '
-        Me.PurchaseOrdersToolStripMenuItem.Name = "PurchaseOrdersToolStripMenuItem"
-        Me.PurchaseOrdersToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
-        Me.PurchaseOrdersToolStripMenuItem.Text = "Purchase Orders"
-        '
-        'StockTransfersToolStripMenuItem
-        '
-        Me.StockTransfersToolStripMenuItem.Name = "StockTransfersToolStripMenuItem"
-        Me.StockTransfersToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
-        Me.StockTransfersToolStripMenuItem.Text = "Stock Transfers"
-        '
-        'StockAdjustmentsToolStripMenuItem
-        '
-        Me.StockAdjustmentsToolStripMenuItem.Name = "StockAdjustmentsToolStripMenuItem"
-        Me.StockAdjustmentsToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
-        Me.StockAdjustmentsToolStripMenuItem.Text = "Stock Adjustments"
-        '
-        'MainDashboard
-        '
-        Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
-        Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(1200, 800)
-        Me.Controls.Add(Me.MenuStrip1)
-        Me.IsMdiContainer = True
-        Me.MainMenuStrip = Me.MenuStrip1
-        Me.Name = "MainDashboard"
-        Me.Text = "Oven Delights ERP - Main Dashboard"
-        Me.WindowState = System.Windows.Forms.FormWindowState.Maximized
-        Me.MenuStrip1.ResumeLayout(False)
-        Me.MenuStrip1.PerformLayout()
-        Me.ResumeLayout(False)
-        Me.PerformLayout()
-
+        Dim resources As ComponentModel.ComponentResourceManager = New ComponentModel.ComponentResourceManager(GetType(MainDashboard))
+        MenuStrip1 = New MenuStrip()
+        AdministratorToolStripMenuItem = New ToolStripMenuItem()
+        DashboardToolStripMenuItem = New ToolStripMenuItem()
+        UserManagementToolStripMenuItem = New ToolStripMenuItem()
+        BranchManagementToolStripMenuItem = New ToolStripMenuItem()
+        AuditLogToolStripMenuItem = New ToolStripMenuItem()
+        SystemSettingsToolStripMenuItem = New ToolStripMenuItem()
+        StockroomToolStripMenuItem = New ToolStripMenuItem()
+        InventoryManagementToolStripMenuItem = New ToolStripMenuItem()
+        SuppliersToolStripMenuItem = New ToolStripMenuItem()
+        PurchaseOrdersToolStripMenuItem = New ToolStripMenuItem()
+        SupplierInvoicesToolStripMenuItem = New ToolStripMenuItem()
+        CreditNotesToolStripMenuItem = New ToolStripMenuItem()
+        StockTransfersToolStripMenuItem = New ToolStripMenuItem()
+        StockAdjustmentsToolStripMenuItem = New ToolStripMenuItem()
+        ManufacturingToolStripMenuItem = New ToolStripMenuItem()
+        RetailToolStripMenuItem = New ToolStripMenuItem()
+        AccountingToolStripMenuItem = New ToolStripMenuItem()
+        EcommerceToolStripMenuItem = New ToolStripMenuItem()
+        ReportingToolStripMenuItem = New ToolStripMenuItem()
+        BrandingToolStripMenuItem = New ToolStripMenuItem()
+        ExitToolStripMenuItem = New ToolStripMenuItem()
+        pnlSidebar = New Panel()
+        lblSidebarTitle = New Label()
+        picLogo = New PictureBox()
+        pnlRightStats = New Panel()
+        lblStatsTitle = New Label()
+        MenuStrip1.SuspendLayout()
+        pnlSidebar.SuspendLayout()
+        CType(picLogo, ComponentModel.ISupportInitialize).BeginInit()
+        pnlRightStats.SuspendLayout()
+        SuspendLayout()
+        ' 
+        ' MenuStrip1
+        ' 
+        MenuStrip1.Items.AddRange(New ToolStripItem() {AdministratorToolStripMenuItem, StockroomToolStripMenuItem, ManufacturingToolStripMenuItem, RetailToolStripMenuItem, AccountingToolStripMenuItem, EcommerceToolStripMenuItem, ReportingToolStripMenuItem, BrandingToolStripMenuItem, ExitToolStripMenuItem})
+        MenuStrip1.Location = New Point(0, 0)
+        MenuStrip1.Name = "MenuStrip1"
+        MenuStrip1.Padding = New Padding(7, 2, 0, 2)
+        MenuStrip1.Size = New Size(1400, 24)
+        MenuStrip1.TabIndex = 0
+        MenuStrip1.Text = "MenuStrip1"
+        ' 
+        ' AdministratorToolStripMenuItem
+        ' 
+        AdministratorToolStripMenuItem.DropDownItems.AddRange(New ToolStripItem() {DashboardToolStripMenuItem, UserManagementToolStripMenuItem, BranchManagementToolStripMenuItem, AuditLogToolStripMenuItem, SystemSettingsToolStripMenuItem})
+        AdministratorToolStripMenuItem.Name = "AdministratorToolStripMenuItem"
+        AdministratorToolStripMenuItem.Size = New Size(92, 20)
+        AdministratorToolStripMenuItem.Text = "Administrator"
+        ' 
+        ' DashboardToolStripMenuItem
+        ' 
+        DashboardToolStripMenuItem.Name = "DashboardToolStripMenuItem"
+        DashboardToolStripMenuItem.Size = New Size(185, 22)
+        DashboardToolStripMenuItem.Text = "Dashboard"
+        ' 
+        ' UserManagementToolStripMenuItem
+        ' 
+        UserManagementToolStripMenuItem.Name = "UserManagementToolStripMenuItem"
+        UserManagementToolStripMenuItem.Size = New Size(185, 22)
+        UserManagementToolStripMenuItem.Text = "User Management"
+        ' 
+        ' BranchManagementToolStripMenuItem
+        ' 
+        BranchManagementToolStripMenuItem.Name = "BranchManagementToolStripMenuItem"
+        BranchManagementToolStripMenuItem.Size = New Size(185, 22)
+        BranchManagementToolStripMenuItem.Text = "Branch Management"
+        ' 
+        ' AuditLogToolStripMenuItem
+        ' 
+        AuditLogToolStripMenuItem.Name = "AuditLogToolStripMenuItem"
+        AuditLogToolStripMenuItem.Size = New Size(185, 22)
+        AuditLogToolStripMenuItem.Text = "Audit Log"
+        ' 
+        ' SystemSettingsToolStripMenuItem
+        ' 
+        SystemSettingsToolStripMenuItem.Name = "SystemSettingsToolStripMenuItem"
+        SystemSettingsToolStripMenuItem.Size = New Size(185, 22)
+        SystemSettingsToolStripMenuItem.Text = "System Settings"
+        ' 
+        ' StockroomToolStripMenuItem
+        ' 
+        StockroomToolStripMenuItem.DropDownItems.AddRange(New ToolStripItem() {InventoryManagementToolStripMenuItem, SuppliersToolStripMenuItem, PurchaseOrdersToolStripMenuItem, SupplierInvoicesToolStripMenuItem, CreditNotesToolStripMenuItem, StockTransfersToolStripMenuItem, StockAdjustmentsToolStripMenuItem})
+        StockroomToolStripMenuItem.Name = "StockroomToolStripMenuItem"
+        StockroomToolStripMenuItem.Size = New Size(77, 20)
+        StockroomToolStripMenuItem.Text = "Stockroom"
+        ' 
+        ' InventoryManagementToolStripMenuItem
+        ' 
+        InventoryManagementToolStripMenuItem.Name = "InventoryManagementToolStripMenuItem"
+        InventoryManagementToolStripMenuItem.Size = New Size(198, 22)
+        InventoryManagementToolStripMenuItem.Text = "Inventory Management"
+        ' 
+        ' SuppliersToolStripMenuItem
+        ' 
+        SuppliersToolStripMenuItem.Name = "SuppliersToolStripMenuItem"
+        SuppliersToolStripMenuItem.Size = New Size(198, 22)
+        SuppliersToolStripMenuItem.Text = "Suppliers"
+        ' 
+        ' PurchaseOrdersToolStripMenuItem
+        ' 
+        PurchaseOrdersToolStripMenuItem.Name = "PurchaseOrdersToolStripMenuItem"
+        PurchaseOrdersToolStripMenuItem.Size = New Size(198, 22)
+        PurchaseOrdersToolStripMenuItem.Text = "Purchase Orders"
+        ' 
+        ' SupplierInvoicesToolStripMenuItem
+        ' 
+        SupplierInvoicesToolStripMenuItem.Name = "SupplierInvoicesToolStripMenuItem"
+        SupplierInvoicesToolStripMenuItem.Size = New Size(198, 22)
+        SupplierInvoicesToolStripMenuItem.Text = "Supplier Invoices"
+        ' 
+        ' CreditNotesToolStripMenuItem
+        ' 
+        CreditNotesToolStripMenuItem.Name = "CreditNotesToolStripMenuItem"
+        CreditNotesToolStripMenuItem.Size = New Size(198, 22)
+        CreditNotesToolStripMenuItem.Text = "Credit Notes"
+        ' 
+        ' StockTransfersToolStripMenuItem
+        ' 
+        StockTransfersToolStripMenuItem.Name = "StockTransfersToolStripMenuItem"
+        StockTransfersToolStripMenuItem.Size = New Size(198, 22)
+        StockTransfersToolStripMenuItem.Text = "Stock Transfers"
+        ' 
+        ' StockAdjustmentsToolStripMenuItem
+        ' 
+        StockAdjustmentsToolStripMenuItem.Name = "StockAdjustmentsToolStripMenuItem"
+        StockAdjustmentsToolStripMenuItem.Size = New Size(198, 22)
+        StockAdjustmentsToolStripMenuItem.Text = "Stock Adjustments"
+        ' 
+        ' ManufacturingToolStripMenuItem
+        ' 
+        ManufacturingToolStripMenuItem.Name = "ManufacturingToolStripMenuItem"
+        ManufacturingToolStripMenuItem.Size = New Size(98, 20)
+        ManufacturingToolStripMenuItem.Text = "Manufacturing"
+        ' 
+        ' RetailToolStripMenuItem
+        ' 
+        RetailToolStripMenuItem.Name = "RetailToolStripMenuItem"
+        RetailToolStripMenuItem.Size = New Size(48, 20)
+        RetailToolStripMenuItem.Text = "Retail"
+        ' 
+        ' AccountingToolStripMenuItem
+        ' 
+        AccountingToolStripMenuItem.Name = "AccountingToolStripMenuItem"
+        AccountingToolStripMenuItem.Size = New Size(81, 20)
+        AccountingToolStripMenuItem.Text = "Accounting"
+        ' 
+        ' EcommerceToolStripMenuItem
+        ' 
+        EcommerceToolStripMenuItem.Name = "EcommerceToolStripMenuItem"
+        EcommerceToolStripMenuItem.Size = New Size(87, 20)
+        EcommerceToolStripMenuItem.Text = "E-commerce"
+        ' 
+        ' ReportingToolStripMenuItem
+        ' 
+        ReportingToolStripMenuItem.Name = "ReportingToolStripMenuItem"
+        ReportingToolStripMenuItem.Size = New Size(71, 20)
+        ReportingToolStripMenuItem.Text = "Reporting"
+        ' 
+        ' BrandingToolStripMenuItem
+        ' 
+        BrandingToolStripMenuItem.Name = "BrandingToolStripMenuItem"
+        BrandingToolStripMenuItem.Size = New Size(67, 20)
+        BrandingToolStripMenuItem.Text = "Branding"
+        ' 
+        ' ExitToolStripMenuItem
+        ' 
+        ExitToolStripMenuItem.Name = "ExitToolStripMenuItem"
+        ExitToolStripMenuItem.Size = New Size(38, 20)
+        ExitToolStripMenuItem.Text = "Exit"
+        ' 
+        ' pnlSidebar
+        ' 
+        pnlSidebar.BackColor = Color.FromArgb(CByte(183), CByte(58), CByte(46))
+        pnlSidebar.Controls.Add(lblSidebarTitle)
+        pnlSidebar.Controls.Add(picLogo)
+        pnlSidebar.Dock = DockStyle.Left
+        pnlSidebar.Location = New Point(0, 24)
+        pnlSidebar.Name = "pnlSidebar"
+        pnlSidebar.Padding = New Padding(12)
+        pnlSidebar.Size = New Size(220, 899)
+        pnlSidebar.TabIndex = 1
+        ' 
+        ' lblSidebarTitle
+        ' 
+        lblSidebarTitle.AutoSize = True
+        lblSidebarTitle.Dock = DockStyle.Top
+        lblSidebarTitle.Font = New Font("Segoe UI", 11F, FontStyle.Bold, GraphicsUnit.Point)
+        lblSidebarTitle.ForeColor = Color.White
+        lblSidebarTitle.Location = New Point(12, 112)
+        lblSidebarTitle.Margin = New Padding(0, 8, 0, 8)
+        lblSidebarTitle.Name = "lblSidebarTitle"
+        lblSidebarTitle.Padding = New Padding(0, 10, 0, 10)
+        lblSidebarTitle.Size = New Size(107, 40)
+        lblSidebarTitle.TabIndex = 2
+        lblSidebarTitle.Text = "Oven Delights"
+        ' 
+        ' picLogo
+        ' 
+        picLogo.BackColor = Color.FromArgb(CByte(183), CByte(58), CByte(46))
+        picLogo.Dock = DockStyle.Top
+        picLogo.Image = CType(resources.GetObject("picLogo.Image"), Image)
+        picLogo.Location = New Point(12, 12)
+        picLogo.Name = "picLogo"
+        picLogo.Size = New Size(196, 100)
+        picLogo.SizeMode = PictureBoxSizeMode.Zoom
+        picLogo.TabIndex = 0
+        picLogo.TabStop = False
+        ' 
+        ' pnlRightStats
+        ' 
+        pnlRightStats.BackColor = Color.FromArgb(CByte(242), CByte(215), CByte(212))
+        pnlRightStats.Controls.Add(lblStatsTitle)
+        pnlRightStats.Dock = DockStyle.Right
+        pnlRightStats.Location = New Point(1142, 24)
+        pnlRightStats.Name = "pnlRightStats"
+        pnlRightStats.Padding = New Padding(16)
+        pnlRightStats.Size = New Size(258, 899)
+        pnlRightStats.TabIndex = 3
+        ' 
+        ' lblStatsTitle
+        ' 
+        lblStatsTitle.AutoSize = True
+        lblStatsTitle.Font = New Font("Segoe UI", 11F, FontStyle.Bold, GraphicsUnit.Point)
+        lblStatsTitle.ForeColor = Color.Black
+        lblStatsTitle.Location = New Point(24, 24)
+        lblStatsTitle.Name = "lblStatsTitle"
+        lblStatsTitle.Size = New Size(171, 20)
+        lblStatsTitle.TabIndex = 0
+        lblStatsTitle.Text = "Key Stats (placeholder)"
+        ' 
+        ' MainDashboard
+        ' 
+        AutoScaleDimensions = New SizeF(7F, 15F)
+        AutoScaleMode = AutoScaleMode.Font
+        BackColor = Color.WhiteSmoke
+        ClientSize = New Size(1400, 923)
+        Controls.Add(pnlRightStats)
+        Controls.Add(pnlSidebar)
+        Controls.Add(MenuStrip1)
+        IsMdiContainer = True
+        MainMenuStrip = MenuStrip1
+        Margin = New Padding(4, 3, 4, 3)
+        Name = "MainDashboard"
+        Text = "Oven Delights ERP - Main Dashboard"
+        WindowState = FormWindowState.Maximized
+        MenuStrip1.ResumeLayout(False)
+        MenuStrip1.PerformLayout()
+        pnlSidebar.ResumeLayout(False)
+        pnlSidebar.PerformLayout()
+        CType(picLogo, ComponentModel.ISupportInitialize).EndInit()
+        pnlRightStats.ResumeLayout(False)
+        pnlRightStats.PerformLayout()
+        ResumeLayout(False)
+        PerformLayout()
     End Sub
 
     Friend WithEvents MenuStrip1 As MenuStrip
@@ -203,18 +290,25 @@ Partial Class MainDashboard
     Friend WithEvents ReportingToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents BrandingToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents ExitToolStripMenuItem As ToolStripMenuItem
-    
+
     ' Administrator Submenus
     Friend WithEvents DashboardToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents UserManagementToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents BranchManagementToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents AuditLogToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents SystemSettingsToolStripMenuItem As ToolStripMenuItem
-    
+
     ' Stockroom Submenus
     Friend WithEvents InventoryManagementToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents SuppliersToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents PurchaseOrdersToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents StockTransfersToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents StockAdjustmentsToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents SupplierInvoicesToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents CreditNotesToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents pnlSidebar As Panel
+    Friend WithEvents picLogo As PictureBox
+    Friend WithEvents lblSidebarTitle As Label
+    Friend WithEvents pnlRightStats As Panel
+    Friend WithEvents lblStatsTitle As Label
 End Class

@@ -16,17 +16,16 @@ Public Class ReportingService
                         u.Email,
                         u.FirstName,
                         u.LastName,
+                        u.RoleID,
+                        u.BranchID,
+                        u.LastLogin,
                         u.IsActive,
-                        u.CreatedDate,
-                        u.LastLoginDate,
-                        b.BranchName,
-                        r.RoleName
+                        u.CreatedDate
                     FROM Users u
-                    LEFT JOIN Branches b ON u.BranchID = b.BranchID
-                    LEFT JOIN Roles r ON u.RoleID = r.RoleID"
+                    WHERE u.IsActive = 1"
                 
                 If branchID.HasValue Then
-                    query += " WHERE u.BranchID = @BranchID"
+                    query += " AND u.BranchID = @BranchID"
                 End If
                 
                 query += " ORDER BY u.CreatedDate DESC"
@@ -47,7 +46,7 @@ Public Class ReportingService
         End Try
     End Function
 
-    Public Function GenerateAuditReport(startDate As DateTime, endDate As DateTime, Optional userID As Integer? = Nothing) As DataTable
+    Public Function GenerateAuditReport(startDate As DateTime, endDate As DateTime, Optional branchID As Integer? = Nothing) As DataTable
         Try
             Using connection As New SqlConnection(connectionString)
                 Dim query As String = "
@@ -68,8 +67,8 @@ Public Class ReportingService
                     LEFT JOIN Users u ON a.UserID = u.UserID
                     WHERE a.Timestamp BETWEEN @StartDate AND @EndDate"
                 
-                If userID.HasValue Then
-                    query += " AND a.UserID = @UserID"
+                If branchID.HasValue Then
+                    query += " AND u.BranchID = @BranchID"
                 End If
                 
                 query += " ORDER BY a.Timestamp DESC"
@@ -77,8 +76,8 @@ Public Class ReportingService
                 Using command As New SqlCommand(query, connection)
                     command.Parameters.AddWithValue("@StartDate", startDate)
                     command.Parameters.AddWithValue("@EndDate", endDate)
-                    If userID.HasValue Then
-                        command.Parameters.AddWithValue("@UserID", userID.Value)
+                    If branchID.HasValue Then
+                        command.Parameters.AddWithValue("@BranchID", branchID.Value)
                     End If
 
                     Dim adapter As New SqlDataAdapter(command)
@@ -97,7 +96,7 @@ Public Class ReportingService
             Using connection As New SqlConnection(connectionString)
                 Dim query As String = "
                     SELECT 
-                        s.SessionID,
+                        s.ID,
                         s.LoginTime,
                         s.LastActivity,
                         s.LogoutTime,
@@ -107,10 +106,9 @@ Public Class ReportingService
                         u.Username,
                         u.FirstName,
                         u.LastName,
-                        b.BranchName
+                        u.BranchID
                     FROM UserSessions s
-                    LEFT JOIN Users u ON s.UserID = u.UserID
-                    LEFT JOIN Branches b ON u.BranchID = b.BranchID"
+                    LEFT JOIN Users u ON s.UserID = u.UserID"
                 
                 If isActive.HasValue Then
                     query += " WHERE s.IsActive = @IsActive"
@@ -139,8 +137,8 @@ Public Class ReportingService
             Using connection As New SqlConnection(connectionString)
                 Dim query As String = "
                     SELECT 
-                        b.BranchID,
-                        b.BranchName,
+                        b.ID,
+                        b.Name,
                         b.BranchCode,
                         b.Address,
                         b.City,
@@ -153,11 +151,11 @@ Public Class ReportingService
                         COUNT(u.UserID) as UserCount,
                         COUNT(CASE WHEN u.IsActive = 1 THEN 1 END) as ActiveUserCount
                     FROM Branches b
-                    LEFT JOIN Users u ON b.BranchID = u.BranchID
-                    GROUP BY b.BranchID, b.BranchName, b.BranchCode, b.Address, 
+                    LEFT JOIN Users u ON b.ID = u.BranchID
+                    GROUP BY b.ID, b.Name, b.BranchCode, b.Address, 
                              b.City, b.Province, b.PostalCode, b.Phone, b.Email, 
                              b.IsActive, b.CreatedDate
-                    ORDER BY b.BranchName"
+                    ORDER BY b.Name"
 
                 Using command As New SqlCommand(query, connection)
                     Dim adapter As New SqlDataAdapter(command)

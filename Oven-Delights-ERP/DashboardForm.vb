@@ -1,6 +1,12 @@
+Option Strict On
+Option Explicit On
 Imports System.Windows.Forms
 Imports Microsoft.Web.WebView2.WinForms
 Imports System.IO
+' Charting types are referenced fully-qualified below
+
+' Toggle this to True when the environment has the Windows Desktop targeting pack/Charting installed
+#Const HAS_CHART = False
 
 Partial Class DashboardForm
     Inherits Form
@@ -8,34 +14,110 @@ Partial Class DashboardForm
     Private chartsService As New DashboardChartsService()
     Private WithEvents webView As WebView2
     Private dashboardTimer As Timer
+#If HAS_CHART Then
+    Private stockChart As System.Windows.Forms.DataVisualization.Charting.Chart
+#End If
 
     Public Sub New()
         InitializeComponent()
-        InitializeWebView()
+#If HAS_CHART Then
+        InitializeChartsUI()
+#End If
+        InitializeWebView() ' keep but hidden to avoid HTML charts
         SetupAutoRefresh()
     End Sub
 
-    Private Sub InitializeWebView()
+#If HAS_CHART Then
+    Private Sub InitializeChartsUI()
+        stockChart = New System.Windows.Forms.DataVisualization.Charting.Chart()
+        stockChart.Dock = DockStyle.Fill
+        stockChart.BackColor = Color.White
+
+        Dim area As New System.Windows.Forms.DataVisualization.Charting.ChartArea("Main")
+        area.BackColor = Color.White
+        area.AxisX.MajorGrid.Enabled = False
+        area.AxisY.MajorGrid.LineColor = Color.FromArgb(230, 235, 245)
+        area.AxisX.LabelStyle.Font = New Font("Segoe UI", 9.0F)
+        area.AxisY.LabelStyle.Font = New Font("Segoe UI", 9.0F)
+        stockChart.ChartAreas.Add(area)
+
+        Dim series As New System.Windows.Forms.DataVisualization.Charting.Series("Stock On Hand")
+        series.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Column
+        series.ChartArea = "Main"
+        series.Color = Color.FromArgb(79, 172, 254) ' blue
+        series.BorderColor = Color.FromArgb(70, 130, 230)
+        series.BorderWidth = 1
+        series.IsValueShownAsLabel = True
+        series.Font = New Font("Segoe UI", 9.0F)
+
+        ' Sample data
+        series.Points.AddXY("Flour", 120)
+        series.Points.AddXY("Sugar", 85)
+        series.Points.AddXY("Yeast", 40)
+        series.Points.AddXY("Oil", 60)
+
+        stockChart.Series.Add(series)
+
+        Dim legend As New System.Windows.Forms.DataVisualization.Charting.Legend("Legend1") With {
+            .Docking = Docking.Bottom,
+            .Font = New Font("Segoe UI", 9.0F)
+        }
+        stockChart.Legends.Add(legend)
+
+        Controls.Add(stockChart)
+        Controls.SetChildIndex(stockChart, 0)
+    End Sub
+#End If
+
+    Private Async Sub InitializeWebView()
         webView = New WebView2()
         webView.Dock = DockStyle.Fill
+        webView.Visible = True ' HTML charts are the primary surface
         Me.Controls.Add(webView)
         
         AddHandler webView.NavigationCompleted, AddressOf WebView_NavigationCompleted
         AddHandler webView.WebMessageReceived, AddressOf WebView_WebMessageReceived
         
-        ' Load the dashboard HTML file
-        Dim htmlPath As String = Path.Combine(Application.StartupPath, "Resources", "DashboardCharts.html")
-        
-        ' If not found in output directory, try source directory
-        If Not File.Exists(htmlPath) Then
-            Dim sourceHtmlPath As String = Path.Combine(Directory.GetParent(Application.StartupPath).Parent.Parent.FullName, "Resources", "DashboardCharts.html")
-            If File.Exists(sourceHtmlPath) Then
-                htmlPath = sourceHtmlPath
+        ' Load the freshest dashboard HTML file
+        Dim outputHtml As String = Path.Combine(System.Windows.Forms.Application.StartupPath, "Resources", "DashboardCharts.html")
+        Dim sourceHtml As String = Nothing
+        Try
+            ' Probe up to 6 parent levels for source Resources/DashboardCharts.html
+            Dim probe As DirectoryInfo = New DirectoryInfo(System.Windows.Forms.Application.StartupPath)
+            For i As Integer = 0 To 6
+                Dim candidate As String = Path.Combine(probe.FullName, "Resources", "DashboardCharts.html")
+                If File.Exists(candidate) Then
+                    sourceHtml = candidate
+                    Exit For
+                End If
+                If probe.Parent Is Nothing Then Exit For
+                probe = probe.Parent
+            Next
+        Catch
+            ' ignore probe errors
+        End Try
+
+        Try
+            ' Always copy latest source to output so user edits take effect immediately
+            If Not Directory.Exists(Path.GetDirectoryName(outputHtml)) Then
+                Directory.CreateDirectory(Path.GetDirectoryName(outputHtml))
             End If
-        End If
-        
+            If Not String.IsNullOrEmpty(sourceHtml) AndAlso File.Exists(sourceHtml) Then
+                File.Copy(sourceHtml, outputHtml, True)
+            End If
+        Catch ex As Exception
+            ' Non-fatal
+        End Try
+
+        Dim htmlPath As String = If(File.Exists(outputHtml), outputHtml, If(Not String.IsNullOrEmpty(sourceHtml) AndAlso File.Exists(sourceHtml), sourceHtml, outputHtml))
         If File.Exists(htmlPath) Then
-            webView.Source = New Uri(String.Format("file:///{0}", htmlPath.Replace("\", "/")))
+            ' Ensure WebView2 runtime is initialized before navigating
+            Try
+                Await webView.EnsureCoreWebView2Async(Nothing)
+            Catch
+                ' continue; navigate anyway
+            End Try
+            webView.Source = New Uri(String.Format("file:///{0}", htmlPath.Replace("\\", "/")))
         Else
             MessageBox.Show("Dashboard HTML file not found: " & htmlPath, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End If
@@ -78,7 +160,7 @@ Partial Class DashboardForm
             Dim userActivityData As String = chartsService.GetUserActivityChartData()
             Await webView.ExecuteScriptAsync($"updateChartData('userActivity', '{userActivityData}');")
 
-            Dim loginFrequencyData As String = chartsService.GetLoginFrequencyChartData()
+            Dim loginFrequencyData As String = chartsService.GetLastLoginFrequencyChartData()
             Await webView.ExecuteScriptAsync($"updateChartData('loginFrequency', '{loginFrequencyData}');")
 
             Dim branchDistributionData As String = chartsService.GetBranchDistributionChartData()

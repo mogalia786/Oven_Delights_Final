@@ -1,0 +1,7 @@
+RoleID column already exists in Users table
+Foreign key constraint FK_Users_Roles already exists
+ColumnName                                                                                                                       DataType                                                                                                                         max_length is_nullable
+-------------------------------------------------------------------------------------------------------------------------------- -------------------------------------------------------------------------------------------------------------------------------- ---------- -----------
+RoleID                                                                                                                           int                                                                                                                                       4           0
+
+(1 rows affected)

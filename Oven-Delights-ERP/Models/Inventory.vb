@@ -1,6 +1,7 @@
 Imports System.ComponentModel.DataAnnotations
-
+' Navigation properties
 Public Class Inventory
+    ' DB-aligned fields for Inventory table
     Public Property ID As Integer
     Public Property MaterialID As Integer
     Public Property BranchID As Integer?
@@ -8,9 +9,9 @@ Public Class Inventory
     Public Property Batch As String
     Public Property QuantityOnHand As Decimal
     Public Property QuantityAllocated As Decimal
-    Public Property QuantityAvailable As Decimal ' Calculated field
+    Public Property QuantityAvailable As Decimal ' Calculated field (see below)
     Public Property UnitCost As Decimal
-    Public Property TotalCost As Decimal ' Calculated field
+    Public Property TotalCost As Decimal ' Calculated field (see below)
     Public Property LastReceived As DateTime?
     Public Property LastIssued As DateTime?
     Public Property LastUpdated As DateTime
@@ -20,8 +21,8 @@ Public Class Inventory
     Public Property CreatedBy As Integer
     Public Property ModifiedDate As DateTime?
     Public Property ModifiedBy As Integer?
-
-    ' Navigation properties
+   
+    ' Navigation properties for foreign keys
     Public Property RawMaterial As RawMaterial
     Public Property Branch As Branch
     Public Property CreatedByUser As User

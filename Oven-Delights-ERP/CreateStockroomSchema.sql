@@ -3,17 +3,17 @@
 -- Oven Delights ERP - Azure SQL Server
 -- =============================================
 
-USE [OvenDelightsERP]
-GO
+-- USE [OvenDelightsERP] -- disabled for Azure SQL (Msg 40508)
+-- GO
 
 -- =============================================
 -- 1. SUPPLIERS TABLE
 -- =============================================
 IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Suppliers' AND xtype='U')
 CREATE TABLE [dbo].[Suppliers] (
-    [ID] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [SupplierID] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
     [SupplierCode] [nvarchar](20) NOT NULL UNIQUE,
-    [Name] [nvarchar](100) NOT NULL,
+    [CompanyName] [nvarchar](100) NOT NULL,
     [ContactPerson] [nvarchar](100) NULL,
     [Email] [nvarchar](100) NULL,
     [Phone] [nvarchar](20) NULL,
@@ -34,13 +34,13 @@ CREATE TABLE [dbo].[Suppliers] (
     [AccountsPayableAccountID] [int] NULL,
     [DefaultExpenseAccountID] [int] NULL,
     
-    CONSTRAINT [FK_Suppliers_CreatedBy] FOREIGN KEY ([CreatedBy]) REFERENCES [Users]([ID]),
-    CONSTRAINT [FK_Suppliers_ModifiedBy] FOREIGN KEY ([ModifiedBy]) REFERENCES [Users]([ID])
+    CONSTRAINT [FK_Suppliers_CreatedBy] FOREIGN KEY ([CreatedBy]) REFERENCES [Users]([UserID]),
+    CONSTRAINT [FK_Suppliers_ModifiedBy] FOREIGN KEY ([ModifiedBy]) REFERENCES [Users]([UserID])
 )
 GO
 
 CREATE NONCLUSTERED INDEX [IX_Suppliers_SupplierCode] ON [dbo].[Suppliers] ([SupplierCode])
-CREATE NONCLUSTERED INDEX [IX_Suppliers_Name] ON [dbo].[Suppliers] ([Name])
+CREATE NONCLUSTERED INDEX [IX_Suppliers_CompanyName] ON [dbo].[Suppliers] ([CompanyName])
 CREATE NONCLUSTERED INDEX [IX_Suppliers_IsActive] ON [dbo].[Suppliers] ([IsActive])
 GO
 
@@ -49,9 +49,9 @@ GO
 -- =============================================
 IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='RawMaterials' AND xtype='U')
 CREATE TABLE [dbo].[RawMaterials] (
-    [ID] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [MaterialID] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
     [MaterialCode] [nvarchar](20) NOT NULL UNIQUE,
-    [Name] [nvarchar](100) NOT NULL,
+    [MaterialName] [nvarchar](100) NOT NULL,
     [Description] [nvarchar](500) NULL,
     [Category] [nvarchar](50) NULL,
     [UnitOfMeasure] [nvarchar](20) NOT NULL,
@@ -73,14 +73,14 @@ CREATE TABLE [dbo].[RawMaterials] (
     [COGSAccountID] [int] NULL,
     [VarianceAccountID] [int] NULL,
     
-    CONSTRAINT [FK_RawMaterials_PreferredSupplier] FOREIGN KEY ([PreferredSupplierID]) REFERENCES [Suppliers]([ID]),
-    CONSTRAINT [FK_RawMaterials_CreatedBy] FOREIGN KEY ([CreatedBy]) REFERENCES [Users]([ID]),
-    CONSTRAINT [FK_RawMaterials_ModifiedBy] FOREIGN KEY ([ModifiedBy]) REFERENCES [Users]([ID])
+    CONSTRAINT [FK_RawMaterials_PreferredSupplier] FOREIGN KEY ([PreferredSupplierID]) REFERENCES [Suppliers]([SupplierID]),
+    CONSTRAINT [FK_RawMaterials_CreatedBy] FOREIGN KEY ([CreatedBy]) REFERENCES [Users]([UserID]),
+    CONSTRAINT [FK_RawMaterials_ModifiedBy] FOREIGN KEY ([ModifiedBy]) REFERENCES [Users]([UserID])
 )
 GO
 
 CREATE NONCLUSTERED INDEX [IX_RawMaterials_MaterialCode] ON [dbo].[RawMaterials] ([MaterialCode])
-CREATE NONCLUSTERED INDEX [IX_RawMaterials_Name] ON [dbo].[RawMaterials] ([Name])
+CREATE NONCLUSTERED INDEX [IX_RawMaterials_MaterialName] ON [dbo].[RawMaterials] ([MaterialName])
 CREATE NONCLUSTERED INDEX [IX_RawMaterials_Category] ON [dbo].[RawMaterials] ([Category])
 CREATE NONCLUSTERED INDEX [IX_RawMaterials_IsActive] ON [dbo].[RawMaterials] ([IsActive])
 GO
@@ -90,8 +90,8 @@ GO
 -- =============================================
 IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='PurchaseOrders' AND xtype='U')
 CREATE TABLE [dbo].[PurchaseOrders] (
-    [ID] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    [OrderNumber] [nvarchar](20) NOT NULL UNIQUE,
+    [PurchaseOrderID] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [PONumber] [nvarchar](20) NOT NULL UNIQUE,
     [SupplierID] [int] NOT NULL,
     [BranchID] [int] NULL,
     [OrderDate] [datetime] NOT NULL DEFAULT GETDATE(),
@@ -102,8 +102,8 @@ CREATE TABLE [dbo].[PurchaseOrders] (
     [DiscountPercentage] [decimal](5,2) NOT NULL DEFAULT 0.00,
     [DiscountAmount] [decimal](18,2) NOT NULL DEFAULT 0.00,
     [TaxPercentage] [decimal](5,2) NOT NULL DEFAULT 15.00,
-    [TaxAmount] [decimal](18,2) NOT NULL DEFAULT 0.00,
-    [Total] [decimal](18,2) NOT NULL DEFAULT 0.00,
+    [VATAmount] [decimal](18,2) NOT NULL DEFAULT 0.00,
+    [TotalAmount] [decimal](18,2) NOT NULL DEFAULT 0.00,
     [Notes] [nvarchar](1000) NULL,
     [PaymentTerms] [int] NULL,
     [ApprovedBy] [int] NULL,
@@ -117,16 +117,16 @@ CREATE TABLE [dbo].[PurchaseOrders] (
     [PostedDate] [datetime] NULL,
     [PostedBy] [int] NULL,
     
-    CONSTRAINT [FK_PurchaseOrders_Supplier] FOREIGN KEY ([SupplierID]) REFERENCES [Suppliers]([ID]),
+    CONSTRAINT [FK_PurchaseOrders_Supplier] FOREIGN KEY ([SupplierID]) REFERENCES [Suppliers]([SupplierID]),
     CONSTRAINT [FK_PurchaseOrders_Branch] FOREIGN KEY ([BranchID]) REFERENCES [Branches]([ID]),
-    CONSTRAINT [FK_PurchaseOrders_CreatedBy] FOREIGN KEY ([CreatedBy]) REFERENCES [Users]([ID]),
-    CONSTRAINT [FK_PurchaseOrders_ModifiedBy] FOREIGN KEY ([ModifiedBy]) REFERENCES [Users]([ID]),
-    CONSTRAINT [FK_PurchaseOrders_ApprovedBy] FOREIGN KEY ([ApprovedBy]) REFERENCES [Users]([ID]),
-    CONSTRAINT [FK_PurchaseOrders_PostedBy] FOREIGN KEY ([PostedBy]) REFERENCES [Users]([ID])
+    CONSTRAINT [FK_PurchaseOrders_CreatedBy] FOREIGN KEY ([CreatedBy]) REFERENCES [Users]([UserID]),
+    CONSTRAINT [FK_PurchaseOrders_ModifiedBy] FOREIGN KEY ([ModifiedBy]) REFERENCES [Users]([UserID]),
+    CONSTRAINT [FK_PurchaseOrders_ApprovedBy] FOREIGN KEY ([ApprovedBy]) REFERENCES [Users]([UserID]),
+    CONSTRAINT [FK_PurchaseOrders_PostedBy] FOREIGN KEY ([PostedBy]) REFERENCES [Users]([UserID])
 )
 GO
 
-CREATE NONCLUSTERED INDEX [IX_PurchaseOrders_OrderNumber] ON [dbo].[PurchaseOrders] ([OrderNumber])
+CREATE NONCLUSTERED INDEX [IX_PurchaseOrders_PONumber] ON [dbo].[PurchaseOrders] ([PONumber])
 CREATE NONCLUSTERED INDEX [IX_PurchaseOrders_Supplier] ON [dbo].[PurchaseOrders] ([SupplierID])
 CREATE NONCLUSTERED INDEX [IX_PurchaseOrders_Status] ON [dbo].[PurchaseOrders] ([Status])
 CREATE NONCLUSTERED INDEX [IX_PurchaseOrders_OrderDate] ON [dbo].[PurchaseOrders] ([OrderDate])
@@ -135,14 +135,14 @@ GO
 -- =============================================
 -- 4. PURCHASE ORDER ITEMS TABLE
 -- =============================================
-IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='PurchaseOrderItems' AND xtype='U')
-CREATE TABLE [dbo].[PurchaseOrderItems] (
-    [ID] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    [OrderID] [int] NOT NULL,
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='PurchaseOrderLines' AND xtype='U')
+CREATE TABLE [dbo].[PurchaseOrderLines] (
+    [PurchaseOrderLineID] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [PurchaseOrderID] [int] NOT NULL,
     [MaterialID] [int] NOT NULL,
     [LineNumber] [int] NOT NULL,
-    [QuantityOrdered] [decimal](18,3) NOT NULL,
-    [QuantityReceived] [decimal](18,3) NOT NULL DEFAULT 0.000,
+    [OrderedQuantity] [decimal](18,3) NOT NULL,
+    [ReceivedQuantity] [decimal](18,3) NOT NULL DEFAULT 0.000,
     [UnitOfMeasure] [nvarchar](20) NOT NULL,
     [UnitPrice] [decimal](18,4) NOT NULL,
     [DiscountPercentage] [decimal](5,2) NOT NULL DEFAULT 0.00,
@@ -155,16 +155,16 @@ CREATE TABLE [dbo].[PurchaseOrderItems] (
     [ModifiedDate] [datetime] NULL,
     [ModifiedBy] [int] NULL,
     
-    CONSTRAINT [FK_PurchaseOrderItems_Order] FOREIGN KEY ([OrderID]) REFERENCES [PurchaseOrders]([ID]) ON DELETE CASCADE,
-    CONSTRAINT [FK_PurchaseOrderItems_Material] FOREIGN KEY ([MaterialID]) REFERENCES [RawMaterials]([ID]),
-    CONSTRAINT [FK_PurchaseOrderItems_CreatedBy] FOREIGN KEY ([CreatedBy]) REFERENCES [Users]([ID]),
-    CONSTRAINT [FK_PurchaseOrderItems_ModifiedBy] FOREIGN KEY ([ModifiedBy]) REFERENCES [Users]([ID]),
-    CONSTRAINT [UK_PurchaseOrderItems_OrderLine] UNIQUE ([OrderID], [LineNumber])
+    CONSTRAINT [FK_PurchaseOrderLines_Order] FOREIGN KEY ([PurchaseOrderID]) REFERENCES [PurchaseOrders]([PurchaseOrderID]) ON DELETE CASCADE,
+    CONSTRAINT [FK_PurchaseOrderLines_Material] FOREIGN KEY ([MaterialID]) REFERENCES [RawMaterials]([MaterialID]),
+    CONSTRAINT [FK_PurchaseOrderLines_CreatedBy] FOREIGN KEY ([CreatedBy]) REFERENCES [Users]([UserID]),
+    CONSTRAINT [FK_PurchaseOrderLines_ModifiedBy] FOREIGN KEY ([ModifiedBy]) REFERENCES [Users]([UserID]),
+    CONSTRAINT [UK_PurchaseOrderLines_OrderLine] UNIQUE ([PurchaseOrderID], [LineNumber])
 )
 GO
 
-CREATE NONCLUSTERED INDEX [IX_PurchaseOrderItems_Order] ON [dbo].[PurchaseOrderItems] ([OrderID])
-CREATE NONCLUSTERED INDEX [IX_PurchaseOrderItems_Material] ON [dbo].[PurchaseOrderItems] ([MaterialID])
+CREATE NONCLUSTERED INDEX [IX_PurchaseOrderLines_Order] ON [dbo].[PurchaseOrderLines] ([PurchaseOrderID])
+CREATE NONCLUSTERED INDEX [IX_PurchaseOrderLines_Material] ON [dbo].[PurchaseOrderLines] ([MaterialID])
 GO
 
 -- =============================================
@@ -172,7 +172,7 @@ GO
 -- =============================================
 IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Inventory' AND xtype='U')
 CREATE TABLE [dbo].[Inventory] (
-    [ID] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [InventoryID] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
     [MaterialID] [int] NOT NULL,
     [BranchID] [int] NULL,
     [Location] [nvarchar](50) NOT NULL DEFAULT 'MAIN',
@@ -192,10 +192,10 @@ CREATE TABLE [dbo].[Inventory] (
     [ModifiedDate] [datetime] NULL,
     [ModifiedBy] [int] NULL,
     
-    CONSTRAINT [FK_Inventory_Material] FOREIGN KEY ([MaterialID]) REFERENCES [RawMaterials]([ID]),
+    CONSTRAINT [FK_Inventory_Material] FOREIGN KEY ([MaterialID]) REFERENCES [RawMaterials]([MaterialID]),
     CONSTRAINT [FK_Inventory_Branch] FOREIGN KEY ([BranchID]) REFERENCES [Branches]([ID]),
-    CONSTRAINT [FK_Inventory_CreatedBy] FOREIGN KEY ([CreatedBy]) REFERENCES [Users]([ID]),
-    CONSTRAINT [FK_Inventory_ModifiedBy] FOREIGN KEY ([ModifiedBy]) REFERENCES [Users]([ID]),
+    CONSTRAINT [FK_Inventory_CreatedBy] FOREIGN KEY ([CreatedBy]) REFERENCES [Users]([UserID]),
+    CONSTRAINT [FK_Inventory_ModifiedBy] FOREIGN KEY ([ModifiedBy]) REFERENCES [Users]([UserID]),
     CONSTRAINT [UK_Inventory_MaterialLocationBatch] UNIQUE ([MaterialID], [BranchID], [Location], [Batch])
 )
 GO
@@ -211,7 +211,7 @@ GO
 -- =============================================
 IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='InventoryTransactions' AND xtype='U')
 CREATE TABLE [dbo].[InventoryTransactions] (
-    [ID] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [InventoryTransactionID] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
     [MaterialID] [int] NOT NULL,
     [BranchID] [int] NULL,
     [Location] [nvarchar](50) NOT NULL,
@@ -232,10 +232,10 @@ CREATE TABLE [dbo].[InventoryTransactions] (
     [PostedDate] [datetime] NULL,
     [PostedBy] [int] NULL,
     
-    CONSTRAINT [FK_InventoryTransactions_Material] FOREIGN KEY ([MaterialID]) REFERENCES [RawMaterials]([ID]),
+    CONSTRAINT [FK_InventoryTransactions_Material] FOREIGN KEY ([MaterialID]) REFERENCES [RawMaterials]([MaterialID]),
     CONSTRAINT [FK_InventoryTransactions_Branch] FOREIGN KEY ([BranchID]) REFERENCES [Branches]([ID]),
-    CONSTRAINT [FK_InventoryTransactions_CreatedBy] FOREIGN KEY ([CreatedBy]) REFERENCES [Users]([ID]),
-    CONSTRAINT [FK_InventoryTransactions_PostedBy] FOREIGN KEY ([PostedBy]) REFERENCES [Users]([ID])
+    CONSTRAINT [FK_InventoryTransactions_CreatedBy] FOREIGN KEY ([CreatedBy]) REFERENCES [Users]([UserID]),
+    CONSTRAINT [FK_InventoryTransactions_PostedBy] FOREIGN KEY ([PostedBy]) REFERENCES [Users]([UserID])
 )
 GO
 
@@ -251,36 +251,36 @@ GO
 -- View for Purchase Order Accounting
 CREATE OR ALTER VIEW [dbo].[vw_PurchaseOrderAccounting] AS
 SELECT 
-    po.ID as PurchaseOrderID,
-    po.OrderNumber,
+    po.PurchaseOrderID AS PurchaseOrderID,
+    po.PONumber AS PONumber,
     po.SupplierID,
-    s.Name as SupplierName,
-    po.Total,
-    po.TaxAmount,
-    po.IsPosted,
+    s.CompanyName AS SupplierName,
+    po.TotalAmount AS TotalAmount,
+    po.VATAmount AS VATAmount,
+    ISNULL(po.IsPosted, 0) AS IsPosted,
     s.AccountsPayableAccountID,
     s.DefaultExpenseAccountID
-FROM PurchaseOrders po
-INNER JOIN Suppliers s ON po.SupplierID = s.ID
-WHERE po.IsPosted = 0
+FROM dbo.PurchaseOrders po
+INNER JOIN dbo.Suppliers s ON po.SupplierID = s.SupplierID
+WHERE ISNULL(po.IsPosted, 0) = 0
 GO
 
 -- View for Inventory Valuation
 CREATE OR ALTER VIEW [dbo].[vw_InventoryValuation] AS
 SELECT 
-    rm.ID as MaterialID,
-    rm.MaterialCode,
-    rm.Name as MaterialName,
-    rm.Category,
-    SUM(i.QuantityOnHand) as TotalQuantity,
-    AVG(i.UnitCost) as AverageUnitCost,
-    SUM(i.TotalCost) as TotalValue,
+    rm.MaterialID AS MaterialID,
+    rm.MaterialCode AS MaterialCode,
+    rm.MaterialName AS MaterialName,
+    rm.Category AS Category,
+    SUM(ISNULL(i.QuantityOnHand, 0)) AS TotalQuantity,
+    AVG(ISNULL(i.UnitCost, 0)) AS AverageUnitCost,
+    SUM(ISNULL(i.TotalCost, ISNULL(i.QuantityOnHand, 0) * ISNULL(i.UnitCost, 0))) AS TotalValue,
     rm.InventoryAccountID,
     rm.COGSAccountID
-FROM RawMaterials rm
-LEFT JOIN Inventory i ON rm.ID = i.MaterialID
-WHERE rm.IsActive = 1 AND (i.IsActive = 1 OR i.IsActive IS NULL)
-GROUP BY rm.ID, rm.MaterialCode, rm.Name, rm.Category, rm.InventoryAccountID, rm.COGSAccountID
+FROM dbo.RawMaterials rm
+LEFT JOIN dbo.Inventory i ON rm.MaterialID = i.MaterialID
+WHERE ISNULL(rm.IsActive, 1) = 1 AND (ISNULL(i.IsActive, 1) = 1 OR i.IsActive IS NULL)
+GROUP BY rm.MaterialID, rm.MaterialCode, rm.MaterialName, rm.Category, rm.InventoryAccountID, rm.COGSAccountID
 GO
 
 -- =============================================
@@ -288,7 +288,7 @@ GO
 -- =============================================
 
 -- Insert sample suppliers
-INSERT INTO Suppliers (SupplierCode, Name, ContactPerson, Email, Phone, PaymentTerms, CreatedBy)
+INSERT INTO Suppliers (SupplierCode, CompanyName, ContactPerson, Email, Phone, PaymentTerms, CreatedBy)
 VALUES 
 ('SUP001', 'Premium Flour Mills', 'John Smith', 'orders@premiumflour.co.za', '011-123-4567', 30, 1),
 ('SUP002', 'Fresh Dairy Supplies', 'Mary Johnson', 'sales@freshdairy.co.za', '021-987-6543', 15, 1),
@@ -296,7 +296,7 @@ VALUES
 GO
 
 -- Insert sample raw materials
-INSERT INTO RawMaterials (MaterialCode, Name, Description, Category, UnitOfMeasure, ReorderLevel, StandardCost, CostingMethod, PreferredSupplierID, CreatedBy)
+INSERT INTO RawMaterials (MaterialCode, MaterialName, Description, Category, UnitOfMeasure, ReorderLevel, StandardCost, CostingMethod, PreferredSupplierID, CreatedBy)
 VALUES 
 ('RM001', 'Bread Flour', 'High quality bread flour', 'Flour', 'kg', 100.000, 12.50, 'FIFO', 1, 1),
 ('RM002', 'Fresh Milk', 'Full cream fresh milk', 'Dairy', 'liters', 50.000, 18.75, 'FIFO', 2, 1),
@@ -306,7 +306,7 @@ VALUES
 GO
 
 PRINT 'Stockroom Module Database Schema Created Successfully!'
-PRINT 'Tables Created: Suppliers, RawMaterials, PurchaseOrders, PurchaseOrderItems, Inventory, InventoryTransactions'
+PRINT 'Tables Created: Suppliers, RawMaterials, PurchaseOrders, PurchaseOrderLines, Inventory, InventoryTransactions'
 PRINT 'Accounting Integration: Views and foreign keys for journal entry integration'
 PRINT 'Sample Data: Basic suppliers and raw materials inserted'
 GO

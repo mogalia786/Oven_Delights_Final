@@ -18,9 +18,9 @@ Public Class CrystalReportsService
                         u.Username,
                         u.FirstName + ' ' + u.LastName as FullName,
                         u.Email,
-                        b.BranchName,
-                        r.RoleName,
-                        u.LastLoginDate,
+                        b.Name,
+                        u.RoleID,
+                        u.LastLogin,
                         u.IsActive,
                         COUNT(s.SessionID) as TotalSessions,
                         SUM(CASE WHEN s.LogoutTime IS NOT NULL 
@@ -28,12 +28,12 @@ Public Class CrystalReportsService
                             ELSE 0 END) as TotalMinutesActive,
                         COUNT(CASE WHEN s.LoginTime >= @StartDate AND s.LoginTime <= @EndDate THEN 1 END) as SessionsInPeriod
                     FROM Users u
-                    LEFT JOIN Branches b ON u.BranchID = b.BranchID
+                    LEFT JOIN Branches b ON b.ID = u.BranchID
                     LEFT JOIN Roles r ON u.RoleID = r.RoleID
                     LEFT JOIN UserSessions s ON u.UserID = s.UserID
-                    WHERE (@BranchID IS NULL OR u.BranchID = @BranchID)
+                    WHERE (@BranchID IS NULL OR b.ID = @BranchID)
                     GROUP BY u.UserID, u.Username, u.FirstName, u.LastName, u.Email, 
-                             b.BranchName, r.RoleName, u.LastLoginDate, u.IsActive
+                             b.Name, u.RoleID, u.LastLogin, u.IsActive
                     ORDER BY u.Username"
 
                 Using command As New SqlCommand(query, connection)
@@ -62,7 +62,7 @@ Public Class CrystalReportsService
                         s.SessionID,
                         u.Username,
                         u.FirstName + ' ' + u.LastName as FullName,
-                        b.BranchName,
+                        b.Name,
                         s.LoginTime,
                         s.LogoutTime,
                         s.IPAddress,
@@ -75,7 +75,7 @@ Public Class CrystalReportsService
                         s.IsActive
                     FROM UserSessions s
                     INNER JOIN Users u ON s.UserID = u.UserID
-                    LEFT JOIN Branches b ON u.BranchID = b.BranchID
+                    LEFT JOIN Branches b ON b.ID = u.BranchID
                     WHERE s.LoginTime BETWEEN @StartDate AND @EndDate
                     AND (@UserID IS NULL OR s.UserID = @UserID)
                     ORDER BY s.LoginTime DESC"
@@ -110,7 +110,7 @@ Public Class CrystalReportsService
                         a.OldValues as Description,
                         u.Username,
                         u.FirstName + ' ' + u.LastName as FullName,
-                        b.BranchName,
+                        b.Name,
                         CASE a.Action
                             WHEN 'FAILED_LOGIN' THEN 'High'
                             WHEN 'ACCOUNT_LOCKED' THEN 'Critical'
@@ -120,7 +120,7 @@ Public Class CrystalReportsService
                         END as SeverityLevel
                     FROM AuditLog a
                     LEFT JOIN Users u ON a.UserID = u.UserID
-                    LEFT JOIN Branches b ON u.BranchID = b.BranchID
+                    LEFT JOIN Branches b ON b.ID = u.BranchID
                     WHERE a.Timestamp BETWEEN @StartDate AND @EndDate
                     AND a.Action IN ('FAILED_LOGIN', 'ACCOUNT_LOCKED', 'UNAUTHORIZED_ACCESS', 
                                    'PASSWORD_BREACH', 'SECURITY_VIOLATION', 'IP_BLOCKED')
@@ -148,27 +148,27 @@ Public Class CrystalReportsService
                 connection.Open()
                 Dim query As String = "
                     SELECT 
-                        b.BranchID,
-                        b.BranchName,
+                        b.ID as BranchID,
+                        b.Name,
                         b.BranchCode,
                         b.City,
                         b.Province,
                         b.Manager,
                         COUNT(u.UserID) as TotalUsers,
                         COUNT(CASE WHEN u.IsActive = 1 THEN 1 END) as ActiveUsers,
-                        COUNT(CASE WHEN u.LastLoginDate >= DATEADD(day, -30, GETDATE()) THEN 1 END) as RecentlyActiveUsers,
+                        COUNT(CASE WHEN u.LastLogin >= DATEADD(day, -30, GETDATE()) THEN 1 END) as RecentlyActiveUsers,
                         COUNT(s.SessionID) as TotalSessions,
                         AVG(CASE WHEN s.LogoutTime IS NOT NULL 
                             THEN DATEDIFF(minute, s.LoginTime, s.LogoutTime) 
                             ELSE NULL END) as AvgSessionDuration,
                         SUM(aj.Amount) as TotalAccountingValue
                     FROM Branches b
-                    LEFT JOIN Users u ON b.BranchID = u.BranchID
+                    LEFT JOIN Users u ON u.BranchID = b.ID
                     LEFT JOIN UserSessions s ON u.UserID = s.UserID
-                    LEFT JOIN AccountingJournals aj ON b.BranchID = aj.ReferenceID AND aj.ReferenceTable = 'Branches'
+                    LEFT JOIN AccountingJournals aj ON b.ID = aj.ReferenceID AND aj.ReferenceTable = 'Branches'
                     WHERE b.IsActive = 1
-                    GROUP BY b.BranchID, b.BranchName, b.BranchCode, b.City, b.Province, b.Manager
-                    ORDER BY b.BranchName"
+                    GROUP BY b.ID, b.Name, b.BranchCode, b.City, b.Province, b.Manager
+                    ORDER BY b.Name"
 
                 Using command As New SqlCommand(query, connection)
                     Dim adapter As New SqlDataAdapter(command)
@@ -190,11 +190,11 @@ Public Class CrystalReportsService
                 Dim query As String = "
                     SELECT 
                         r.RoleID,
-                        r.RoleName,
+                        u.RoleID,
                         r.Description,
                         COUNT(u.UserID) as TotalUsers,
                         COUNT(CASE WHEN u.IsActive = 1 THEN 1 END) as ActiveUsers,
-                        COUNT(CASE WHEN u.LastLoginDate >= DATEADD(day, -7, GETDATE()) THEN 1 END) as RecentlyActive,
+                        COUNT(CASE WHEN u.LastLogin >= DATEADD(day, -7, GETDATE()) THEN 1 END) as RecentlyActive,
                         STRING_AGG(p.PermissionName, ', ') as Permissions,
                         AVG(CASE WHEN s.LogoutTime IS NOT NULL 
                             THEN DATEDIFF(minute, s.LoginTime, s.LogoutTime) 
@@ -205,7 +205,7 @@ Public Class CrystalReportsService
                     LEFT JOIN RolePermissions rp ON r.RoleID = rp.RoleID
                     LEFT JOIN Permissions p ON rp.PermissionID = p.PermissionID
                     WHERE r.IsActive = 1
-                    GROUP BY r.RoleID, r.RoleName, r.Description
+                    GROUP BY r.RoleID, u.RoleID, r.Description
                     ORDER BY COUNT(u.UserID) DESC"
 
                 Using command As New SqlCommand(query, connection)

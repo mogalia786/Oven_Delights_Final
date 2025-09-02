@@ -78,7 +78,7 @@ Partial Class PasswordChangeForm
         Using conn As New SqlConnection(connectionString)
             Try
                 conn.Open()
-                Dim cmd As New SqlCommand("SELECT Password, PasswordHash FROM Users WHERE ID = @userID", conn)
+                Dim cmd As New SqlCommand("SELECT Password, PasswordHash FROM Users WHERE UserID = @userID", conn)
                 cmd.Parameters.AddWithValue("@userID", currentUserID)
                 Dim reader As SqlDataReader = cmd.ExecuteReader()
                 If reader.Read() Then
@@ -111,7 +111,7 @@ Partial Class PasswordChangeForm
                 
                 ' Update with new password
                 Dim hashedPassword As String = BCrypt.Net.BCrypt.HashPassword(txtNewPassword.Text)
-                Dim cmd As New SqlCommand("UPDATE Users SET Password = @password, PasswordHash = @passwordHash, PasswordLastChanged = GETDATE() WHERE ID = @userID", conn)
+                Dim cmd As New SqlCommand("UPDATE Users SET Password = @password, PasswordHash = @passwordHash, PasswordLastChanged = GETDATE() WHERE UserID = @userID", conn)
                 cmd.Parameters.AddWithValue("@userID", currentUserID)
                 cmd.Parameters.AddWithValue("@password", txtNewPassword.Text) ' Keep for backward compatibility
                 cmd.Parameters.AddWithValue("@passwordHash", hashedPassword)
@@ -129,7 +129,7 @@ Partial Class PasswordChangeForm
     Private Sub StorePasswordHistory(conn As SqlConnection)
         Try
             ' Get current password hash
-            Dim cmd As New SqlCommand("SELECT PasswordHash FROM Users WHERE ID = @userID", conn)
+            Dim cmd As New SqlCommand("SELECT PasswordHash FROM Users WHERE UserID = @userID", conn)
             cmd.Parameters.AddWithValue("@userID", currentUserID)
             Dim currentHash As String = cmd.ExecuteScalar()?.ToString()
             

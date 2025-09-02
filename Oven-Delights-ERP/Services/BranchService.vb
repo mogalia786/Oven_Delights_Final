@@ -13,15 +13,24 @@ Public Class BranchService
         Try
             Using connection As New SqlConnection(_connectionString)
                 connection.Open()
-                Dim query As String = "SELECT * FROM Branches WHERE ID = @BranchID"
-                
+                ' Determine key column at runtime to support schemas with ID or BranchID
+                Dim keyColumn As String = "ID"
+                Using cmdCheck As New SqlCommand("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Branches' AND COLUMN_NAME = 'ID'", connection)
+                    cmdCheck.CommandType = CommandType.Text
+                    Dim hasID = Convert.ToInt32(cmdCheck.ExecuteScalar()) > 0
+                    If Not hasID Then keyColumn = "BranchID"
+                End Using
+
+                Dim query As String = $"SELECT * FROM Branches WHERE {keyColumn} = @BranchID"
                 Using cmd As New SqlCommand(query, connection)
+                    cmd.CommandType = CommandType.Text
                     cmd.Parameters.AddWithValue("@BranchID", branchId)
-                    
                     Using reader As SqlDataReader = cmd.ExecuteReader()
                         If reader.Read() Then
+                            ' Map ID even if underlying column is BranchID
+                            Dim idValue As Integer = If(ColumnExists(reader, "ID"), Convert.ToInt32(reader(If(ColumnExists(reader, "ID"), "ID", "BranchID"))), Convert.ToInt32(reader("BranchID")))
                             Return New Branch() With {
-                                .ID = Convert.ToInt32(reader("ID")),
+                                .ID = idValue,
                                 .BranchCode = If(reader("BranchCode") IsNot DBNull.Value, reader("BranchCode").ToString(), String.Empty),
                                 .BranchName = If(reader("BranchName") IsNot DBNull.Value, reader("BranchName").ToString(), String.Empty),
                                 .Prefix = If(reader("Prefix") IsNot DBNull.Value, reader("Prefix").ToString(), String.Empty),
@@ -49,23 +58,45 @@ Public Class BranchService
         End Try
     End Function
 
+    Private Function ColumnExists(reader As IDataRecord, columnName As String) As Boolean
+        For i = 0 To reader.FieldCount - 1
+            If String.Equals(reader.GetName(i), columnName, StringComparison.OrdinalIgnoreCase) Then
+                Return True
+            End If
+        Next
+        Return False
+    End Function
+
     ' ... rest of the BranchService class remains the same ...
+
+    Private Function GetBranchKeyColumn(connection As SqlConnection, Optional transaction As SqlTransaction = Nothing) As String
+        Using cmd As New SqlCommand("SELECT CASE WHEN EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='Branches' AND COLUMN_NAME='ID') THEN 1 ELSE 0 END", connection, transaction)
+            cmd.CommandType = CommandType.Text
+            Dim hasId As Boolean = Convert.ToInt32(cmd.ExecuteScalar()) = 1
+            Return If(hasId, "ID", "BranchID")
+        End Using
+    End Function
 
     Public Function GetAllBranches() As DataTable
         Dim dtBranches As New DataTable()
         Try
             Using connection As New SqlConnection(_connectionString)
                 connection.Open()
-                Dim query As String = "SELECT ID, BranchCode, BranchName, Prefix, " & _
-                                    "Address, City, Province, PostalCode, Phone, " & _
-                                    "Email, ManagerName, IsActive, CreatedBy, " & _
-                                    "CreatedDate, ModifiedBy, ModifiedDate " & _
-                                    "FROM Branches ORDER BY BranchName"
+                ' Use SELECT * to avoid invalid column errors across schema variants
+                Dim query As String = "SELECT * FROM Branches ORDER BY BranchName"
                 Using cmd As New SqlCommand(query, connection)
+                    cmd.CommandType = CommandType.Text
                     Using da As New SqlDataAdapter(cmd)
                         da.Fill(dtBranches)
                     End Using
                 End Using
+                ' Normalize ID column if only BranchID exists
+                If Not dtBranches.Columns.Contains("ID") AndAlso dtBranches.Columns.Contains("BranchID") Then
+                    dtBranches.Columns.Add("ID", GetType(Integer))
+                    For Each row As DataRow In dtBranches.Rows
+                        row("ID") = Convert.ToInt32(row("BranchID"))
+                    Next
+                End If
             End Using
         Catch ex As Exception
             _logger.LogError($"Error in GetAllBranches: {ex.Message}")
@@ -94,6 +125,7 @@ Public Class BranchService
                                    "@PostalCode, @Phone, @Email, @ManagerName, @IsActive, @CreatedBy, GETDATE())"
                             
                             Using cmd As New SqlCommand(query, connection, transaction)
+                                cmd.CommandType = CommandType.Text
                                 cmd.Parameters.AddWithValue("@BranchCode", If(String.IsNullOrEmpty(branchCode), DBNull.Value, CObj(branchCode)))
                                 cmd.Parameters.AddWithValue("@BranchName", If(String.IsNullOrEmpty(branchName), DBNull.Value, CObj(branchName)))
                                 cmd.Parameters.AddWithValue("@Prefix", If(String.IsNullOrEmpty(prefix), DBNull.Value, CObj(prefix)))
@@ -110,6 +142,7 @@ Public Class BranchService
                             End Using
                         Else
                             ' Update existing branch
+                            Dim keyCol As String = GetBranchKeyColumn(connection, transaction)
                             query = "UPDATE Branches SET " & _
                                    "BranchCode = @BranchCode, " & _
                                    "BranchName = @BranchName, " & _
@@ -124,9 +157,10 @@ Public Class BranchService
                                    "IsActive = @IsActive, " & _
                                    "ModifiedBy = @ModifiedBy, " & _
                                    "ModifiedDate = GETDATE() " & _
-                                   "WHERE ID = @BranchID"
+                                   $"WHERE {keyCol} = @BranchID"
                             
                             Using cmd As New SqlCommand(query, connection, transaction)
+                                cmd.CommandType = CommandType.Text
                                 cmd.Parameters.AddWithValue("@BranchID", branchId)
                                 cmd.Parameters.AddWithValue("@BranchCode", If(String.IsNullOrEmpty(branchCode), DBNull.Value, CObj(branchCode)))
                                 cmd.Parameters.AddWithValue("@BranchName", If(String.IsNullOrEmpty(branchName), DBNull.Value, CObj(branchName)))
@@ -171,6 +205,7 @@ Public Class BranchService
                         Using cmd As New SqlCommand(
                             "SELECT COUNT(*) FROM Users WHERE BranchID = @BranchID AND IsActive = 1", 
                             connection, transaction)
+                            cmd.CommandType = CommandType.Text
                             cmd.Parameters.AddWithValue("@BranchID", branchId)
                             userCount = Convert.ToInt32(cmd.ExecuteScalar())
                         End Using
@@ -184,8 +219,10 @@ Public Class BranchService
                         End If
                         
                         ' Delete branch
+                        Dim keyCol As String = GetBranchKeyColumn(connection, transaction)
                         Using cmd As New SqlCommand(
-                            "DELETE FROM Branches WHERE ID = @BranchID", connection, transaction)
+                            $"DELETE FROM Branches WHERE {keyCol} = @BranchID", connection, transaction)
+                            cmd.CommandType = CommandType.Text
                             cmd.Parameters.AddWithValue("@BranchID", branchId)
                             cmd.ExecuteNonQuery()
                         End Using

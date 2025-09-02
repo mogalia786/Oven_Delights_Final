@@ -1,15 +1,17 @@
 Imports System.ComponentModel.DataAnnotations
-
+' Navigation properties
 Public Class PurchaseOrder
     Public Property ID As Integer
-    Public Property OrderNumber As String
+    Public Property OrderNumber As String ' Document number with branch prefix
     Public Property SupplierID As Integer
     Public Property BranchID As Integer?
+    Public Property Prefix As String ' Branch prefix for document numbering
     Public Property OrderDate As DateTime
     Public Property RequiredDate As DateTime?
     Public Property ExpectedDeliveryDate As DateTime?
-    Public Property Status As String
+    Public Property Status As String ' Draft, Approved, Received, Cancelled, Closed
     Public Property SubTotal As Decimal
+    Public Property VATAmount As Decimal ' For clarity with DB
     Public Property DiscountPercentage As Decimal
     Public Property DiscountAmount As Decimal
     Public Property TaxPercentage As Decimal
@@ -29,6 +31,7 @@ Public Class PurchaseOrder
     Public Property PostedBy As Integer?
 
     ' Navigation properties
+    ' Navigation properties for foreign keys
     Public Property Supplier As Supplier
     Public Property Branch As Branch
     Public Property CreatedByUser As User

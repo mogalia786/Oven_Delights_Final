@@ -30,6 +30,15 @@ Based on the existing database structure, the following tables are available:
 ## Table Structures
 
 ### 1. Suppliers Table
+
+**NOTE:** As of August 2025, the schema has been migrated to use UserID, RoleID, BranchID, etc. throughout all tables. Any previous references to generic 'ID' or string-based 'Role' fields have been replaced for consistency and referential integrity.
+
+#### Changelog
+- Migrated Users table: ID → UserID, Role (string) → RoleID (int, FK)
+- Migrated Branches table: ID → BranchID
+- Migrated Roles table: ID → RoleID
+- Updated all foreign key relationships and documentation accordingly.
+
 **Purpose:** Manage supplier/vendor information for procurement
 
 | Column Name | Data Type | Nullable | Default | Description |
@@ -84,9 +93,10 @@ Based on the existing database structure, the following tables are available:
 
 | Column Name | Data Type | Nullable | Default | Description |
 |-------------|-----------|----------|---------|-------------|
-| ID | int | No | IDENTITY | Primary key |
+| PurchaseOrderID | int | No | IDENTITY | Primary key |
 | PONumber | nvarchar | Yes | NULL | Purchase order number |
 | SupplierID | int | Yes | NULL | Supplier reference |
+| BranchID | int | Yes | NULL | Branch reference |
 | OrderDate | datetime2 | Yes | getdate() | Order date |
 | RequiredDate | datetime2 | Yes | NULL | Required delivery date |
 | Status | nvarchar | Yes | 'Draft' | Order status |
@@ -100,6 +110,8 @@ Based on the existing database structure, the following tables are available:
 | ModifiedBy | int | Yes | NULL | User who modified record |
 | ApprovedBy | int | Yes | NULL | User who approved order |
 | ApprovedDate | datetime2 | Yes | NULL | Approval date |
+| UserID | int | No | FOREIGN KEY | User reference (see Users table) |
+| RoleID | int | No | FOREIGN KEY | Role reference (see Roles table) |
 
 ---
 

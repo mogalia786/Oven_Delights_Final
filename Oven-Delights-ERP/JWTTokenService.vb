@@ -9,15 +9,15 @@ Public Class JWTTokenService
     Private Shared ReadOnly key As SymmetricSecurityKey = New SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
     Private Shared ReadOnly credentials As SigningCredentials = New SigningCredentials(key, SecurityAlgorithms.HmacSha256)
 
-    Public Shared Function GenerateToken(userID As Integer, username As String, role As String, branchID As Integer?) As String
+    Public Shared Function GenerateToken(userID As Integer, username As String, roleID As Integer, branchID As Integer?) As String
         Try
             Dim claims As New List(Of Claim) From {
                 New Claim(ClaimTypes.NameIdentifier, userID.ToString()),
                 New Claim(ClaimTypes.Name, username),
-                New Claim(ClaimTypes.Role, role),
+                New Claim(ClaimTypes.Role, roleID.ToString()),
                 New Claim("UserID", userID.ToString()),
                 New Claim("Username", username),
-                New Claim("Role", role)
+                New Claim("RoleID", roleID.ToString())
             }
 
             If branchID.HasValue Then

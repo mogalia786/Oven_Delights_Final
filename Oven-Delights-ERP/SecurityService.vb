@@ -213,17 +213,20 @@ Public Class SecurityService
         End Try
     End Function
     
-    ' Role-Based Menu Visibility
-    Public Function GetUserPermissions(userID As Integer) As List(Of String)
+    ' RoleID-Based Menu Visibility
+    Public Function GetUserPermissions(userUserID As Integer) As List(Of String)
         Dim permissions As New List(Of String)
         
         Try
             Using connection As New SqlConnection(connectionString)
                 connection.Open()
-                Dim query As String = "SELECT DISTINCT p.PermissionName FROM Users u INNER JOIN RolePermissions rp ON u.RoleID = rp.RoleID INNER JOIN Permissions p ON rp.PermissionID = p.PermissionID WHERE u.UserID = @UserID AND p.IsActive = 1"
+                Dim query As String = "SELECT DISTINCT p.PermissionName FROM Users u " & _
+                                    "INNER JOIN RolePermissions rp ON u.RoleID = rp.RoleID " & _
+                                    "INNER JOIN Permissions p ON rp.PermissionID = p.PermissionID " & _
+                                    "WHERE u.UserID = @UserID AND p.IsActive = 1"
                 
                 Using command As New SqlCommand(query, connection)
-                    command.Parameters.AddWithValue("@UserID", userID)
+                    command.Parameters.AddWithValue("@UserID", userUserID)
                     Using reader As SqlDataReader = command.ExecuteReader()
                         While reader.Read()
                             permissions.Add(reader("PermissionName").ToString())

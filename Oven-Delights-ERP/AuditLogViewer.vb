@@ -48,8 +48,8 @@ Partial Class AuditLogViewer
         Using conn As New SqlConnection(connectionString)
             Try
                 conn.Open()
-                Dim sql As String = "SELECT a.ID, u.Username, a.Action, a.TableName, a.RecordID, a.Details, a.Timestamp, a.IPAddress " &
-                                   "FROM AuditLog a LEFT JOIN Users u ON a.UserID = u.ID " &
+                Dim sql As String = "SELECT a.AuditID, u.Username, a.Action, a.TableName, a.RecordID, a.Details, a.Timestamp, a.IPAddress " &
+                                   "FROM AuditLog a LEFT JOIN Users u ON a.UserID = u.UserID " &
                                    "WHERE a.Timestamp >= @fromDate AND a.Timestamp <= @toDate"
                 
                 If cboAction.SelectedIndex > 0 Then

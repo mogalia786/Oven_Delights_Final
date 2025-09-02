@@ -25,6 +25,7 @@ Public Class Supplier
     Public Property DefaultExpenseAccountID As Integer?
 
     ' Navigation properties
+    ' Navigation properties for user references
     Public Property CreatedByUser As User
     Public Property ModifiedByUser As User
     Public Property PurchaseOrders As List(Of PurchaseOrder)

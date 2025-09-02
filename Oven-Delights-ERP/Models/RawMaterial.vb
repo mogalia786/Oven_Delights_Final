@@ -26,6 +26,7 @@ Public Class RawMaterial
     Public Property VarianceAccountID As Integer?
 
     ' Navigation properties
+    ' Navigation properties for foreign keys
     Public Property PreferredSupplier As Supplier
     Public Property CreatedByUser As User
     Public Property ModifiedByUser As User

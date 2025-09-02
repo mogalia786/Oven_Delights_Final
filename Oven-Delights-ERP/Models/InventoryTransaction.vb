@@ -1,6 +1,8 @@
 Imports System.ComponentModel.DataAnnotations
-
+Imports Oven_Delights_ERP.Models
+    ' Navigation properties
 Public Class InventoryTransaction
+    ' DB-aligned fields for InventoryTransactions table
     Public Property ID As Integer
     Public Property MaterialID As Integer
     Public Property BranchID As Integer?

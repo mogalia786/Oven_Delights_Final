@@ -11,7 +11,7 @@ Public Class PurchaseOrderItem
     Public Property UnitPrice As Decimal
     Public Property DiscountPercentage As Decimal
     Public Property LineTotal As Decimal
-    Public Property Status As String
+    Public Property Status As String ' Ordered, Received, PartiallyReceived, Cancelled
     Public Property RequiredDate As DateTime?
     Public Property Notes As String
     Public Property CreatedDate As DateTime
@@ -20,6 +20,7 @@ Public Class PurchaseOrderItem
     Public Property ModifiedBy As Integer?
 
     ' Navigation properties
+    ' Navigation properties for foreign keys
     Public Property PurchaseOrder As PurchaseOrder
     Public Property RawMaterial As RawMaterial
     Public Property CreatedByUser As User

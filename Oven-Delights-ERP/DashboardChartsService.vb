@@ -1,6 +1,7 @@
 Imports Microsoft.Data.SqlClient
 Imports System.Configuration
 Imports System.Text.Json
+Imports Oven_Delights_ERP.Services
 
 Public Class DashboardChartsService
     Private connectionString As String
@@ -30,7 +31,7 @@ Public Class DashboardChartsService
         Return $"{{""labels"":[""Active"",""Inactive""],""data"":[{activeUsers},{inactiveUsers}]}}"
     End Function
 
-    Public Function GetLoginFrequencyChartData() As String
+    Public Function GetLastLoginFrequencyChartData() As String
         Dim loginData As New List(Of Integer)()
         Dim labels As New List(Of String)()
 
@@ -38,7 +39,7 @@ Public Class DashboardChartsService
             Try
                 conn.Open()
                 For i As Integer = 6 To 0 Step -1
-                    Dim currentDate As DateTime = DateTime.Now.AddDays(-i)
+                    Dim currentDate As DateTime = TimeProvider.Now().AddDays(-i)
                     Dim cmd As New SqlCommand("SELECT COUNT(*) FROM UserSessions WHERE CAST(LoginTime AS DATE) = @date", conn)
                     cmd.Parameters.AddWithValue("@date", currentDate.Date)
                     Dim count As Integer = Convert.ToInt32(cmd.ExecuteScalar())
@@ -49,7 +50,7 @@ Public Class DashboardChartsService
                 ' Return default data on error
                 For i As Integer = 0 To 6
                     loginData.Add(0)
-                    labels.Add(DateTime.Now.AddDays(-6 + i).ToString("MM/dd"))
+                    labels.Add(TimeProvider.Now().AddDays(-6 + i).ToString("MM/dd"))
                 Next
             End Try
         End Using
@@ -65,19 +66,39 @@ Public Class DashboardChartsService
         Using conn As New SqlConnection(connectionString)
             Try
                 conn.Open()
-                Dim cmd As New SqlCommand("SELECT b.Name, COUNT(u.ID) as UserCount FROM Branches b LEFT JOIN Users u ON b.ID = u.BranchID WHERE b.IsActive = 1 GROUP BY b.Name", conn)
-                Dim reader As SqlDataReader = cmd.ExecuteReader()
-                
-                While reader.Read()
-                    branchData.Add(New With {
-                        .BranchLabel = reader("Name").ToString(),
-                        .BranchValue = Convert.ToInt32(reader("UserCount"))
-                    })
-                End While
-                reader.Close()
-            Catch ex As Exception
-                ' Return default data on error
-                branchData.Add(New With {.label = "No Data", .value = 0})
+                ' First attempt: Branches has ID PK and BranchName, Users has UserID and BranchID
+                Dim sql1 As String = "SELECT b.BranchName AS BranchName, COUNT(u.UserID) AS UserCount " & _
+                                     "FROM Branches b LEFT JOIN Users u ON u.BranchID = b.ID " & _
+                                     "GROUP BY b.BranchName"
+                Using cmd As New SqlCommand(sql1, conn)
+                    Using reader As SqlDataReader = cmd.ExecuteReader()
+                        While reader.Read()
+                            branchData.Add(New With {
+                                .BranchLabel = reader("BranchName").ToString(),
+                                .BranchValue = Convert.ToInt32(reader("UserCount"))
+                            })
+                        End While
+                    End Using
+                End Using
+            Catch ex1 As Exception
+                ' Fallback: Branches has BranchID as PK
+                Try
+                    Dim sql2 As String = "SELECT b.BranchName AS BranchName, COUNT(u.UserID) AS UserCount " & _
+                                         "FROM Branches b LEFT JOIN Users u ON u.BranchID = b.BranchID " & _
+                                         "GROUP BY b.BranchName"
+                    Using cmd2 As New SqlCommand(sql2, conn)
+                        Using reader2 As SqlDataReader = cmd2.ExecuteReader()
+                            While reader2.Read()
+                                branchData.Add(New With {
+                                    .BranchLabel = reader2("BranchName").ToString(),
+                                    .BranchValue = Convert.ToInt32(reader2("UserCount"))
+                                })
+                            End While
+                        End Using
+                    End Using
+                Catch
+                    ' Return default data on error
+                End Try
             End Try
         End Using
 
@@ -96,27 +117,30 @@ Public Class DashboardChartsService
         Using conn As New SqlConnection(connectionString)
             Try
                 conn.Open()
-                Dim cmd As New SqlCommand("SELECT Role, COUNT(*) as RoleCount FROM Users WHERE IsActive = 1 GROUP BY Role", conn)
-                Dim reader As SqlDataReader = cmd.ExecuteReader()
-                
-                While reader.Read()
-                    roleData.Add(New With {
-                        .RoleName = reader("Role").ToString(),
-                        .RoleCount = Convert.ToInt32(reader("RoleCount"))
-                    })
-                End While
-                reader.Close()
-            Catch ex As Exception
+                Dim sql As String = "SELECT r.RoleName AS RoleName, COUNT(*) AS RoleCount " & _
+                                    "FROM Users u LEFT JOIN Roles r ON u.RoleID = r.RoleID " & _
+                                    "WHERE u.IsActive = 1 " & _
+                                    "GROUP BY r.RoleName"
+                Using cmd As New SqlCommand(sql, conn)
+                    Using reader As SqlDataReader = cmd.ExecuteReader()
+                        While reader.Read()
+                            roleData.Add(New With {
+                                .Role = Convert.ToString(reader("RoleName")),
+                                .RoleCount = Convert.ToInt32(reader("RoleCount"))
+                            })
+                        End While
+                    End Using
+                End Using
+            Catch
                 ' Return default data on error
-                roleData.Add(New With {.role = "No Data", .count = 0})
             End Try
         End Using
 
         If roleData.Count = 0 Then
-            roleData.Add(New With {.RoleName = "No Users", .RoleCount = 0})
+            roleData.Add(New With {.Role = "No Users", .RoleCount = 0})
         End If
 
-        Dim labels As String = String.Join(",", roleData.Select(Function(r) $"""{r.RoleName}"""))
+        Dim labels As String = String.Join(",", roleData.Select(Function(r) $"""{r.Role}"""))
         Dim data As String = String.Join(",", roleData.Select(Function(r) r.RoleCount))
         Return $"{{""labels"":[{labels}],""data"":[{data}]}}"
     End Function
@@ -141,7 +165,7 @@ Public Class DashboardChartsService
             Try
                 conn.Open()
                 For i As Integer = 11 To 0 Step -1
-                    Dim currentDate As DateTime = DateTime.Now.AddMonths(-i)
+                    Dim currentDate As DateTime = TimeProvider.Now().AddMonths(-i)
                     Dim cmd As New SqlCommand("SELECT COUNT(*) FROM Users WHERE YEAR(CreatedDate) = @year AND MONTH(CreatedDate) = @month", conn)
                     cmd.Parameters.AddWithValue("@year", currentDate.Year)
                     cmd.Parameters.AddWithValue("@month", currentDate.Month)
@@ -153,7 +177,7 @@ Public Class DashboardChartsService
                 ' Return default data on error
                 For i As Integer = 0 To 11
                     registrationData.Add(0)
-                    labels.Add(DateTime.Now.AddMonths(-11 + i).ToString("MMM yyyy"))
+                    labels.Add(TimeProvider.Now().AddMonths(-11 + i).ToString("MMM yyyy"))
                 Next
             End Try
         End Using
