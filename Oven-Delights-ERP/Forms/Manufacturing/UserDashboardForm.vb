@@ -282,7 +282,7 @@ Namespace Manufacturing
 
                     ' Load active manufacturers
                     Dim dtUsers As New DataTable()
-                    Using cmdU As New SqlCommand("SELECT u.UserID, (u.FirstName + ' ' + u.LastName) AS DisplayName FROM dbo.Users u INNER JOIN dbo.Roles r ON r.RoleID = u.RoleID WHERE r.RoleName='Manufacturer' AND u.IsActive=1 ORDER BY DisplayName;", cn)
+                    Using cmdU As New SqlCommand("SELECT u.UserID, (u.FirstName + ' ' + u.LastName) AS DisplayName FROM dbo.Users u INNER JOIN dbo.Roles r ON r.RoleID = u.RoleID WHERE r.RoleName IN ('Manufacturing-Manager','Manufacturer') AND u.IsActive=1 ORDER BY DisplayName;", cn)
                         Using da As New SqlDataAdapter(cmdU)
                             da.Fill(dtUsers)
                         End Using
