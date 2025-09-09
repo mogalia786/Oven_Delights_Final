@@ -1,0 +1,33 @@
+﻿# Visual Studio / .NET build outputs
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.pdb
+*.ilk
+*.idb
+*.tlog
+*.cache
+*.log
+msbuild.log
+build_output.txt
+
+# NuGet
+packages/
+*.nupkg
+
+# WebView2 caches
+*.WebView2/
+**/EBWebView/
+**/Default/Cache/
+**/Cache/Cache_Data/
+
+# IDE state / temp
+*.db
+*.sqlite
+*.userprefs
+Thumbs.db
+.DS_Store
