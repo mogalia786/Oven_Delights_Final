@@ -1,0 +1,2478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oven Delights - POS System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Base styles */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e2d;
+            --surface: #252537;
+            --text-color: #e0e0e0;
+            --primary-color: #ff6b35;
+            --secondary-color: #4ecdc4;
+            --warning-color: #ffc43d;
+            --success-color: #06d6a0;
+            --danger-color: #ef476f;
+            --border-color: #33334a;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); height: 100vh; display: flex; flex-direction: column; }
+        .container { 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            min-height: 100vh; 
+            max-height: 100vh;
+            background-color: var(--bg-color); 
+            color: white; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            overflow: hidden; 
+        }
+        
+        /* Header */
+        .header { 
+            padding: 0.8rem 1.5rem; 
+            border-bottom: 1px solid var(--border-color); 
+            display: flex; 
+            align-items: center; 
+            background-color: var(--card-bg); 
+            gap: 20px; 
+            flex-wrap: nowrap;
+        }
+        
+        .logo-container { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px;
+            white-space: nowrap;
+        }
+        
+        .logo-container h1 {
+            font-size: 1.8rem;
+            margin: 0;
+            white-space: nowrap;
+        }
+        .logo-container { display: flex; align-items: center; }
+        .logo { height: 50px; width: auto; object-fit: contain; }
+        .teller-info { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 15px; }
+        .order-controls { display: flex; gap: 10px; }
+        
+        /* Buttons */
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-hold { background-color: var(--warning-color); color: #000; }
+        .btn-recall { background-color: var(--secondary-color); color: #000; }
+        
+        /* Stock Code Input */
+        .stock-code-container { padding: 10px 15px; background-color: var(--card-bg); border-bottom: 1px solid var(--border-color); }
+        .stock-code-input { display: flex; gap: 10px; max-width: 500px; margin: 0 auto; width: 100%; }
+        .stock-code-input input { flex: 1; padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 4px; background-color: var(--surface); color: var(--text-color); }
+        
+        /* Main Content */
+        .main-content { 
+            display: flex; 
+            flex: 1; 
+            overflow: hidden; 
+            padding: 15px 15px 90px; /* Add bottom padding for F-keys */
+            gap: 15px;
+            min-height: 0;
+            height: calc(100% - 60px); /* Account for header height */
+        }
+        
+        /* Categories Sidebar */
+        .categories-sidebar {
+            width: 200px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        
+        /* Products Section */
+        .products-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 0; /* Allows flex children to shrink below content size */
+        }
+        
+        /* Cart Section */
+        .cart-section {
+            width: 350px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        
+        /* Categories */
+        .categories-sidebar { 
+            width: 200px; 
+            background-color: var(--card-bg); 
+            border-radius: 8px; 
+            padding: 15px; 
+            overflow-y: auto;
+            min-height: 0; /* Allows flex children to shrink below content size */
+        }
+        .category-item { padding: 15px; margin-bottom: 8px; background-color: var(--surface); border-radius: 6px; cursor: pointer; }
+        .category-item.active { background-color: var(--primary-color); color: white; }
+        
+        /* Products Grid */
+        .products-grid { 
+            flex: 1; 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
+            gap: 15px; 
+            overflow-y: auto; 
+            padding: 15px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            min-height: 0; /* Allows flex children to shrink below content size */
+            height: 100%;
+            align-content: flex-start;
+        }
+        
+        .no-products {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 20px;
+            color: var(--text-color);
+        }
+        .product-card { 
+            background-color: var(--surface); 
+            border-radius: 8px; 
+            overflow: hidden; 
+            cursor: pointer; 
+            display: flex; 
+            flex-direction: column;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .product-image { 
+            height: 120px; 
+            background-size: cover; 
+            background-position: center; 
+            background-color: #2a2a3c;
+            position: relative;
+        }
+        .product-image::after {
+            content: attr(data-fallback);
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: white;
+            font-size: 12px;
+            transform: translateY(-50%);
+            padding: 0 5px;
+        }
+        .product-info { padding: 12px; }
+        .product-name { font-weight: 600; margin-bottom: 5px; }
+        .product-price { color: var(--primary-color); font-weight: 700; }
+        
+        /* Cart */
+        .cart-section { width: 350px; background-color: var(--card-bg); border-radius: 8px; display: flex; flex-direction: column; }
+        .cart-header { padding: 15px; background-color: var(--primary-color); color: white; font-weight: 600; display: flex; justify-content: space-between; }
+        .cart-count { background: white; color: var(--primary-color); padding: 2px 8px; border-radius: 12px; font-size: 14px; }
+        .cart-items { flex: 1; overflow-y: auto; padding: 15px; }
+        .cart-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-color); }
+        .cart-item-details { flex: 1; }
+        .cart-item-quantity { display: flex; align-items: center; gap: 8px; }
+        .quantity-btn { width: 24px; height: 24px; border: 1px solid var(--border-color); background: var(--surface); color: var(--text-color); border-radius: 4px; cursor: pointer; }
+        .remove-btn { color: var(--danger-color); background: none; border: none; cursor: pointer; }
+        .cart-footer { padding: 15px; border-top: 1px solid var(--border-color); background-color: var(--surface); }
+        .cart-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; margin-bottom: 15px; }
+        .checkout-btn { width: 100%; padding: 12px; background-color: var(--success-color); color: white; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; }
+        
+        /* Function Keys Container */
+        .function-keys-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            padding: 10px 15px;
+            display: flex;
+            justify-content: center;
+            border-top: 1px solid var(--border-color);
+            z-index: 100;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .function-keys-inner {
+            display: flex;
+            gap: 10px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .f-key {
+            position: relative;
+            width: 100%;
+            height: 60px;
+            border: none;
+            border-radius: 6px;
+            background: #2d3748;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+        
+        /* Individual key colors */
+        .f-key-1 { background: linear-gradient(145deg, #4CAF50, #43A047); } /* Green */
+        .f-key-2 { background: linear-gradient(145deg, #FF9800, #F57C00); } /* Orange */
+        .f-key-3 { background: linear-gradient(145deg, #2196F3, #1976D2); } /* Blue */
+        .f-key-4 { background: linear-gradient(145deg, #9C27B0, #7B1FA2); } /* Purple */
+        .f-key-5 { background: linear-gradient(145deg, #FF5722, #E64A19); } /* Deep Orange */
+        .f-key-6 { background: linear-gradient(145deg, #009688, #00796B); } /* Teal */
+        .f-key-7 { background: linear-gradient(145deg, #607D8B, #455A64); } /* Blue Grey */
+        .f-key-8 { background: linear-gradient(145deg, #795548, #5D4037); } /* Brown */
+        .f-key-9 { background: linear-gradient(145deg, #E91E63, #C2185B); } /* Pink */
+        .f-key-10 { background: linear-gradient(145deg, #3F51B5, #303F9F); } /* Indigo */
+        .f-key-11 { background: linear-gradient(145deg, #00BCD4, #0097A7); } /* Cyan */
+        .f-key-12 { background: linear-gradient(145deg, #8BC34A, #689F38); } /* Light Green */
+        
+        /* Hover and active states */
+        .f-key:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        .f-key:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* Icons */
+        .f-key i {
+            font-size: 24px;
+            margin-bottom: 8px;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+            transition: transform 0.2s ease;
+        }
+        .f-key:hover i {
+            transform: scale(1.1);
+        }
+        
+        /* Text */
+        .f-key span {
+            position: relative;
+            z-index: 1;
+            font-size: 13px;
+            margin-top: 4px;
+            opacity: 0.95;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        /* Shortcut key indicator */
+        .f-key-shortcut {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: 700;
+            text-shadow: none;
+            backdrop-filter: blur(4px);
+        }
+        
+        /* Ripple effect */
+        .f-key::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%, -50%);
+            transform-origin: 50% 50%;
+            transition: opacity 0.3s, transform 0.5s;
+        }
+        
+        .f-key:active::after {
+            opacity: 0.4;
+            transform: scale(0, 0);
+            transition: 0s;
+        }
+        .f-key::before {
+            content: attr(data-key);
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            opacity: 0.8;
+        }
+        .f-key:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .f-key:active {
+            transform: translateY(1px);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        /* Colorful F-keys */
+        .f-key[data-key="F1"] { background: linear-gradient(135deg, #4a90e2, #357abd); }
+        .f-key[data-key="F2"] { background: linear-gradient(135deg, #48bb78, #2f855a); }
+        .f-key[data-key="F3"] { background: linear-gradient(135deg, #e53e3e, #c53030); }
+        .f-key[data-key="F4"] { background: linear-gradient(135deg, #d69e2e, #b7791f); }
+        .f-key[data-key="F5"] { background: linear-gradient(135deg, #805ad5, #6b46c1); }
+        .f-key[data-key="F6"] { background: linear-gradient(135deg, #3182ce, #2c5282); }
+        .f-key[data-key="F7"] { background: linear-gradient(135deg, #38a169, #2f855a); }
+        .f-key[data-key="F8"] { background: linear-gradient(135deg, #e53e3e, #9b2c2c); }
+        
+        /* Notification */
+        .notification {
+            position: fixed; top: 20px; right: 20px; background-color: #4caf50; color: white; padding: 15px 25px; border-radius: 4px;
+            transform: translateX(120%); transition: transform 0.3s ease-in-out; z-index: 1000; display: flex; align-items: center; gap: 10px;
+        }
+        .notification.show { transform: translateX(0); }
+        .notification.error { background-color: #f44336; }
+
+        /* Touch-friendly checkout scaling */
+        .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .keypad-btn { min-width: 100px; height: 84px; font-size: 28px; font-weight: 800; border-radius: 12px; }
+        .input-display { font-size: 32px; padding: 12px 16px; background: var(--surface); border-radius: 8px; margin-bottom: 12px; text-align: right; }
+        .payment-amount { font-size: 24px; }
+        .payment-actions .btn { padding: 16px; font-size: 18px; border-radius: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-container">
+                <img src="images/Overn_Delights_Logo.svg" alt="Oven Delights" class="logo">
+                <h1>Point of Sale</h1>
+            </div>
+            <div class="teller-info">
+                <span class="teller-name">Teller: John</span>
+                <div class="order-controls">
+                    <button id="holdOrderBtn" class="btn btn-hold"><i class="fas fa-pause"></i> Hold Order</button>
+                    <button id="recallOrderBtn" class="btn btn-recall"><i class="fas fa-undo"></i> Recall Order</button>
+                </div>
+                <span class="current-time">00:00:00</span>
+            </div>
+        </div>
+        
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Left Sidebar - Categories -->
+            <div class="categories-sidebar" id="categories-sidebar"></div>
+            
+            <!-- Middle - Products Grid -->
+            <div class="products-section">
+                <div class="products-grid" id="products-grid">
+                    <!-- Products will be dynamically inserted here -->
+                </div>
+            </div>
+            
+            <!-- Right Sidebar - Cart -->
+            <div class="cart-section">
+                <div class="cart-header">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h3 style="margin: 0;">New Sale</h3>
+                        <span class="badge" id="cart-count" style="background: #4CAF50; color: white; border-radius: 10px; padding: 2px 8px; font-size: 12px; font-weight: bold;">0 items</span>
+                    </div>
+                    <button class="btn btn-sm btn-outline-light" id="clear-cart-btn">
+                        <i class="fas fa-trash"></i> Clear
+                    </button>
+                </div>
+                <div class="cart-items" id="cart-items">
+                    <div class="empty-cart">Your cart is empty</div>
+                </div>
+                
+                <div class="cart-footer">
+                    <div class="cart-total">
+                        <span>Total:</span>
+                        <span class="total-amount" id="cart-total">R0.00</span>
+                    </div>
+                    <button class="checkout-btn" id="checkout-btn"><i class="fas fa-credit-card"></i> Checkout</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barcode Scanner Input (Hidden) -->
+        <div class="barcode-scanner" style="position: absolute; left: -9999px; top: -9999px;">
+            <input type="text" id="barcodeInput" autocomplete="off" />
+        </div>
+        
+        <!-- Function Keys -->
+        <div class="function-keys-container">
+            <div class="function-keys-inner">
+                <div class="stock-code-input" style="display: flex; align-items: center; margin-right: 15px;">
+                    <input type="text" id="stockCodeInput" placeholder="Scan barcode or enter code" style="height: 40px; padding: 0 10px; border: 1px solid #ccc; border-radius: 4px; margin-right: 5px; width: 200px;" />
+                    <button id="stockCodeBtn" class="btn btn-primary" style="height: 40px; padding: 0 15px;">
+                        <i class="fas fa-barcode"></i> Enter
+                    </button>
+                </div>
+                <button class="f-key f-key-1" data-key="F1">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                    <div class="f-key-shortcut">F1</div>
+                </button>
+                <button class="f-key f-key-2" data-key="F2">
+                    <i class="fas fa-search"></i>
+                    <span>Search</span>
+                    <div class="f-key-shortcut">F2</div>
+                </button>
+                <button class="f-key f-key-3" data-key="F3">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Cart</span>
+                    <div class="f-key-shortcut">F3</div>
+                </button>
+                <button class="f-key f-key-4" data-key="F4">
+                    <i class="fas fa-receipt"></i>
+                    <span>Receipt</span>
+                    <div class="f-key-shortcut">F4</div>
+                </button>
+                <button class="f-key f-key-5" data-key="F5">
+                    <i class="fas fa-pause"></i>
+                    <span>Hold Order</span>
+                    <div class="f-key-shortcut">F5</div>
+                </button>
+                <button class="f-key f-key-6" data-key="F6">
+                    <i class="fas fa-undo"></i>
+                    <span>Recall Order</span>
+                    <div class="f-key-shortcut">F6</div>
+                </button>
+                <button class="f-key f-key-7" data-key="F7">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reports</span>
+                    <div class="f-key-shortcut">F7</div>
+                </button>
+                <button class="f-key f-key-8" data-key="F8">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                    <div class="f-key-shortcut">F8</div>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i>
+        <span id="notification-message">Item added to cart</span>
+    </div>
+
+    <script>
+        // Main POS Application
+        window.addEventListener('load', function() {
+            console.log('Window loaded, initializing POS...');
+            // DOM Elements
+            let categoriesSidebar = null;
+            let productsGrid = null;
+            const cartItems = document.getElementById('cart-items');
+            const cartCount = document.getElementById('cart-count');
+            const cartTotal = document.getElementById('cart-total');
+            const checkoutBtn = document.getElementById('checkout-btn');
+            const holdOrderBtn = document.getElementById('holdOrderBtn');
+            const recallOrderBtn = document.getElementById('recallOrderBtn');
+            const stockCodeInput = document.getElementById('stockCodeInput');
+            const stockCodeBtn = document.getElementById('stockCodeBtn');
+            const notification = document.getElementById('notification');
+            const notificationMessage = document.getElementById('notification-message');
+            const currentTimeElement = document.querySelector('.current-time');
+            const fKeys = document.querySelectorAll('.f-key');
+            
+            // State
+            let cart = [];
+            let holdOrders = [];
+            let selectedCategory = null;
+            
+            // Oven Delights Products Data with SVG placeholders
+            const products = [
+                { id: 1, name: 'Croissant', price: 25.00, category: 'pastries', image: 'https://images.unsplash.com/photo-1555507036-ab794f4afe5b?w=150&h=120&fit=crop&crop=center' },
+                { id: 2, name: 'Sourdough Bread', price: 45.00, category: 'breads', image: 'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=150&h=120&fit=crop&crop=center' },
+                { id: 3, name: 'Chocolate Cake', price: 120.00, category: 'cakes', image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=150&h=120&fit=crop&crop=center' },
+                { id: 4, name: 'Blueberry Muffin', price: 18.00, category: 'pastries', image: 'https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=150&h=120&fit=crop&crop=center' },
+                { id: 5, name: 'Whole Wheat Bread', price: 38.00, category: 'breads', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=150&h=120&fit=crop&crop=center' },
+                { id: 6, name: 'Red Velvet Cake', price: 135.00, category: 'cakes', image: 'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?w=150&h=120&fit=crop&crop=center' },
+                { id: 7, name: 'Danish Pastry', price: 22.00, category: 'pastries', image: 'https://images.unsplash.com/photo-1571115764595-644a1f56a55c?w=150&h=120&fit=crop&crop=center' },
+                { id: 8, name: 'Baguette', price: 28.00, category: 'breads', image: 'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=150&h=120&fit=crop&crop=center' },
+                { id: 9, name: 'Cheesecake', price: 95.00, category: 'cakes', image: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=150&h=120&fit=crop&crop=center' },
+                { id: 10, name: 'Scone', price: 16.00, category: 'pastries', image: 'https://images.unsplash.com/photo-1519915028121-7d3463d20b13?w=150&h=120&fit=crop&crop=center' },
+                { id: 15, name: 'Classic Pound Cake', price: 45.00, category: 'pound-cakes', image: 'https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=150&h=120&fit=crop&crop=center' },
+                { id: 16, name: 'Lemon Pound Cake', price: 48.00, category: 'pound-cakes', image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=150&h=120&fit=crop&crop=center' },
+                { id: 17, name: 'Marble Pound Cake', price: 48.00, category: 'pound-cakes', image: 'https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=150&h=120&fit=crop&crop=center' }
+            ];
+            
+            // Define categories with display names
+            const categories = [
+                { id: 'all', name: 'All Items' },
+                { id: 'croissants', name: 'Croissants' },
+                { id: 'danish', name: 'Danish' },
+                { id: 'muffins', name: 'Muffins' },
+                { id: 'pound-cakes', name: 'Pound Cakes' }
+            ];
+            
+            // Initialize the application
+            function init() {
+                console.log('Initializing application...');
+                console.log('Categories:', categories);
+                console.log('Products:', products);
+                
+                // Get DOM elements
+                categoriesSidebar = document.getElementById('categories-sidebar');
+                // Get reference to products grid (already declared at the top level)
+                productsGrid = document.getElementById('products-grid');
+                
+                console.log('DOM elements after selection:', { categoriesSidebar, productsGrid });
+                
+                if (!categoriesSidebar) {
+                    console.error('Categories sidebar not found!');
+                }
+                
+                if (!productsGrid) {
+                    console.error('Products grid not found!');
+                    return; // Exit if products grid is not found
+                }
+                
+                // Render categories and products
+                console.log('Rendering categories...');
+                renderCategories();
+                console.log('Rendering products...');
+                renderProducts();
+                
+                // Setup UI and event listeners
+                console.log('Setting up UI and event listeners...');
+                updateCartUI();
+                setupEventListeners();
+                updateTime();
+                setInterval(updateTime, 1000);
+                
+                // Log DOM elements
+                console.log('Categories sidebar element:', categoriesSidebar);
+                console.log('Products grid element:', productsGrid);
+                console.log('Checkout button:', checkoutBtn);
+                
+                // Set up checkout button event listener
+                if (checkoutBtn) {
+                    console.log('Setting up checkout button event listener');
+                    checkoutBtn.addEventListener('click', function(e) {
+                        console.log('Checkout button clicked');
+                        e.preventDefault();
+                        checkout();
+                    });
+                    
+                    // Also add click handler directly to the button for better reliability
+                    checkoutBtn.onclick = function(e) {
+                        e.preventDefault();
+                        console.log('Direct checkout button click handler');
+                        checkout();
+                        return false;
+                    };
+                } else {
+                    console.error('Checkout button not found!');
+                }
+                
+                // Auto-focus stock code input
+                if (stockCodeInput) stockCodeInput.focus();
+            }
+            
+            // Set up event listeners
+            function setupEventListeners() {
+                // Function keys
+                fKeys.forEach(key => {
+                    key.addEventListener('click', () => handleFunctionKey(key.dataset.key));
+                });
+                
+                // Keyboard shortcuts for function keys
+                document.addEventListener('keydown', (e) => {
+                    if (e.key.startsWith('F') && e.key.length > 1) {
+                        e.preventDefault();
+                        const keyElement = document.querySelector(`.f-key[data-key="${e.key}"]`);
+                        if (keyElement) keyElement.click();
+                    }
+                });
+                
+                // Single event delegation for product clicks
+                function setupProductClickHandlers() {
+                    console.log('Setting up product click delegation...');
+                    
+                    if (!productsGrid) {
+                        console.error('Products grid not found in setupProductClickHandlers');
+                        return;
+                    }
+
+                    // Create a named function for the click handler so we can remove it properly
+                    function handleProductClick(e) {
+                        try {
+                            console.log('Click event detected in products grid');
+                            const productCard = e.target.closest('.product-card');
+                            
+                            if (productCard) {
+                                const productId = productCard.getAttribute('data-product-id');
+                                console.log('Product card clicked, ID:', productId);
+                                
+                                if (productId) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.log('Adding to cart:', productId);
+                                    addToCart(Number(productId));
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Error in product click handler:', error);
+                        }
+                    }
+                    
+                    // Store the handler on the grid element itself so we can remove it later
+                    if (productsGrid._clickHandler) {
+                        productsGrid.removeEventListener('click', productsGrid._clickHandler);
+                    }
+                    
+                    // Store the handler reference
+                    productsGrid._clickHandler = handleProductClick;
+                    
+                    // Add the new click handler
+                    productsGrid.addEventListener('click', productsGrid._clickHandler);
+                    console.log('Click event listener added to products grid');
+                }
+                
+                // Call the setup function
+                setupProductClickHandlers();
+
+                // Set up barcode scanner input
+                if (stockCodeInput) {
+                    stockCodeInput.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter' && this.value.trim() !== '') {
+                            // Find product by ID (since we don't have barcodes in the sample data)
+                            const product = products.find(p => p.id === Number(this.value));
+                            
+                            if (product) {
+                                addToCart(product.id);
+                                this.value = '';
+                            } else {
+                                showNotification('Product not found!', 'error');
+                            }
+                        }
+                    });
+                    
+                    // Focus the input when the page loads
+                    stockCodeInput.focus();
+                }
+                
+                // Set up barcode scanner input (hidden)
+                const barcodeInput = document.getElementById('barcodeInput');
+                if (barcodeInput) {
+                    barcodeInput.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter' && this.value.trim() !== '') {
+                            // Find product by ID (since we don't have barcodes in the sample data)
+                            const product = products.find(p => p.id === Number(this.value));
+                            
+                            if (product) {
+                                addToCart(product.id);
+                            } else {
+                                showNotification('Product not found!', 'error');
+                            }
+                            
+                            this.value = '';
+                            this.focus();
+                        }
+                    });
+                    
+                    // Focus the barcode input when the page loads
+                    barcodeInput.focus();
+                }
+                
+                // Stock code input
+                if (stockCodeBtn) {
+                    stockCodeBtn.addEventListener('click', function() {
+                        const code = stockCodeInput.value.trim();
+                        if (code) processStockCode(code);
+                    });
+                    
+                    stockCodeInput.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            const code = stockCodeInput.value.trim();
+                            if (code) processStockCode(code);
+                        }
+                    });
+                } else {
+                    console.error('Stock code elements not found');
+                }
+                
+                // Checkout button
+                if (checkoutBtn) {
+                    checkoutBtn.addEventListener('click', checkout);
+                } else {
+                    console.error('Checkout button not found');
+                }
+                
+                // Function keys
+                if (fKeys && fKeys.length > 0) {
+                    fKeys.forEach(key => {
+                        key.addEventListener('click', function() {
+                            const keyName = this.getAttribute('data-key');
+                            if (keyName) handleFunctionKey(keyName);
+                        });
+                    });
+                } else {
+                    console.error('Function keys not found');
+                }
+                
+                console.log('Event listeners set up');
+            }
+            
+            // Select a category
+            function selectCategory(category) {
+                console.log('Selecting category:', category);
+                selectedCategory = category;
+                renderCategories();
+                renderProducts();
+                
+                // Update active state in UI
+                document.querySelectorAll('.category-item').forEach(item => {
+                    item.classList.remove('active');
+                    if ((!category && item.textContent === 'All Items') || 
+                        (category && item.textContent.toLowerCase() === category.toLowerCase())) {
+                        item.classList.add('active');
+                    }
+                });
+                
+                // Focus back to stock code input
+                if (stockCodeInput) stockCodeInput.focus();
+            }
+            
+            // Render categories in the sidebar
+            function renderCategories() {
+                console.log('Rendering categories...');
+                const categoriesSidebar = document.getElementById('categories-sidebar');
+                if (!categoriesSidebar) {
+                    console.error('Categories sidebar element not found!');
+                    return;
+                }
+                
+                // Clear existing categories
+                categoriesSidebar.innerHTML = '';
+                
+                // Add all categories with proper display names
+                categories.forEach(category => {
+                    const categoryElement = document.createElement('div');
+                    categoryElement.className = 'category-item' + 
+                        (selectedCategory === category.id || (!selectedCategory && category.id === 'all') ? ' active' : '');
+                    categoryElement.textContent = category.name;
+                    categoryElement.onclick = () => selectCategory(category.id === 'all' ? null : category.id);
+                    categoriesSidebar.appendChild(categoryElement);
+                });
+                
+                console.log('Categories rendered:', categories);
+            }
+            
+            // Helper to provide nice photos for categories
+            function getImageForCategory(cat){
+                switch(cat){
+                    case 'croissants': return 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?q=80&w=1200&auto=format&fit=crop';
+                    case 'danish': return 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?q=80&w=1200&auto=format&fit=crop';
+                    case 'muffins': return 'https://images.unsplash.com/photo-1526318472351-c75fcf070305?q=80&w=1200&auto=format&fit=crop';
+                    case 'pound-cakes': return 'https://images.unsplash.com/photo-1606313564200-e75d5e30476f?q=80&w=1200&auto=format&fit=crop';
+                    default: return 'https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1200&auto=format&fit=crop';
+                }
+            }
+
+            // Render products in the grid
+            function renderProducts() {
+                console.log('=== renderProducts() called ===');
+                
+                // Ensure we have the products grid element
+                productsGrid = document.getElementById('products-grid');
+                console.log('Products grid element:', productsGrid);
+                
+                if (!productsGrid) {
+                    console.error('Products grid element not found in DOM!');
+                    return;
+                }
+                
+                // Log the current state
+                console.log('Selected category:', selectedCategory);
+                console.log('All products:', products);
+                console.log('Categories:', categories);
+                
+                // Check if products is defined and an array
+                if (!Array.isArray(products)) {
+                    console.error('Products is not an array!', products);
+                    productsGrid.innerHTML = '<div class="no-products">Error: No products available</div>';
+                    return;
+                }
+                console.log('Selected category:', selectedCategory);
+                console.log('All products:', products);
+                
+                // Filter products by selected category
+                const filteredProducts = selectedCategory && selectedCategory !== 'all'
+                    ? products.filter(p => p.category === selectedCategory)
+                    : products;
+                
+                console.log('Filtered products:', filteredProducts);
+                
+                if (filteredProducts.length === 0) {
+                    const noProductsMsg = selectedCategory && selectedCategory !== 'all'
+                        ? `No products found in category: ${categories.find(c => c.id === selectedCategory)?.name || selectedCategory}`
+                        : 'No products available';
+                    
+                    productsGrid.innerHTML = `<div class="no-products">${noProductsMsg}</div>`;
+                    console.log('No products to display');
+                    return;
+                }
+                
+                let productsHTML = '';
+                try {
+                    productsHTML = filteredProducts.map(product => {
+                        console.log('Rendering product:', product);
+                        
+                        // Create short name from initials
+                        const shortName = product.name.split(' ').map(word => word[0]).join('').toUpperCase();
+                        
+                        // Determine text color based on background color
+                        const textColor = product.color === '#2D2D2A' || 
+                                        product.color === '#073B4C' || 
+                                        product.color === '#4A4A4A' ? '#FFFFFF' : '#000000';
+                        
+                        return `
+                            <div class="product-card" data-product-id="${product.id}">
+                                <div class="product-image" style="background-color: ${product.color};">
+                                    <svg width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="100%" height="100%" fill="${product.color}" />
+                                        <text x="50%" y="50%" 
+                    }).join('');
+                    
+                    console.log('Generated products HTML:', productsHTML);
+                    
+                    // Log the number of product cards rendered
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = productsHTML;
+                    const productCards = tempDiv.querySelectorAll('.product-card');
+                    console.log(`Rendered ${productCards.length} product cards`);
+                    
+                } catch (error) {
+                    console.error('Error rendering products:', error);
+                    productsHTML = '<div class="no-products">Error loading products. Please refresh the page.</div>';
+                }
+                
+                if (productsGrid) {
+                    productsGrid.innerHTML = productsHTML || '<div class="no-products">No products available</div>';
+                }
+            }
+            
+            // Add item to cart
+            function addToCart(productId) {
+                try {
+                    console.log('=== addToCart called ===');
+                    console.log('Product ID:', productId);
+                    console.log('Type of productId:', typeof productId);
+                    
+                    // Convert to number if it's a string
+                    const id = typeof productId === 'string' ? parseInt(productId, 10) : productId;
+                    
+                    if (isNaN(id)) {
+                        console.error('Invalid product ID:', productId);
+                        showNotification('Invalid product!', 'error');
+                        return;
+                    }
+                    
+                    // Find the product
+                    console.log('Searching for product with ID:', id);
+                    console.log('Available products:', JSON.stringify(products, null, 2));
+                    
+                    const product = products.find(p => p.id === id);
+                    console.log('Found product:', product);
+                    
+                    if (!product) {
+                        console.error('❌ Product not found with id:', id);
+                        console.log('Available product IDs:', products.map(p => p.id));
+                        showNotification('Product not found!', 'error');
+                        return;
+                    }
+                    
+                    console.log('Current cart before update:', JSON.stringify(cart, null, 2));
+                    
+                    // Check if product is already in cart
+                    const existingItemIndex = cart.findIndex(item => item.id === id);
+                    
+                    if (existingItemIndex > -1) {
+                        // Update quantity if item exists
+                        cart[existingItemIndex].quantity += 1;
+                        console.log('Updated quantity for existing item. New cart:', JSON.stringify(cart, null, 2));
+                    } else {
+                        // Add new item to cart
+                        const newItem = { 
+                            id: product.id,
+                            name: product.name,
+                            price: product.price,
+                            quantity: 1 
+                        };
+                        cart.push(newItem);
+                        console.log('Added new item to cart. New cart:', JSON.stringify(cart, null, 2));
+                    }
+                    
+                    // Update the UI
+                    console.log('Updating cart UI...');
+                    updateCartUI();
+                    showNotification(`✅ ${product.name} added to cart`);
+                    
+                    // Auto-focus stock code input after adding to cart
+                    if (stockCodeInput) {
+                        stockCodeInput.value = '';
+                        stockCodeInput.focus();
+                    }
+                    
+                    console.log('=== End addToCart ===\n');
+                } catch (error) {
+                    console.error('Error in addToCart:', error);
+                    showNotification('Error adding to cart!', 'error');
+                }
+            }
+            
+            // Update cart quantity
+            function updateCartItemQuantity(productId, change) {
+                const item = cart.find(item => item.id === productId);
+                if (!item) return;
+                
+                item.quantity += change;
+                
+                if (item.quantity <= 0) {
+                    cart = cart.filter(item => item.id !== productId);
+                }
+                
+                updateCartUI();
+            }
+            
+            // Remove item from cart
+            function removeFromCart(productId) {
+                cart = cart.filter(item => item.id !== productId);
+                updateCartUI();
+                showNotification('Item removed from cart');
+            }
+            
+            // Update cart UI
+            function updateCartUI() {
+                console.log('=== updateCartUI called ===');
+                console.log('Cart items element:', cartItems);
+                console.log('Cart count element:', cartCount);
+                console.log('Cart total element:', cartTotal);
+                
+                if (!cartItems || !cartCount || !cartTotal) {
+                    console.error('❌ Cart UI elements not found!');
+                    return;
+                }
+                
+                console.log('Current cart:', JSON.parse(JSON.stringify(cart)));
+                
+                // Update cart count
+                const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+                cartCount.textContent = `${totalItems} ${totalItems === 1 ? 'item' : 'items'}`;
+                
+                // Update cart total
+                const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                cartTotal.textContent = `R${total.toFixed(2)}`;
+                
+                // Update cart items
+                if (cart.length === 0) {
+                    cartItems.innerHTML = '<div class="empty-cart">Your cart is empty</div>';
+                    return;
+                }
+                
+                cartItems.innerHTML = cart.map(item => `
+                    <div class="cart-item">
+                        <div class="cart-item-details">
+                            <div class="cart-item-name">${item.name}</div>
+                            <div class="cart-item-price">R${(item.price * item.quantity).toFixed(2)}</div>
+                        </div>
+                        <div class="cart-item-quantity">
+                            <button class="quantity-btn" onclick="updateCartItemQuantity(${item.id}, -1)">-</button>
+                            <span>${item.quantity}</span>
+                            <button class="quantity-btn" onclick="updateCartItemQuantity(${item.id}, 1)">+</button>
+                            <button class="remove-btn" onclick="removeFromCart(${item.id})" title="Remove">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            // Show payment modal
+            function showPaymentModal() {
+                console.log('Showing payment modal...');
+                
+                // Close any existing modals first
+                const existingModals = document.querySelectorAll('.modal');
+                existingModals.forEach(modal => modal.remove());
+                
+                const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                // Build modal
+                const modal = document.createElement('div');
+                modal.className = 'modal';
+                modal.style.display = 'block';
+                modal.style.position = 'fixed';
+                modal.style.zIndex = '1000';
+                modal.style.left = '0';
+                modal.style.top = '0';
+                modal.style.width = '100%';
+                modal.style.height = '100%';
+                modal.style.background = 'rgba(0,0,0,0.6)';
+
+                modal.innerHTML = `
+                    <div class="modal-dialog" style="max-width:600px;margin:60px auto">
+                      <div class="modal-content" style="background:#fff;border-radius:8px;overflow:hidden">
+                        <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #eee">
+                          <h3 style="margin:0;color:#333">Payment</h3>
+                          <button class="close-modal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+                        </div>
+                        <div class="modal-body" id="payment-details" style="padding:16px">
+                          <h3 style="text-align: center; margin-bottom: 20px; color: #333;">Select Payment Method</h3>
+                          <div class="payment-options" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; padding: 0 10px;">
+                            <button class="payment-option" data-method="cash" style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; border: none; padding: 20px 15px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 120px;">
+                              <i class="fas fa-money-bill-wave" style="font-size: 28px; margin-bottom: 10px;"></i>
+                              <span>Cash Payment</span>
+                              <small style="opacity: 0.9; font-size: 13px; margin-top: 6px;">Pay with cash</small>
+                            </button>
+                            <button class="payment-option" data-method="credit" style="background: linear-gradient(135deg, #2196F3, #0b7dda); color: white; border: none; padding: 20px 15px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 120px;">
+                              <i class="far fa-credit-card" style="font-size: 28px; margin-bottom: 10px;"></i>
+                              <span>Credit Card</span>
+                              <small style="opacity: 0.9; font-size: 13px; margin-top: 6px;">Visa, Mastercard, etc.</small>
+                            </button>
+                            <button class="payment-option" data-method="debit" style="background: linear-gradient(135deg, #9C27B0, #7B1FA2); color: white; border: none; padding: 20px 15px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 120px;">
+                              <i class="fas fa-credit-card" style="font-size: 28px; margin-bottom: 10px;"></i>
+                              <span>Debit Card</span>
+                              <small style="opacity: 0.9; font-size: 13px; margin-top: 6px;">Bank-issued cards</small>
+                            </button>
+                            <button class="payment-option" data-method="partial" style="background: linear-gradient(135deg, #FF9800, #F57C00); color: white; border: none; padding: 20px 15px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 120px;">
+                              <i class="fas fa-percentage" style="font-size: 28px; margin-bottom: 10px;"></i>
+                              <span>Split Payment</span>
+                              <small style="opacity: 0.9; font-size: 13px; margin-top: 6px;">Multiple payment methods</small>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>`;
+
+                document.body.appendChild(modal);
+                
+                // Close modal when clicking X or outside
+                const closeModal = () => {
+                    modal.style.animation = 'fadeOut 0.3s';
+                    setTimeout(() => modal.remove(), 300);
+                };
+                
+                modal.querySelector('.close-modal').addEventListener('click', closeModal);
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) closeModal();
+                });
+                
+                // Handle payment method selection
+                modal.querySelectorAll('.payment-option').forEach(btn => {
+                    btn.addEventListener('click', () => handlePaymentMethod(btn.dataset.method, total));
+                });
+                
+                // Add styles for the modal
+                const style = document.createElement('style');
+                style.textContent = `
+                    .payment-modal {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background-color: rgba(0, 0, 0, 0.7);
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 1000;
+                    }
+                    .payment-modal-content {
+                        background-color: var(--card-bg);
+                        border-radius: 8px;
+                        width: 90%;
+                        max-width: 500px;
+                        padding: 20px;
+                        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                    }
+                    .payment-header {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 20px;
+                        padding-bottom: 10px;
+                        border-bottom: 1px solid var(--border-color);
+                    }
+                    .close-btn {
+                        font-size: 24px;
+                        cursor: pointer;
+                        color: var(--text-color);
+                    }
+                    .payment-amount {
+                        display: flex;
+                        justify-content: space-between;
+                        font-size: 18px;
+                        margin-bottom: 20px;
+                        padding: 15px;
+                        background-color: var(--surface);
+                        border-radius: 6px;
+                    }
+                    .amount {
+                        font-weight: bold;
+                        color: var(--primary-color);
+                    }
+                    .payment-methods {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 10px;
+                        margin-bottom: 20px;
+                    }
+                    .payment-method-btn {
+                        padding: 15px 10px;
+                        background-color: var(--surface);
+                        border: 1px solid var(--border-color);
+                        border-radius: 6px;
+                        color: var(--text-color);
+                        cursor: pointer;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        gap: 8px;
+                        transition: all 0.2s;
+                    }
+                    .payment-method-btn:hover {
+                        background-color: var(--primary-color);
+                        border-color: var(--primary-color);
+                    }
+                    .payment-method-btn i {
+                        font-size: 24px;
+                    }
+                    .processing-payment {
+                        text-align: center;
+                        padding: 20px;
+                    }
+                    .processing-spinner {
+                        width: 40px;
+                        height: 40px;
+                        border: 4px solid rgba(255, 255, 255, 0.3);
+                        border-radius: 50%;
+                        border-top-color: var(--primary-color);
+                        animation: spin 1s ease-in-out infinite;
+                        margin: 0 auto 15px;
+                    }
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+                    .payment-success {
+                        text-align: center;
+                        padding: 20px;
+                        color: var(--success-color);
+                    }
+                    .payment-success i {
+                        font-size: 48px;
+                        margin-bottom: 15px;
+                        display: block;
+                    }
+                    .payment-details {
+                        margin-top: 20px;
+                        text-align: left;
+                        background: var(--surface);
+                        padding: 15px;
+                        border-radius: 6px;
+                    }
+                    .detail-row {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 10px;
+                        padding-bottom: 8px;
+                        border-bottom: 1px solid var(--border-color);
+                    }
+                    .detail-row:last-child {
+                        border-bottom: none;
+                        margin-bottom: 0;
+                        padding-bottom: 0;
+                    }
+                    .detail-row.total {
+                        font-weight: bold;
+                        font-size: 1.1em;
+                        margin-top: 15px;
+                        padding-top: 10px;
+                        border-top: 2px solid var(--border-color);
+                    }
+                    .status-success {
+                        color: var(--success-color);
+                        font-weight: bold;
+                    }
+                    .form-group {
+                        margin: 15px 0;
+                    }
+                    .form-group label {
+                        display: block;
+                        margin-bottom: 5px;
+                        font-weight: 500;
+                    }
+                    .input-group {
+                        display: flex;
+                        align-items: center;
+                    }
+                    .input-prefix {
+                        background: var(--surface);
+                        padding: 10px 12px;
+                        border: 1px solid var(--border-color);
+                        border-right: none;
+                        border-radius: 4px 0 0 4px;
+                    }
+                    .form-control {
+                        flex: 1;
+                        padding: 10px;
+                        border: 1px solid var(--border-color);
+                        border-radius: 0 4px 4px 0;
+                        background: var(--card-bg);
+                        color: var(--text-color);
+                    }
+                    .payment-actions {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 10px;
+                        margin-top: 20px;
+                    }
+                    .payment-actions .btn {
+                        width: 100%;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            // Handle payment method selection (clean implementation)
+            function handlePaymentMethod(method, amount) {
+                console.log('Selected payment method:', method, 'Amount:', amount);
+                const modal = document.querySelector('.modal');
+                const details = modal ? modal.querySelector('#payment-details') : null;
+                if (!modal || !details) return;
+
+                if (method === 'cash') {
+                    // Render cash numpad interface
+                    details.innerHTML = `
+                      <div style="margin-bottom:12px;font-weight:600">Amount Due: <span class="amount">R${amount.toFixed(2)}</span></div>
+                      <div style="display:flex;gap:20px;">
+                        <div style="flex:1;">
+                          <div class="display-screen" style="background:#000;color:#0f0;font-size:24px;padding:15px;text-align:right;border:2px solid #333;margin-bottom:15px;">
+                            <div id="tendered-display">R0.00</div>
+                          </div>
+                          <div class="numpad" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:200px;">
+                            <button class="num-btn" data-num="7" style="padding:15px;font-size:18px;background:#444;color:white;border:1px solid #666;border-radius:4px;">7</button>
+                            <button class="num-btn" data-num="8" style="padding:15px;font-size:18px;background:#444;color:white;border:1px solid #666;border-radius:4px;">8</button>
+                            <button class="num-btn" data-num="9" style="padding:15px;font-size:18px;background:#444;color:white;border:1px solid #666;border-radius:4px;">9</button>
+                            <button class="num-btn" data-num="4" style="padding:15px;font-size:18px;background:#444;color:white;border:1px solid #666;border-radius:4px;">4</button>
+                            <button class="num-btn" data-num="5" style="padding:15px;font-size:18px;background:#444;color:white;border:1px solid #666;border-radius:4px;">5</button>
+                            <button class="num-btn" data-num="6" style="padding:15px;font-size:18px;background:#444;color:white;border:1px solid #666;border-radius:4px;">6</button>
+                            <button class="num-btn" data-num="1" style="padding:15px;font-size:18px;background:#444;color:white;border:1px solid #666;border-radius:4px;">1</button>
+                            <button class="num-btn" data-num="2" style="padding:15px;font-size:18px;background:#444;color:white;border:1px solid #666;border-radius:4px;">2</button>
+                            <button class="num-btn" data-num="3" style="padding:15px;font-size:18px;background:#444;color:white;border:1px solid #666;border-radius:4px;">3</button>
+                            <button class="num-btn" data-num="0" style="padding:15px;font-size:18px;background:#444;color:white;border:1px solid #666;border-radius:4px;grid-column:span 2;">0</button>
+                            <button class="num-btn" data-num="." style="padding:15px;font-size:18px;background:#444;color:white;border:1px solid #666;border-radius:4px;">.</button>
+                            <button id="clear-btn" style="padding:15px;font-size:14px;background:#d32f2f;color:white;border:1px solid #666;border-radius:4px;grid-column:span 3;margin-top:8px;">Clear</button>
+                          </div>
+                        </div>
+                        <div style="flex:1;padding-left:20px;">
+                          <div class="detail-row" style="font-size:18px;margin-bottom:10px;">
+                            <span>Change:</span>
+                            <span id="change-amount" style="color:#4caf50;font-weight:bold;">R0.00</span>
+                          </div>
+                          <div class="payment-actions" style="margin-top:20px;">
+                            <button class="btn btn-primary" id="process-payment" disabled style="width:100%;padding:15px;font-size:16px;margin-bottom:10px;">Process Cash Payment</button>
+                            <button class="btn btn-outline-secondary" id="cancel-payment" style="width:100%;padding:10px;">Cancel</button>
+                          </div>
+                        </div>
+                      </div>
+                    `;
+                    
+                    let currentAmount = '';
+                    const display = document.getElementById('tendered-display');
+                    const processBtn = document.getElementById('process-payment');
+                    const cancelBtn = document.getElementById('cancel-payment');
+                    const changeEl = document.getElementById('change-amount');
+                    const clearBtn = document.getElementById('clear-btn');
+                    
+                    const updateDisplay = () => {
+                        const tendered = parseFloat(currentAmount || '0');
+                        display.textContent = `R${tendered.toFixed(2)}`;
+                        const change = tendered - amount;
+                        changeEl.textContent = `R${change.toFixed(2)}`;
+                        changeEl.style.color = change >= 0 ? '#4caf50' : '#f44336';
+                        processBtn.disabled = !(tendered > 0 && change >= 0);
+                    };
+                    
+                    document.querySelectorAll('.num-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const num = btn.dataset.num;
+                            if (num === '.' && currentAmount.includes('.')) return;
+                            if (currentAmount.length < 10) {
+                                currentAmount += num;
+                                updateDisplay();
+                            }
+                        });
+                    });
+                    
+                    clearBtn.addEventListener('click', () => {
+                        currentAmount = '';
+                        updateDisplay();
+                    });
+                    
+                    processBtn.addEventListener('click', () => {
+                        const tendered = parseFloat(currentAmount || '0');
+                        const change = tendered - amount;
+                        
+                        // Show cash drawer with change amount
+                        details.innerHTML = `
+                          <div style="text-align:center;padding:30px;background:linear-gradient(145deg, #2d5016, #4a7c59);border-radius:8px;color:white;">
+                            <div style="font-size:48px;margin-bottom:20px;">💰</div>
+                            <h2 style="margin-bottom:15px;">Cash Drawer Open</h2>
+                            <div style="background:#000;color:#0f0;padding:20px;border-radius:4px;font-family:monospace;margin:20px 0;">
+                              <div style="font-size:24px;margin-bottom:10px;">PAYMENT: R${amount.toFixed(2)}</div>
+                              <div style="font-size:24px;margin-bottom:10px;">TENDERED: R${tendered.toFixed(2)}</div>
+                              <div style="font-size:32px;font-weight:bold;color:#ffff00;">CHANGE: R${change.toFixed(2)}</div>
+                            </div>
+                            <div style="font-size:18px;margin-bottom:20px;">Give customer R${change.toFixed(2)} change</div>
+                            <button id="close-drawer" style="padding:15px 30px;font-size:16px;background:#4caf50;color:white;border:none;border-radius:4px;cursor:pointer;">Close Drawer & Complete Sale</button>
+                          </div>
+                        `;
+                        
+                        document.getElementById('close-drawer').addEventListener('click', () => {
+                            showNotification(`Sale completed - Change given: R${change.toFixed(2)}`, 'success');
+                            modal.remove();
+                            cart = [];
+                            updateCartUI();
+                            setTimeout(() => window.location.href = 'index.html', 300);
+                        });
+                    });
+                    
+                    cancelBtn.addEventListener('click', () => modal.remove());
+                    updateDisplay();
+                    return;
+                }
+
+                if (method === 'credit' || method === 'debit') {
+                    // Show quick processing then complete
+                    details.innerHTML = `
+                      <div class="processing-payment" style="text-align:center;padding:20px">
+                        <i class="fas fa-credit-card" style="font-size:48px;margin-bottom:10px"></i>
+                        <h3>Processing Card...</h3>
+                        <div class="processing-spinner"></div>
+                      </div>`;
+                    setTimeout(() => {
+                        showNotification(`Payment of R${amount.toFixed(2)} processed successfully via card`, 'success');
+                        modal.remove();
+                        cart = [];
+                        updateCartUI();
+                        setTimeout(() => window.location.href = 'index.html', 300);
+                    }, 600);
+                    return;
+                }
+
+                if (method === 'partial') {
+                    // Minimal split stub (can be expanded later)
+                    details.innerHTML = `
+                      <div class="payment-success" style="text-align:center;padding:20px">
+                        <i class="fas fa-info-circle" style="font-size:36px;margin-bottom:8px"></i>
+                        <div>Split payment flow coming next.</div>
+                      </div>`;
+                }
+            }
+            
+            // Calculate change
+            function calculateChange() {
+                const amountTendered = parseFloat(document.getElementById('amount-tendered').value) || 0;
+                const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                const change = amountTendered - total;
+                
+                const changeElement = document.getElementById('change-amount');
+                if (changeElement) {
+                    changeElement.textContent = `R${Math.max(0, change).toFixed(2)}`;
+                    changeElement.className = change >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
+                }
+                
+                // Enable/disable process payment button based on sufficient funds
+                const processBtn = document.getElementById('process-payment');
+                if (processBtn) {
+                    processBtn.disabled = amountTendered <= 0 || change < 0;
+                }
+                
+                return change;
+            }
+            
+            
+            // Process payment
+            function processPayment(method) {
+                const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                
+                // In a real app, this would process the payment with the payment gateway
+                console.log(`Processing ${method} payment for R${total.toFixed(2)}`);
+                
+                // Show success message with proceed after tender button
+                const paymentDetails = document.getElementById('payment-details');
+                paymentDetails.innerHTML = `
+                    <div class="payment-success text-center py-4">
+                        <i class="fas fa-check-circle text-success mb-3" style="font-size: 4rem;"></i>
+                        <h3>Payment Successful!</h3>
+                        <p class="mb-4">Thank you for your purchase.</p>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" id="proceed-after-tender">
+                                <i class="fas fa-print me-2"></i>Print Receipt & Proceed
+                            </button>
+                            <button class="btn btn-outline-secondary" id="new-order">
+                                <i class="fas fa-plus-circle me-2"></i>Start New Order
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Add event listeners for the new buttons
+                document.getElementById('proceed-after-tender').addEventListener('click', () => {
+                    printReceipt();
+                    // Close the modal and clear cart after printing
+                    document.querySelector('.modal').remove();
+                    document.body.classList.remove('modal-open');
+                    cart = [];
+                    updateCartUI();
+                });
+                
+                document.getElementById('new-order').addEventListener('click', () => {
+                    // Just close the modal, keep cart for new order
+                    document.querySelector('.modal').remove();
+                    document.body.classList.remove('modal-open');
+                    cart = [];
+                    updateCartUI();
+                });
+                
+                // Focus on the proceed button for better UX
+                document.getElementById('proceed-after-tender').focus();
+            }
+            
+            // Show payment breakdown
+            function showPaymentBreakdown(amount, method, callback) {
+                const modal = document.createElement('div');
+                modal.className = 'payment-modal';
+                modal.innerHTML = `
+                    <div class="payment-modal-content">
+                        <div class="payment-header">
+                            <h3>Payment Summary</h3>
+                            <span class="close-btn">&times;</span>
+                        </div>
+                        <div class="payment-summary">
+                            <div class="summary-row">
+                                <span>Amount Due:</span>
+                                <span class="amount">R${amount.toFixed(2)}</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Payment Method:</span>
+                                <span class="method">${method === 'credit' ? 'Credit Card' : 
+                                    method === 'debit' ? 'Debit Card' : 
+                                    method === 'eft' ? 'EFT' : 
+                                    method === 'cash' ? 'Cash' : 'Split Payment'}</span>
+                            </div>
+                            <div class="summary-row total">
+                                <span>Total:</span>
+                                <span class="amount">R${amount.toFixed(2)}</span>
+                            </div>
+                            <div class="summary-actions">
+                                <button class="btn btn-primary" id="confirm-payment">
+                                    <i class="fas fa-check"></i> Confirm Payment
+                                </button>
+                                <button class="btn" id="cancel-payment" style="margin-top: 10px;">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // Close modal when clicking X or outside
+                const closeModal = () => modal.remove();
+                modal.querySelector('.close-btn').addEventListener('click', closeModal);
+                modal.querySelector('#cancel-payment').addEventListener('click', closeModal);
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) closeModal();
+                });
+                
+                // Handle payment confirmation
+                modal.querySelector('#confirm-payment').addEventListener('click', () => {
+                    modal.remove();
+                    callback();
+                });
+            }
+            
+            // Complete transaction and return to home
+            function completeTransaction(modal, amount, method, reference = '') {
+                // Show processing message
+                if (modal) {
+                    modal.querySelector('#payment-details').innerHTML = `
+                        <div class="processing-payment">
+                            <i class="fas fa-cog fa-spin" style="font-size: 48px; margin-bottom: 15px;"></i>
+                            <h3>Processing Transaction</h3>
+                            <p>Please wait while we complete your transaction...</p>
+                            <div class="processing-spinner"></div>
+                        </div>
+                    `;
+                }
+                
+                // Step 1: Open cash drawer (simulated)
+                console.log('Opening cash drawer...');
+                
+                // Step 2: Print receipt (simulated with delay)
+                setTimeout(() => {
+                    console.log('Printing receipt...');
+                    
+                    // Generate and print receipt
+                    printReceipt(amount, method, reference);
+                    
+                    // Step 3: Show completion message
+                    if (modal) {
+                        modal.querySelector('#payment-details').innerHTML = `
+                            <div class="processing-payment">
+                                <i class="fas fa-check-circle" style="font-size: 48px; margin-bottom: 15px; color: #4caf50;"></i>
+                                <h3>Transaction Complete</h3>
+                                <p>Receipt printed successfully!</p>
+                                <p>Please take your receipt${method === 'cash' ? ' and change' : ''}.</p>
+                                <div class="payment-actions" style="margin-top: 20px;">
+                                    <button class="btn btn-primary" id="done-btn" style="width: 100%;">
+                                        <i class="fas fa-home"></i> Return to Home Screen
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Add event listener for done button
+                        const doneBtn = document.getElementById('done-btn');
+                        if (doneBtn) {
+                            doneBtn.addEventListener('click', () => {
+                                // Clear cart and close modal
+                                cart = [];
+                                updateCartUI();
+                                if (modal) modal.remove();
+                                showNotification('Transaction completed successfully!');
+                                
+                                // Focus back to stock code input for next order
+                                if (stockCodeInput) stockCodeInput.focus();
+                            });
+                        }
+                    } else {
+                        // If modal is not available, just clear cart and show notification
+                        cart = [];
+                        updateCartUI();
+                        showNotification('Transaction completed successfully!');
+                    }
+                    
+                    // Auto-close after 10 seconds if user doesn't click the button
+                    setTimeout(() => {
+                        if (modal && modal.parentNode) {
+                            cart = [];
+                            updateCartUI();
+                            modal.remove();
+                            showNotification('Transaction completed successfully!');
+                            if (stockCodeInput) stockCodeInput.focus();
+                        }
+                    }, 10000);
+                    
+                }, 1500);
+            }
+            
+            // Process cash payment
+            function processCashPayment(modal, amount) {
+                console.log('Processing cash payment:', amount);
+                
+                // Show processing message
+                modal.querySelector('#payment-details').innerHTML = `
+                    <div class="processing-payment">
+                        <i class="fas fa-cog fa-spin" style="font-size: 48px; margin-bottom: 15px;"></i>
+                        <h3>Processing Payment</h3>
+                        <p>Please wait while we process your payment...</p>
+                        <div class="processing-spinner"></div>
+                    </div>
+                `;
+                
+                // Simulate processing delay
+                setTimeout(() => {
+                    // Print receipt
+                    printReceipt(amount, 'cash');
+                    
+                    // Show success message
+                    modal.querySelector('#payment-details').innerHTML = `
+                        <div class="processing-payment">
+                            <i class="fas fa-check-circle" style="font-size: 48px; margin-bottom: 15px; color: #4caf50;"></i>
+                            <h3>Payment Complete</h3>
+                            <p>Receipt printed successfully!</p>
+                            <p>Please take your receipt and change.</p>
+                            <div class="payment-actions" style="margin-top: 20px;">
+                                <button class="btn btn-primary" id="done-btn" style="width: 100%;">
+                                    <i class="fas fa-check"></i> Done
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Add event listener for done button
+                    const doneBtn = document.getElementById('done-btn');
+                    if (doneBtn) {
+                        doneBtn.addEventListener('click', () => {
+                            // Clear cart and close modal
+                            cart = [];
+                            updateCartUI();
+                            if (modal) modal.remove();
+                            showNotification('Payment processed successfully!');
+                            
+                            // Focus back to stock code input for next order
+                            const stockCodeInput = document.getElementById('stockCodeInput');
+                            if (stockCodeInput) stockCodeInput.focus();
+                        });
+                    }
+                    
+                    // In a real implementation, this would open the cash drawer
+                    console.log('Opening cash drawer...');
+                }, 1500);
+            }
+            
+            // Show payment success modal
+            function showPaymentSuccess(modal, amount, method, reference = '') {
+                const methodName = {
+                    'cash': 'Cash',
+                    'card': 'Card',
+                    'eft': 'EFT',
+                    'split': 'Split Payment'
+                }[method] || method;
+
+                modal.querySelector('#payment-details').innerHTML = `
+                    <div class="payment-success">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>Payment Approved</h3>
+                        <div class="payment-details">
+                            <div class="detail-row">
+                                <span>Amount Paid:</span>
+                                <span>R${amount.toFixed(2)}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span>Method:</span>
+                                <span>${methodName}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span>Change Due:</span>
+                                <span id="change-due">R${(method === 'cash' && change > 0 ? change.toFixed(2) : '0.00')}</span>
+                            </div>
+                            ${reference ? `<div class="detail-row">
+                                <span>Reference:</span>
+                                <span>${reference}</span>
+                            </div>` : ''}
+                            <div class="detail-row total">
+                                <span>Status:</span>
+                                <span class="status-success">Approved</span>
+                            </div>
+                        </div>
+                        <div class="payment-actions" style="margin-top: 20px;">
+                            <button class="btn btn-primary" id="proceed-btn" style="width: 100%;">
+                                <i class="fas fa-cash-register"></i> Open Till & Print Receipt
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // Add event listener for proceed button
+                const proceedBtn = document.getElementById('proceed-btn');
+                if (proceedBtn) {
+                    proceedBtn.addEventListener('click', () => {
+                        // Simulate opening cash drawer (in a real system, this would trigger a cash drawer)
+                        console.log('Opening cash drawer...');
+                        
+                        // Print receipt
+                        printReceipt(amount, method, reference);
+                        
+                        // Show success message
+                        showNotification('Payment processed successfully!');
+                        
+                        // Clear cart and close modal
+                        cart = [];
+                        updateCartUI();
+                        if (modal) modal.remove();
+                        
+                        // Focus back to stock code input for next order
+                        const stockCodeInput = document.getElementById('stockCodeInput');
+                        if (stockCodeInput) stockCodeInput.focus();
+                    });
+                }
+            }
+            
+            // Global variables for cash payment
+            let tendered = 0;
+            let change = 0;
+            
+            // Print receipt function
+            function printReceipt(amount, method, reference = '') {
+                // Create receipt HTML
+                const receiptContent = `
+                    <div style="font-family: monospace; max-width: 300px; margin: 0 auto; padding: 15px; border: 1px dashed #ccc;">
+                        <div style="text-align: center; margin-bottom: 15px;">
+                            <h2 style="margin: 0; font-size: 18px;">Oven Delights</h2>
+                            <p style="margin: 5px 0; font-size: 12px;">123 Bakery Street, Foodville</p>
+                            <p style="margin: 5px 0; font-size: 12px;">Tel: (012) 345-6789</p>
+                            <p style="margin: 5px 0; font-size: 12px;">${new Date().toLocaleString()}</p>
+                            <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+                        </div>
+                        
+                        <div style="margin-bottom: 15px;">
+                            ${cart.map(item => `
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span>${item.quantity}x ${item.name}</span>
+                                    <span>R${(item.price * item.quantity).toFixed(2)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div style="border-top: 1px dashed #000; margin: 15px 0;"></div>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold;">
+                                <span>Subtotal:</span>
+                                <span>R${cart.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <span>Tax (15%):</span>
+                                <span>R${(cart.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 0.15).toFixed(2)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; font-size: 1.1em;">
+                                <span>Total:</span>
+                                <span>R${amount.toFixed(2)}</span>
+                            </div>
+                            ${method === 'cash' ? `
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span>Tendered:</span>
+                                    <span>R${tendered.toFixed(2)}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold;">
+                                    <span>Change:</span>
+                                    <span>R${change.toFixed(2)}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div style="text-align: center; margin-top: 20px; font-size: 12px;">
+                            <p>Thank you for your purchase!</p>
+                            <p>${reference ? `Ref: ${reference}` : ''}</p>
+                            <p>Have a delicious day!</p>
+                        </div>
+                    </div>
+                `;
+                
+                // In a real implementation, this would send the receipt to a thermal printer
+                console.log('=== RECEIPT ===');
+                console.log(receiptContent);
+                console.log('===============');
+                
+                // For demo purposes, we'll show the receipt in a new window
+                const receiptWindow = window.open('', '_blank');
+                receiptWindow.document.write(`
+                    <html>
+                        <head>
+                            <title>Receipt</title>
+                            <style>
+                                body { font-family: Arial, sans-serif; padding: 20px; }
+                                @media print {
+                                    @page { margin: 0; }
+                                    body { padding: 15px; }
+                                }
+                            </style>
+                        </head>
+                        <body onload="window.print();">
+                            ${receiptContent}
+                            <div style="text-align: center; margin-top: 20px;">
+                                <button onclick="window.print()" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 10px;">
+                                    Print Receipt
+                                </button>
+                                <button onclick="window.close()" style="padding: 10px 20px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 10px;">
+                                    Close
+                                </button>
+                            </div>
+                        </body>
+                    </html>
+                `);
+                try {
+                    receiptWindow.document.close();
+                } catch (e) {
+                    console.log('Error closing receipt window:', e);
+                }
+            }
+            
+            // Handle cash payment
+            function handleCashPayment(modal, amount) {
+                const details = modal.querySelector('#payment-details');
+                
+                // Reset global variables
+                tendered = 0;
+                change = 0;
+                let inputValue = '0.00';
+                
+                // Store original completeTransaction function
+                const originalCompleteTransaction = window.completeTransaction;
+                
+                // Override completeTransaction to prevent redirection
+                window.completeTransaction = function(modal, amount, method, reference = '') {
+                    // Print receipt
+                    printReceipt(amount, method, reference);
+                    
+                    // Show success message
+                    showNotification('Payment processed successfully!');
+                    
+                    // Clear cart and close modal
+                    cart = [];
+                    updateCartUI();
+                    if (modal) modal.remove();
+                    
+                    // Focus back to stock code input for next order
+                    const stockCodeInput = document.getElementById('stockCodeInput');
+                    if (stockCodeInput) stockCodeInput.focus();
+                    
+                    // Restore original function
+                    window.completeTransaction = originalCompleteTransaction;
+                };
+                
+                // Show cash input modal
+                const showCashInput = () => {
+                    details.innerHTML = `
+                        <div class="cash-payment">
+                            <h3>Cash Payment</h3>
+                            <div class="payment-details">
+                                <div class="detail-row">
+                                    <span>Amount Due:</span>
+                                    <span>R${amount.toFixed(2)}</span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="cash-tendered">Amount Tendered</label>
+                                    <div class="input-group">
+                                        <span class="input-prefix">R</span>
+                                        <input type="text" id="cash-tendered" class="form-control" value="0.00" readonly>
+                                    </div>
+                                </div>
+                                <div class="detail-row total">
+                                    <span>Change Due:</span>
+                                    <span id="change-amount">R0.00</span>
+                                </div>
+                                
+                                <!-- Numeric Keypad -->
+                                <div class="keypad-container" style="margin: 15px 0;">
+                                    <div class="keypad-row">
+                                        <button class="keypad-btn" data-value="1">1</button>
+                                        <button class="keypad-btn" data-value="2">2</button>
+                                        <button class="keypad-btn" data-value="3">3</button>
+                                    </div>
+                                    <div class="keypad-row">
+                                        <button class="keypad-btn" data-value="4">4</button>
+                                        <button class="keypad-btn" data-value="5">5</button>
+                                        <button class="keypad-btn" data-value="6">6</button>
+                                    </div>
+                                    <div class="keypad-row">
+                                        <button class="keypad-btn" data-value="7">7</button>
+                                        <button class="keypad-btn" data-value="8">8</button>
+                                        <button class="keypad-btn" data-value="9">9</button>
+                                    </div>
+                                    <div class="keypad-row">
+                                        <button class="keypad-btn" data-value=".">.</button>
+                                        <button class="keypad-btn" data-value="0">0</button>
+                                        <button class="keypad-btn" data-value="backspace">
+                                            <i class="fas fa-backspace"></i>
+                                        </button>
+                                    </div>
+                                    <div class="keypad-row">
+                                        <button class="keypad-btn clear-btn" data-value="clear" style="flex: 1; margin: 0 5px;">
+                                            Clear
+                                        </button>
+                                        <button class="keypad-btn exact-amount" data-value="${amount.toFixed(2)}" style="flex: 1; margin: 0 5px;">
+                                            R${amount.toFixed(2)}
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="payment-actions">
+                                    <button class="btn btn-primary" id="process-cash" disabled>
+                                        <i class="fas fa-check"></i> Process Payment
+                                    </button>
+                                    <button class="btn" id="cancel-cash">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <style>
+                            .keypad-container {
+                                display: flex;
+                                flex-direction: column;
+                                gap: 8px;
+                                margin-top: 15px;
+                            }
+                            .keypad-row {
+                                display: flex;
+                                justify-content: space-between;
+                                gap: 8px;
+                            }
+                            .keypad-btn {
+                                flex: 1;
+                                padding: 15px 0;
+                                font-size: 18px;
+                                background: var(--surface);
+                                border: 1px solid var(--border-color);
+                                border-radius: 4px;
+                                color: var(--text-color);
+                                cursor: pointer;
+                                transition: all 0.2s;
+                            }
+                            .keypad-btn:active {
+                                background: var(--primary-color);
+                                color: white;
+                                transform: scale(0.95);
+                            }
+                            .keypad-btn.clear-btn {
+                                background: #f44336;
+                                color: white;
+                            }
+                            .keypad-btn.exact-amount {
+                                background: #4caf50;
+                                color: white;
+                            }
+                            .btn-success {
+                                background-color: #28a745;
+                                border-color: #28a745;
+                            }
+                            .btn-success:hover {
+                                background-color: #218838;
+                                border-color: #1e7e34;
+                            }
+                            #cash-tendered {
+                                text-align: right;
+                                font-size: 20px;
+                                font-weight: bold;
+                                padding: 10px;
+                            }
+                        </style>
+                    `;
+                    
+                    const input = details.querySelector('#cash-tendered');
+                    const changeAmount = details.querySelector('#change-amount');
+                    const processBtn = details.querySelector('#process-cash');
+                    
+                    // Format number with 2 decimal places
+                    const formatNumber = (num) => {
+                        return parseFloat(num).toFixed(2);
+                    };
+                    
+                    // Update the input and calculate change
+                    const updateInput = () => {
+                        // Ensure inputValue is a valid number
+                        if (!inputValue || isNaN(parseFloat(inputValue)) || inputValue === '') {
+                            inputValue = '0.00';
+                        }
+                        
+                        // Format the display value with 2 decimal places
+                        const displayValue = parseFloat(inputValue).toFixed(2);
+                        input.value = `R${displayValue}`;
+                        
+                        // Calculate change
+                        tendered = parseFloat(displayValue);
+                        change = (tendered - amount).toFixed(2);
+                        
+                        // Update change display
+                        changeAmount.textContent = `R${Math.max(0, change).toFixed(2)}`;
+                        changeAmount.style.color = change >= 0 ? 'var(--success-color)' : 'var(--danger-color)';
+                        
+                        // Enable/disable process button based on sufficient amount
+                        const hasSufficientFunds = tendered >= amount;
+                        processBtn.disabled = !hasSufficientFunds;
+                        
+                        // Update button style based on state
+                        if (hasSufficientFunds) {
+                            processBtn.classList.add('btn-success');
+                            processBtn.classList.remove('btn-primary');
+                        } else {
+                            processBtn.classList.add('btn-primary');
+                            processBtn.classList.remove('btn-success');
+                        }
+                        
+                        // Log for debugging
+                        console.log(`Tendered: R${tendered.toFixed(2)}, Change: R${change}, Amount Due: R${amount.toFixed(2)}`);
+                    };
+                    
+                    // Handle keypad button clicks
+                    details.querySelectorAll('.keypad-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const value = e.currentTarget.dataset.value;
+                            
+                            if (value === 'backspace') {
+                                // Handle backspace
+                                inputValue = inputValue.slice(0, -1);
+                                if (!inputValue) inputValue = '0';
+                            } else if (value === 'clear') {
+                                // Handle clear
+                                inputValue = '0';
+                            } else if (value === amount.toFixed(2)) {
+                                // Handle exact amount
+                                inputValue = amount.toString();
+                            } else if (value === '.' && inputValue.includes('.')) {
+                                // Prevent multiple decimal points
+                                return;
+                            } else if (inputValue === '0' || inputValue === '0.00') {
+                                // Replace initial 0 with new digit, but allow decimal
+                                inputValue = value === '.' ? '0.' : value;
+                            } else {
+                                // Handle decimal input
+                                if (value === '.') {
+                                    if (!inputValue.includes('.')) {
+                                        inputValue += '.';
+                                    }
+                                } else {
+                                    // Handle digit input
+                                    if (inputValue === '0' || inputValue === '0.00') {
+                                        inputValue = value;
+                                    } else {
+                                        // Check if we're adding a decimal place
+                                        if (inputValue.includes('.')) {
+                                            const [whole, decimal] = inputValue.split('.');
+                                            if (decimal.length < 2) {  // Allow up to 2 decimal places
+                                                inputValue += value;
+                                            }
+                                        } else {
+                                            inputValue += value;
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            updateInput();
+                        });
+                    });
+                    
+                    // Process payment
+                    processBtn.addEventListener('click', () => {
+                        if (tendered >= amount) {
+                            // Show processing state
+                            processBtn.disabled = true;
+                            processBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                            
+                            // Simulate processing delay
+                            setTimeout(() => {
+                                // Print receipt
+                                printReceipt(amount, 'cash');
+                                
+                                // Show success message
+                                details.innerHTML = `
+                                    <div class="processing-payment">
+                                        <i class="fas fa-check-circle" style="font-size: 48px; margin-bottom: 15px; color: #4caf50;"></i>
+                                        <h3>Payment Complete</h3>
+                                        <p>Receipt printed successfully!</p>
+                                        <p>Please take your receipt and change.</p>
+                                        <div class="payment-actions" style="margin-top: 20px;">
+                                            <button class="btn btn-primary" id="done-btn" style="width: 100%;">
+                                                <i class="fas fa-check"></i> Done
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                                
+                                // Add event listener for done button
+                                const doneBtn = document.getElementById('done-btn');
+                                if (doneBtn) {
+                                    doneBtn.addEventListener('click', () => {
+                                        // Clear cart and close modal
+                                        cart = [];
+                                        updateCartUI();
+                                        if (modal) modal.remove();
+                                        showNotification('Payment processed successfully!');
+                                        
+                                        // Focus back to stock code input for next order
+                                        const stockCodeInput = document.getElementById('stockCodeInput');
+                                        if (stockCodeInput) stockCodeInput.focus();
+                                    });
+                                }
+                                
+                                // Auto-close after 10 seconds if user doesn't click the button
+                                setTimeout(() => {
+                                    if (modal && modal.parentNode) {
+                                        cart = [];
+                                        updateCartUI();
+                                        modal.remove();
+                                        showNotification('Payment processed successfully!');
+                                        const stockCodeInput = document.getElementById('stockCodeInput');
+                                        if (stockCodeInput) stockCodeInput.focus();
+                                    }
+                                }, 10000);
+                            }, 500);
+                        }
+                    });
+                    
+                    // Cancel
+                    details.querySelector('#cancel-cash').addEventListener('click', () => {
+                        modal.remove();
+                    });
+                    
+                    // Initial update
+                    updateInput();
+                };
+                
+                showCashInput();
+            }
+            
+            // Handle EFT payment
+            function handleEFTPayment(modal, amount) {
+                const details = modal.querySelector('#payment-details');
+                const reference = 'OD' + Date.now().toString().slice(-8);
+                
+                details.innerHTML = `
+                    <div class="processing-payment">
+                        <i class="fas fa-mobile-alt" style="font-size: 48px; margin-bottom: 15px;"></i>
+                        <h3>Awaiting EFT Payment</h3>
+                        <div class="payment-amount" style="font-size: 24px; margin: 20px 0;">
+                            R${amount.toFixed(2)}
+                        </div>
+                        <p>Please approve the payment on your banking app</p>
+                        <div class="processing-spinner"></div>
+                        <div class="payment-details" style="margin-top: 20px; text-align: left; background: var(--surface); padding: 15px; border-radius: 6px;">
+                            <div class="detail-row">
+                                <span>Amount Due:</span>
+                                <span>R${amount.toFixed(2)}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span>Reference:</span>
+                                <span>${reference}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Simulate EFT processing
+                setTimeout(() => {
+                    completeTransaction(modal, amount, 'eft', reference);
+                }, 600);
+            }
+            
+            // Handle split payment
+            function handleSplitPayment(modal, amount) {
+                const details = modal.querySelector('#payment-details');
+                let firstAmount = 0;
+                let remaining = amount;
+                
+                const showSplitInput = () => {
+                    details.innerHTML = `
+                        <div class="split-payment">
+                            <div class="payment-amount">
+                                <div>Total Amount: <strong>R${amount.toFixed(2)}</strong></div>
+                                <div class="form-group">
+                                    <label>Number of Payments</label>
+                                    <select id="split-count" class="form-select mb-3">
+                                        <option value="2">2 Payments</option>
+                                        <option value="3">3 Payments</option>
+                                        <option value="4">4 Payments</option>
+                                    </select>
+                                </div>
+                                <div id="split-payments" class="mb-3"></div>
+                            </div>
+                            <div class="payment-actions">
+                                <button class="btn btn-secondary" id="cancel-payment">Cancel</button>
+                                <button class="btn btn-primary" id="process-split-payment">Process Split Payment</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const splitSelect = document.getElementById('split-count');
+                    if (splitSelect) {
+                        splitSelect.addEventListener('change', function() {
+                            setupSplitPayments(parseInt(this.value));
+                        });
+                        // Initialize with default split
+                        setupSplitPayments(2);
+                    }
+                };
+                
+                showSplitInput();
+            }
+            
+            // Checkout
+            function checkout() {
+                const isOrderMode = new URLSearchParams(location.search).get('mode') === 'order';
+                if (isOrderMode) { showOrderWizard(); return; }
+                console.log('Checkout button clicked');
+                if (!cart || cart.length === 0) {
+                    showNotification('Please add items to cart before checkout', 'error');
+                    return;
+                }
+                console.log('Cart has items, showing payment modal');
+                showPaymentModal();
+            }
+
+            // Order wizard (capture details and deposit)
+            function showOrderWizard(){
+                if (!cart || cart.length === 0) { showNotification('Add items before creating an order', 'error'); return; }
+                const amount = cart.reduce((s,i)=> s + i.price*i.quantity, 0);
+                const wrap = document.createElement('div');
+                wrap.className = 'modal';
+                wrap.innerHTML = `
+                  <div class="modal-content" style="background: var(--card-bg); color: var(--text-color); padding: 16px; border-radius: 10px; width: 520px; max-width: 92vw;">
+                    <h2 style="margin:0 0 10px 0">Create Order</h2>
+                    <div class="form-group" style="margin-bottom:10px"><label>Name</label><input id="ordName" class="form-control" style="width:100%;padding:10px;background:var(--surface);border:1px solid var(--border-color);color:var(--text-color)"/></div>
+                    <div class="form-group" style="margin-bottom:10px"><label>Phone</label><input id="ordPhone" class="form-control" style="width:100%;padding:10px;background:var(--surface);border:1px solid var(--border-color);color:var(--text-color)"/></div>
+                    <div class="form-group" style="margin-bottom:10px"><label>Pickup Time</label><input id="ordTime" type="datetime-local" class="form-control" style="width:100%;padding:10px;background:var(--surface);border:1px solid var(--border-color);color:var(--text-color)"/></div>
+                    <div class="form-group" style="margin-bottom:10px"><label>Deposit (R)</label><input id="ordDeposit" type="number" step="0.01" min="0" class="form-control" style="width:100%;padding:10px;background:var(--surface);border:1px solid var(--border-color);color:var(--text-color)" placeholder="0.00"/></div>
+                    <div style="display:flex;gap:10px;margin-top:12px;justify-content:flex-end">
+                      <button id="ordCancel" class="btn">Cancel</button>
+                      <button id="ordCreate" class="btn btn-primary">Create Order</button>
+                    </div>
+                  </div>`;
+                document.body.appendChild(wrap);
+                const close = ()=> wrap.remove();
+                wrap.querySelector('#ordCancel').onclick = close;
+                wrap.querySelector('#ordCreate').onclick = ()=>{
+                    const name = (wrap.querySelector('#ordName').value||'').trim();
+                    const phone = (wrap.querySelector('#ordPhone').value||'').trim();
+                    const when = wrap.querySelector('#ordTime').value||'';
+                    const deposit = Math.max(0, parseFloat(wrap.querySelector('#ordDeposit').value||'0'));
+                    const id = 'ORD' + Date.now().toString().slice(-8);
+                    const orderObj = { id, name, phone, pickup: when, items: cart.map(i=>({name:i.name, price:i.price, qty:i.quantity})), total: amount, deposit, created: new Date().toISOString() };
+                    let orders=[]; try{ orders = JSON.parse(localStorage.getItem('orders')||'[]')||[] }catch{}
+                    orders.push(orderObj); localStorage.setItem('orders', JSON.stringify(orders));
+                    showNotification(`Order ${id} created. Deposit: R${deposit.toFixed(2)}`);
+                    close();
+                    // Simulate deposit collection success immediately for card, or open payment modal for cash
+                    if (deposit > 0){
+                        // Open payment quickly for deposit (EFT/Card auto-process fast)
+                        showPaymentModal();
+                    } else {
+                        cart = []; updateCartUI();
+                    }
+                };
+            }
+            
+            // Hold current order
+            function holdCurrentOrder() {
+                if (cart.length === 0) {
+                    showNotification('No items in cart to hold', 'error');
+                    return;
+                }
+                
+                const orderId = 'H' + Date.now();
+                const orderTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                
+                holdOrders.push({
+                    id: orderId,
+                    items: [...cart],
+                    total: orderTotal,
+                    time: new Date().toLocaleTimeString()
+                });
+                
+                showNotification(`Order #${orderId} has been held`);
+                
+                // Clear the cart
+                cart = [];
+                updateCartUI();
+            }
+            
+            // Recall order
+            function recallOrder() {
+                if (holdOrders.length === 0) {
+                    showNotification('No held orders available', 'error');
+                    return;
+                }
+                
+                // For simplicity, recall the most recent order
+                const orderToRecall = holdOrders.pop();
+                cart = [...orderToRecall.items];
+                
+                updateCartUI();
+                showNotification(`Order #${orderToRecall.id} has been recalled`);
+            }
+            
+            // Process stock code
+            function processStockCode(code) {
+                if (!code || code.trim() === '') {
+                    showNotification('Please enter a stock code', 'error');
+                    return false;
+                }
+                
+                // Try to find product by ID or name
+                const product = products.find(p => 
+                    p.id.toString() === code.trim() || 
+                    p.name.toLowerCase().includes(code.trim().toLowerCase())
+                );
+                
+                if (product) {
+                    addToCart(product.id);
+                    return true;
+                } else {
+                    showNotification('Product not found', 'error');
+                    return false;
+                }
+            }
+            
+            // Handle function key presses
+            function handleFunctionKey(key) {
+                // Check if we're in payment screen
+                const paymentModal = document.querySelector('.modal');
+                
+                // If in payment screen, allow returning to order with F1
+                if (paymentModal && key === 'F1') {
+                    if (confirm('Return to order without completing payment?')) {
+                        paymentModal.remove();
+                    }
+                    return;
+                }
+                
+                // Handle other function keys
+                switch(key) {
+                    case 'F1': // New Order/Return to Order
+                        if (cart.length > 0) {
+                            if (confirm('Are you sure you want to start a new order? This will clear the current cart.')) {
+                                cart = [];
+                                updateCartUI();
+                                showNotification('New order started');
+                            }
+                        }
+                        break;
+                        
+                    case 'F2': { // Discount % for day-old stock
+                        if (cart.length === 0) { showNotification('No items to discount', 'error'); break; }
+                        const pctStr = prompt('Enter discount % for day-old stock (e.g., 30 for 30%)', '30');
+                        const pct = parseFloat(pctStr);
+                        if (isNaN(pct) || pct <= 0 || pct >= 100) { showNotification('Invalid discount %', 'error'); break; }
+                        cart = cart.map(it => ({...it, price: parseFloat((it.price * (1 - pct/100)).toFixed(2)), discountPct: pct }));
+                        updateCartUI();
+                        showNotification(`Applied ${pct}% discount to all lines`);
+                        break; }
+                        
+                    case 'F3': // Payment
+                        if (cart.length > 0) {
+                            checkout();
+                        } else {
+                            showNotification('Please add items to the cart before processing payment', 'error');
+                        }
+                        break;
+                        
+                    case 'F4': // Print Last Receipt
+                        if (cart.length > 0) {
+                            showNotification('Printing last receipt...');
+                            // In a real implementation, this would reprint the last receipt
+                        } else {
+                            showNotification('No recent receipt to print', 'error');
+                        }
+                        break;
+                        
+                    case 'F5': // Hold Order
+                        if (cart.length > 0) {
+                            holdCurrentOrder();
+                        } else {
+                            showNotification('No items in cart to hold', 'error');
+                        }
+                        break;
+                        
+                    case 'F6': // Recall Order
+                        recallOrder();
+                        break;
+                        
+                    case 'F7': // Reports
+                        showNotification('Opening reports...');
+                        // In a real implementation, this would open the reports screen
+                        break;
+                        
+                    case 'F8': // Logout
+                        if (confirm('Are you sure you want to logout?')) {
+                            showNotification('Logging out...');
+                            // In a real app, you would handle logout here
+                            setTimeout(() => {
+                                alert('You have been logged out');
+                                // In a real app, this would redirect to login
+                            }, 1000);
+                        }
+                        break;
+                    case 'F9': { // Order pickup
+                        const num = prompt('Enter Order Number');
+                        if (!num) break;
+                        let orders = [];
+                        try { orders = JSON.parse(localStorage.getItem('orders')||'[]') || []; } catch {}
+                        const order = orders.find(o => o.id === num);
+                        if (!order) { showNotification('Order not found', 'error'); break; }
+                        cart = order.items.map(it => ({ id: it.id||0, name: it.name, price: it.price, quantity: it.qty||it.quantity||1 }));
+                        updateCartUI();
+                        const balance = Math.max(0, cart.reduce((s,i)=> s + i.price*i.quantity, 0) - (order.deposit||0));
+                        showNotification(`Loaded order ${num}. Balance due: R${balance.toFixed(2)}`);
+                        checkout();
+                        break; }
+                }
+            }
+            
+            // Show notification
+            function showNotification(message, type = 'success') {
+                if (!notification || !notificationMessage) return;
+                
+                // Update notification content
+                notificationMessage.textContent = message;
+                
+                // Set notification type (success or error)
+                notification.className = 'notification';
+                notification.classList.add(type === 'error' ? 'error' : 'success');
+                notification.classList.add('show');
+                
+                // Hide notification after 3 seconds
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+                
+                // Auto-focus stock code input after notification
+                if (stockCodeInput) stockCodeInput.focus();
+            }
+            
+            // Update current time
+            function updateTime() {
+                if (!currentTimeElement) return;
+                const now = new Date();
+                currentTimeElement.textContent = now.toLocaleTimeString();
+            }
+            
+            // Make functions available globally
+            window.addToCart = addToCart;
+            window.updateCartItemQuantity = updateCartItemQuantity;
+            window.removeFromCart = removeFromCart;
+            window.selectCategory = selectCategory;
+            window.handleFunctionKey = handleFunctionKey;
+            
+            // Initialize the application
+            console.log('Calling init()...');
+            init();
+            console.log('Initialization complete');
+        });
+    </script>
+</body>
+</html>

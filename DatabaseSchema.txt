@@ -1,0 +1,116 @@
+
+Oven_Delights_Main – Database Schema
+
+Tables & Columns
+
+1. Branches
+- ID (int, PK, identity)
+- BranchName (nvarchar(100), NOT NULL)
+- Prefix (nvarchar(10), NOT NULL)
+
+2. DocumentNumbering
+- DocumentType (varchar(20), PK)
+- Prefix (varchar(10), NOT NULL)
+- NextNumber (int, default = 1)
+- NumberLength (int, default = 6)
+- BranchSpecific (bit, default = 1)
+- LastUsedNumber (varchar(50), nullable)
+- LastUsedDate (datetime, nullable)
+- ModifiedDate (datetime, default = GETDATE())
+- ModifiedBy (int, FK → Users.UserID)
+
+3. FiscalPeriods
+- PeriodID (int, PK, identity)
+- PeriodName (nvarchar(50), NOT NULL)
+- StartDate (date, NOT NULL)
+- EndDate (date, NOT NULL)
+- IsClosed (bit, default = 0)
+- ClosedDate (datetime, nullable)
+- ClosedBy (int, FK → Users.UserID)
+Constraint: EndDate > StartDate
+
+4. GLAccounts
+- AccountID (int, PK, identity)
+- AccountNumber (varchar(20), UNIQUE)
+- AccountName (nvarchar(100), NOT NULL)
+- AccountType (varchar(20), NOT NULL)
+- BalanceType (char(1), NOT NULL)
+- ParentAccountID (int, FK → GLAccounts.AccountID)
+- IsSystem (bit, default = 0)
+- IsActive (bit, default = 1)
+- OpeningBalance (decimal(18,2), default = 0)
+
+5. JournalHeaders
+- JournalID (int, PK, identity)
+- JournalNumber (varchar(20), NOT NULL)
+- JournalDate (date, NOT NULL)
+- Reference (nvarchar(50), nullable)
+- Description (nvarchar(255), nullable)
+- FiscalPeriodID (int, FK → FiscalPeriods.PeriodID)
+- CreatedBy (int, FK → Users.UserID)
+- BranchID (int, FK → Branches.ID)
+- IsPosted (bit, default = 0)
+- PostedDate (datetime, nullable)
+- PostedBy (int, FK → Users.UserID)
+
+6. JournalDetails
+- JournalDetailID (int, PK, identity)
+- JournalID (int, FK → JournalHeaders.JournalID)
+- LineNumber (int, NOT NULL)
+- AccountID (int, FK → GLAccounts.AccountID)
+- Debit (decimal(18,2), default = 0)
+- Credit (decimal(18,2), default = 0)
+- Description (nvarchar(255), nullable)
+- Reference1 (nvarchar(50), nullable)
+- Reference2 (nvarchar(50), nullable)
+- CostCenterID (int, nullable)
+- ProjectID (int, nullable)
+Index: IX_JournalDetails_AccountID (on AccountID)
+
+7. Roles
+- RoleID (int, PK, identity)
+- RoleName (nvarchar(50), UNIQUE)
+
+8. Users
+- UserID (int, PK, identity)
+- Username (nvarchar(50), UNIQUE)
+- Password (nvarchar(255), NOT NULL)
+- Email (nvarchar(128), UNIQUE)
+- FirstName (nvarchar(50), NOT NULL)
+- LastName (nvarchar(50), NOT NULL)
+- RoleID (int, FK → Roles.RoleID)
+- BranchID (int, nullable)
+- CreatedDate (datetime, default = GETDATE())
+- LastLogin (datetime, nullable)
+- IsActive (bit, default = 1)
+- FailedLoginAttempts (int, default = 0)
+- LastFailedLogin (datetime, nullable)
+- PasswordLastChanged (datetime, nullable)
+- TwoFactorEnabled (bit, default = 0)
+
+Stored Procedures
+
+1. sp_CreateJournalEntry
+Purpose: Creates a journal header and reserves a document number
+Input: @JournalDate, @Reference, @Description, @FiscalPeriodID, @CreatedBy, @BranchID
+Output: @JournalID (new Journal ID)
+
+2. sp_AddJournalDetail
+Purpose: Adds a line to an existing journal
+Input: @JournalID, @AccountID, @Debit, @Credit, @Description, @Reference1, @Reference2, @CostCenterID, @ProjectID
+Output: @LineNumber
+
+3. sp_PostJournal
+Purpose: Validates and posts a journal, updates AccountBalances
+Input: @JournalID, @PostedBy
+Checks: Balanced (debits = credits), not already posted, not in closed period
+
+4. sp_GenerateTrialBalance
+Purpose: Generates a trial balance report
+Input: @AsOfDate, @BranchID, @IncludeZeroBalances
+Output: Balance breakdown per GL account
+
+5. sp_GetNextDocumentNumber
+Purpose: Computes the next document number for a type
+Input: @DocumentType, @BranchID, @UserID
+Output: @NextDocNumber (string with prefix & padding)

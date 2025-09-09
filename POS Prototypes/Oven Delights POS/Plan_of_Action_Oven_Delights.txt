@@ -1,0 +1,658 @@
+# PLAN OF ACTION - OVEN DELIGHTS BAKERY SOLUTION
+
+# PLAN OF ACTION - OVEN DELIGHTS BAKERY SOLUTION
+
+## 1. SYSTEM OVERVIEW
+
+### 1.1 Core Modules
+- Multi-branch Inventory Management
+- Warehouse/Store Room Management
+- Manufacturing & Production
+- Retail & Point of Sale (POS)
+- Financial Management & Accounting
+- Reporting & Analytics
+
+### 1.2 Inventory Flow
+1. **Warehouse/Store Room**
+   - Purchase order creation and management
+   - Goods receipt verification
+   - Credit note processing for discrepancies
+   - Raw material stock management
+
+2. **Manufacturing**
+   - Bill of Materials (BOM) management
+   - Raw material requisition from store room
+   - Production planning and tracking
+   - Finished goods conversion
+   - Quality control
+
+3. **Retail**
+   - Finished goods ordering from manufacturing
+   - Stock level management
+   - Point of Sale integration
+   - Sales and returns processing
+
+4. **Accounting**
+   - Automated journal entries for all transactions
+   - Cost of goods sold (COGS) calculation
+   - Inventory valuation
+   - Financial reporting
+
+### 1.2 Technical Stack
+- **Frontend**: VB.NET Windows Forms (Touch-optimized)
+- **Backend**: .NET 6.0+
+- **Database**: SQL Server 2019+
+- **Reporting**: SQL Server Reporting Services (SSRS)
+- **Integration**: REST APIs, WebSockets
+
+## 2. DATABASE SCHEMA
+
+### 2.1 Core Tables
+
+#### 2.1.1 Inventory & Production
+```sql
+-- Raw Material Stock
+CREATE TABLE RawMaterialStock (
+    MaterialID INT PRIMARY KEY IDENTITY(1,1),
+    WarehouseID INT NOT NULL,
+    ItemID INT NOT NULL,
+    QuantityOnHand DECIMAL(18,3) NOT NULL DEFAULT 0,
+    LastUpdated DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (WarehouseID) REFERENCES Warehouses(WarehouseID),
+    FOREIGN KEY (ItemID) REFERENCES Items(ItemID)
+);
+
+-- Finished Goods Stock
+CREATE TABLE FinishedGoodsStock (
+    ProductID INT PRIMARY KEY IDENTITY(1,1),
+    LocationID INT NOT NULL,
+    ItemID INT NOT NULL,
+    QuantityOnHand DECIMAL(18,3) NOT NULL DEFAULT 0,
+    LastUpdated DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (LocationID) REFERENCES Locations(LocationID),
+    FOREIGN KEY (ItemID) REFERENCES Items(ItemID)
+);
+
+-- Bill of Materials
+CREATE TABLE BillOfMaterials (
+    BOMID INT PRIMARY KEY IDENTITY(1,1),
+    ProductID INT NOT NULL,
+    MaterialID INT NOT NULL,
+    QuantityRequired DECIMAL(18,3) NOT NULL,
+    UnitOfMeasure NVARCHAR(20),
+    IsActive BIT DEFAULT 1,
+    FOREIGN KEY (ProductID) REFERENCES Products(ProductID),
+    FOREIGN KEY (MaterialID) REFERENCES RawMaterials(MaterialID)
+);
+
+-- Production Orders
+CREATE TABLE ProductionOrders (
+    ProductionOrderID INT PRIMARY KEY IDENTITY(1,1),
+    OrderNumber NVARCHAR(50) UNIQUE NOT NULL,
+    ProductID INT NOT NULL,
+    QuantityOrdered DECIMAL(18,3) NOT NULL,
+    QuantityProduced DECIMAL(18,3) DEFAULT 0,
+    Status NVARCHAR(20) DEFAULT 'Draft',
+    StartDate DATETIME,
+    CompletionDate DATETIME,
+    Notes NVARCHAR(MAX),
+    CreatedBy INT,
+    DateCreated DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (ProductID) REFERENCES Products(ProductID)
+);
+
+-- Production Order Materials
+CREATE TABLE ProductionOrderMaterials (
+    ID INT PRIMARY KEY IDENTITY(1,1),
+    ProductionOrderID INT NOT NULL,
+    MaterialID INT NOT NULL,
+    QuantityRequired DECIMAL(18,3) NOT NULL,
+    QuantityIssued DECIMAL(18,3) DEFAULT 0,
+    UnitCost DECIMAL(18,2) NOT NULL,
+    FOREIGN KEY (ProductionOrderID) REFERENCES ProductionOrders(ProductionOrderID),
+    FOREIGN KEY (MaterialID) REFERENCES RawMaterials(MaterialID)
+);
+```
+
+#### 2.1.2 Transactions
+```sql
+-- Inventory Transactions
+CREATE TABLE InventoryTransactions (
+    TransactionID INT PRIMARY KEY IDENTITY(1,1),
+    TransactionType NVARCHAR(20) NOT NULL, -- PO, GRN, Production, Transfer, Sale, etc.
+    ReferenceID NVARCHAR(50) NOT NULL, -- PO Number, GRN Number, etc.
+    ItemID INT NOT NULL,
+    LocationID INT NOT NULL,
+    Quantity DECIMAL(18,3) NOT NULL,
+    UnitCost DECIMAL(18,4) NOT NULL,
+    TransactionDate DATETIME DEFAULT GETDATE(),
+    CreatedBy INT,
+    Notes NVARCHAR(MAX),
+    FOREIGN KEY (ItemID) REFERENCES Items(ItemID),
+    FOREIGN KEY (LocationID) REFERENCES Locations(LocationID)
+);
+
+-- Journal Entries
+CREATE TABLE JournalEntries (
+    JournalID INT PRIMARY KEY IDENTITY(1,1),
+    JournalNumber NVARCHAR(50) UNIQUE NOT NULL,
+    TransactionDate DATETIME NOT NULL,
+    Reference NVARCHAR(100),
+    Description NVARCHAR(255),
+    CreatedBy INT,
+    DateCreated DATETIME DEFAULT GETDATE()
+);
+
+-- Journal Entry Lines
+CREATE TABLE JournalEntryLines (
+    LineID INT PRIMARY KEY IDENTITY(1,1),
+    JournalID INT NOT NULL,
+    AccountID INT NOT NULL,
+    DebitAmount DECIMAL(18,2) DEFAULT 0,
+    CreditAmount DECIMAL(18,2) DEFAULT 0,
+    Description NVARCHAR(255),
+    FOREIGN KEY (JournalID) REFERENCES JournalEntries(JournalID),
+    FOREIGN KEY (AccountID) REFERENCES ChartOfAccounts(AccountID)
+);
+```
+
+```sql
+-- Branches
+CREATE TABLE Branches (
+    BranchID INT IDENTITY(1,1) PRIMARY KEY,
+    BranchName NVARCHAR(100) NOT NULL,
+    BranchCode NVARCHAR(20) UNIQUE NOT NULL,
+    Address NVARCHAR(255),
+    ContactNumber NVARCHAR(20),
+    Email NVARCHAR(100),
+    IsActive BIT DEFAULT 1,
+    IsCentralKitchen BIT DEFAULT 0,
+    DateCreated DATETIME DEFAULT GETDATE()
+);
+
+-- Products
+CREATE TABLE Products (
+    ProductID INT IDENTITY(1,1) PRIMARY KEY,
+    ProductCode NVARCHAR(50) UNIQUE NOT NULL,
+    ProductName NVARCHAR(100) NOT NULL,
+    Description NVARCHAR(MAX),
+    CategoryID INT,
+    UnitOfMeasure NVARCHAR(20),
+    ReorderLevel DECIMAL(18,2),
+    IsActive BIT DEFAULT 1,
+    DateCreated DATETIME DEFAULT GETDATE()
+);
+
+-- Raw Materials
+CREATE TABLE RawMaterials (
+    MaterialID INT IDENTITY(1,1) PRIMARY KEY,
+    MaterialCode NVARCHAR(50) UNIQUE NOT NULL,
+    MaterialName NVARCHAR(100) NOT NULL,
+    Description NVARCHAR(MAX),
+    UnitOfMeasure NVARCHAR(20),
+    CurrentStock DECIMAL(18,2) DEFAULT 0,
+    ReorderLevel DECIMAL(18,2),
+    SupplierID INT,
+    IsActive BIT DEFAULT 1,
+    DateCreated DATETIME DEFAULT GETDATE()
+);
+
+-- Branch Inventory
+CREATE TABLE BranchInventory (
+    InventoryID INT IDENTITY(1,1) PRIMARY KEY,
+    BranchID INT NOT NULL,
+    ProductID INT,
+    MaterialID INT,
+    CurrentStock DECIMAL(18,2) DEFAULT 0,
+    ReorderLevel DECIMAL(18,2),
+    LastStockTakeDate DATETIME,
+    LastUpdated DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (BranchID) REFERENCES Branches(BranchID),
+    FOREIGN KEY (ProductID) REFERENCES Products(ProductID),
+    FOREIGN KEY (MaterialID) REFERENCES RawMaterials(MaterialID),
+    CHECK (ProductID IS NOT NULL OR MaterialID IS NOT NULL)
+);
+```
+
+### 2.2 Transaction Workflows
+
+#### 2.2.1 Purchase to Warehouse Workflow
+1. **Purchase Order Creation**
+   - Select supplier and items
+   - Define quantities and expected delivery date
+   - Approve and send to supplier
+
+2. **Goods Receipt**
+   - Match received items against PO
+   - Record actual quantities received
+   - Note any damages/shortages
+   - Update inventory levels
+   - Generate GRN (Goods Received Note)
+
+3. **Invoice Matching**
+   - Match supplier invoice with PO and GRN
+   - Resolve any discrepancies
+   - Process payment
+   - Create accounting entries:
+     - Debit: Inventory Asset
+     - Credit: Accounts Payable
+
+#### 2.2.2 Manufacturing Workflow
+1. **Production Planning**
+   - Create production order
+   - Define BOM and required quantities
+   - Check raw material availability
+
+2. **Material Issue**
+   - Issue raw materials from store room
+   - Record material consumption
+   - Update inventory levels
+   - Create accounting entries:
+     - Debit: Work in Process
+     - Credit: Raw Materials Inventory
+
+3. **Production Completion**
+   - Record finished goods produced
+   - Update inventory levels
+   - Create accounting entries:
+     - Debit: Finished Goods Inventory
+     - Credit: Work in Process
+     - Debit/Credit: Production Variance (if any)
+
+#### 2.2.3 Retail Workflow
+1. **Stock Transfer to Retail**
+   - Create transfer order from manufacturing to retail
+   - Record quantities transferred
+   - Update inventory levels at both locations
+   - Create accounting entries:
+     - Debit: Retail Inventory
+     - Credit: Finished Goods Inventory
+
+2. **Point of Sale**
+   - Process customer sales
+   - Update retail inventory
+   - Record payment
+   - Create accounting entries:
+     - Debit: Cash/Bank/Receivable
+     - Credit: Sales Revenue
+     - Debit: COGS
+     - Credit: Retail Inventory
+
+```sql
+-- Purchase Orders
+CREATE TABLE PurchaseOrders (
+    POID INT IDENTITY(1,1) PRIMARY KEY,
+    PONumber NVARCHAR(50) UNIQUE NOT NULL,
+    SupplierID INT NOT NULL,
+    BranchID INT NOT NULL,
+    OrderDate DATETIME DEFAULT GETDATE(),
+    ExpectedDeliveryDate DATETIME,
+    Status NVARCHAR(20) DEFAULT 'Draft',
+    TotalAmount DECIMAL(18,2) DEFAULT 0,
+    Notes NVARCHAR(MAX),
+    CreatedBy INT,
+    DateCreated DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (SupplierID) REFERENCES Suppliers(SupplierID),
+    FOREIGN KEY (BranchID) REFERENCES Branches(BranchID)
+);
+
+-- Sales Orders
+CREATE TABLE SalesOrders (
+    OrderID INT IDENTITY(1,1) PRIMARY KEY,
+    OrderNumber NVARCHAR(50) UNIQUE NOT NULL,
+    BranchID INT NOT NULL,
+    CustomerID INT,
+    OrderDate DATETIME DEFAULT GETDATE(),
+    OrderType NVARCHAR(20) NOT NULL, -- Retail, Wholesale, Ecommerce
+    Status NVARCHAR(20) DEFAULT 'New',
+    TotalAmount DECIMAL(18,2) DEFAULT 0,
+    DiscountAmount DECIMAL(18,2) DEFAULT 0,
+    TaxAmount DECIMAL(18,2) DEFAULT 0,
+    GrandTotal AS (TotalAmount - DiscountAmount + TaxAmount),
+    PaymentStatus NVARCHAR(20) DEFAULT 'Pending',
+    Notes NVARCHAR(MAX),
+    CreatedBy INT,
+    DateCreated DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (BranchID) REFERENCES Branches(BranchID),
+    FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID)
+);
+
+-- Transfer Orders
+CREATE TABLE TransferOrders (
+    TransferID INT IDENTITY(1,1) PRIMARY KEY,
+    TransferNumber NVARCHAR(50) UNIQUE NOT NULL,
+    FromBranchID INT NOT NULL,
+    ToBranchID INT NOT NULL,
+    OrderDate DATETIME DEFAULT GETDATE(),
+    ExpectedDeliveryDate DATETIME,
+    Status NVARCHAR(20) DEFAULT 'Draft',
+    TotalAmount DECIMAL(18,2) DEFAULT 0,
+    Notes NVARCHAR(MAX),
+    CreatedBy INT,
+    ApprovedBy INT,
+    ApprovedDate DATETIME,
+    DateCreated DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (FromBranchID) REFERENCES Branches(BranchID),
+    FOREIGN KEY (ToBranchID) REFERENCES Branches(BranchID)
+);
+```
+
+## 3. INVENTORY VALUATION & COSTING
+
+### 3.1 Costing Methods
+- **FIFO (First-In-First-Out)**
+- **Weighted Average Cost**
+- **Standard Costing**
+
+### 3.2 Inventory Valuation Reports
+- Current stock valuation
+- Cost of goods sold
+- Inventory turnover
+- Slow-moving items
+- Obsolete stock analysis
+
+## 4. POS SYSTEM SPECIFICATIONS
+
+### 3.1 Touch Screen Interface
+- **Product Grid**: Large, touch-friendly buttons with product images
+- **Order Management**: Swipe gestures, quantity adjustment, modifiers
+- **Payment Screen**: Large buttons, multiple payment methods, tipping options
+- **Kitchen Display**: Real-time order updates, preparation timers
+
+### 3.2 Hardware Integration
+- **Pole Display**: Transaction totals, itemized lists
+- **Receipt Printer**: Thermal printing, kitchen orders, reports
+- **Credit Card Terminal**: EMV, contactless payments, gift cards
+- **Barcode Scanner**: Product lookup, loyalty cards
+
+## 4. IMPLEMENTATION ROADMAP
+
+### Phase 1: Core System Setup (Weeks 1-4)
+1. Database implementation
+2. Branch management
+3. User authentication
+4. Basic inventory management
+
+### Phase 2: Branch Operations (Weeks 5-8)
+1. Inter-branch transfers
+2. Branch-specific pricing
+3. Inventory reconciliation
+4. Basic reporting
+
+### Phase 3: POS Development (Weeks 9-12)
+1. Touch-optimized UI
+2. Product catalog management
+3. Order processing
+4. Payment integration
+
+### Phase 4: Hardware Integration (Weeks 13-16)
+1. Receipt printer setup
+2. Pole display configuration
+3. Barcode scanner support
+4. Credit card terminal integration
+
+### Phase 5: Advanced Features (Weeks 17-20)
+1. Real-time inventory sync
+2. Advanced reporting
+3. Loyalty program
+4. Mobile app integration
+
+### Phase 6: Testing & Deployment (Weeks 21-24)
+1. User acceptance testing
+2. Performance optimization
+3. Staff training
+4. Go-live support
+
+## 5. TECHNICAL REQUIREMENTS
+
+### 5.1 Hardware
+- Touchscreen POS terminals (15"+)
+- Thermal receipt printers
+- Pole displays
+- Barcode scanners
+- EMV credit card terminals
+- Network infrastructure
+
+### 5.2 Software
+- Windows 10/11
+- .NET 6.0+
+- SQL Server 2019+
+- IIS for web services
+- Backup solution
+
+## 6. TRAINING PLAN
+
+### 6.1 Administrator Training
+- System configuration
+- User management
+- Reporting
+- Troubleshooting
+
+### 6.2 Manager Training
+- Inventory management
+- Transfer orders
+- Staff scheduling
+- Basic reporting
+
+### 6.3 Cashier Training
+- POS operation
+- Payment processing
+- Customer service
+- Basic troubleshooting
+
+## 7. MAINTENANCE & SUPPORT
+
+### 7.1 Regular Maintenance
+- Database optimization
+- Backup verification
+- Software updates
+- Security patches
+
+### 7.2 Support Structure
+- Helpdesk system
+- On-call support
+- Regular system audits
+- Performance monitoring
+
+## 8. RISK MANAGEMENT
+
+### 8.1 Identified Risks
+- Data loss
+- System downtime
+- Security breaches
+- Hardware failure
+
+### 8.2 Mitigation Strategies
+- Regular backups
+- Redundant systems
+- Security protocols
+- Disaster recovery plan
+
+## 9. SUCCESS METRICS
+
+### 9.1 Key Performance Indicators
+- Order processing time
+- Inventory accuracy
+- Sales performance
+- Customer satisfaction
+
+### 9.2 Reporting Requirements
+- Daily sales reports
+- Inventory valuation
+- Staff performance
+- Customer analytics
+
+## 10. PASTEL EVOLUTION INTEGRATION
+
+### 10.1 Integration Approach (No Developer License Needed)
+- **Standard CSV/Excel Import/Export**
+  - Use built-in Pastel import/export functionality
+  - No direct database access or API integration required
+  - No custom programming within Pastel needed
+
+### 10.2 Data Exchange Methods
+
+#### Inventory Export to Pastel
+```
+Code,Description,Category,UnitOfMeasure,StandardCost,SellingPrice,GLCode,IsActive
+BREAD-001,Artisan Sourdough,Bread,Each,15.99,29.99,4000,1
+CAKE-001,Chocolate Fudge,Cake,Each,45.50,89.99,4000,1
+```
+
+#### Stock Level Import from Pastel
+```
+ProductCode,ProductName,CurrentStock,LastUpdated
+BREAD-001,Artisan Sourdough,42,2025-07-11
+CAKE-001,Chocolate Fudge,15,2025-07-11
+```
+
+### 10.3 Implementation Requirements
+- Standard Pastel Evolution License (already owned)
+- Sufficient user permissions for import/export
+- Scheduled tasks for automated file transfers
+- Data validation before import
+
+## 11. DEVELOPMENT CHECKLIST
+
+### Phase 1: Foundation (Weeks 1-2)
+- [ ] Set up development environment
+- [ ] Create database schema
+- [ ] Implement branch management
+- [ ] Set up user authentication
+- [ ] Create basic inventory structure
+
+### Phase 2: Core Features (Weeks 3-8)
+- [ ] Inventory Management
+  - [ ] Product and raw material catalog
+  - [ ] Multi-location stock tracking
+  - [ ] Barcode/QR code support
+  - [ ] Batch/lot tracking
+  - [ ] Expiry date management
+
+- [ ] Warehouse Module
+  - [ ] Purchase order management
+  - [ ] Goods receipt processing
+  - [ ] Quality control checks
+  - [ ] Credit note generation
+  - [ ] Supplier returns
+
+- [ ] Manufacturing Module
+  - [ ] Bill of Materials (BOM)
+  - [ ] Production planning
+  - [ ] Material requirements planning (MRP)
+  - [ ] Work order management
+  - [ ] Production reporting
+
+- [ ] Retail & POS
+  - [ ] Stock transfer management
+  - [ ] Retail inventory
+  - [ ] Point of sale interface
+  - [ ] Sales reporting
+
+- [ ] Basic Reporting
+  - [ ] Stock valuation reports
+  - [ ] Inventory movement
+  - [ ] Production efficiency
+  - [ ] Sales analysis
+
+### Phase 3: Accounting Integration (Weeks 9-12)
+- [ ] Chart of Accounts setup
+- [ ] Automated Journal Entries
+  - [ ] Purchase transactions
+  - [ ] Inventory movements
+  - [ ] Production costs
+  - [ ] Sales transactions
+- [ ] Financial Reporting
+  - [ ] Trial balance
+  - [ ] Profit & loss
+  - [ ] Balance sheet
+  - [ ] Cost of goods sold
+
+### Phase 4: POS & Reporting (Weeks 13-16)
+- [ ] POS Development
+  - [ ] Touch-optimized interface
+  - [ ] Product search and selection
+  - [ ] Order processing
+  - [ ] Receipt printing
+  - [ ] Payment processing
+  - [ ] Customer display integration
+
+- [ ] Advanced Reporting
+  - [ ] Custom report builder
+  - [ ] Dashboard with KPIs
+  - [ ] Scheduled reports
+  - [ ] Export to Excel/PDF
+
+### Phase 5: Pastel Integration (Weeks 17-18)
+- [ ] Design export/import templates
+- [ ] Implement data synchronization
+- [ ] Set up scheduled sync jobs
+- [ ] Data validation and error handling
+- [ ] Audit trail for all syncs
+
+### Phase 6: Testing & Deployment (Weeks 19-20)
+- [ ] Unit testing
+- [ ] Integration testing
+- [ ] User acceptance testing
+- [ ] Performance optimization
+- [ ] Deployment preparation
+- [ ] Staff training
+- [ ] Data migration
+
+### Phase 7: Go-Live & Support (Week 21+)
+- [ ] Phased deployment
+- [ ] On-site support
+- [ ] Performance monitoring
+- [ ] User feedback collection
+- [ ] Continuous improvements
+- [ ] Ongoing maintenance
+
+## 12. FUTURE ENHANCEMENTS
+
+### 12.1 Planned Features
+- [ ] Mobile ordering
+- [ ] Advanced analytics
+- [ ] Customer loyalty program
+- [ ] Supplier portal
+- [ ] Recipe management
+- [ ] Production scheduling
+
+### 12.2 Integration Possibilities
+- [ ] E-commerce platforms
+- [ ] Delivery services
+- [ ] Marketing tools
+- [ ] Payroll systems
+
+## 13. APPENDICES
+
+### 13.1 Field Mappings (Pastel ↔ Oven Delights)
+| Oven Delights Field | Pastel Field | Notes |
+|---------------------|--------------|-------|
+| ProductCode | Code | Must be unique |
+| Description | Description |  |
+| CurrentStock | QuantityOnHand |  |
+| CostPrice | StandardCost |  |
+| SellingPrice | SellingPrice |  |
+| Category | Category |  |
+| Barcode | Barcode |  |
+
+### 13.2 Sample Export Script (VB.NET)
+```vb
+Public Sub ExportInventoryToPastel(filePath As String, items As List(Of InventoryItem))
+    Using writer As New StreamWriter(filePath, False, Encoding.UTF8)
+        ' Write header
+        writer.WriteLine("\"Code\",\"Description\",\"Category\",\"UnitOfMeasure\",\"StandardCost\",\"SellingPrice\",\"GLCode\",\"IsActive\"")
+        
+        ' Write data
+        For Each item In items
+            writer.WriteLine($"\"{item.Code}\",\"{item.Description}\",\"{item.Category}\"," & 
+                           $"\"{item.UnitOfMeasure}\",{item.StandardCost},{item.SellingPrice},\"4000\"," & 
+                           $"\"{If(item.IsActive, "Yes", "No")}\"")
+        Next
+    End Using
+End Sub
+```
+
+---
+END OF PLAN
+---

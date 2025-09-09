@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard Charts</title>
+    <script src='https://cdn.jsdelivr.net/npm/chart.js'></script>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7fa;
+        }
+        .chart-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .chart-box {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            transition: transform 0.3s ease;
+        }
+        .chart-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        canvas {
+            width: 100% !important;
+            height: auto !important;
+        }
+    </style>
+</head>
+<body>
+    <div class='chart-container'>
+        <div class='chart-box'>
+            <div class='chart-title'>User Activity Distribution</div>
+            <canvas id='userActivityChart'></canvas>
+        </div>
+        <div class='chart-box'>
+            <div class='chart-title'>Login Frequency (Last 7 Days)</div>
+            <canvas id='loginFrequencyChart'></canvas>
+        </div>
+        <div class='chart-box'>
+            <div class='chart-title'>Branch Distribution</div>
+            <canvas id='branchDistributionChart'></canvas>
+        </div>
+        <div class='chart-box'>
+            <div class='chart-title'>Role-Based Access</div>
+            <canvas id='roleAccessChart'></canvas>
+        </div>
+    </div>
+
+    <script>
+        // User Activity Pie Chart
+        const userActivityCtx = document.getElementById('userActivityChart').getContext('2d');
+        new Chart(userActivityCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Active Users', 'Inactive Users', 'Locked Accounts'],
+                datasets: [{
+                    data: [65, 25, 10],
+                    backgroundColor: ['#4CAF50', '#FFC107', '#F44336'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Login Frequency Line Chart
+        const loginCtx = document.getElementById('loginFrequencyChart').getContext('2d');
+        new Chart(loginCtx, {
+            type: 'line',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Logins',
+                    data: [120, 190, 150, 210, 180, 90, 60],
+                    borderColor: '#3F51B5',
+                    backgroundColor: 'rgba(63, 81, 181, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Branch Distribution Doughnut Chart
+        const branchCtx = document.getElementById('branchDistributionChart').getContext('2d');
+        new Chart(branchCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Main Branch', 'Downtown', 'Uptown', 'Westside'],
+                datasets: [{
+                    data: [40, 25, 20, 15],
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Role Access Bar Chart
+        const roleCtx = document.getElementById('roleAccessChart').getContext('2d');
+        new Chart(roleCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Admin', 'Manager', 'Staff', 'Guest'],
+                datasets: [{
+                    label: 'Access Level',
+                    data: [100, 75, 40, 15],
+                    backgroundColor: ['#8E44AD', '#3498DB', '#2ECC71', '#E74C3C'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+
+        // Make charts responsive
+        window.addEventListener('resize', function() {
+            Chart.getChart('userActivityChart')?.resize();
+            Chart.getChart('loginFrequencyChart')?.resize();
+            Chart.getChart('branchDistributionChart')?.resize();
+            Chart.getChart('roleAccessChart')?.resize();
+        });
+    </script>
+</body>
+</html>

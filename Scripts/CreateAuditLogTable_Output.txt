@@ -1,0 +1,4 @@
+Msg 1767, Level 16, State 1, Server MOGALIAHP\SQLEXPRESS, Line 4
+Foreign key 'FK_AuditLog_User' references invalid table 'User'.
+Msg 1750, Level 16, State 1, Server MOGALIAHP\SQLEXPRESS, Line 4
+Could not create constraint or index. See previous errors.

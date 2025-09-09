@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Midnight Marble POS - Catalog</title>
+  <style>
+    :root { --obs:#0F1115; --marble:#1B1E25; --neon:#FF3B7F; --mint:#9CE6A8; --chip:#1b2030; --chip-b:#2b314a; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:IBM Plex Sans, system-ui, Segoe UI, Roboto, Arial, sans-serif;background:linear-gradient(180deg,#0F1115,#151925 60%,#0F1115);color:#eef1f7}
+    header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#151925;border-bottom:1px solid #232938;position:sticky;top:0}
+    .brand{font-family:"Cormorant Garamond", Georgia, serif;font-size:22px;letter-spacing:.5px}
+    .status{display:flex;gap:10px;font-size:12px}
+    .status span{padding:6px 10px;border-radius:999px;background:#23283b;color:#cfd3dc;border:1px solid #2f3550}
+    .container{display:grid;grid-template-columns:320px 1fr;gap:12px;padding:12px 12px 92px}
+    .panel{background:#151925;border:1px solid #232938;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .cats{padding:12px}
+    .catbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .chip{padding:18px 16px;border-radius:14px;background:var(--chip);color:#cfd3dc;border:2px solid var(--chip-b);cursor:pointer;text-align:center;font-weight:700}
+    .chip.active,.chip:hover{background:#232b42;color:#fff;box-shadow:0 0 0 6px rgba(255,59,127,.18), inset 0 0 12px rgba(255,59,127,.2)}
+    .sub{margin-top:10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .sub .chip{padding:16px 14px}
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding:12px}
+    .tile{position:relative;border-radius:18px;overflow:hidden;background:#111420;border:2px solid #232938;cursor:pointer}
+    .tile img{width:100%;height:140px;object-fit:cover;display:block;filter:contrast(1.08) saturate(1.1)}
+    .meta{display:flex;justify-content:space-between;align-items:center;padding:10px 12px}
+    .price{color:#b7bdc8}
+    /* Bottom cart dock */
+    footer.cart{position:fixed;left:0;right:0;bottom:0;background:#151925;border-top:2px solid #232938;box-shadow:0 -8px 28px rgba(0,0,0,.4);padding:8px 12px}
+    .cart-wrap{display:grid;grid-template-columns:1fr 360px;gap:12px;align-items:start}
+    .order-list{max-height:26vh;overflow:auto}
+    .line{display:grid;grid-template-columns:1fr 120px 110px 32px;gap:12px;align-items:center;padding:10px;border-bottom:1px dashed #2f3650;font-size:18px}
+    .qty{display:flex;gap:10px;justify-content:flex-end}
+    .qty button{width:42px;height:42px;border-radius:12px;background:#1b2030;border:2px solid #2b314a;color:#dfe3ec;font-size:20px;font-weight:800}
+    .totals{border-left:2px solid #2b314a;padding-left:12px}
+    .totals .row{display:flex;justify-content:space-between;padding:8px 0;font-size:18px}
+    .shortcuts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .sc{padding:12px 14px;border-radius:12px;background:#1b2030;border:1px solid #2b314a}
+    .pay{background:#9CE6A8;color:#052711;border:none;border-radius:12px;padding:14px 18px;font-weight:800;font-size:18px}
+    a{color:inherit;text-decoration:none}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">Oven Delights — POS</div>
+    <div class="status"><span>Branch: Main</span><span>Cashier: Neo</span><span>Pole: Ready</span><span>Printer: Online</span></div>
+  </header>
+  <div class="container">
+    <aside class="panel cats">
+      <div class="catbar">
+        <div class="chip active" data-cat="Pastries">Pastries</div>
+        <div class="chip" data-cat="Bread">Bread</div>
+        <div class="chip" data-cat="Cakes">Cakes</div>
+        <div class="chip" data-cat="Cookies">Cookies</div>
+        <div class="chip" data-cat="Drinks">Drinks</div>
+        <div class="chip" data-cat="Savory">Savory</div>
+      </div>
+      <div class="sub">
+        <div class="chip" data-sub="Croissants">Croissants</div>
+        <div class="chip" data-sub="Danish">Danish</div>
+        <div class="chip" data-sub="Cruffins">Cruffins</div>
+        <div class="chip" data-sub="Puff">Puff</div>
+      </div>
+    </aside>
+    <main class="panel">
+      <div class="grid">
+        <div class="tile" data-name="Butter Croissant" data-price="22.00">
+          <img src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?q=80&w=1200&auto=format&fit=crop" alt="Croissant"/>
+          <div class="meta"><div>Butter Croissant</div><div class="price">R 22.00</div></div>
+        </div>
+        <div class="tile" data-name="Custard Danish" data-price="26.00">
+          <img src="https://images.unsplash.com/photo-1565958011703-44f9829ba187?q=80&w=1200&auto=format&fit=crop" alt="Danish"/>
+          <div class="meta"><div>Custard Danish</div><div class="price">R 26.00</div></div>
+        </div>
+        <div class="tile" data-name="Cruffin" data-price="28.00">
+          <img src="https://images.unsplash.com/photo-1565958010724-56f2881d28d6?q=80&w=1200&auto=format&fit=crop" alt="Cruffin"/>
+          <div class="meta"><div>Cruffin</div><div class="price">R 28.00</div></div>
+        </div>
+        <div class="tile" data-name="Chocolate Cake Slice" data-price="30.00">
+          <img src="https://images.unsplash.com/photo-1606313564200-e75d5e30476f?q=80&w=1200&auto=format&fit=crop" alt="Cake"/>
+          <div class="meta"><div>Chocolate Cake Slice</div><div class="price">R 30.00</div></div>
+        </div>
+        <div class="tile" data-name="Macaron Box (6)" data-price="55.00">
+          <img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1200&auto=format&fit=crop" alt="Macarons"/>
+          <div class="meta"><div>Macaron Box (6)</div><div class="price">R 55.00</div></div>
+        </div>
+        <div class="tile" data-name="Americano" data-price="20.00">
+          <img src="https://images.unsplash.com/photo-1511920170033-f8396924c348?q=80&w=1200&auto=format&fit=crop" alt="Coffee"/>
+          <div class="meta"><div>Americano</div><div class="price">R 20.00</div></div>
+        </div>
+      </div>
+    </main>
+    <!-- Bottom cart dock replaces side cart -->
+  </div>
+  <footer class="cart">
+    <div class="cart-wrap">
+      <div>
+        <div class="order-list" id="orderList"></div>
+        <div class="shortcuts">
+          <div class="sc">F2 Hold</div>
+          <div class="sc">F3 Recall</div>
+          <div class="sc">F4 Qty</div>
+          <div class="sc">F5 Search</div>
+          <div class="sc">F6 Discount</div>
+          <div class="sc">Del Remove</div>
+          <div class="sc"><a id="btnPay" href="tender.html" style="color:inherit;text-decoration:none">F12 Pay</a></div>
+        </div>
+      </div>
+      <div class="totals">
+        <div class="row"><span>Subtotal</span><strong id="subTot">R 0.00</strong></div>
+        <div class="row"><span>VAT (15%)</span><strong id="vat">R 0.00</strong></div>
+        <div class="row" style="font-size:20px"><span>Total</span><strong id="total">R 0.00</strong></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+          <a class="pay" id="btnPay2" href="tender.html">Pay (F12)</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const VAT_RATE = 0.15;
+    const order = new Map();
+    const orderList = document.getElementById('orderList');
+    const subTotEl = document.getElementById('subTot');
+    const vatEl = document.getElementById('vat');
+    const totalEl = document.getElementById('total');
+    function format(n){ return 'R ' + n.toFixed(2); }
+    function recalc(){
+      let sub=0; order.forEach(v=> sub += v.qty*v.price);
+      const vat = Math.round((sub*VAT_RATE)*100)/100;
+      const tot = Math.round((sub+vat)*100)/100;
+      subTotEl.textContent = format(sub); vatEl.textContent = format(vat); totalEl.textContent = format(tot);
+    }
+    function render(){
+      orderList.innerHTML = '';
+      order.forEach((v,k)=>{
+        const d=document.createElement('div'); d.className='line';
+        d.innerHTML = `<div>${k}</div>
+          <div class="qty"><button data-act="-" data-name="${k}">-</button><strong>${v.qty}</strong><button data-act="+" data-name="${k}">+</button></div>
+          <div style="text-align:right">${format(v.qty*v.price)}</div>
+          <div><button data-act="x" data-name="${k}">×</button></div>`;
+        orderList.appendChild(d);
+      });
+      recalc();
+    }
+    function addItem(name, price){ if(!order.has(name)) order.set(name,{qty:0,price:parseFloat(price)}); order.get(name).qty++; render(); }
+    function adjust(name, act){ if(!order.has(name)) return; const v=order.get(name); if(act==='+') v.qty++; else if(act==='-'&&v.qty>1) v.qty--; else if(act!=='+'&&v.qty===1) order.delete(name); if(act==='x') order.delete(name); render(); }
+    document.querySelectorAll('.tile').forEach(t=> t.addEventListener('click',()=> addItem(t.dataset.name, t.dataset.price)));
+    orderList.addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return; adjust(b.dataset.name, b.dataset.act); });
+    window.addEventListener('keydown', e=>{
+      if(e.key==='F12'){ document.getElementById('btnPay2').click(); }
+      if(e.key==='Delete'){ const last = Array.from(order.keys()).pop(); if(last){ order.delete(last); render(); } }
+    });
+    // Persist on pay
+    function persist(){ const items=[]; order.forEach((v,k)=> items.push({name:k,qty:v.qty,price:v.price})); localStorage.setItem('pos_cart', JSON.stringify(items)); }
+    document.getElementById('btnPay2').addEventListener('click', persist);
+    const payLink = document.getElementById('btnPay'); if(payLink){ payLink.addEventListener('click', persist); }
+  </script>
+</body>
+</html>

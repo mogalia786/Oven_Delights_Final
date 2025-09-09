@@ -1,0 +1,1036 @@
+Imports Microsoft.Data.SqlClient
+Imports System.Configuration
+Imports System.Data
+Imports System.Text
+Imports BCrypt.Net
+Imports System.Security.Cryptography
+Imports System.Diagnostics
+
+''' <summary>
+''' Service class for handling user-related operations in the Oven Delights ERP system.
+''' </summary>
+Public Class UserService
+    Implements IDisposable
+    
+    Private ReadOnly _connectionString As String
+    Private ReadOnly _minPasswordLength As Integer = 8
+    Private ReadOnly _maxFailedLoginAttempts As Integer = 5
+    Private ReadOnly _accountLockoutMinutes As Integer = 30
+    Private _disposed As Boolean = False
+    Private _connection As SqlConnection = Nothing
+
+    ''' <summary>
+    ''' Initializes a new instance of the UserService class using the default connection string
+    ''' </summary>
+    Public Sub New()
+        _connectionString = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
+    End Sub
+    
+    ''' <summary>
+    ''' Initializes a new instance of the UserService class with a custom connection string
+    ''' </summary>
+    ''' <param name="connectionString">The database connection string to use</param>
+    Public Sub New(connectionString As String)
+        _connectionString = connectionString
+    End Sub
+
+    #Region "Public Methods"
+
+    ''' <summary>
+    ''' Retrieves all users from the database
+    ''' </summary>
+    ''' <returns>DataTable containing all users</returns>
+    Public Function GetAllUsers() As DataTable
+        Dim dt As New DataTable()
+        
+        Using conn As New SqlConnection(_connectionString)
+            Try
+                conn.Open()
+                
+                Dim query As String = """
+                    SELECT 
+                        u.UserID, 
+                        u.Username, 
+                        u.Email, 
+                        u.FirstName, 
+                        u.LastName, 
+                        u.RoleID,
+                        r.RoleName,
+                        u.BranchID,
+                        b.BranchName,
+                        u.IsActive, 
+                        u.CreatedDate, 
+                        u.LastLogin,
+                        u.LastFailedLogin,
+                        u.FailedLoginAttempts,
+                        u.PasswordLastChanged,
+                        u.TwoFactorEnabled
+                    FROM Users u 
+                    LEFT JOIN Roles r ON u.RoleID = r.RoleID
+                    LEFT JOIN Branches b ON u.BranchID = b.BranchID 
+                    ORDER BY u.CreatedDate DESC
+                """
+                
+                Using cmd As New SqlCommand(query, conn)
+                    Dim adapter As New SqlDataAdapter(cmd)
+                    adapter.Fill(dt)
+                End Using
+                
+                Return dt
+            Catch ex As Exception
+                ' Log the error (in a production app, use a proper logging framework)
+                Debug.WriteLine($"Error in GetAllUsers: {ex.Message}")
+                Throw New Exception("An error occurred while retrieving users. Please try again.", ex)
+            End Try
+        End Using
+    End Function
+
+    ''' <summary>
+    ''' Searches for users based on the provided search term
+    ''' </summary>
+    ''' <param name="searchTerm">The term to search for in username, email, first name, or last name</param>
+    ''' <returns>DataTable containing matching users</returns>
+    Public Function SearchUsers(searchTerm As String) As DataTable
+        If String.IsNullOrWhiteSpace(searchTerm) Then
+            Return GetAllUsers()
+        End If
+        
+        Dim dt As New DataTable()
+        
+        Using conn As New SqlConnection(_connectionString)
+            Try
+                conn.Open()
+                
+                Dim query As String = """
+                    SELECT 
+                        u.UserID, 
+                        u.Username, 
+                        u.Email, 
+                        u.FirstName, 
+                        u.LastName, 
+                        u.RoleID,
+                        r.RoleName,
+                        u.BranchID,
+                        b.BranchName,
+                        u.IsActive, 
+                        u.CreatedDate, 
+                        u.LastLogin
+                    FROM Users u 
+                    LEFT JOIN Roles r ON u.RoleID = r.RoleID
+                    LEFT JOIN Branches b ON u.BranchID = b.BranchID 
+                    WHERE u.Username LIKE @searchTerm
+                       OR u.Email LIKE @searchTerm
+                       OR u.FirstName LIKE @searchTerm
+                       OR u.LastName LIKE @searchTerm
+                    ORDER BY u.Username
+                """
+                
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@searchTerm", $"%{searchTerm}%")
+                    
+                    Dim adapter As New SqlDataAdapter(cmd)
+                    adapter.Fill(dt)
+                End Using
+                
+                Return dt
+            Catch ex As Exception
+                Debug.WriteLine($"Error in SearchUsers: {ex.Message}")
+                Throw New Exception("An error occurred while searching for users.", ex)
+            End Try
+        End Using
+    End Function
+    
+    ''' <summary>
+    ''' Creates a new user account
+    ''' </summary>
+    Public Function CreateUser(
+        username As String, 
+        password As String, 
+        email As String, 
+        firstName As String, 
+        lastName As String, 
+        roleID As Integer, 
+        branchID As Integer?, 
+        isActive As Boolean, 
+        twoFactorEnabled As Boolean) As Boolean
+        
+        ' Input validation
+        If String.IsNullOrWhiteSpace(username) Then
+            Throw New ArgumentException("Username is required.", NameOf(username))
+        End If
+        
+        If String.IsNullOrWhiteSpace(password) Then
+            Throw New ArgumentException("Password is required.", NameOf(password))
+        End If
+        
+        If password.Length < _minPasswordLength Then
+            Throw New ArgumentException($"Password must be at least {_minPasswordLength} characters long.", NameOf(password))
+        End If
+        
+        ' Hash the password
+        Dim hashedPassword = BCrypt.Net.BCrypt.HashPassword(password)
+        
+        Using conn As New SqlConnection(_connectionString)
+            Try
+                conn.Open()
+                
+                ' Start a transaction
+                Using transaction = conn.BeginTransaction()
+                    Try
+                        ' Check if username or email already exists
+                        If UserExists(conn, transaction, username, email) Then
+                            Throw New InvalidOperationException("A user with this username or email already exists.")
+                        End If
+                        
+                        ' Insert the new user
+                        Dim query As String = """
+                            INSERT INTO Users (
+                                Username, 
+                                Email, 
+                                FirstName, 
+                                LastName, 
+                                RoleID, 
+                                BranchID, 
+                                Password,
+                                IsActive,
+                                TwoFactorEnabled,
+                                CreatedDate,
+                                PasswordLastChanged
+                            ) VALUES (
+                                @username, 
+                                @email, 
+                                @firstName, 
+                                @lastName, 
+                                @roleID, 
+                                @branchID, 
+                                @password,
+                                @isActive,
+                                @twoFactorEnabled,
+                                GETDATE(),
+                                GETDATE()
+                            )
+                        """
+                        
+                        Using cmd As New SqlCommand(query, conn, transaction)
+                            cmd.Parameters.AddWithValue("@username", username)
+                            cmd.Parameters.AddWithValue("@email", email)
+                            cmd.Parameters.AddWithValue("@firstName", firstName)
+                            cmd.Parameters.AddWithValue("@lastName", lastName)
+                            cmd.Parameters.AddWithValue("@roleID", roleID)
+                            cmd.Parameters.AddWithValue("@branchID", If(branchID.HasValue, branchID.Value, DBNull.Value))
+                            cmd.Parameters.AddWithValue("@password", hashedPassword)
+                            cmd.Parameters.AddWithValue("@isActive", isActive)
+                            cmd.Parameters.AddWithValue("@twoFactorEnabled", twoFactorEnabled)
+                            
+                            cmd.ExecuteNonQuery()
+                        End Using
+                        
+                        ' Commit the transaction
+                        transaction.Commit()
+                        
+                        ' Log the action
+                        LogAuditAction(Nothing, "UserCreated", "Users", Nothing, $"Created user: {username}")
+                        
+                        Return True
+                        
+                    Catch ex As Exception
+                        ' Rollback the transaction on error
+                        transaction.Rollback()
+                        Throw
+                    End Try
+                End Using
+                
+            Catch ex As Exception
+                Debug.WriteLine($"Error in CreateUser: {ex.Message}")
+                Throw New Exception("An error occurred while creating the user.", ex)
+            End Try
+        End Using
+    End Function
+    
+    ''' <summary>
+    ''' Updates an existing user's information
+    ''' </summary>
+    Public Function UpdateUser(
+        userID As Integer, 
+        username As String, 
+        email As String, 
+        firstName As String, 
+        lastName As String, 
+        roleID As Integer, 
+        branchID As Integer?, 
+        isActive As Boolean, 
+        twoFactorEnabled As Boolean) As Boolean
+        
+        ' Input validation
+        If String.IsNullOrWhiteSpace(username) Then
+            Throw New ArgumentException("Username is required.", NameOf(username))
+        End If
+        
+        Using conn As New SqlConnection(_connectionString)
+            Try
+                conn.Open()
+                
+                Dim query As String = """
+                    UPDATE Users SET
+                        Username = @username,
+                        Email = @email,
+                        FirstName = @firstName,
+                        LastName = @lastName,
+                        RoleID = @roleID,
+                        BranchID = @branchID,
+                        IsActive = @isActive,
+                        TwoFactorEnabled = @twoFactorEnabled,
+                        LastModifiedDate = GETDATE()
+                    WHERE UserID = @userID
+                """
+                
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@userID", userID)
+                    cmd.Parameters.AddWithValue("@username", username)
+                    cmd.Parameters.AddWithValue("@email", email)
+                    cmd.Parameters.AddWithValue("@firstName", firstName)
+                    cmd.Parameters.AddWithValue("@lastName", lastName)
+                    cmd.Parameters.AddWithValue("@roleID", roleID)
+                    cmd.Parameters.AddWithValue("@branchID", If(branchID.HasValue, branchID.Value, DBNull.Value))
+                    cmd.Parameters.AddWithValue("@isActive", isActive)
+                    cmd.Parameters.AddWithValue("@twoFactorEnabled", twoFactorEnabled)
+                    
+                    Dim rowsAffected = cmd.ExecuteNonQuery()
+                    
+                    If rowsAffected > 0 Then
+                        LogAuditAction(Nothing, "UserUpdated", "Users", userID, $"Updated user: {username}")
+                        Return True
+                    End If
+                    
+                    Return False
+                End Using
+                
+            Catch ex As Exception
+                Debug.WriteLine($"Error in UpdateUser: {ex.Message}")
+                Throw New Exception("An error occurred while updating the user.", ex)
+            End Try
+        End Using
+    End Function
+    
+    ''' <summary>
+    ''' Deactivates a user by setting IsActive to 0 (soft delete)
+    ''' </summary>
+    Public Function DeleteUser(userID As Integer) As Boolean
+        Using conn As New SqlConnection(_connectionString)
+            Try
+                conn.Open()
+                
+                ' Soft delete by setting IsActive to 0
+                Dim query As String = """
+                    UPDATE Users 
+                    SET 
+                        IsActive = 0,
+                        LastModifiedDate = GETDATE()
+                    WHERE UserID = @userID
+                """
+                
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@userID", userID)
+                    Dim rowsAffected = cmd.ExecuteNonQuery()
+                    
+                    If rowsAffected > 0 Then
+                        LogAuditAction(Nothing, "UserDeactivated", "Users", userID, $"Deactivated user ID: {userID}")
+                        Return True
+                    End If
+                    
+                    Return False
+                End Using
+                
+            Catch ex As Exception
+                Debug.WriteLine($"Error in DeleteUser: {ex.Message}")
+                Throw New Exception("An error occurred while deactivating the user.", ex)
+            End Try
+        End Using
+    End Function
+    
+    ''' <summary>
+    ''' Authenticates a user's credentials
+    ''' </summary>
+    Public Function Authenticate(username As String, password As String) As (IsAuthenticated As Boolean, UserID As Integer, RoleID As Integer, Message As String)
+        Using conn As New SqlConnection(_connectionString)
+            Try
+                conn.Open()
+                
+                ' Get user by username
+                Dim query = """
+                    SELECT 
+                        UserID, 
+                        Username, 
+                        Password, 
+                        IsActive, 
+                        FailedLoginAttempts, 
+                        LastFailedLogin,
+                        RoleID
+                    FROM Users 
+                    WHERE Username = @username
+                """
+                
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@username", username)
+                    
+                    Using reader = cmd.ExecuteReader()
+                        If reader.Read() Then
+                            ' Check if account is locked
+                            Dim failedAttempts = Convert.ToInt32(reader("FailedLoginAttempts"))
+                            Dim lastFailedLogin As DateTime? = If(reader("LastFailedLogin") Is DBNull.Value, 
+                                                              DirectCast(Nothing, DateTime?), 
+                                                              Convert.ToDateTime(reader("LastFailedLogin")))
+                            
+                            If IsAccountLocked(failedAttempts, lastFailedLogin) Then
+                                Return (False, -1, -1, "Account is locked due to too many failed login attempts. Please try again later.")
+                            End If
+                            
+                            ' Check if account is active
+                            If Not Convert.ToBoolean(reader("IsActive")) Then
+                                Return (False, -1, -1, "Account is inactive. Please contact your administrator.")
+                            End If
+                            
+                            ' Verify password
+                            Dim storedHash = reader("Password").ToString()
+                            If BCrypt.Net.BCrypt.Verify(password, storedHash) Then
+                                ' Password is correct, reset failed attempts
+                                ResetFailedLoginAttempts(Convert.ToInt32(reader("UserID")))
+                                
+                                ' Update last login
+                                UpdateLastLogin(Convert.ToInt32(reader("UserID")))
+                                
+                                Return (True, 
+                                       Convert.ToInt32(reader("UserID")), 
+                                       Convert.ToInt32(reader("RoleID")), 
+                                       "Authentication successful")
+                            Else
+                                ' Password is incorrect, increment failed attempts
+                                IncrementFailedLoginAttempts(Convert.ToInt32(reader("UserID")), failedAttempts + 1)
+                                
+                                Dim remainingAttempts = _maxFailedLoginAttempts - (failedAttempts + 1)
+                                Dim message = If(remainingAttempts > 0,
+                                              $"Invalid username or password. {remainingAttempts} attempts remaining.",
+                                              "Account locked due to too many failed login attempts. Please try again later.")
+                                
+                                Return (False, -1, -1, message)
+                            End If
+                        Else
+                            ' User not found
+                            Return (False, -1, -1, "Invalid username or password.")
+                        End If
+                    End Using
+                End Using
+                
+            Catch ex As Exception
+                Debug.WriteLine($"Error in Authenticate: {ex.Message}")
+                Throw New Exception("An error occurred during authentication.", ex)
+            End Try
+        End Using
+    End Function
+    
+    #End Region
+    
+    #Region "Private Helper Methods"
+    
+    ''' <summary>
+    ''' Checks if a username or email already exists in the database
+    ''' </summary>
+    Private Function UserExists(conn As SqlConnection, transaction As SqlTransaction, username As String, email As String) As Boolean
+        Dim query = """
+            SELECT COUNT(*) 
+            FROM Users 
+            WHERE Username = @username OR Email = @email
+        """
+        
+        Using cmd As New SqlCommand(query, conn, transaction)
+            cmd.Parameters.AddWithValue("@username", username)
+            cmd.Parameters.AddWithValue("@email", email)
+            
+            Dim count = Convert.ToInt32(cmd.ExecuteScalar())
+            Return count > 0
+        End Using
+    End Function
+    
+    ''' <summary>
+    ''' Checks if an account is locked based on failed login attempts
+    ''' </summary>
+    Private Function IsAccountLocked(failedAttempts As Integer, lastFailedLogin As DateTime?) As Boolean
+        If failedAttempts < _maxFailedLoginAttempts Then
+            Return False
+        End If
+        
+        ' If we don't have a last failed login time, assume it's locked
+        If Not lastFailedLogin.HasValue Then
+            Return True
+        End If
+        
+        ' Check if the lockout period has passed
+        Dim lockoutEndTime = lastFailedLogin.Value.AddMinutes(_accountLockoutMinutes)
+        Return DateTime.Now < lockoutEndTime
+    End Function
+    
+    ''' <summary>
+    ''' Resets the failed login attempts counter for a user
+    ''' </summary>
+    Private Sub ResetFailedLoginAttempts(userID As Integer)
+        Try
+            Using conn As New SqlConnection(_connectionString)
+                conn.Open()
+                
+                Dim query = """
+                    UPDATE Users 
+                    SET 
+                        FailedLoginAttempts = 0,
+                        LastFailedLogin = NULL
+                    WHERE UserID = @userID
+                """
+                
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@userID", userID)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+        Catch ex As Exception
+            Debug.WriteLine($"Error in ResetFailedLoginAttempts: {ex.Message}")
+            ' Don't throw, as this is a non-critical operation
+        End Try
+    End Sub
+    
+    ''' <summary>
+    ''' Increments the failed login attempts counter for a user
+    ''' </summary>
+    Private Sub IncrementFailedLoginAttempts(userID As Integer, newAttemptCount As Integer)
+        Try
+            Using conn As New SqlConnection(_connectionString)
+                conn.Open()
+                
+                Dim query = """
+                    UPDATE Users 
+                    SET 
+                        FailedLoginAttempts = @attempts,
+                        LastFailedLogin = GETDATE()
+                    WHERE UserID = @userID
+                """
+                
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@userID", userID)
+                    cmd.Parameters.AddWithValue("@attempts", newAttemptCount)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+        Catch ex As Exception
+            Debug.WriteLine($"Error in IncrementFailedLoginAttempts: {ex.Message}")
+            ' Don't throw, as this is a non-critical operation
+        End Try
+    End Sub
+    
+    ''' <summary>
+    ''' Updates the last login timestamp for a user
+    ''' </summary>
+    Private Sub UpdateLastLogin(userID As Integer)
+        Try
+            Using conn As New SqlConnection(_connectionString)
+                conn.Open()
+                
+                Dim query = "UPDATE Users SET LastLogin = GETDATE() WHERE UserID = @userID"
+                
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@userID", userID)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+        Catch ex As Exception
+            Debug.WriteLine($"Error in UpdateLastLogin: {ex.Message}")
+            ' Don't throw, as this is a non-critical operation
+        End Try
+    End Sub
+    
+    ''' <summary>
+    ''' Logs an audit action to the database
+    ''' </summary>
+    Private Sub LogAuditAction(userID As Integer?, action As String, tableName As String, recordID As Integer?, details As String)
+        Try
+            Using conn As New SqlConnection(_connectionString)
+                conn.Open()
+                
+                Dim query = """
+                    INSERT INTO AuditLog (
+                        UserID, 
+                        Action, 
+                        TableName, 
+                        RecordID, 
+                        Details, 
+                        Timestamp
+                    ) VALUES (
+                        @userID, 
+                        @action, 
+                        @tableName, 
+                        @recordID, 
+                        @details, 
+                        GETDATE()
+                    )
+                """
+                
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@userID", If(userID.HasValue, userID.Value, DBNull.Value))
+                    cmd.Parameters.AddWithValue("@action", action)
+                    cmd.Parameters.AddWithValue("@tableName", tableName)
+                    cmd.Parameters.AddWithValue("@recordID", If(recordID.HasValue, recordID.Value, DBNull.Value))
+                    cmd.Parameters.AddWithValue("@details", If(String.IsNullOrEmpty(details), DBNull.Value, details))
+                    
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+        Catch ex As Exception
+            Debug.WriteLine($"Error in LogAuditAction: {ex.Message}")
+            ' Don't throw, as we don't want to interrupt the main operation
+        End Try
+    End Sub
+    
+    #End Region
+    
+    #Region "IDisposable Implementation"
+    
+    Protected Overridable Sub Dispose(disposing As Boolean)
+        If Not _disposed Then
+            If disposing Then
+                ' Dispose managed resources
+                If _connection IsNot Nothing Then
+                    _connection.Dispose()
+                    _connection = Nothing
+                End If
+            End If
+            
+            _disposed = True
+        End If
+    End Sub
+    
+    Public Sub Dispose() Implements IDisposable.Dispose
+        Dispose(True)
+        GC.SuppressFinalize(Me)
+    End Sub
+    
+    Protected Overrides Sub Finalize()
+        Dispose(False)
+    End Sub
+    
+    #End Region
+                ' Format date columns
+                For Each row As DataRow In dt.Rows
+                    ' Format LastLogin
+                    If Not DBNull.Value.Equals(row("LastLogin")) Then
+                        row("LastLogin") = Convert.ToDateTime(row("LastLogin")).ToString("g")
+                    End If
+                    
+                    ' Format LastFailedLogin
+                    If Not DBNull.Value.Equals(row("LastFailedLogin")) Then
+                        row("LastFailedLogin") = Convert.ToDateTime(row("LastFailedLogin")).ToString("g")
+                    End If
+                    
+                    ' Format PasswordLastChanged
+                    If Not DBNull.Value.Equals(row("PasswordLastChanged")) Then
+                        row("PasswordLastChanged") = Convert.ToDateTime(row("PasswordLastChanged")).ToString("d")
+                    End If
+                Next
+                
+            Catch ex As Exception
+                Throw New Exception($"Error loading users: {ex.Message}")
+            End Try
+        End Using
+        Return dt
+    End Function
+
+    ''' <summary>
+    ''' Searches for users based on the provided search term
+    ''' </summary>
+    ''' <param name="searchTerm">The term to search for in username, email, first name, or last name</param>
+    ''' <returns>DataTable containing matching users</returns>
+    Public Function SearchUsers(searchTerm As String) As DataTable
+        If String.IsNullOrWhiteSpace(searchTerm) Then
+            Return GetAllUsers()
+        End If
+        
+        Dim dt As New DataTable()
+        Using conn As New SqlConnection(_connectionString)
+            Try
+                conn.Open()
+                Dim query As String = """
+                    SELECT 
+                        u.UserID, 
+                        u.Username, 
+                        u.Email, 
+                        u.FirstName, 
+                        u.LastName, 
+                        u.RoleID,
+                        r.RoleName,
+                        u.BranchID,
+                        b.BranchName,
+                        u.IsActive, 
+                        u.CreatedDate, 
+                        u.LastLogin,
+                        u.LastFailedLogin,
+                        u.FailedLoginAttempts,
+                        u.PasswordLastChanged,
+                        u.TwoFactorEnabled
+                    FROM Users u 
+                    LEFT JOIN Roles r ON u.RoleID = r.RoleID
+                    LEFT JOIN Branches b ON u.BranchID = b.BranchID 
+                    WHERE u.Username LIKE @search 
+                       OR u.Email LIKE @search 
+                       OR u.FirstName LIKE @search 
+                       OR u.LastName LIKE @search
+                       OR r.RoleName LIKE @search
+                       OR b.BranchName LIKE @search
+                    ORDER BY u.CreatedDate DESC
+                """
+                
+                Dim cmd As New SqlCommand(query, conn)
+                cmd.Parameters.AddWithValue("@search", "%" & searchTerm & "%")
+                
+                Dim adapter As New SqlDataAdapter(cmd)
+                adapter.Fill(dt)
+                
+                ' Format date columns
+                For Each row As DataRow In dt.Rows
+                    ' Format LastLogin
+                    If Not DBNull.Value.Equals(row("LastLogin")) Then
+                        row("LastLogin") = Convert.ToDateTime(row("LastLogin")).ToString("g")
+                    End If
+                    
+                    ' Format LastFailedLogin
+                    If Not DBNull.Value.Equals(row("LastFailedLogin")) Then
+                        row("LastFailedLogin") = Convert.ToDateTime(row("LastFailedLogin")).ToString("g")
+                    End If
+                    
+                    ' Format PasswordLastChanged
+                    If Not DBNull.Value.Equals(row("PasswordLastChanged")) Then
+                        row("PasswordLastChanged") = Convert.ToDateTime(row("PasswordLastChanged")).ToString("d")
+                    End If
+                Next
+                
+            Catch ex As Exception
+                Throw New Exception($"Error searching users: {ex.Message}")
+            End Try
+        End Using
+        Return dt
+    End Function
+
+    Private Function UserExists(conn As SqlConnection, username As String, email As String, Optional excludeUserId As Integer = 0) As Boolean
+        Dim query As String = """
+            SELECT COUNT(*) 
+            FROM Users 
+            WHERE (Username = @username OR Email = @email)
+        """
+        
+        If excludeUserId > 0 Then
+            query &= " AND UserID <> @excludeUserId"
+        End If
+        
+        Using cmd As New SqlCommand(query, conn)
+            cmd.Parameters.AddWithValue("@username", username)
+            cmd.Parameters.AddWithValue("@email", email)
+            
+            If excludeUserId > 0 Then
+                cmd.Parameters.AddWithValue("@excludeUserId", excludeUserId)
+            End If
+            
+            Return Convert.ToInt32(cmd.ExecuteScalar()) > 0
+        End Using
+    End Function
+    
+    Private Function RoleExists(conn As SqlConnection, roleId As Integer) As Boolean
+        Dim query As String = "SELECT COUNT(*) FROM Roles WHERE RoleID = @roleId"
+        
+        Using cmd As New SqlCommand(query, conn)
+            cmd.Parameters.AddWithValue("@roleId", roleId)
+            Return Convert.ToInt32(cmd.ExecuteScalar()) > 0
+        End Using
+    End Function
+    
+    Private Function BranchExists(conn As SqlConnection, branchId As Integer) As Boolean
+        Dim query As String = "SELECT COUNT(*) FROM Branches WHERE BranchID = @branchId AND IsActive = 1"
+        
+        Using cmd As New SqlCommand(query, conn)
+            cmd.Parameters.AddWithValue("@branchId", branchId)
+            Return Convert.ToInt32(cmd.ExecuteScalar()) > 0
+        End Using
+    End Function
+    
+    Private Function GetUserId(conn As SqlConnection, username As String) As Integer
+        Dim query As String = "SELECT UserID FROM Users WHERE Username = @username"
+        
+        Using cmd As New SqlCommand(query, conn)
+            cmd.Parameters.AddWithValue("@username", username)
+            Dim result = cmd.ExecuteScalar()
+            Return If(result IsNot Nothing, Convert.ToInt32(result), 0)
+        End Using
+    End Function
+    
+    Public Function CreateUser(username As String, password As String, email As String, firstName As String, lastName As String, roleID As Integer, branchID As Integer?, isActive As Boolean, twoFactorEnabled As Boolean) As Boolean
+        ' Input validation
+        If String.IsNullOrWhiteSpace(username) Then
+            Throw New ArgumentException("Username is required.", NameOf(username))
+        End If
+        
+        If String.IsNullOrWhiteSpace(password) Then
+            Throw New ArgumentException("Password is required.", NameOf(password))
+        End If
+        
+        If password.Length < minPasswordLength Then
+            Throw New ArgumentException($"Password must be at least {minPasswordLength} characters long.", NameOf(password))
+        End If
+        
+        If String.IsNullOrWhiteSpace(email) OrElse Not IsValidEmail(email) Then
+            Throw New ArgumentException("A valid email address is required.", NameOf(email))
+        End If
+        
+        If String.IsNullOrWhiteSpace(firstName) Then
+            Throw New ArgumentException("First name is required.", NameOf(firstName))
+        End If
+        
+        If String.IsNullOrWhiteSpace(lastName) Then
+            Throw New ArgumentException("Last name is required.", NameOf(lastName))
+        End If
+        
+        Using conn As New SqlConnection(connectionString)
+            Try
+                conn.Open()
+                
+                ' Start a transaction to ensure data consistency
+                Using transaction = conn.BeginTransaction()
+                    Try
+                        ' Check if username or email already exists
+                        If UserExists(conn, username, email) Then
+                            Throw New InvalidOperationException("A user with this username or email already exists.")
+                        End If
+                        
+                        ' Validate role exists
+                        If Not RoleExists(conn, roleID) Then
+                            Throw New InvalidOperationException("The specified role does not exist.")
+                        End If
+                        
+                        ' Validate branch exists if provided
+                        If branchID.HasValue AndAlso Not BranchExists(conn, branchID.Value) Then
+                            Throw New InvalidOperationException("The specified branch does not exist or is inactive.")
+                        End If
+                        
+                        ' Hash the password
+                        Dim hashedPassword As String = BCrypt.Net.BCrypt.HashPassword(password)
+                        Dim currentTime As DateTime = DateTime.UtcNow
+                        
+                        ' Insert new user with all required fields
+                        Dim query As String = """
+                            INSERT INTO Users (
+                                Username, 
+                                Password, 
+                                Email, 
+                                FirstName, 
+                                LastName, 
+                                RoleID, 
+                                BranchID,
+                                IsActive,
+                                CreatedDate,
+                                LastLogin,
+                                LastFailedLogin,
+                                FailedLoginAttempts,
+                                PasswordLastChanged,
+                                TwoFactorEnabled
+                            ) VALUES (
+                                @Username, 
+                                @Password, 
+                                @Email, 
+                                @FirstName, 
+                                @LastName, 
+                                @RoleID, 
+                                @BranchID,
+                                @IsActive,
+                                @CreatedDate,
+                                NULL,  -- LastLogin
+                                NULL,  -- LastFailedLogin
+                                0,     -- FailedLoginAttempts
+                                @PasswordLastChanged,
+                                @TwoFactorEnabled
+                            );
+                            SELECT SCOPE_IDENTITY();
+                        """
+                        
+                        Dim newUserId As Integer
+                        
+                        Using cmd As New SqlCommand(query, conn, transaction)
+                            cmd.Parameters.AddWithValue("@Username", username.Trim())
+                            cmd.Parameters.AddWithValue("@Password", hashedPassword)
+                            cmd.Parameters.AddWithValue("@Email", email.Trim().ToLowerInvariant())
+                            cmd.Parameters.AddWithValue("@FirstName", firstName.Trim())
+                            cmd.Parameters.AddWithValue("@LastName", lastName.Trim())
+                            cmd.Parameters.AddWithValue("@RoleID", roleID)
+                            cmd.Parameters.AddWithValue("@BranchID", If(branchID.HasValue, CObj(branchID.Value), DBNull.Value))
+                            cmd.Parameters.AddWithValue("@IsActive", isActive)
+                            cmd.Parameters.AddWithValue("@CreatedDate", currentTime)
+                            cmd.Parameters.AddWithValue("@PasswordLastChanged", currentTime)
+                            cmd.Parameters.AddWithValue("@TwoFactorEnabled", twoFactorEnabled)
+
+                            ' Get the new user ID
+                            newUserId = Convert.ToInt32(cmd.ExecuteScalar())
+
+                            If newUserId <= 0 Then
+                                Throw New Exception("Failed to create user. No rows were affected.")
+                            End If
+                        End Using
+
+                        ' Log the user creation
+                        LogAuditAction(Nothing, "UserCreated", "Users", newUserId, $"Created user: {username}")
+
+                        ' Commit the transaction if everything succeeded
+                        transaction.Commit()
+                        Return True
+
+                    Catch ex As Exception
+                        ' Rollback the transaction on error
+                        transaction.Rollback()
+                        Throw ' Re-throw the exception to be handled by the outer try-catch
+                    End Try
+                End Using
+
+            Catch ex As Exception
+                ' Log the error and rethrow with a user-friendly message
+                ' Note: In a production environment, you'd want to log the full exception details
+                Throw New Exception($"An error occurred while creating the user: {ex.Message}", ex)
+            End Try
+        End Using
+    End Function
+                    INSERT INTO Users (
+                        Username, 
+                        Email, 
+                        FirstName, 
+                        LastName, 
+                        RoleID, 
+                        BranchID, 
+                        PasswordHash, 
+                        IsActive,
+                        CreatedDate
+                    ) VALUES (
+                        @username, 
+                        @email, 
+                        @firstName, 
+                        @lastName, 
+                        @roleID, 
+                        @branchID, 
+                        @passwordHash, 
+                        1, -- IsActive
+                        GETDATE()
+                    )
+                """
+                
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@username", username)
+                    cmd.Parameters.AddWithValue("@email", email)
+                    cmd.Parameters.AddWithValue("@firstName", firstName)
+                    cmd.Parameters.AddWithValue("@lastName", lastName)
+                    cmd.Parameters.AddWithValue("@roleID", roleID)
+                    cmd.Parameters.AddWithValue("@branchID", If(branchID.HasValue, branchID.Value, DBNull.Value))
+                    cmd.Parameters.AddWithValue("@passwordHash", hashedPassword)
+                    
+                    cmd.ExecuteNonQuery()
+                End Using
+                
+                LogAuditAction(Nothing, "UserCreated", "Users", Nothing, $"Created user: {username}")
+                Return True
+            Catch ex As Exception
+                Throw New Exception($"Error creating user: {ex.Message}")
+            End Try
+        End Using
+    End Function
+
+    Public Function UpdateUser(userID As Integer, username As String, email As String, firstName As String, 
+                             lastName As String, roleID As Integer, branchID As Integer?, isActive As Boolean) As Boolean
+        Using conn As New SqlConnection(connectionString)
+            Try
+                conn.Open()
+                
+                Dim query As String = """
+                    UPDATE Users SET
+                        Username = @username, 
+                        Email = @email, 
+                        FirstName = @firstName, 
+                        LastName = @lastName, 
+                        RoleID = @roleID, 
+                        BranchID = @branchID, 
+                        IsActive = @isActive,
+                        LastModifiedDate = GETDATE()
+                    WHERE UserID = @userID
+                """
+                
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@userID", userID)
+                    cmd.Parameters.AddWithValue("@username", username)
+                    cmd.Parameters.AddWithValue("@email", email)
+                    cmd.Parameters.AddWithValue("@firstName", firstName)
+                    cmd.Parameters.AddWithValue("@lastName", lastName)
+                    cmd.Parameters.AddWithValue("@roleID", roleID)
+                    cmd.Parameters.AddWithValue("@branchID", If(branchID.HasValue, branchID.Value, DBNull.Value))
+                    cmd.Parameters.AddWithValue("@isActive", isActive)
+                    
+                    cmd.ExecuteNonQuery()
+                End Using
+                
+                LogAuditAction(Nothing, "UserUpdated", "Users", userID, $"Updated user: {username}")
+                Return True
+            Catch ex As Exception
+                Throw New Exception($"Error updating user: {ex.Message}")
+            End Try
+        End Using
+    End Function
+
+    ''' <summary>
+    ''' Deactivates a user by setting IsActive to 0 (soft delete)
+    ''' </summary>
+    ''' <param name="userID">The ID of the user to deactivate</param>
+    ''' <returns>True if deactivation was successful, False otherwise</returns>
+    Public Function DeleteUser(userID As Integer) As Boolean
+        Using conn As New SqlConnection(connectionString)
+            Try
+                conn.Open()
+                
+                ' Soft delete by setting IsActive to 0
+                Dim query As String = """
+                    UPDATE Users 
+                    SET 
+                        IsActive = 0,
+                        LastModifiedDate = GETDATE()
+                    WHERE UserID = @userID
+                """
+                
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@userID", userID)
+                    Dim rowsAffected = cmd.ExecuteNonQuery()
+                    
+                    If rowsAffected > 0 Then
+                        LogAuditAction(Nothing, "UserDeactivated", "Users", userID, $"Deactivated user ID: {userID}")
+                        Return True
+                    End If
+                    Return False
+                End Using
+            Catch ex As Exception
+                ' Log the error and rethrow with a user-friendly message
+                Throw New Exception($"Error deactivating user: {ex.Message}")
+            End Try
+        End Using
+    End Function
+
+    Private Sub LogAuditAction(userID As Integer?, action As String, tableName As String, recordID As Integer?, details As String)
+        Using conn As New SqlConnection(connectionString)
+            Try
+                conn.Open()
+                Dim cmd As New SqlCommand("INSERT INTO AuditLog (ID, Action, TableName, RecordID, Details, Timestamp) VALUES (@userID, @action, @tableName, @recordID, @details, GETDATE())", conn)
+                cmd.Parameters.AddWithValue("@userID", If(userID.HasValue, userID.Value, DBNull.Value))
+                cmd.Parameters.AddWithValue("@action", action)
+                cmd.Parameters.AddWithValue("@tableName", tableName)
+                cmd.Parameters.AddWithValue("@recordID", If(recordID.HasValue, recordID.Value, DBNull.Value))
+                cmd.Parameters.AddWithValue("@details", details)
+                cmd.ExecuteNonQuery()
+            Catch ex As Exception
+                ' Silent fail for audit logging to prevent cascading errors
+            End Try
+        End Using
+    End Sub
+End Class

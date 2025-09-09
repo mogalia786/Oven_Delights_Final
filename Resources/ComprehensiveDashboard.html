@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Comprehensive Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        .chart-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .chart-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #333; }
+        canvas { max-height: 300px; }
+        .stats-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; text-align: center; }
+        .stat-value { font-size: 32px; font-weight: bold; }
+        .stat-label { font-size: 14px; opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <div class="stats-cards">
+        <div class="stat-card">
+            <div class="stat-value" id="totalUsers">0</div>
+            <div class="stat-label">Total Users</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="activeUsers">0</div>
+            <div class="stat-label">Active Users</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="totalBranches">0</div>
+            <div class="stat-label">Total Branches</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="activeSessions">0</div>
+            <div class="stat-label">Active Sessions</div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="chart-container">
+            <div class="chart-title">User Activity Status</div>
+            <canvas id="userActivityChart"></canvas>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">Login Frequency (Last 7 Days)</div>
+            <canvas id="loginFrequencyChart"></canvas>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">Branch Distribution</div>
+            <canvas id="branchDistributionChart"></canvas>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">Role-Based Access Matrix</div>
+            <canvas id="roleAccessChart"></canvas>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">Real-Time Session Monitoring</div>
+            <canvas id="sessionMonitoringChart"></canvas>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">Security Alerts Timeline</div>
+            <canvas id="securityAlertsChart"></canvas>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">User Registration Trends</div>
+            <canvas id="registrationTrendsChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // Initialize all charts
+        function initializeCharts() {
+            // 1. User Activity Pie Chart
+            const userActivityCtx = document.getElementById('userActivityChart').getContext('2d');
+            new Chart(userActivityCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Active Users', 'Inactive Users'],
+                    datasets: [{
+                        data: [75, 25],
+                        backgroundColor: ['#4CAF50', '#FF5722']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // 2. Login Frequency Bar Chart
+            const loginFrequencyCtx = document.getElementById('loginFrequencyChart').getContext('2d');
+            new Chart(loginFrequencyCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Logins',
+                        data: [45, 52, 38, 61, 55, 23, 18],
+                        backgroundColor: '#2196F3'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // 3. Branch Distribution Donut Chart
+            const branchDistributionCtx = document.getElementById('branchDistributionChart').getContext('2d');
+            new Chart(branchDistributionCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Head Office', 'Branch A', 'Branch B', 'Branch C'],
+                    datasets: [{
+                        data: [40, 25, 20, 15],
+                        backgroundColor: ['#FF9800', '#9C27B0', '#00BCD4', '#8BC34A']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // 4. Role-Based Access Heatmap
+            const roleAccessCtx = document.getElementById('roleAccessChart').getContext('2d');
+            new Chart(roleAccessCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Super Admin', 'Branch Admin', 'Manager', 'User', 'Viewer'],
+                    datasets: [{
+                        label: 'Access Level',
+                        data: [100, 80, 60, 40, 20],
+                        backgroundColor: ['#F44336', '#FF9800', '#FFEB3B', '#4CAF50', '#2196F3']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // 5. Real-Time Session Monitoring
+            const sessionMonitoringCtx = document.getElementById('sessionMonitoringChart').getContext('2d');
+            new Chart(sessionMonitoringCtx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => i + ':00'),
+                    datasets: [{
+                        label: 'Active Sessions',
+                        data: [5, 3, 2, 1, 2, 8, 15, 25, 35, 42, 38, 45, 48, 52, 49, 46, 41, 35, 28, 22, 18, 12, 8, 6],
+                        borderColor: '#E91E63',
+                        fill: false
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // 6. Security Alerts Timeline
+            const securityAlertsCtx = document.getElementById('securityAlertsChart').getContext('2d');
+            new Chart(securityAlertsCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Security Alerts',
+                        data: [12, 8, 15, 6, 9, 4],
+                        borderColor: '#FF5722',
+                        backgroundColor: 'rgba(255, 87, 34, 0.1)',
+                        fill: true
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // 7. User Registration Trends
+            const registrationTrendsCtx = document.getElementById('registrationTrendsChart').getContext('2d');
+            new Chart(registrationTrendsCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'New Users',
+                        data: [25, 32, 28, 45, 38, 52],
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        fill: true
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // Update stats
+            updateStats();
+        }
+
+        function updateStats() {
+            document.getElementById('totalUsers').textContent = '156';
+            document.getElementById('activeUsers').textContent = '142';
+            document.getElementById('totalBranches').textContent = '8';
+            document.getElementById('activeSessions').textContent = '47';
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializeCharts);
+        
+        // Auto-refresh every 30 seconds
+        setInterval(updateStats, 30000);
+    </script>
+</body>
+</html>
