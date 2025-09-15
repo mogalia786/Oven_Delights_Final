@@ -62,6 +62,16 @@ Public Class InvoiceCaptureForm
             ' Non-fatal for runtime styling
         End Try
 
+        ' Wire events (moved out of InitializeComponent to be designer-safe)
+        Try
+            AddHandler cboSupplier.SelectedIndexChanged, AddressOf cboSupplier_SelectedIndexChanged
+            AddHandler dgvLines.DataBindingComplete, AddressOf dgvLines_DataBindingComplete
+            AddHandler dgvLines.RowsAdded, AddressOf dgvLines_RowsAdded
+            AddHandler dgvLines.CellValueChanged, AddressOf dgvLines_CellValueChanged
+            AddHandler dgvLines.CurrentCellDirtyStateChanged, AddressOf dgvLines_CurrentCellDirtyStateChanged
+        Catch
+        End Try
+
         ' Load supplier data so the header controls and grid can be used immediately
         Try
             LoadSuppliers()
@@ -164,13 +174,6 @@ Public Class InvoiceCaptureForm
         ' Form padding and controls order (working order)
         Me.Padding = New Padding(0)
         Me.Controls.AddRange(New Control() {dgvLines, pnlBottom, pnlTop})
-
-        ' Wire events
-        AddHandler cboSupplier.SelectedIndexChanged, AddressOf cboSupplier_SelectedIndexChanged
-        AddHandler dgvLines.DataBindingComplete, AddressOf dgvLines_DataBindingComplete
-        AddHandler dgvLines.RowsAdded, AddressOf dgvLines_RowsAdded
-        AddHandler dgvLines.CellValueChanged, AddressOf dgvLines_CellValueChanged
-        AddHandler dgvLines.CurrentCellDirtyStateChanged, AddressOf dgvLines_CurrentCellDirtyStateChanged
 
         ' Dashboard (collapsed)
         dashboardPanel = New Panel() With {.Dock = DockStyle.Right, .Width = 0, .Visible = False}

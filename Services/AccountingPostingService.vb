@@ -113,9 +113,22 @@ Public Class AccountingPostingService
         Return GetSystemAccountId("WIP")
     End Function
 
-    Private Function GetSystemAccountId(key As String) As Integer
-        ' Placeholder: swap for table-driven config if present
-        ' For now, assume a mapping table or a view exists. Return 0 to force caller to validate.
+    Public Function GetSystemAccountId(key As String) As Integer
+        If String.IsNullOrWhiteSpace(key) Then Return 0
+        Try
+            Using cn As New SqlConnection(_connStr)
+                Using cmd As New SqlCommand("SELECT AccountID FROM dbo.SystemAccounts WHERE SysKey = @k", cn)
+                    cmd.Parameters.AddWithValue("@k", key)
+                    cn.Open()
+                    Dim obj = cmd.ExecuteScalar()
+                    If obj IsNot Nothing AndAlso Not Convert.IsDBNull(obj) Then
+                        Dim id As Integer
+                        If Integer.TryParse(obj.ToString(), id) Then Return id
+                    End If
+                End Using
+            End Using
+        Catch
+        End Try
         Return 0
     End Function
 
@@ -127,5 +140,226 @@ Public Class AccountingPostingService
         ' 2) If missing, create under AP Control parent.
         ' 3) Return AccountID.
         Return 0
+    End Function
+
+    ' ============ AP (Suppliers) ============
+    Public Function PostAPSupplierInvoice(invoiceId As Integer, supplierId As Integer, journalDate As Date, amount As Decimal, useGRNI As Boolean, reference As String, description As String, createdBy As Integer, branchId As Integer) As Integer
+        Using cn As New SqlConnection(_connStr)
+            Using cmd As New SqlCommand("sp_AP_Post_SupplierInvoice", cn)
+                cmd.CommandType = CommandType.StoredProcedure
+                cmd.Parameters.AddWithValue("@InvoiceID", invoiceId)
+                cmd.Parameters.AddWithValue("@SupplierID", supplierId)
+                cmd.Parameters.AddWithValue("@JournalDate", journalDate)
+                cmd.Parameters.AddWithValue("@Amount", amount)
+                cmd.Parameters.AddWithValue("@UseGRNI", If(useGRNI, 1, 0))
+                cmd.Parameters.AddWithValue("@Reference", If(reference, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@Description", If(description, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@CreatedBy", createdBy)
+                cmd.Parameters.AddWithValue("@BranchID", branchId)
+                Dim outParam As New SqlParameter("@JournalID", SqlDbType.Int) With {.Direction = ParameterDirection.Output}
+                cmd.Parameters.Add(outParam)
+                cn.Open()
+                cmd.ExecuteNonQuery()
+                Return Convert.ToInt32(outParam.Value)
+            End Using
+        End Using
+    End Function
+
+    Public Function PostAPSupplierCredit(creditNoteId As Integer, supplierId As Integer, journalDate As Date, amount As Decimal, usePurchaseReturns As Boolean, reference As String, description As String, createdBy As Integer, branchId As Integer) As Integer
+        Using cn As New SqlConnection(_connStr)
+            Using cmd As New SqlCommand("sp_AP_Post_SupplierCredit", cn)
+                cmd.CommandType = CommandType.StoredProcedure
+                cmd.Parameters.AddWithValue("@CreditNoteID", creditNoteId)
+                cmd.Parameters.AddWithValue("@SupplierID", supplierId)
+                cmd.Parameters.AddWithValue("@JournalDate", journalDate)
+                cmd.Parameters.AddWithValue("@Amount", amount)
+                cmd.Parameters.AddWithValue("@UsePurchaseReturns", If(usePurchaseReturns, 1, 0))
+                cmd.Parameters.AddWithValue("@Reference", If(reference, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@Description", If(description, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@CreatedBy", createdBy)
+                cmd.Parameters.AddWithValue("@BranchID", branchId)
+                Dim outParam As New SqlParameter("@JournalID", SqlDbType.Int) With {.Direction = ParameterDirection.Output}
+                cmd.Parameters.Add(outParam)
+                cn.Open()
+                cmd.ExecuteNonQuery()
+                Return Convert.ToInt32(outParam.Value)
+            End Using
+        End Using
+    End Function
+
+    Public Function PostAPSupplierPayment(paymentId As Integer, supplierId As Integer, journalDate As Date, amount As Decimal, reference As String, description As String, createdBy As Integer, branchId As Integer) As Integer
+        Using cn As New SqlConnection(_connStr)
+            Using cmd As New SqlCommand("sp_AP_Post_SupplierPayment", cn)
+                cmd.CommandType = CommandType.StoredProcedure
+                cmd.Parameters.AddWithValue("@PaymentID", paymentId)
+                cmd.Parameters.AddWithValue("@SupplierID", supplierId)
+                cmd.Parameters.AddWithValue("@JournalDate", journalDate)
+                cmd.Parameters.AddWithValue("@Amount", amount)
+                cmd.Parameters.AddWithValue("@Reference", If(reference, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@Description", If(description, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@CreatedBy", createdBy)
+                cmd.Parameters.AddWithValue("@BranchID", branchId)
+                Dim outParam As New SqlParameter("@JournalID", SqlDbType.Int) With {.Direction = ParameterDirection.Output}
+                cmd.Parameters.Add(outParam)
+                cn.Open()
+                cmd.ExecuteNonQuery()
+                Return Convert.ToInt32(outParam.Value)
+            End Using
+        End Using
+    End Function
+
+    ' ============ AR (Customers) ============
+    Public Function PostARCustomerInvoice(invoiceId As Integer, customerId As Integer, journalDate As Date, netAmount As Decimal, vatAmount As Decimal, cogsAmount As Decimal, reference As String, description As String, createdBy As Integer, branchId As Integer) As Integer
+        Using cn As New SqlConnection(_connStr)
+            Using cmd As New SqlCommand("sp_AR_Post_CustomerInvoice", cn)
+                cmd.CommandType = CommandType.StoredProcedure
+                cmd.Parameters.AddWithValue("@InvoiceID", invoiceId)
+                cmd.Parameters.AddWithValue("@CustomerID", customerId)
+                cmd.Parameters.AddWithValue("@JournalDate", journalDate)
+                cmd.Parameters.AddWithValue("@NetAmount", netAmount)
+                cmd.Parameters.AddWithValue("@VATAmount", vatAmount)
+                cmd.Parameters.AddWithValue("@COGSAmount", cogsAmount)
+                cmd.Parameters.AddWithValue("@Reference", If(reference, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@Description", If(description, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@CreatedBy", createdBy)
+                cmd.Parameters.AddWithValue("@BranchID", branchId)
+                Dim outParam As New SqlParameter("@JournalID", SqlDbType.Int) With {.Direction = ParameterDirection.Output}
+                cmd.Parameters.Add(outParam)
+                cn.Open()
+                cmd.ExecuteNonQuery()
+                Return Convert.ToInt32(outParam.Value)
+            End Using
+        End Using
+    End Function
+
+    Public Function PostARCustomerCredit(creditNoteId As Integer, customerId As Integer, journalDate As Date, netAmount As Decimal, vatAmount As Decimal, cogsReturn As Decimal, reference As String, description As String, createdBy As Integer, branchId As Integer) As Integer
+        Using cn As New SqlConnection(_connStr)
+            Using cmd As New SqlCommand("sp_AR_Post_CustomerCredit", cn)
+                cmd.CommandType = CommandType.StoredProcedure
+                cmd.Parameters.AddWithValue("@CreditNoteID", creditNoteId)
+                cmd.Parameters.AddWithValue("@CustomerID", customerId)
+                cmd.Parameters.AddWithValue("@JournalDate", journalDate)
+                cmd.Parameters.AddWithValue("@NetAmount", netAmount)
+                cmd.Parameters.AddWithValue("@VATAmount", vatAmount)
+                cmd.Parameters.AddWithValue("@COGSReturn", cogsReturn)
+                cmd.Parameters.AddWithValue("@Reference", If(reference, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@Description", If(description, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@CreatedBy", createdBy)
+                cmd.Parameters.AddWithValue("@BranchID", branchId)
+                Dim outParam As New SqlParameter("@JournalID", SqlDbType.Int) With {.Direction = ParameterDirection.Output}
+                cmd.Parameters.Add(outParam)
+                cn.Open()
+                cmd.ExecuteNonQuery()
+                Return Convert.ToInt32(outParam.Value)
+            End Using
+        End Using
+    End Function
+
+    Public Function PostARCustomerReceipt(receiptId As Integer, customerId As Integer, journalDate As Date, amount As Decimal, reference As String, description As String, createdBy As Integer, branchId As Integer) As Integer
+        Using cn As New SqlConnection(_connStr)
+            Using cmd As New SqlCommand("sp_AR_Post_CustomerReceipt", cn)
+                cmd.CommandType = CommandType.StoredProcedure
+                cmd.Parameters.AddWithValue("@ReceiptID", receiptId)
+                cmd.Parameters.AddWithValue("@CustomerID", customerId)
+                cmd.Parameters.AddWithValue("@JournalDate", journalDate)
+                cmd.Parameters.AddWithValue("@Amount", amount)
+                cmd.Parameters.AddWithValue("@Reference", If(reference, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@Description", If(description, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@CreatedBy", createdBy)
+                cmd.Parameters.AddWithValue("@BranchID", branchId)
+                Dim outParam As New SqlParameter("@JournalID", SqlDbType.Int) With {.Direction = ParameterDirection.Output}
+                cmd.Parameters.Add(outParam)
+                cn.Open()
+                cmd.ExecuteNonQuery()
+                Return Convert.ToInt32(outParam.Value)
+            End Using
+        End Using
+    End Function
+
+    ' ============ Expenses ============
+    Public Function PostExpenseBill(expenseId As Integer, journalDate As Date, expenseAccountId As Integer, netAmount As Decimal, vatAmount As Decimal, viaAP As Boolean, reference As String, description As String, createdBy As Integer, branchId As Integer) As Integer
+        Using cn As New SqlConnection(_connStr)
+            Using cmd As New SqlCommand("sp_Exp_Post_Bill", cn)
+                cmd.CommandType = CommandType.StoredProcedure
+                cmd.Parameters.AddWithValue("@ExpenseID", expenseId)
+                cmd.Parameters.AddWithValue("@JournalDate", journalDate)
+                cmd.Parameters.AddWithValue("@ExpenseAccountID", expenseAccountId)
+                cmd.Parameters.AddWithValue("@NetAmount", netAmount)
+                cmd.Parameters.AddWithValue("@VATAmount", vatAmount)
+                cmd.Parameters.AddWithValue("@ViaAP", If(viaAP, 1, 0))
+                cmd.Parameters.AddWithValue("@Reference", If(reference, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@Description", If(description, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@CreatedBy", createdBy)
+                cmd.Parameters.AddWithValue("@BranchID", branchId)
+                Dim outParam As New SqlParameter("@JournalID", SqlDbType.Int) With {.Direction = ParameterDirection.Output}
+                cmd.Parameters.Add(outParam)
+                cn.Open()
+                cmd.ExecuteNonQuery()
+                Return Convert.ToInt32(outParam.Value)
+            End Using
+        End Using
+    End Function
+
+    Public Function PostExpensePayment(paymentId As Integer, journalDate As Date, amount As Decimal, reference As String, description As String, createdBy As Integer, branchId As Integer) As Integer
+        Using cn As New SqlConnection(_connStr)
+            Using cmd As New SqlCommand("sp_Exp_Post_Payment", cn)
+                cmd.CommandType = CommandType.StoredProcedure
+                cmd.Parameters.AddWithValue("@PaymentID", paymentId)
+                cmd.Parameters.AddWithValue("@JournalDate", journalDate)
+                cmd.Parameters.AddWithValue("@Amount", amount)
+                cmd.Parameters.AddWithValue("@Reference", If(reference, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@Description", If(description, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@CreatedBy", createdBy)
+                cmd.Parameters.AddWithValue("@BranchID", branchId)
+                Dim outParam As New SqlParameter("@JournalID", SqlDbType.Int) With {.Direction = ParameterDirection.Output}
+                cmd.Parameters.Add(outParam)
+                cn.Open()
+                cmd.ExecuteNonQuery()
+                Return Convert.ToInt32(outParam.Value)
+            End Using
+        End Using
+    End Function
+
+    ' ============ Bank ============
+    Public Function PostBankCharge(chargeId As Integer, journalDate As Date, amount As Decimal, reference As String, description As String, createdBy As Integer, branchId As Integer) As Integer
+        Using cn As New SqlConnection(_connStr)
+            Using cmd As New SqlCommand("sp_Bank_Post_Charge", cn)
+                cmd.CommandType = CommandType.StoredProcedure
+                cmd.Parameters.AddWithValue("@ChargeID", chargeId)
+                cmd.Parameters.AddWithValue("@JournalDate", journalDate)
+                cmd.Parameters.AddWithValue("@Amount", amount)
+                cmd.Parameters.AddWithValue("@Reference", If(reference, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@Description", If(description, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@CreatedBy", createdBy)
+                cmd.Parameters.AddWithValue("@BranchID", branchId)
+                Dim outParam As New SqlParameter("@JournalID", SqlDbType.Int) With {.Direction = ParameterDirection.Output}
+                cmd.Parameters.Add(outParam)
+                cn.Open()
+                cmd.ExecuteNonQuery()
+                Return Convert.ToInt32(outParam.Value)
+            End Using
+        End Using
+    End Function
+
+    Public Function PostBankTransfer(transferId As Integer, journalDate As Date, amount As Decimal, fromBankAccountId As Integer, toBankAccountId As Integer, reference As String, description As String, createdBy As Integer, branchId As Integer) As Integer
+        Using cn As New SqlConnection(_connStr)
+            Using cmd As New SqlCommand("sp_Bank_Post_Transfer", cn)
+                cmd.CommandType = CommandType.StoredProcedure
+                cmd.Parameters.AddWithValue("@TransferID", transferId)
+                cmd.Parameters.AddWithValue("@JournalDate", journalDate)
+                cmd.Parameters.AddWithValue("@Amount", amount)
+                cmd.Parameters.AddWithValue("@FromBankAccountID", fromBankAccountId)
+                cmd.Parameters.AddWithValue("@ToBankAccountID", toBankAccountId)
+                cmd.Parameters.AddWithValue("@Reference", If(reference, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@Description", If(description, CType(DBNull.Value, Object)))
+                cmd.Parameters.AddWithValue("@CreatedBy", createdBy)
+                cmd.Parameters.AddWithValue("@BranchID", branchId)
+                Dim outParam As New SqlParameter("@JournalID", SqlDbType.Int) With {.Direction = ParameterDirection.Output}
+                cmd.Parameters.Add(outParam)
+                cn.Open()
+                cmd.ExecuteNonQuery()
+                Return Convert.ToInt32(outParam.Value)
+            End Using
+        End Using
     End Function
 End Class

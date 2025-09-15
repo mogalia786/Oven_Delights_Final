@@ -8,12 +8,15 @@ Partial Class AuditLogViewer
     Inherits Form
 
     Private connectionString As String
+    Private ReadOnly _cboUser As New ComboBox()
 
     Public Sub New()
         InitializeComponent()
         connectionString = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
-        LoadAuditLogs()
+        EnsureAuditLogTable()
         SetupDateFilters()
+        SetupUserDropdown()
+        LoadAuditLogs()
     End Sub
 
     Private Sub SetupDateFilters()
@@ -33,6 +36,58 @@ Partial Class AuditLogViewer
         cboAction.SelectedIndex = 0
     End Sub
 
+    Private Sub SetupUserDropdown()
+        Try
+            ' Place dropdown near existing controls if not on designer
+            If _cboUser.Parent Is Nothing Then
+                _cboUser.DropDownStyle = ComboBoxStyle.DropDownList
+                _cboUser.Width = 220
+                _cboUser.Name = "_cboUser"
+                ' Try to align top row
+                _cboUser.Left = If(cboAction IsNot Nothing, cboAction.Right + 12, 12)
+                _cboUser.Top = If(cboAction IsNot Nothing, cboAction.Top, 8)
+                Me.Controls.Add(_cboUser)
+            End If
+            LoadUsersIntoDropdown()
+            AddHandler _cboUser.SelectedIndexChanged, Sub() LoadAuditLogs()
+        Catch
+        End Try
+    End Sub
+
+    Private Sub LoadUsersIntoDropdown()
+        Dim isSuper As Boolean = String.Equals(AppSession.CurrentRoleName, "Super Administrator", StringComparison.OrdinalIgnoreCase)
+        Dim branchId As Integer = 0
+        Try
+            branchId = If(AppSession.CurrentUser IsNot Nothing AndAlso AppSession.CurrentUser.BranchID.HasValue, AppSession.CurrentUser.BranchID.Value, 0)
+        Catch
+            branchId = 0
+        End Try
+        Dim dt As New DataTable()
+        Using conn As New SqlConnection(connectionString)
+            conn.Open()
+            Dim sql As String = "SELECT u.UserID, u.Username, u.BranchID FROM dbo.Users u"
+            If Not isSuper AndAlso branchId > 0 Then
+                sql &= " WHERE u.BranchID = @b"
+            End If
+            sql &= " ORDER BY u.Username"
+            Using da As New SqlDataAdapter(sql, conn)
+                If Not isSuper AndAlso branchId > 0 Then da.SelectCommand.Parameters.AddWithValue("@b", branchId)
+                da.Fill(dt)
+            End Using
+        End Using
+        Dim list As New List(Of KeyValuePair(Of Integer, String))()
+        list.Add(New KeyValuePair(Of Integer, String)(0, If(String.Equals(AppSession.CurrentRoleName, "Super Administrator", StringComparison.OrdinalIgnoreCase), "All Users (All Branches)", "All Users (My Branch)")))
+        For Each r As DataRow In dt.Rows
+            Dim id As Integer = Convert.ToInt32(r("UserID"))
+            Dim name As String = Convert.ToString(r("Username"))
+            list.Add(New KeyValuePair(Of Integer, String)(id, name))
+        Next
+        _cboUser.DataSource = list
+        _cboUser.ValueMember = "Key"
+        _cboUser.DisplayMember = "Value"
+        _cboUser.SelectedIndex = 0
+    End Sub
+
     Private Sub LoadAuditLogs()
         dgvAuditLog.DataSource = GetAuditLogs()
         dgvAuditLog.AutoResizeColumns()
@@ -49,15 +104,23 @@ Partial Class AuditLogViewer
             Try
                 conn.Open()
                 Dim sql As String = "SELECT a.AuditID, u.Username, a.Action, a.TableName, a.RecordID, a.Details, a.Timestamp, a.IPAddress " &
-                                   "FROM AuditLog a LEFT JOIN Users u ON a.UserID = u.UserID " &
+                                   "FROM dbo.AuditLog a LEFT JOIN dbo.Users u ON a.UserID = u.UserID " &
                                    "WHERE a.Timestamp >= @fromDate AND a.Timestamp <= @toDate"
                 
                 If cboAction.SelectedIndex > 0 Then
                     sql &= " AND a.Action = @action"
                 End If
-                
-                If Not String.IsNullOrWhiteSpace(txtUserFilter.Text) Then
-                    sql &= " AND u.Username LIKE @username"
+                ' Filter by selected user if chosen
+                Dim selectedUserId As Integer = 0
+                Try
+                    If _cboUser IsNot Nothing AndAlso _cboUser.SelectedValue IsNot Nothing AndAlso Not TypeOf _cboUser.SelectedValue Is DBNull Then
+                        selectedUserId = Convert.ToInt32(_cboUser.SelectedValue)
+                    End If
+                Catch
+                    selectedUserId = 0
+                End Try
+                If selectedUserId > 0 Then
+                    sql &= " AND a.UserID = @uid"
                 End If
                 
                 sql &= " ORDER BY a.Timestamp DESC"
@@ -69,9 +132,8 @@ Partial Class AuditLogViewer
                 If cboAction.SelectedIndex > 0 Then
                     cmd.Parameters.AddWithValue("@action", cboAction.SelectedItem.ToString())
                 End If
-                
-                If Not String.IsNullOrWhiteSpace(txtUserFilter.Text) Then
-                    cmd.Parameters.AddWithValue("@username", "%" & txtUserFilter.Text.Trim() & "%")
+                If selectedUserId > 0 Then
+                    cmd.Parameters.AddWithValue("@uid", selectedUserId)
                 End If
                 
                 Dim adapter As New SqlDataAdapter(cmd)
@@ -82,6 +144,29 @@ Partial Class AuditLogViewer
         End Using
         Return dt
     End Function
+
+    Private Sub EnsureAuditLogTable()
+        Try
+            Using conn As New SqlConnection(connectionString)
+                conn.Open()
+                Dim sql As String = "IF OBJECT_ID('dbo.AuditLog','U') IS NULL BEGIN " & _
+                                    "CREATE TABLE dbo.AuditLog (" & _
+                                    " AuditID INT IDENTITY(1,1) PRIMARY KEY, " & _
+                                    " UserID INT NULL, " & _
+                                    " Action NVARCHAR(100) NOT NULL, " & _
+                                    " TableName NVARCHAR(128) NULL, " & _
+                                    " RecordID NVARCHAR(100) NULL, " & _
+                                    " Details NVARCHAR(MAX) NULL, " & _
+                                    " Timestamp DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(), " & _
+                                    " IPAddress NVARCHAR(45) NULL ); END;"
+                Using cmd As New SqlCommand(sql, conn)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+        Catch
+            ' best-effort only
+        End Try
+    End Sub
 
     Private Sub btnFilter_Click(sender As Object, e As EventArgs) Handles btnFilter.Click
         LoadAuditLogs()

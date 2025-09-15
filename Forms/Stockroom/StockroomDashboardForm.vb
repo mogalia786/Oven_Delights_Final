@@ -69,6 +69,10 @@ Namespace Stockroom
             pnlGrid.Controls.Add(CreateTile("In-Transit", "--", "Transfers"), 1, 1)
             pnlGrid.Controls.Add(CreateTile("Manufacturer Pending Queries", "--", "By Manufacturer"), 2, 1)
             pnlGrid.Controls.Add(CreateTile("Stockroom Fulfilled Queries", "--", "Stockroom"), 0, 2)
+            ' New: Inter-Branch Pending Requests tile with click to open Requests List
+            pnlGrid.Controls.Add(CreateActionTile("Pending Branch Requests", "Click to open Requests List", AddressOf OpenInterBranchRequestsList), 1, 2)
+            ' New: Cross-Branch Stock Lookup tile
+            pnlGrid.Controls.Add(CreateActionTile("Cross-Branch Lookup", "Find stock across branches", AddressOf OpenCrossBranchLookup), 2, 2)
 
             Controls.Add(header)
             Controls.Add(btnClose)
@@ -81,6 +85,7 @@ Namespace Stockroom
                                       LoadMfgPendingGridSafely()
                                       LoadFulfilledGridSafely()
                                   End Sub
+
             ' constructor continues below to finish UI initialization
 
         ' (method moved below constructor)
@@ -131,6 +136,26 @@ Namespace Stockroom
                                             End If
                                          End Sub
 
+        End Sub
+
+        Private Sub OpenInterBranchRequestsList()
+            Try
+                Using f As New InterBranchRequestsListForm()
+                    f.ShowDialog(Me)
+                End Using
+            Catch ex As Exception
+                MessageBox.Show(Me, "Failed to open Inter-Branch Requests: " & ex.Message, "Stockroom Dashboard", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
+        End Sub
+
+        Private Sub OpenCrossBranchLookup()
+            Try
+                Using f As New CrossBranchLookupForm()
+                    f.ShowDialog(Me)
+                End Using
+            Catch ex As Exception
+                MessageBox.Show(Me, "Failed to open Cross-Branch Lookup: " & ex.Message, "Stockroom Dashboard", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
         End Sub
 
         Private Sub OpenStockroomFulfillWithSelection(internalOrderId As Integer)
@@ -321,6 +346,44 @@ Namespace Stockroom
             AddHandler lblValue.Click, Sub() OpenStockroomFulfill(autoShortage)
             AddHandler lblSub.Click, Sub() OpenStockroomFulfill(autoShortage)
             If Not tileValues.ContainsKey(title) Then tileValues.Add(title, lblValue)
+            Return panel
+        End Function
+
+        ' Lightweight action tile with a title and subtitle that invokes a zero-argument action on click.
+        ' Accepts an Action delegate so callers can pass AddressOf SomeSub with no parameters.
+        Private Function CreateActionTile(title As String, subtitle As String, clickAction As System.Action) As Control
+            Dim panel As New Panel()
+            panel.Margin = New Padding(8)
+            panel.Padding = New Padding(16)
+            panel.BackColor = Color.FromArgb(240, 245, 255) ' slightly tinted to indicate click target
+            panel.BorderStyle = BorderStyle.FixedSingle
+            panel.Dock = DockStyle.Fill
+
+            Dim lblTitle As New Label() With {
+                .Text = title,
+                .Font = New Font("Segoe UI", 10.0F, FontStyle.Bold),
+                .AutoSize = True,
+                .Location = New Point(8, 8)
+            }
+            Dim lblSub As New Label() With {
+                .Text = subtitle,
+                .Font = New Font("Segoe UI", 9.0F, FontStyle.Regular),
+                .AutoSize = True,
+                .ForeColor = Color.DimGray,
+                .Location = New Point(8, 34)
+            }
+
+            panel.Controls.Add(lblTitle)
+            panel.Controls.Add(lblSub)
+
+            ' Wire click on panel and labels to the provided action using a lambda to match EventHandler signature
+            Dim handler As EventHandler = Sub(sender, e)
+                                              If clickAction IsNot Nothing Then clickAction()
+                                          End Sub
+            AddHandler panel.Click, handler
+            AddHandler lblTitle.Click, handler
+            AddHandler lblSub.Click, handler
+
             Return panel
         End Function
 

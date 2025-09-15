@@ -6,6 +6,34 @@ Imports System.Diagnostics
 
 
 Public Class LoginForm
+    Private Sub LoginForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        Try
+            ' Test database connection with timeout handling
+            Dim connStr As String = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString")?.ConnectionString
+            If String.IsNullOrEmpty(connStr) Then
+                MessageBox.Show("Database connection string not found in App.config", "Configuration Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+            
+            ' Quick connection test with short timeout
+            Using conn As New SqlConnection(connStr)
+                ' Note: ConnectionTimeout is read-only, set in connection string instead
+                conn.Open()
+                conn.Close()
+            End Using
+            
+            ' If we get here, database is accessible
+            Me.Text = "Oven Delights ERP - Login (Database Connected)"
+            
+        Catch ex As SqlException
+            MessageBox.Show($"Database connection failed: {ex.Message}{Environment.NewLine}Please check your database server is running.", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Me.Text = "Oven Delights ERP - Login (Database Offline)"
+        Catch ex As Exception
+            MessageBox.Show($"Connection test failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Me.Text = "Oven Delights ERP - Login (Connection Error)"
+        End Try
+    End Sub
+
     Private Sub btnLogin_Click(sender As Object, e As EventArgs) Handles btnLogin.Click
         Dim username As String = txtEmail.Text.Trim()
         Dim password As String = txtPassword.Text.Trim()

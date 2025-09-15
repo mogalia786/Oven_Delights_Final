@@ -15,6 +15,13 @@
     <Import Include="System.Windows.Forms" />
   </ItemGroup>
 
+  <!-- Stop implicit include of MainDashboard.resx and OLD files -->
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);MainDashboard.resx;*_OLD.*</DefaultItemExcludes>
+  </PropertyGroup>
+
+
+
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0" />
@@ -43,30 +50,27 @@
     </EmbeddedResource>
   </ItemGroup>
 
-  <!-- Explicitly include resources once and remove implicit duplicates to fix MSB3577 -->
-  <ItemGroup>
-    <EmbeddedResource Remove="AuditLogViewer.resx" />
-    <EmbeddedResource Include="AuditLogViewer.resx">
-      <DependentUpon>AuditLogViewer.vb</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Remove="BranchManagementForm.resx" />
-    <EmbeddedResource Include="BranchManagementForm.resx">
-      <DependentUpon>BranchManagementForm.vb</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Remove="LoginForm.resx" />
-    <EmbeddedResource Include="LoginForm.resx">
-      <DependentUpon>LoginForm.vb</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Remove="MainDashboard.resx" />
-    <EmbeddedResource Include="MainDashboard.resx">
-      <DependentUpon>MainDashboard.vb</DependentUpon>
-    </EmbeddedResource>
-  </ItemGroup>
+  <!-- Keep default SDK implicit resx includes; only strip prototypes -->
 
   <!-- Exclude prototype resources to avoid duplicate logical names (e.g. LoginForm.resources) -->
   <ItemGroup>
     <Compile Remove="POS Prototypes\**\*.vb" />
     <EmbeddedResource Remove="POS Prototypes\**\*.resx" />
+    <!-- Extra guard: explicitly remove prototype MainDashboard.resx to avoid duplicate Oven_Delights_ERP.MainDashboard.resources -->
+    <EmbeddedResource Remove="POS Prototypes\Oven Delights POS\OvenDelightsERP\Forms\MainDashboard.resx" />
   </ItemGroup>
+
+  <!-- Temporarily exclude Retail menus resx to eliminate resource collision -->
+  <ItemGroup>
+    <EmbeddedResource Remove="Forms\Retail\MainDashboard.RetailMenus.resx" />
+  </ItemGroup>
+
+  <!-- Explicitly include only the root MainDashboard.resx once -->
+  <ItemGroup>
+    <EmbeddedResource Include="MainDashboard.resx">
+      <DependentUpon>MainDashboard.vb</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+
 
 </Project>

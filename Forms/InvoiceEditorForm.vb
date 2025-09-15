@@ -39,8 +39,9 @@ Public Class InvoiceEditorForm
     Private btnClose As Button
 
     ' State
-    Private currentBranchId As Integer
-    Private currentUserId As Integer
+    Private ReadOnly _branchId As Integer
+    Private ReadOnly _userId As Integer
+    Private WithEvents cboProduct As ComboBox
     Private currentInvoiceId As Integer = 0
     Private isBindingTopGrid As Boolean = False
 
@@ -49,6 +50,23 @@ Public Class InvoiceEditorForm
         InitializeComponent()
         Me.Text = "View / Edit Invoices"
         Me.WindowState = FormWindowState.Maximized
+        ' Wire events outside InitializeComponent to avoid designer errors
+        AddHandler Me.Load, AddressOf InvoiceEditorForm_Load
+    End Sub
+
+    Private Sub InvoiceEditorForm_Load(sender As Object, e As EventArgs)
+        Try
+            AddHandler btnLoad.Click, AddressOf btnLoad_Click
+            AddHandler cboSupplier.SelectedIndexChanged, AddressOf cboSupplier_SelectedIndexChanged
+            AddHandler dtpFrom.ValueChanged, AddressOf OnDateFilterChanged
+            AddHandler dtpTo.ValueChanged, AddressOf OnDateFilterChanged
+            AddHandler dgvResults.SelectionChanged, AddressOf dgvResults_SelectionChanged
+            AddHandler dgvResults.CellClick, AddressOf dgvResults_CellClick
+            AddHandler dgvLines.CellValueChanged, AddressOf dgvLines_CellValueChanged
+            AddHandler dgvLines.CurrentCellDirtyStateChanged, Sub(s, ea) If dgvLines.IsCurrentCellDirty Then dgvLines.CommitEdit(DataGridViewDataErrorContexts.Commit)
+            AddHandler dgvLines.DataBindingComplete, AddressOf dgvLines_DataBindingComplete
+        Catch
+        End Try
     End Sub
 
     Private Sub cboPO_SelectedIndexChanged(sender As Object, e As EventArgs)
@@ -115,8 +133,23 @@ Public Class InvoiceEditorForm
         InitializeComponent()
         Me.Text = "View / Edit Invoices"
         Me.WindowState = FormWindowState.Maximized
-        currentBranchId = branchId
-        currentUserId = userId
+        _branchId = branchId
+        _userId = userId
+        
+        ' Create and setup product dropdown
+        If pnlSearch IsNot Nothing Then
+            ' Load products using ProductDropdown helper
+            Try
+                Dim txtSKU As New TextBox()
+                txtSKU.Left = 300
+                txtSKU.Top = 8
+                txtSKU.Width = 280
+                cboProduct = UI.ProductDropdown.Create(Me, txtSKU)
+                pnlSearch.Controls.Add(cboProduct)
+            Catch
+            End Try
+        End If
+        
         SafeLoadSuppliers()
     End Sub
 
@@ -131,16 +164,10 @@ Public Class InvoiceEditorForm
         lblTo = New Label() With {.Text = "To:", .AutoSize = True, .Left = 792, .Top = 12}
         dtpTo = New DateTimePicker() With {.Left = 820, .Top = 8, .Format = DateTimePickerFormat.Custom, .CustomFormat = "dd MMM yyyy"}
         btnLoad = New Button() With {.Left = 1010, .Top = 8, .Width = 100, .Text = "Load"}
-        AddHandler btnLoad.Click, AddressOf btnLoad_Click
-        AddHandler cboSupplier.SelectedIndexChanged, AddressOf cboSupplier_SelectedIndexChanged
-        AddHandler dtpFrom.ValueChanged, AddressOf OnDateFilterChanged
-        AddHandler dtpTo.ValueChanged, AddressOf OnDateFilterChanged
         pnlSearch.Controls.AddRange(New Control() {lblSupplier, cboSupplier, lblFrom, dtpFrom, lblTo, dtpTo, btnLoad})
 
         ' Results grid
         dgvResults = New DataGridView() With {.Dock = DockStyle.Top, .Height = 180, .ReadOnly = True, .SelectionMode = DataGridViewSelectionMode.FullRowSelect, .AllowUserToAddRows = False, .AllowUserToDeleteRows = False, .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill}
-        AddHandler dgvResults.SelectionChanged, AddressOf dgvResults_SelectionChanged
-        AddHandler dgvResults.CellClick, AddressOf dgvResults_CellClick
 
         lblLines = New Label() With {.Text = "Invoice Lines (editable: ReceiveNow, CreditReason, CreditComments)", .Dock = DockStyle.Top, .Height = 24, .Padding = New Padding(8, 4, 0, 0)}
 
@@ -164,9 +191,7 @@ Public Class InvoiceEditorForm
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "CreditComments", .HeaderText = "Comments"})
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "LineTotal", .HeaderText = "Line Total", .ReadOnly = True, .DefaultCellStyle = New DataGridViewCellStyle() With {.Format = "N2"}})
 
-        AddHandler dgvLines.CellValueChanged, AddressOf dgvLines_CellValueChanged
-        AddHandler dgvLines.CurrentCellDirtyStateChanged, Sub(sender, e) If dgvLines.IsCurrentCellDirty Then dgvLines.CommitEdit(DataGridViewDataErrorContexts.Commit)
-        AddHandler dgvLines.DataBindingComplete, AddressOf dgvLines_DataBindingComplete
+        ' Event handlers moved to Load to keep InitializeComponent designer-safe
 
         ' Bottom totals/actions panel
         Dim pnlBottomHost As New Panel() With {.Dock = DockStyle.Bottom, .Height = 64}

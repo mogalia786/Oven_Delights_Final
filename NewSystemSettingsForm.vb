@@ -68,6 +68,8 @@ Public Class NewSystemSettingsForm
                 Throw New ConfigurationErrorsException("Database connection string is not configured.")
             End If
             
+            ' Ensure settings table exists prior to any operations
+            EnsureSystemSettingsTable()
             InitializeForm()
             LoadSettings()
             
@@ -77,6 +79,28 @@ Public Class NewSystemSettingsForm
                          MessageBoxButtons.OK, MessageBoxIcon.Error)
             Me.DialogResult = DialogResult.Abort
             Me.Close()
+        End Try
+    End Sub
+
+    Private Sub EnsureSystemSettingsTable()
+        Try
+            Using cn As New SqlConnection(_connectionString)
+                cn.Open()
+                Dim sql As String = "IF OBJECT_ID('dbo.SystemSettings','U') IS NULL BEGIN " & _
+                                    "CREATE TABLE dbo.SystemSettings (" & _
+                                    " SettingID INT IDENTITY(1,1) PRIMARY KEY, " & _
+                                    " Category NVARCHAR(100) NOT NULL, " & _
+                                    " SettingKey NVARCHAR(100) NOT NULL, " & _
+                                    " SettingValue NVARCHAR(MAX) NULL, " & _
+                                    " CreatedBy INT NULL, CreatedDate DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(), " & _
+                                    " ModifiedBy INT NULL, ModifiedDate DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()); " & _
+                                    "CREATE UNIQUE INDEX UX_SystemSettings ON dbo.SystemSettings(Category, SettingKey); END;"
+                Using cmd As New SqlCommand(sql, cn)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+        Catch ex As Exception
+            _logger.LogError($"Failed ensuring SystemSettings table: {ex.Message}")
         End Try
     End Sub
     

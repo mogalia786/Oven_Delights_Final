@@ -1,0 +1,220 @@
+Oven Delights ERP — Accounting Posting Map (Journals and Ledgers)
+Timestamp: 2025-09-12 20:21 SAST
+
+Scope
+This document explains which transactions post journals, which ledgers they affect, and exactly where in the code and database that happens. It cites specific files, methods, and stored procedures present in the current solution so you can verify behavior.
+
+Key Code Artifacts (by path)
+- Services/AccountingPostingService.vb
+- Services/AccountsPayableService.vb
+- Services/AccountsReceivableService.vb
+- Services/CashbookService.vb
+- Services/PayrollService.vb
+- Services/PostingService.vb
+- Database/GL_Core_Tables.sql
+- Database/GL_Core_SPs.sql
+- Database/GL_Posting_Procedures.sql
+- Database/GL_Core_Views.sql
+- Database/03_CreateAccountingSchema.sql
+- Database/04_RecreateAccountingSchema.sql
+- Database/GL_Master_Setup.sql
+
+Glossary
+- Journal Header: GL journal record (JournalID) created via sp_CreateJournalEntry
+- Journal Detail: GL lines added via sp_AddJournalDetail (Debit/Credit)
+- Post Journal: Updates account balances and ledger via sp_PostJournal
+- SystemAccounts: table that maps system keys (e.g., INVENTORY, AP_CONTROL, BANK_DEFAULT, WIP, GRIR) to AccountID
+
+When balances/ledgers update
+- Balances update when sp_PostJournal executes.
+- Many business SPs (e.g., AP/AR/BANK posting SPs) may create the journal header and details and can either:
+  a) Post inside the same SP; or
+  b) Return JournalID to be posted later via sp_PostJournal.
+- In Services/AccountingPostingService.vb you have an explicit PostJournal(journalId, postedBy) method that calls sp_PostJournal.
+
+System Accounts (lookups used by posting logic)
+- GetInventoryAccountId()   -> SystemAccounts(SysKey = 'INVENTORY')
+- GetGRIRAccountId()        -> SystemAccounts(SysKey = 'GRIR')
+- GetAPControlAccountId()   -> SystemAccounts(SysKey = 'AP_CONTROL')
+- GetBankAccountId()        -> SystemAccounts(SysKey = 'BANK_DEFAULT')
+- GetWIPAccountId()         -> SystemAccounts(SysKey = 'WIP')
+
+Primary Transaction Types and Expected Journal Impact
+
+1) Accounts Payable (Suppliers)
+   Code entry points:
+   - AccountingPostingService.PostAPSupplierInvoice(invoiceId, supplierId, journalDate, amount, useGRNI, reference, description, createdBy, branchId)
+     Calls: sp_AP_Post_SupplierInvoice -> returns @JournalID
+     Typical GL (examples; final per SP implementation):
+       If useGRNI = 1 (3-way match via GRNI):
+         Dr GRIR (Goods Received/Invoice Received clearing)
+         Cr Accounts Payable Control (supplier subledger)
+       If useGRNI = 0 (direct expense/inventory):
+         For inventory: Dr Inventory, Cr AP Control
+         For expense:   Dr Expense Account, Cr AP Control
+     Ledgers affected:
+       - Supplier ledger (AP subledger)
+       - General Ledger (AP Control, GRIR, Inventory/Expense)
+     Posting:
+       - The SP may post internally; otherwise call PostJournal(@JournalID).
+
+   - AccountingPostingService.PostAPSupplierCredit(creditNoteId, supplierId, journalDate, amount, usePurchaseReturns, reference, description, createdBy, branchId)
+     Calls: sp_AP_Post_SupplierCredit -> returns @JournalID
+     Typical GL:
+       If purchase return:
+         Dr AP Control
+         Cr GRIR (or Inventory/Expense depending on process)
+     Ledgers affected:
+       - Supplier ledger (credit note)
+       - General Ledger
+
+   - AccountingPostingService.PostAPSupplierPayment(paymentId, supplierId, journalDate, amount, reference, description, createdBy, branchId)
+     Calls: sp_AP_Post_SupplierPayment -> returns @JournalID
+     Typical GL:
+       Dr AP Control
+       Cr Bank (or Cashbook)
+     Ledgers affected:
+       - Supplier ledger (payment allocation)
+       - Bank ledger
+       - General Ledger
+
+2) Accounts Receivable (Customers)
+   Code entry points:
+   - AccountingPostingService.PostARCustomerInvoice(invoiceId, customerId, journalDate, netAmount, vatAmount, cogsAmount, reference, description, createdBy, branchId)
+     Calls: sp_AR_Post_CustomerInvoice -> returns @JournalID
+     Typical GL (with VAT and COGS):
+       Dr Accounts Receivable Control (customer subledger)
+       Cr Sales Revenue (for NetAmount)
+       Cr VAT Output (for VATAmount)
+       Dr COGS (for COGSAmount)
+       Cr Inventory (for COGSAmount)
+     Ledgers affected:
+       - Customer ledger (AR subledger)
+       - General Ledger (AR Control, Sales, VAT Output, Inventory, COGS)
+
+   - AccountingPostingService.PostARCustomerCredit(creditNoteId, customerId, journalDate, netAmount, vatAmount, cogsReturn, reference, description, createdBy, branchId)
+     Calls: sp_AR_Post_CustomerCredit -> returns @JournalID
+     Typical GL:
+       Dr Sales Returns (or reverse Sales)
+       Dr VAT Output (reverse)
+       Cr Accounts Receivable Control
+       Dr Inventory (for returns)
+       Cr COGS (reverse)
+     Ledgers affected:
+       - Customer ledger (credit note)
+       - General Ledger
+
+   - AccountingPostingService.PostARCustomerReceipt(receiptId, customerId, journalDate, amount, reference, description, createdBy, branchId)
+     Calls: sp_AR_Post_CustomerReceipt -> returns @JournalID
+     Typical GL:
+       Dr Bank (or Cashbook)
+       Cr Accounts Receivable Control
+     Ledgers affected:
+       - Customer ledger (receipt allocation)
+       - Bank ledger
+       - General Ledger
+
+3) Inventory / Stockroom / Manufacturing (WIP)
+   Relevant:
+   - WIP (work-in-process) and Inventory rely on SystemAccounts keys WIP and INVENTORY.
+   - Internal Orders and BOM issues/receipts are handled via manufacturing SPs (e.g., sp_MO_CreateBundleFromBOM) and Stockroom flows.
+   Typical GL patterns:
+     a) Issue components to WIP:
+        Dr WIP
+        Cr Inventory (components)
+     b) Complete finished goods from WIP to Inventory:
+        Dr Inventory (finished goods)
+        Cr WIP
+     c) Adjustments (Stock corrections):
+        Dr/Cr Inventory
+        Dr/Cr Stock Adjustments (P&L) depending on direction
+     Ledgers affected:
+        - General Ledger (Inventory, WIP, Adjustments)
+
+   Notes:
+   - Retail stock movements (Retail_StockMovements) are operational records; the financial postings depend on integrations to the core GL flow (via AccountingPostingService or equivalent SPs in GL_Posting_Procedures.sql).
+
+4) Cashbook / Bank
+   Code entry points:
+   - AccountingPostingService.PostBankCharge(chargeId, journalDate, amount, reference, description, createdBy, branchId)
+     Calls: sp_Bank_Post_Charge -> returns @JournalID
+     Typical GL:
+       Dr Bank Charges Expense
+       Cr Bank
+     Ledgers affected:
+       - Bank ledger
+       - General Ledger
+
+   - AccountingPostingService.PostBankTransfer(transferId, journalDate, amount, fromBankAccountId, toBankAccountId, reference, description, createdBy, branchId)
+     Calls: sp_Bank_Post_Transfer -> returns @JournalID
+     Typical GL:
+       Dr Bank (destination)
+       Cr Bank (source)
+     Ledgers affected:
+       - Bank ledger
+       - General Ledger
+
+5) Payroll (summary — see Services/PayrollService.vb and GL procedures)
+   Typical GL:
+     Dr Payroll Expenses (Wages/Salaries)
+     Cr Bank / Payroll Clearing
+     Cr Statutory Payables (PAYE, UIF, SDL, Pension funds, etc.)
+   Ledgers affected:
+     - General Ledger
+     - Bank ledger
+     - Statutory payables subledgers (if maintained)
+
+Journal Lifecycle (step-by-step)
+1. Creation
+   - sp_CreateJournalEntry creates the journal header and returns JournalID.
+   - AccountingPostingService.CreateJournalEntry(...) wraps this call.
+
+2. Adding Lines
+   - sp_AddJournalDetail adds debit/credit lines to the journal.
+   - AccountingPostingService.AddJournalDetail(...) wraps this call.
+
+3. Posting (Updates Balances/Ledgers)
+   - sp_PostJournal applies lines to GL balances and marks journal as posted.
+   - AccountingPostingService.PostJournal(journalId, postedBy) wraps this call.
+   - Some functional SPs (AP/AR/Bank) may internally post — verify in Database/GL_Posting_Procedures.sql.
+
+Where to see suppliers, sales, bank ledgers
+- Suppliers (AP) Subledger:
+  - AP transaction detail stored by AP posting SPs (see sp_AP_Post_*). The control account is AP_CONTROL from SystemAccounts.
+- Sales (Revenue) Ledgers:
+  - Impacted by AR invoice postings (sp_AR_Post_CustomerInvoice). Revenue accounts defined per product/category (see your GL mapping stored procedures/views in GL_Core_Views.sql and GL_Posting_Procedures.sql).
+- Bank Ledgers:
+  - Impacted by AP payments, AR receipts, bank charges, transfers (sp_AP_Post_SupplierPayment, sp_AR_Post_CustomerReceipt, sp_Bank_Post_*).
+
+Exact Entry Triggers (by user action)
+- Supplier Invoice approved/posted (AP module) -> sp_AP_Post_SupplierInvoice -> Journal + (Post)
+- Supplier Credit approved/posted (AP) -> sp_AP_Post_SupplierCredit -> Journal + (Post)
+- Supplier Payment processed (AP Payment) -> sp_AP_Post_SupplierPayment -> Journal + (Post)
+- Customer Invoice posted (AR) -> sp_AR_Post_CustomerInvoice -> Journal + (Post)
+- Customer Credit posted (AR) -> sp_AR_Post_CustomerCredit -> Journal + (Post)
+- Customer Receipt processed (AR Receipt) -> sp_AR_Post_CustomerReceipt -> Journal + (Post)
+- Bank Charge/Transfer captured -> sp_Bank_Post_* -> Journal + (Post)
+- Manufacturing issues/completions -> Manufacturing SPs (WIP/Inventory) -> Journal + (Post) per GL_Posting_Procedures.sql
+
+Cross-References you can open now
+- Services/AccountingPostingService.vb
+  - CreateJournalEntry
+  - AddJournalDetail
+  - PostJournal
+  - PostAPSupplierInvoice / Credit / Payment
+  - PostARCustomerInvoice / Credit / Receipt
+  - PostBankCharge / PostBankTransfer
+
+- Database/GL_Core_SPs.sql
+  - sp_CreateJournalEntry
+  - sp_AddJournalDetail
+  - sp_PostJournal
+
+- Database/GL_Posting_Procedures.sql
+  - AP/AR/Bank posting procedures that orchestrate journal creation/lines/posting
+
+Verification Tips
+- Turn on SQL Profiler on local DB; execute a sample AP invoice and watch calls to sp_AP_Post_SupplierInvoice and sp_PostJournal.
+- In a test branch, set a known SystemAccounts mapping (INVENTORY/AP_CONTROL/etc.) and confirm the specific AccountIDs are used in journal lines.
+
+End of Document.

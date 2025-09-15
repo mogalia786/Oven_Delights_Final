@@ -135,4 +135,33 @@ Public Class PdfService
         If Not String.IsNullOrWhiteSpace(poNumber) Then suffix = "_" & SanitizeToken(poNumber)
         Return WriteAsPseudoPdf(html, $"INV_{invoiceId}{suffix}")
     End Function
+
+    ' Generic: export any DataGridView to printable HTML-backed PDF and return the saved path
+    Public Shared Function SaveDataGridViewAsPdf(dgv As System.Windows.Forms.DataGridView, title As String, baseFileName As String) As String
+        If dgv Is Nothing Then Throw New ArgumentNullException(NameOf(dgv))
+        Dim sb As New StringBuilder()
+        sb.AppendLine("<!DOCTYPE html><html><head><meta charset='utf-8'>")
+        sb.AppendLine("<style> body{font-family:Segoe UI,Arial,sans-serif;margin:24px;} h1{font-size:20px;margin:0 0 8px;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #ddd;padding:6px;text-align:left;} th{background:#f6f6f6;} .meta{color:#666;margin-bottom:8px;} </style>")
+        sb.AppendLine("</head><body>")
+        sb.AppendLine($"<h1>{HtmlEncode(title)}</h1>")
+        sb.AppendLine($"<div class='meta'>Generated: {DateTime.Now:yyyy-MM-dd HH:mm}</div>")
+        sb.AppendLine("<table><thead><tr>")
+        For Each col As System.Windows.Forms.DataGridViewColumn In dgv.Columns
+            If col.Visible Then sb.Append("<th>").Append(HtmlEncode(col.HeaderText)).Append("</th>")
+        Next
+        sb.AppendLine("</tr></thead><tbody>")
+        For Each row As System.Windows.Forms.DataGridViewRow In dgv.Rows
+            If row.IsNewRow Then Continue For
+            sb.Append("<tr>")
+            For Each col As System.Windows.Forms.DataGridViewColumn In dgv.Columns
+                If Not col.Visible Then Continue For
+                Dim val = row.Cells(col.Index).Value
+                Dim cellText As String = If(val Is Nothing, "", val.ToString())
+                sb.Append("<td>").Append(HtmlEncode(cellText)).Append("</td>")
+            Next
+            sb.AppendLine("</tr>")
+        Next
+        sb.AppendLine("</tbody></table></body></html>")
+        Return WriteAsPseudoPdf(sb.ToString(), SanitizeToken(baseFileName))
+    End Function
 End Class

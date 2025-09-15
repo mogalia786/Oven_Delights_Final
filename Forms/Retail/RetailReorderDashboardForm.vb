@@ -195,7 +195,8 @@ Namespace Retail
                     sql &= "           CASE WHEN b.OnHand < 10 THEN 'Red' WHEN b.OnHand BETWEEN 10 AND 14 THEN 'Yellow' ELSE 'Green' END " & vbCrLf
                     sql &= "       END AS NVARCHAR(10)) AS StatusText " & vbCrLf
                     sql &= "FROM Base b " & vbCrLf
-                    sql &= "WHERE (@pSearch = '' OR b.SKU LIKE '%' + @pSearch + '%' OR b.ProductName LIKE '%' + @pSearch + '%') " & vbCrLf
+                    sql &= "WHERE b.IsManufactured = 1 " & vbCrLf
+                    sql &= "  AND (@pSearch = '' OR b.SKU LIKE '%' + @pSearch + '%' OR b.ProductName LIKE '%' + @pSearch + '%') " & vbCrLf
                     sql &= "ORDER BY b.ProductName;"
 
                     Using cmd As New SqlCommand(sql, cn)

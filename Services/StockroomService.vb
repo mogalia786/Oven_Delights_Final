@@ -117,7 +117,8 @@ Public Class StockroomService
     End Function
 
     ' Persist invoice edits and perform accounting/stock postings (safe, schema-aware)
-    Public Sub UpdateInvoiceWithJournal(invoiceId As Integer, edited As DataTable, userId As Integer)
+    ' Legacy implementation retained privately to avoid duplicate public signatures
+    Private Sub UpdateInvoiceWithJournal_Legacy(invoiceId As Integer, edited As DataTable, userId As Integer)
         If invoiceId <= 0 OrElse edited Is Nothing OrElse edited.Rows.Count = 0 Then Exit Sub
         Using con As New SqlConnection(connectionString)
             con.Open()
@@ -699,7 +700,8 @@ Public Class StockroomService
                     ' Create GRN Header
                     Dim grnNumber As String = GetNextDocumentNumber("GRN", branchId, createdBy, con, tx)
                     Dim cmdH = New SqlCommand("INSERT INTO GoodsReceivedNotes(GRNNumber, PurchaseOrderID, SupplierID, ReceivedDate, TotalAmount, Status, DeliveryNote, ReceivedBy, Notes, CreatedDate, CreatedBy) " &
-                                              "OUTPUT INSERTED.GRNID VALUES(@No,@PO,@Sup,@Date,@Total,N'Received',@DN,@By,@Notes,SYSUTCDATETIME(),@By)", con, tx)
+                                              "OUTPUT INSERTED.GRNID " &
+                                              "VALUES(@No,@PO,@Sup,@Date,@Total,N'Received',@DN,@By,@Notes,SYSUTCDATETIME(),@By)", con, tx)
                     cmdH.Parameters.AddWithValue("@No", grnNumber)
                     cmdH.Parameters.AddWithValue("@PO", poId)
                     cmdH.Parameters.AddWithValue("@Sup", supplierId)

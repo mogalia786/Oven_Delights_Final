@@ -71,7 +71,7 @@ Partial Class MainDashboard
         AdministratorToolStripMenuItem.DropDownItems.AddRange(New ToolStripItem() {DashboardToolStripMenuItem, UserManagementToolStripMenuItem, BranchManagementToolStripMenuItem, AuditLogToolStripMenuItem, SystemSettingsToolStripMenuItem})
         AdministratorToolStripMenuItem.Name = "AdministratorToolStripMenuItem"
         AdministratorToolStripMenuItem.Size = New Size(92, 20)
-        AdministratorToolStripMenuItem.Text = "Administrator"
+        AdministratorToolStripMenuItem.Text = "Administration"
         ' 
         ' DashboardToolStripMenuItem
         ' 
