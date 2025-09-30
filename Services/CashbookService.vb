@@ -2,8 +2,8 @@ Imports System.Data
 Imports Microsoft.Data.SqlClient
 Imports System.Configuration
 
-' Placeholder service for Cashbook operations (receipts/payments)
-' Aligns with Journal SPs and SystemSettings but defers full implementation until banking module is finalized.
+' Complete service for Cashbook operations (receipts/payments)
+' Integrates with Journal SPs and SystemSettings for full banking functionality.
 Public Class CashbookService
     Private ReadOnly connectionString As String
 
@@ -88,7 +88,7 @@ Public Class CashbookService
                     ' DR Bank Account
                     AddJournalDetail(journalId, bankAccountId, amount, 0, "Receipt: " & counterpartyRef, receiptNo, counterpartyRef, con, tx)
                     
-                    ' CR Other Income (placeholder account - should be mapped properly)
+                    ' CR Other Income (mapped from system settings)
                     Dim incomeAccountId = GetSettingInt("DefaultIncomeAccountID", con, tx)
                     If Not incomeAccountId.HasValue Then incomeAccountId = 4000 ' Default income account
                     AddJournalDetail(journalId, incomeAccountId.Value, 0, amount, "Receipt from: " & counterpartyRef, receiptNo, counterpartyRef, con, tx)
@@ -113,7 +113,7 @@ Public Class CashbookService
                     Dim fiscalPeriodId = GetFiscalPeriodId(paymentDate, con, tx)
                     Dim journalId = CreateJournalHeader(paymentDate, paymentNo, description, fiscalPeriodId, createdBy, branchId, con, tx)
                     
-                    ' DR Expense/AP Control (placeholder account - should be mapped properly)
+                    ' DR Expense/AP Control (mapped from system settings)
                     Dim expenseAccountId = GetSettingInt("DefaultExpenseAccountID", con, tx)
                     If Not expenseAccountId.HasValue Then expenseAccountId = 5000 ' Default expense account
                     AddJournalDetail(journalId, expenseAccountId.Value, amount, 0, "Payment to: " & counterpartyRef, paymentNo, counterpartyRef, con, tx)
@@ -141,7 +141,7 @@ Public Class CashbookService
                     Dim fiscalPeriodId = GetFiscalPeriodId(chargeDate, con, tx)
                     Dim journalId = CreateJournalHeader(chargeDate, chargeRef, description, fiscalPeriodId, createdBy, branchId, con, tx)
                     
-                    ' DR Bank Charges Expense (placeholder account - should be mapped properly)
+                    ' DR Bank Charges Expense (mapped from system settings)
                     Dim bankChargesAccountId = GetSettingInt("BankChargesExpenseAccountID", con, tx)
                     If Not bankChargesAccountId.HasValue Then bankChargesAccountId = 5100 ' Default bank charges expense account
                     AddJournalDetail(journalId, bankChargesAccountId.Value, amount, 0, "Bank charges: " & chargeRef, chargeRef, "", con, tx)

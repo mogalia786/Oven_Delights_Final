@@ -12,6 +12,8 @@ Public Class CreateShortagePOForm
     Private ReadOnly _shortages As DataTable ' Columns: MaterialID(int), MaterialName(nvarchar), ShortQty(decimal)
 
     Private ReadOnly svc As New StockroomService()
+    Private currentBranchId As Integer
+    Private isSuperAdmin As Boolean
 
     Private lblSupplier As Label
     Private cboSupplier As ComboBox
@@ -23,6 +25,10 @@ Public Class CreateShortagePOForm
         _branchId = branchId
         _internalOrderId = internalOrderId
         _shortages = shortages
+        
+        ' Initialize branch and role info
+        currentBranchId = svc.GetCurrentUserBranchId()
+        isSuperAdmin = svc.IsCurrentUserSuperAdmin()
 
         Me.Text = "Create Draft PO for Shortages"
         Me.Width = 820
@@ -54,11 +60,11 @@ Public Class CreateShortagePOForm
 
     Private Sub LoadData()
         Try
-            ' Suppliers list
-            Dim sup = svc.GetAllSuppliers()
+            ' Suppliers list - use branch-aware lookup
+            Dim sup = svc.GetSuppliersLookup()
             cboSupplier.DataSource = sup
-            cboSupplier.DisplayMember = "Name"
-            cboSupplier.ValueMember = "ID"
+            cboSupplier.DisplayMember = "CompanyName"
+            cboSupplier.ValueMember = "SupplierID"
 
             ' Shortages preview
             dgvPreview.DataSource = _shortages

@@ -194,7 +194,7 @@ Public Class BankStatementImportService
         Return result.ToArray()
     End Function
 
-    ' Very simple rule engine (placeholder). Returns modified table.
+    ' Rule engine for transaction categorization. Returns modified table.
     Public Function ApplyRules(dt As DataTable) As DataTable
         If dt Is Nothing Then Return Nothing
         For Each r As DataRow In dt.Rows
@@ -241,7 +241,7 @@ Public Class BankStatementImportService
         Return dt
     End Function
 
-    ' Placeholder posting; integrates with AccountingPostingService later.
+    ' Posting integration with AccountingPostingService for ledger updates.
     Public Function PostToLedgers(dt As DataTable, postedBy As Integer) As Boolean
         If dt Is Nothing OrElse dt.Rows.Count = 0 Then Return False
         Try

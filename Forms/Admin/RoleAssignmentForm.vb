@@ -90,7 +90,7 @@ Public Class RoleAssignmentForm
     Private Sub LoadRoles()
         Try
             Using conn As New SqlConnection(_connString)
-                Dim sql = "SELECT RoleID, RoleName FROM Roles WHERE IsActive = 1 ORDER BY RoleName"
+                Dim sql = "SELECT RoleID, RoleName FROM Roles ORDER BY RoleName"
                 Using da As New SqlDataAdapter(sql, conn)
                     Dim dt As New DataTable()
                     da.Fill(dt)

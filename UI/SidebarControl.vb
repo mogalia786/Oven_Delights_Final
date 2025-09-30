@@ -42,8 +42,8 @@ Namespace UI
                 Dim probe As DirectoryInfo = New DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory)
                 For i As Integer = 0 To 3 ' probe up to 3 parent levels
                     For Each fname In candidates
-                        Dim full = Path.Combine(probe.FullName, fname)
-                        If File.Exists(full) Then
+                        Dim full = IO.Path.Combine(probe.FullName, fname)
+                        If IO.File.Exists(full) Then
                             picHeaderLogo.Image = Image.FromFile(full)
                             Throw New Exception("__LogoLoaded__") ' break out of both loops
                         End If

@@ -1,5 +1,5 @@
 Imports System.Data
-Imports Microsoft.Data.SqlClient
+Imports System.Data.SqlClient
 Imports System.Configuration
 Imports System.Windows.Forms
 

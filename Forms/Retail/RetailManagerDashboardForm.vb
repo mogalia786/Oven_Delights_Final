@@ -112,7 +112,14 @@ Namespace Retail
 
             ' Pause/resume refresh when not visible or deactivated
             AddHandler Me.Activated, Sub() ResumeRefresh()
-            AddHandler Me.Deactivate, Sub() PauseRefresh()
+            AddHandler Me.Deactivate, Sub() 
+                ' Only pause if form is actually being deactivated, not just losing focus
+                If Me.WindowState <> FormWindowState.Minimized Then
+                    ' Keep refresh running when form is visible but not active
+                    Return
+                End If
+                PauseRefresh()
+            End Sub
             AddHandler Me.VisibleChanged, Sub()
                                             If Me.Visible AndAlso Me.WindowState <> FormWindowState.Minimized Then
                                                 ResumeRefresh()

@@ -4,9 +4,17 @@ Imports Microsoft.Data.SqlClient
 
 Public Class CrossBranchLookupForm
     Private ReadOnly _connString As String
+    Private ReadOnly stockroomService As New StockroomService()
+    Private currentBranchId As Integer
+    Private isSuperAdmin As Boolean
 
     Public Sub New()
         InitializeComponent()
+        
+        ' Initialize branch and role info
+        currentBranchId = stockroomService.GetCurrentUserBranchId()
+        isSuperAdmin = stockroomService.IsCurrentUserSuperAdmin()
+        
         _connString = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString")?.ConnectionString
         If String.IsNullOrWhiteSpace(_connString) Then
             MessageBox.Show("Missing connection string 'OvenDelightsERPConnectionString' in App.config.", "Config Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -34,14 +42,39 @@ Public Class CrossBranchLookupForm
         Try
             Using cn As New SqlConnection(_connString)
                 cn.Open()
-                ' Search across branches using a consolidated view if available
-                Dim sql As String = "SELECT BranchID, BranchName, SKU, Name, QtyOnHand, ReorderPoint FROM dbo.v_Retail_StockOnHand WHERE (SKU = @q OR Name LIKE @like) ORDER BY Name, BranchName"
-                Using da As New SqlDataAdapter(sql, cn)
-                    da.SelectCommand.Parameters.AddWithValue("@q", q)
-                    da.SelectCommand.Parameters.AddWithValue("@like", "%" & q & "%")
-                    Dim dt As New DataTable()
-                    da.Fill(dt)
-                    dgv.DataSource = dt
+                ' Search across branches with proper branch filtering
+                Dim sql As String
+                If isSuperAdmin Then
+                    sql = "SELECT rs.BranchID, b.BranchName, p.ProductCode AS SKU, p.ProductName AS Name, 
+                           ISNULL(rs.QuantityInStock, 0) AS QtyOnHand, ISNULL(rs.ReorderLevel, 0) AS ReorderPoint 
+                           FROM Products p 
+                           LEFT JOIN Retail_Stock rs ON p.ProductID = rs.ProductID 
+                           LEFT JOIN Branches b ON rs.BranchID = b.BranchID 
+                           WHERE (p.ProductCode LIKE @like OR p.ProductName LIKE @like) 
+                           AND p.IsActive = 1 
+                           ORDER BY p.ProductName, b.BranchName"
+                Else
+                    sql = "SELECT rs.BranchID, b.BranchName, p.ProductCode AS SKU, p.ProductName AS Name, 
+                           ISNULL(rs.QuantityInStock, 0) AS QtyOnHand, ISNULL(rs.ReorderLevel, 0) AS ReorderPoint 
+                           FROM Products p 
+                           LEFT JOIN Retail_Stock rs ON p.ProductID = rs.ProductID AND rs.BranchID = @branchId
+                           LEFT JOIN Branches b ON rs.BranchID = b.BranchID 
+                           WHERE (p.ProductCode LIKE @like OR p.ProductName LIKE @like) 
+                           AND p.IsActive = 1 
+                           ORDER BY p.ProductName"
+                End If
+                
+                Using cmd As New SqlCommand(sql, cn)
+                    cmd.Parameters.AddWithValue("@like", "%" & q & "%")
+                    If Not isSuperAdmin Then
+                        cmd.Parameters.AddWithValue("@branchId", currentBranchId)
+                    End If
+                    
+                    Using da As New SqlDataAdapter(cmd)
+                        Dim dt As New DataTable()
+                        da.Fill(dt)
+                        dgv.DataSource = dt
+                    End Using
                 End Using
             End Using
         Catch ex As Exception

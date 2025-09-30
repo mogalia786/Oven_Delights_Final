@@ -10,18 +10,14 @@ Public Class StockMovementReportForm
     Private ReadOnly _connString As String
     Private ReadOnly _isSuperAdmin As Boolean
     Private ReadOnly _sessionBranchId As Integer
+    Private ReadOnly stockroomService As New StockroomService()
 
-    ' Controls
-    Private pnlFilters As Panel
+    ' Controls are declared in Designer file
+    Private btnLoad As Button
     Private lblBranch As Label
     Private cboBranch As ComboBox
-    Private lblFrom As Label
     Private dtpFrom As DateTimePicker
-    Private lblTo As Label
     Private dtpTo As DateTimePicker
-    Private lblMovementType As Label
-    Private cboMovementType As ComboBox
-    Private btnLoad As Button
     Private dgv As DataGridView
 
     Public Sub New()
@@ -30,8 +26,8 @@ Public Class StockMovementReportForm
         If String.IsNullOrWhiteSpace(_connString) Then
             MessageBox.Show("Missing connection string 'OvenDelightsERPConnectionString' in App.config.", "Config Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End If
-        _isSuperAdmin = String.Equals(AppSession.CurrentRoleName, "Super Administrator", StringComparison.OrdinalIgnoreCase)
-        _sessionBranchId = If(AppSession.CurrentUser IsNot Nothing AndAlso AppSession.CurrentUser.BranchID.HasValue, AppSession.CurrentUser.BranchID.Value, 0)
+        _isSuperAdmin = stockroomService.IsCurrentUserSuperAdmin()
+        _sessionBranchId = stockroomService.GetCurrentUserBranchId()
         
         LoadBranches()
         LoadMovementTypes()
@@ -47,66 +43,31 @@ Public Class StockMovementReportForm
         Theme.Apply(Me)
     End Sub
 
-    Private Sub InitializeComponent()
-        Me.Text = "Stock Movement Report"
-        Me.Size = New Size(1200, 700)
-        Me.StartPosition = FormStartPosition.CenterParent
-        
-        ' Filters panel
-        pnlFilters = New Panel() With {.Dock = DockStyle.Top, .Height = 60, .Padding = New Padding(8)}
-        lblBranch = New Label() With {.Text = "Branch:", .AutoSize = True, .Left = 8, .Top = 16}
-        cboBranch = New ComboBox() With {.Left = 60, .Top = 12, .Width = 150, .DropDownStyle = ComboBoxStyle.DropDownList}
-        lblFrom = New Label() With {.Text = "From:", .AutoSize = True, .Left = 230, .Top = 16}
-        dtpFrom = New DateTimePicker() With {.Left = 270, .Top = 12, .Format = DateTimePickerFormat.Custom, .CustomFormat = "dd MMM yyyy", .Value = Date.Now.AddDays(-7)}
-        lblTo = New Label() With {.Text = "To:", .AutoSize = True, .Left = 450, .Top = 16}
-        dtpTo = New DateTimePicker() With {.Left = 480, .Top = 12, .Format = DateTimePickerFormat.Custom, .CustomFormat = "dd MMM yyyy", .Value = Date.Now}
-        lblMovementType = New Label() With {.Text = "Type:", .AutoSize = True, .Left = 660, .Top = 16}
-        cboMovementType = New ComboBox() With {.Left = 700, .Top = 12, .Width = 120, .DropDownStyle = ComboBoxStyle.DropDownList}
-        btnLoad = New Button() With {.Left = 840, .Top = 12, .Width = 100, .Text = "Load Report"}
-        
-        pnlFilters.Controls.AddRange({lblBranch, cboBranch, lblFrom, dtpFrom, lblTo, dtpTo, lblMovementType, cboMovementType, btnLoad})
-        
-        ' Data grid
-        dgv = New DataGridView() With {
-            .Dock = DockStyle.Fill,
-            .ReadOnly = True,
-            .AllowUserToAddRows = False,
-            .AllowUserToDeleteRows = False,
-            .SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-            .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
-        }
-        
-        Me.Controls.AddRange({dgv, pnlFilters})
-    End Sub
+    ' InitializeComponent is in Designer file
 
     Private Sub LoadBranches()
         Try
-            If String.IsNullOrWhiteSpace(_connString) Then Return
-            Using conn As New SqlConnection(_connString)
-                conn.Open()
-                Using da As New SqlDataAdapter("SELECT BranchID, BranchName FROM dbo.Branches ORDER BY BranchName", conn)
-                    Dim dt As New DataTable()
-                    da.Fill(dt)
-                    If _isSuperAdmin Then
-                        ' Add "All Branches" option
-                        Dim allRow = dt.NewRow()
-                        allRow("BranchID") = DBNull.Value
-                        allRow("BranchName") = "All Branches"
-                        dt.Rows.InsertAt(allRow, 0)
-                        cboBranch.DataSource = dt
+            Dim branches = stockroomService.GetBranchesLookup()
+            If branches IsNot Nothing AndAlso branches.Rows.Count > 0 Then
+                If _isSuperAdmin Then
+                    ' Add "All Branches" option
+                    Dim allRow = branches.NewRow()
+                    allRow("BranchID") = DBNull.Value
+                    allRow("BranchName") = "All Branches"
+                    branches.Rows.InsertAt(allRow, 0)
+                    cboBranch.DataSource = branches
+                    cboBranch.DisplayMember = "BranchName"
+                    cboBranch.ValueMember = "BranchID"
+                Else
+                    Dim rows = branches.Select($"BranchID = {_sessionBranchId}")
+                    If rows IsNot Nothing AndAlso rows.Length > 0 Then
+                        cboBranch.DataSource = branches
                         cboBranch.DisplayMember = "BranchName"
                         cboBranch.ValueMember = "BranchID"
-                    Else
-                        Dim rows = dt.Select($"BranchID = {_sessionBranchId}")
-                        If rows IsNot Nothing AndAlso rows.Length > 0 Then
-                            cboBranch.DataSource = dt
-                            cboBranch.DisplayMember = "BranchName"
-                            cboBranch.ValueMember = "BranchID"
-                            cboBranch.SelectedValue = _sessionBranchId
-                        End If
+                        cboBranch.SelectedValue = _sessionBranchId
                     End If
-                End Using
-            End Using
+                End If
+            End If
         Catch ex As Exception
             MessageBox.Show("Error loading branches: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try

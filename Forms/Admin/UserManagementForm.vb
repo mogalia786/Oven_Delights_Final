@@ -32,66 +32,113 @@ Public Class UserManagementForm
     Private Sub InitializeFormProperties()
         Me.Text = "User Management"
         Me.Size = New Size(1200, 700)
-        Me.StartPosition = FormStartPosition.CenterParent
-        Me.FormBorderStyle = FormBorderStyle.Sizable
+        Me.StartPosition = FormStartPosition.CenterScreen
+        Me.WindowState = FormWindowState.Maximized
+        Me.BackColor = Color.FromArgb(248, 249, 250)
     End Sub
 
     Private Sub SetupUI()
         ' Users section
-        lblUsers.Text = "System Users"
-        lblUsers.Font = New Font("Segoe UI", 12, FontStyle.Bold)
-        lblUsers.Location = New Point(20, 20)
+        lblUsers.Text = "Users"
+        lblUsers.Font = New Font("Segoe UI", 14, FontStyle.Bold)
+        lblUsers.ForeColor = Color.FromArgb(33, 37, 41)
+        lblUsers.Location = New Point(30, 30)
         lblUsers.AutoSize = True
 
-        dgvUsers.Location = New Point(20, 50)
-        dgvUsers.Size = New Size(700, 300)
-        dgvUsers.ReadOnly = True
+        dgvUsers.Location = New Point(30, 70)
+        dgvUsers.Size = New Size(1120, 280)
         dgvUsers.AllowUserToAddRows = False
-        dgvUsers.AllowUserToDeleteRows = False
+        dgvUsers.ReadOnly = True
         dgvUsers.SelectionMode = DataGridViewSelectionMode.FullRowSelect
-        dgvUsers.MultiSelect = False
-        dgvUsers.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+        dgvUsers.BackgroundColor = Color.White
+        dgvUsers.BorderStyle = BorderStyle.None
+        dgvUsers.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal
+        dgvUsers.GridColor = Color.FromArgb(233, 236, 239)
+        dgvUsers.DefaultCellStyle.BackColor = Color.White
+        dgvUsers.DefaultCellStyle.ForeColor = Color.FromArgb(33, 37, 41)
+        dgvUsers.DefaultCellStyle.SelectionBackColor = Color.FromArgb(0, 123, 255)
+        dgvUsers.DefaultCellStyle.SelectionForeColor = Color.White
+        dgvUsers.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(248, 249, 250)
+        dgvUsers.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(33, 37, 41)
+        dgvUsers.ColumnHeadersDefaultCellStyle.Font = New Font("Segoe UI", 10, FontStyle.Bold)
+        dgvUsers.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single
+        dgvUsers.EnableHeadersVisualStyles = False
 
-        ' User management buttons
+        ' Modern styled buttons
         btnAddUser.Text = "Add User"
-        btnAddUser.Location = New Point(740, 50)
-        btnAddUser.Size = New Size(100, 30)
+        btnAddUser.Location = New Point(30, 370)
+        btnAddUser.Size = New Size(120, 40)
+        btnAddUser.BackColor = Color.FromArgb(40, 167, 69)
+        btnAddUser.ForeColor = Color.White
+        btnAddUser.FlatStyle = FlatStyle.Flat
+        btnAddUser.FlatAppearance.BorderSize = 0
+        btnAddUser.Font = New Font("Segoe UI", 10, FontStyle.Bold)
         AddHandler btnAddUser.Click, AddressOf OnAddUser
 
         btnEditUser.Text = "Edit User"
-        btnEditUser.Location = New Point(740, 90)
-        btnEditUser.Size = New Size(100, 30)
+        btnEditUser.Location = New Point(160, 370)
+        btnEditUser.Size = New Size(120, 40)
+        btnEditUser.BackColor = Color.FromArgb(0, 123, 255)
+        btnEditUser.ForeColor = Color.White
+        btnEditUser.FlatStyle = FlatStyle.Flat
+        btnEditUser.FlatAppearance.BorderSize = 0
+        btnEditUser.Font = New Font("Segoe UI", 10, FontStyle.Bold)
         AddHandler btnEditUser.Click, AddressOf OnEditUser
 
         btnDeleteUser.Text = "Delete User"
-        btnDeleteUser.Location = New Point(740, 130)
-        btnDeleteUser.Size = New Size(100, 30)
+        btnDeleteUser.Location = New Point(290, 370)
+        btnDeleteUser.Size = New Size(120, 40)
+        btnDeleteUser.BackColor = Color.FromArgb(220, 53, 69)
+        btnDeleteUser.ForeColor = Color.White
+        btnDeleteUser.FlatStyle = FlatStyle.Flat
+        btnDeleteUser.FlatAppearance.BorderSize = 0
+        btnDeleteUser.Font = New Font("Segoe UI", 10, FontStyle.Bold)
         AddHandler btnDeleteUser.Click, AddressOf OnDeleteUser
 
         btnAssignRole.Text = "Assign Role"
-        btnAssignRole.Location = New Point(740, 170)
-        btnAssignRole.Size = New Size(100, 30)
+        btnAssignRole.Location = New Point(420, 370)
+        btnAssignRole.Size = New Size(120, 40)
+        btnAssignRole.BackColor = Color.FromArgb(108, 117, 125)
+        btnAssignRole.ForeColor = Color.White
+        btnAssignRole.FlatStyle = FlatStyle.Flat
+        btnAssignRole.FlatAppearance.BorderSize = 0
+        btnAssignRole.Font = New Font("Segoe UI", 10, FontStyle.Bold)
         AddHandler btnAssignRole.Click, AddressOf OnAssignRole
 
         ' Roles section
-        lblRoles.Text = "System Roles"
-        lblRoles.Font = New Font("Segoe UI", 12, FontStyle.Bold)
-        lblRoles.Location = New Point(20, 370)
+        lblRoles.Text = "Roles"
+        lblRoles.Font = New Font("Segoe UI", 14, FontStyle.Bold)
+        lblRoles.ForeColor = Color.FromArgb(33, 37, 41)
+        lblRoles.Location = New Point(30, 430)
         lblRoles.AutoSize = True
 
-        dgvRoles.Location = New Point(20, 400)
-        dgvRoles.Size = New Size(700, 200)
-        dgvRoles.ReadOnly = True
+        dgvRoles.Location = New Point(30, 470)
+        dgvRoles.Size = New Size(1120, 200)
         dgvRoles.AllowUserToAddRows = False
-        dgvRoles.AllowUserToDeleteRows = False
+        dgvRoles.ReadOnly = True
         dgvRoles.SelectionMode = DataGridViewSelectionMode.FullRowSelect
-        dgvRoles.MultiSelect = False
-        dgvRoles.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+        dgvRoles.BackgroundColor = Color.White
+        dgvRoles.BorderStyle = BorderStyle.None
+        dgvRoles.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal
+        dgvRoles.GridColor = Color.FromArgb(233, 236, 239)
+        dgvRoles.DefaultCellStyle.BackColor = Color.White
+        dgvRoles.DefaultCellStyle.ForeColor = Color.FromArgb(33, 37, 41)
+        dgvRoles.DefaultCellStyle.SelectionBackColor = Color.FromArgb(0, 123, 255)
+        dgvRoles.DefaultCellStyle.SelectionForeColor = Color.White
+        dgvRoles.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(248, 249, 250)
+        dgvRoles.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(33, 37, 41)
+        dgvRoles.ColumnHeadersDefaultCellStyle.Font = New Font("Segoe UI", 10, FontStyle.Bold)
+        dgvRoles.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single
+        dgvRoles.EnableHeadersVisualStyles = False
 
-        ' Close button
         btnClose.Text = "Close"
-        btnClose.Location = New Point(740, 570)
-        btnClose.Size = New Size(100, 30)
+        btnClose.Location = New Point(1050, 680)
+        btnClose.Size = New Size(100, 40)
+        btnClose.BackColor = Color.FromArgb(108, 117, 125)
+        btnClose.ForeColor = Color.White
+        btnClose.FlatStyle = FlatStyle.Flat
+        btnClose.FlatAppearance.BorderSize = 0
+        btnClose.Font = New Font("Segoe UI", 10, FontStyle.Bold)
         AddHandler btnClose.Click, Sub() Me.Close()
 
         ' Add controls to form
@@ -104,7 +151,8 @@ Public Class UserManagementForm
             If String.IsNullOrWhiteSpace(_connString) Then Return
 
             Using conn As New SqlConnection(_connString)
-                Dim sql = "SELECT u.UserID, u.Username, u.Email, u.IsActive, " &
+                Dim sql = "SELECT u.UserID, u.Username, u.Email, " &
+                         "ISNULL(u.IsActive, 1) AS IsActive, " &
                          "r.RoleName, b.BranchName, u.CreatedDate " &
                          "FROM Users u " &
                          "LEFT JOIN Roles r ON r.RoleID = u.RoleID " &
@@ -132,7 +180,8 @@ Public Class UserManagementForm
             If String.IsNullOrWhiteSpace(_connString) Then Return
 
             Using conn As New SqlConnection(_connString)
-                Dim sql = "SELECT RoleID, RoleName, Description, IsActive FROM Roles ORDER BY RoleName"
+                Dim sql = "SELECT RoleID, RoleName " &
+                         "FROM Roles ORDER BY RoleName"
 
                 Using da As New SqlDataAdapter(sql, conn)
                     Dim dt As New DataTable()

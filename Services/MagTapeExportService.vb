@@ -236,10 +236,10 @@ Public Class MagTapeExportService
     ' Save MagTape file to disk
     Public Function SaveMagTapeFile(content As String, batchId As Integer, bankCode As String) As String
         Dim fileName = $"MAGTAPE_{bankCode}_{batchId}_{DateTime.Now:yyyyMMdd_HHmmss}.txt"
-        Dim filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ERP_Exports", fileName)
+        Dim filePath = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ERP_Exports", fileName)
         
-        Directory.CreateDirectory(Path.GetDirectoryName(filePath))
-        File.WriteAllText(filePath, content, Encoding.ASCII)
+        IO.Directory.CreateDirectory(IO.Path.GetDirectoryName(filePath))
+        IO.File.WriteAllText(filePath, content, Encoding.ASCII)
         
         Return filePath
     End Function

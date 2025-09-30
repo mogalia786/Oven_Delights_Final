@@ -9,6 +9,9 @@ Public Class InternalOrdersForm
     Inherits Form
 
     Private ReadOnly svc As New ManufacturingService()
+    Private ReadOnly stockroomService As New StockroomService()
+    Private currentBranchId As Integer
+    Private isSuperAdmin As Boolean
 
     Private dgvHeaders As DataGridView
     Private dgvLines As DataGridView
@@ -31,6 +34,10 @@ Public Class InternalOrdersForm
     Private _preselectInternalOrderId As Integer = 0
 
     Public Sub New()
+        ' Initialize branch and role info
+        currentBranchId = stockroomService.GetCurrentUserBranchId()
+        isSuperAdmin = stockroomService.IsCurrentUserSuperAdmin()
+        
         Me.Text = "Internal Orders (Bundles)"
         Me.Width = 900
         Me.Height = 560
@@ -86,7 +93,7 @@ Public Class InternalOrdersForm
                     "  AND u.IsActive = 1 " & _
                     "ORDER BY DisplayName;"
                 Using cmd As New SqlCommand(sql, cn)
-                    cmd.Parameters.Add("@BranchID", SqlDbType.Int).Value = AppSession.CurrentBranchID
+                    cmd.Parameters.Add("@BranchID", SqlDbType.Int).Value = currentBranchId
                     Using rdr = cmd.ExecuteReader()
                         Dim dt As New DataTable()
                         dt.Load(rdr)

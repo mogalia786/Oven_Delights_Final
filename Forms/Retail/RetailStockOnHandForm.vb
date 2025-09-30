@@ -107,46 +107,27 @@ Namespace Retail
                     cn.Open()
                     Dim sql As String = ""
                     
-                    ' Branch-aware query - Super Admin can see all branches, regular users only their branch
-                    If _isSuperAdmin Then
-                        sql = "SELECT p.ProductID, p.SKU, p.Name AS ProductName, " &
-                              "ISNULL(s.QtyOnHand, 0) AS OnHand, " &
-                              "ISNULL(b.BranchName, 'Global') AS BranchName, " &
-                              "CAST(GETDATE() AS DATE) AS LastMovement " &
-                              "FROM dbo.Retail_Product p " &
-                              "LEFT JOIN dbo.Retail_Variant v ON v.ProductID = p.ProductID " &
-                              "LEFT JOIN dbo.Retail_Stock s ON s.VariantID = v.VariantID " &
-                              "LEFT JOIN dbo.Branches b ON b.BranchID = s.BranchID " &
-                              "WHERE p.IsActive = 1 " &
-                              "AND (@sku IS NULL OR @sku = '' OR p.SKU LIKE '%' + @sku + '%' OR p.Name LIKE '%' + @sku + '%') " &
-                              "ORDER BY p.Name"
-                    Else
-                        sql = "SELECT p.ProductID, p.SKU, p.Name AS ProductName, " &
-                              "ISNULL(s.QtyOnHand, 0) AS OnHand, " &
-                              "CAST(GETDATE() AS DATE) AS LastMovement " &
-                              "FROM dbo.Retail_Product p " &
-                              "LEFT JOIN dbo.Retail_Variant v ON v.ProductID = p.ProductID " &
-                              "LEFT JOIN dbo.Retail_Stock s ON s.VariantID = v.VariantID AND (s.BranchID = @branchId OR (@branchId = 0 AND s.BranchID IS NULL)) " &
-                              "WHERE p.IsActive = 1 " &
-                              "AND (@sku IS NULL OR @sku = '' OR p.SKU LIKE '%' + @sku + '%' OR p.Name LIKE '%' + @sku + '%') " &
-                              "ORDER BY p.Name"
-                    End If
+                    ' Use simplified query for RetailInventory table
+                    sql = "SELECT ProductID, ProductCode, ProductName, CurrentStock AS OnHand, " &
+                          "Category, CAST(GETDATE() AS DATE) AS LastMovement " &
+                          "FROM RetailInventory " &
+                          "WHERE IsActive = 1 " &
+                          "AND (@sku IS NULL OR @sku = '' OR ProductCode LIKE '%' + @sku + '%' OR ProductName LIKE '%' + @sku + '%') " &
+                          "ORDER BY ProductName"
 
                     Using cmd As New SqlCommand(sql, cn)
                         Dim searchText = txtSearch.Text.Trim()
                         cmd.Parameters.AddWithValue("@sku", If(String.IsNullOrWhiteSpace(searchText), DBNull.Value, CObj(searchText)))
                         
-                        If Not _isSuperAdmin Then
-                            cmd.Parameters.AddWithValue("@branchId", _sessionBranchId)
-                        End If
                         Using rdr = cmd.ExecuteReader()
                             While rdr.Read()
                                 dgv.Rows.Add(New Object() {
                                     rdr("ProductID"),
-                                    rdr("SKU").ToString(),
+                                    rdr("ProductCode").ToString(),
                                     rdr("ProductName").ToString(),
                                     Convert.ToDecimal(If(IsDBNull(rdr("OnHand")), 0D, rdr("OnHand"))),
-                                    If(IsDBNull(rdr("LastMovement")), "", Convert.ToDateTime(rdr("LastMovement")).ToString("yyyy-MM-dd HH:mm"))
+                                    rdr("Category").ToString(),
+                                    If(IsDBNull(rdr("LastMovement")), "", Convert.ToDateTime(rdr("LastMovement")).ToString("yyyy-MM-dd"))
                                 })
                             End While
                         End Using

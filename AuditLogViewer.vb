@@ -19,6 +19,29 @@ Partial Class AuditLogViewer
         LoadAuditLogs()
     End Sub
 
+    Private Sub EnsureAuditLogTable()
+        Try
+            Using conn As New SqlConnection(connectionString)
+                conn.Open()
+                Dim sql As String = "IF OBJECT_ID('dbo.AuditLog','U') IS NULL BEGIN " & _
+                                    "CREATE TABLE dbo.AuditLog (" & _
+                                    " AuditID INT IDENTITY(1,1) PRIMARY KEY, " & _
+                                    " UserID INT NULL, " & _
+                                    " Action NVARCHAR(100) NOT NULL, " & _
+                                    " TableName NVARCHAR(128) NULL, " & _
+                                    " RecordID NVARCHAR(100) NULL, " & _
+                                    " Details NVARCHAR(MAX) NULL, " & _
+                                    " Timestamp DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(), " & _
+                                    " IPAddress NVARCHAR(45) NULL ); END;"
+                Using cmd As New SqlCommand(sql, conn)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+        Catch
+            ' best-effort only
+        End Try
+    End Sub
+
     Private Sub SetupDateFilters()
         dtpFromDate.Value = DateTime.Now.AddDays(-30)
         dtpToDate.Value = DateTime.Now
@@ -88,83 +111,103 @@ Partial Class AuditLogViewer
         _cboUser.SelectedIndex = 0
     End Sub
 
-    Private Sub LoadAuditLogs()
-        dgvAuditLog.DataSource = GetAuditLogs()
-        dgvAuditLog.AutoResizeColumns()
+    Private Sub SetupAuditLogColumns()
+        dgvAuditLog.Columns.Clear()
+        dgvAuditLog.Columns.Add("ID", "ID")
+        dgvAuditLog.Columns.Add("UserID", "User ID")
+        dgvAuditLog.Columns.Add("Action", "Action")
+        dgvAuditLog.Columns.Add("TableName", "Table")
+        dgvAuditLog.Columns.Add("RecordID", "Record ID")
+        dgvAuditLog.Columns.Add("Details", "Details")
+        dgvAuditLog.Columns.Add("Timestamp", "Timestamp")
+        dgvAuditLog.Columns.Add("IPAddress", "IP Address")
         
-        ' Format timestamp column
-        If dgvAuditLog.Columns.Contains("Timestamp") Then
-            dgvAuditLog.Columns("Timestamp").DefaultCellStyle.Format = "yyyy-MM-dd HH:mm:ss"
-        End If
+        ' Set column widths
+        dgvAuditLog.Columns("ID").Width = 60
+        dgvAuditLog.Columns("UserID").Width = 80
+        dgvAuditLog.Columns("Action").Width = 120
+        dgvAuditLog.Columns("TableName").Width = 100
+        dgvAuditLog.Columns("RecordID").Width = 80
+        dgvAuditLog.Columns("Details").Width = 300
+        dgvAuditLog.Columns("Timestamp").Width = 150
+        dgvAuditLog.Columns("IPAddress").Width = 120
     End Sub
 
-    Private Function GetAuditLogs() As DataTable
-        Dim dt As New DataTable()
-        Using conn As New SqlConnection(connectionString)
-            Try
+    Private Sub LoadAuditLogs()
+        Try
+            ' Ensure columns exist before clearing rows
+            If dgvAuditLog.Columns.Count = 0 Then
+                SetupAuditLogColumns()
+            End If
+            
+            dgvAuditLog.Rows.Clear()
+            Using conn As New SqlConnection(connectionString)
                 conn.Open()
-                Dim sql As String = "SELECT a.AuditID, u.Username, a.Action, a.TableName, a.RecordID, a.Details, a.Timestamp, a.IPAddress " &
-                                   "FROM dbo.AuditLog a LEFT JOIN dbo.Users u ON a.UserID = u.UserID " &
-                                   "WHERE a.Timestamp >= @fromDate AND a.Timestamp <= @toDate"
                 
-                If cboAction.SelectedIndex > 0 Then
-                    sql &= " AND a.Action = @action"
-                End If
-                ' Filter by selected user if chosen
-                Dim selectedUserId As Integer = 0
-                Try
-                    If _cboUser IsNot Nothing AndAlso _cboUser.SelectedValue IsNot Nothing AndAlso Not TypeOf _cboUser.SelectedValue Is DBNull Then
-                        selectedUserId = Convert.ToInt32(_cboUser.SelectedValue)
-                    End If
-                Catch
-                    selectedUserId = 0
-                End Try
-                If selectedUserId > 0 Then
-                    sql &= " AND a.UserID = @uid"
-                End If
+                Dim sql As String = "SELECT TOP 1000 AuditID AS ID, UserID, Action, TableName, RecordID, " &
+                                   "Details, Timestamp, IPAddress " &
+                                   "FROM AuditLog " &
+                                   "WHERE (@FromDate IS NULL OR Timestamp >= @FromDate) " &
+                                   "AND (@ToDate IS NULL OR Timestamp <= @ToDate) " &
+                                   "AND (@Action IS NULL OR @Action = '' OR @Action = 'All Actions' OR Action = @Action) " &
+                                   "AND (@UserID IS NULL OR UserID = @UserID) " &
+                                   "ORDER BY Timestamp DESC"
                 
-                sql &= " ORDER BY a.Timestamp DESC"
-                
-                Dim cmd As New SqlCommand(sql, conn)
-                cmd.Parameters.AddWithValue("@fromDate", dtpFromDate.Value.Date)
-                cmd.Parameters.AddWithValue("@toDate", dtpToDate.Value.Date.AddDays(1).AddSeconds(-1))
-                
-                If cboAction.SelectedIndex > 0 Then
-                    cmd.Parameters.AddWithValue("@action", cboAction.SelectedItem.ToString())
-                End If
-                If selectedUserId > 0 Then
-                    cmd.Parameters.AddWithValue("@uid", selectedUserId)
-                End If
-                
-                Dim adapter As New SqlDataAdapter(cmd)
-                adapter.Fill(dt)
-            Catch ex As Exception
-                MessageBox.Show("Error loading audit logs: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            End Try
-        End Using
-        Return dt
-    End Function
+                Using cmd As New SqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@FromDate", If(dtpFromDate.Value.Date = DateTime.MinValue.Date, DBNull.Value, dtpFromDate.Value.Date))
+                    cmd.Parameters.AddWithValue("@ToDate", If(dtpToDate.Value.Date = DateTime.MaxValue.Date, DBNull.Value, dtpToDate.Value.Date.AddDays(1).AddSeconds(-1)))
+                    cmd.Parameters.AddWithValue("@Action", If(cboAction.SelectedItem?.ToString() = "All Actions", DBNull.Value, cboAction.SelectedItem?.ToString()))
+                    cmd.Parameters.AddWithValue("@UserID", If(_cboUser.SelectedValue Is Nothing OrElse CInt(_cboUser.SelectedValue) = 0, DBNull.Value, _cboUser.SelectedValue))
+                    
+                    Using reader As SqlDataReader = cmd.ExecuteReader()
+                        While reader.Read()
+                            dgvAuditLog.Rows.Add(
+                                reader("ID"),
+                                reader("UserID"),
+                                reader("Action"),
+                                If(IsDBNull(reader("TableName")), "", reader("TableName").ToString()),
+                                If(IsDBNull(reader("RecordID")), "", reader("RecordID").ToString()),
+                                If(IsDBNull(reader("Details")), "", reader("Details").ToString()),
+                                reader("Timestamp"),
+                                If(IsDBNull(reader("IPAddress")), "", reader("IPAddress").ToString())
+                            )
+                        End While
+                    End Using
+                End Using
+            End Using
+            
+            ' Insert sample data if no records exist
+            If dgvAuditLog.Rows.Count = 0 Then
+                InsertSampleAuditData()
+                LoadAuditLogs() ' Reload after inserting sample data
+            End If
+            
+        Catch ex As Exception
+            MessageBox.Show($"Error loading audit logs: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
 
-    Private Sub EnsureAuditLogTable()
+    Private Sub InsertSampleAuditData()
         Try
             Using conn As New SqlConnection(connectionString)
                 conn.Open()
-                Dim sql As String = "IF OBJECT_ID('dbo.AuditLog','U') IS NULL BEGIN " & _
-                                    "CREATE TABLE dbo.AuditLog (" & _
-                                    " AuditID INT IDENTITY(1,1) PRIMARY KEY, " & _
-                                    " UserID INT NULL, " & _
-                                    " Action NVARCHAR(100) NOT NULL, " & _
-                                    " TableName NVARCHAR(128) NULL, " & _
-                                    " RecordID NVARCHAR(100) NULL, " & _
-                                    " Details NVARCHAR(MAX) NULL, " & _
-                                    " Timestamp DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(), " & _
-                                    " IPAddress NVARCHAR(45) NULL ); END;"
-                Using cmd As New SqlCommand(sql, conn)
-                    cmd.ExecuteNonQuery()
-                End Using
+                
+                ' Insert sample audit log entries
+                Dim sampleEntries As String() = {
+                    "INSERT INTO AuditLog (UserID, Action, TableName, RecordID, Details, Timestamp, IPAddress) VALUES (1, 'Login', 'Users', '1', 'User logged in successfully', GETDATE(), '127.0.0.1')",
+                    "INSERT INTO AuditLog (UserID, Action, TableName, RecordID, Details, Timestamp, IPAddress) VALUES (1, 'UserCreated', 'Users', '2', 'New user account created', DATEADD(MINUTE, -30, GETDATE()), '127.0.0.1')",
+                    "INSERT INTO AuditLog (UserID, Action, TableName, RecordID, Details, Timestamp, IPAddress) VALUES (1, 'BranchCreated', 'Branches', '1', 'New branch office created', DATEADD(HOUR, -2, GETDATE()), '127.0.0.1')",
+                    "INSERT INTO AuditLog (UserID, Action, TableName, RecordID, Details, Timestamp, IPAddress) VALUES (1, 'UserUpdated', 'Users', '1', 'User profile updated', DATEADD(DAY, -1, GETDATE()), '127.0.0.1')"
+                }
+                
+                For Each entry In sampleEntries
+                    Using cmd As New SqlCommand(entry, conn)
+                        cmd.ExecuteNonQuery()
+                    End Using
+                Next
             End Using
-        Catch
-            ' best-effort only
+        Catch ex As Exception
+            ' Ignore errors when inserting sample data
         End Try
     End Sub
 

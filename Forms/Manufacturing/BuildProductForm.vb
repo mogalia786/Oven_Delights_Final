@@ -830,7 +830,7 @@ Namespace Manufacturing
                     Try
                         Dim skuValue As String = If(String.IsNullOrWhiteSpace(txtSKU.Text), "", txtSKU.Text.Trim())
                         Dim productName As String = txtProductName.Text.Trim()
-                        
+
                         ' 1. Insert into Manufacturing_Product for recipe/BOM functionality
                         Dim manufacturingProductId As Integer
                         Dim sql1 As String = "INSERT INTO dbo.Manufacturing_Product (SKU, ProductName, Category, Subcategory, UnitCost, BranchID, IsActive, CreatedDate) VALUES (@sku, @name, @cat, @subcat, 0, 1, 1, GETDATE()); SELECT SCOPE_IDENTITY()"
@@ -841,7 +841,7 @@ Namespace Manufacturing
                             cmd.Parameters.AddWithValue("@subcat", categorySelector.SelectedSubcategoryName)
                             manufacturingProductId = Convert.ToInt32(cmd.ExecuteScalar())
                         End Using
-                        
+
                         ' 2. Insert into Retail_Product for stock/inventory/POS functionality
                         Dim retailProductId As Integer
                         Dim sql2 As String = "INSERT INTO dbo.Retail_Product (SKU, Name, IsActive, CreatedAt) VALUES (@sku, @name, 1, GETDATE()); SELECT SCOPE_IDENTITY()"
@@ -850,7 +850,7 @@ Namespace Manufacturing
                             cmd.Parameters.AddWithValue("@name", productName)
                             retailProductId = Convert.ToInt32(cmd.ExecuteScalar())
                         End Using
-                        
+
                         ' 3. Create default variant for retail system
                         Dim variantId As Integer
                         Dim sql3 As String = "INSERT INTO dbo.Retail_Variant (ProductID, VariantName, IsActive) VALUES (@pid, 'Default', 1); SELECT SCOPE_IDENTITY()"

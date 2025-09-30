@@ -130,13 +130,21 @@ Public Class UserAddEditForm
     Private Sub LoadRoles()
         Try
             Using conn As New SqlConnection(_connString)
-                Dim sql = "SELECT RoleID, RoleName FROM Roles WHERE IsActive = 1 ORDER BY RoleName"
+                Dim sql = "SELECT RoleID, RoleName FROM Roles ORDER BY RoleName"
                 Using da As New SqlDataAdapter(sql, conn)
                     Dim dt As New DataTable()
                     da.Fill(dt)
+                    
+                    ' Add default "Select Role" option
+                    Dim defaultRow = dt.NewRow()
+                    defaultRow("RoleID") = DBNull.Value
+                    defaultRow("RoleName") = "-- Select Role --"
+                    dt.Rows.InsertAt(defaultRow, 0)
+                    
                     cboRole.DataSource = dt
                     cboRole.DisplayMember = "RoleName"
                     cboRole.ValueMember = "RoleID"
+                    cboRole.SelectedIndex = 0
                 End Using
             End Using
         Catch ex As Exception
@@ -255,8 +263,8 @@ Public Class UserAddEditForm
     End Function
 
     Private Sub CreateUser(conn As SqlConnection)
-        Dim sql = "INSERT INTO Users (Username, Email, PasswordHash, RoleID, BranchID, IsActive, CreatedDate) " &
-                 "VALUES (@username, @email, @password, @roleId, @branchId, @isActive, GETDATE())"
+        Dim sql = "INSERT INTO Users (Username, Email, Password, RoleID, BranchID, IsActive, CreatedDate, FirstName, LastName) " &
+                 "VALUES (@username, @email, @password, @roleId, @branchId, @isActive, GETDATE(), @firstName, @lastName)"
         
         Using cmd As New SqlCommand(sql, conn)
             cmd.Parameters.AddWithValue("@username", txtUsername.Text.Trim())
@@ -265,6 +273,8 @@ Public Class UserAddEditForm
             cmd.Parameters.AddWithValue("@roleId", cboRole.SelectedValue)
             cmd.Parameters.AddWithValue("@branchId", If(cboBranch.SelectedValue Is DBNull.Value, DBNull.Value, cboBranch.SelectedValue))
             cmd.Parameters.AddWithValue("@isActive", chkIsActive.Checked)
+            cmd.Parameters.AddWithValue("@firstName", txtUsername.Text.Trim()) ' Use username as firstname for now
+            cmd.Parameters.AddWithValue("@lastName", txtUsername.Text.Trim()) ' Use username as lastname for now
             cmd.ExecuteNonQuery()
         End Using
         
@@ -276,7 +286,7 @@ Public Class UserAddEditForm
                  "BranchID = @branchId, IsActive = @isActive"
         
         If Not String.IsNullOrWhiteSpace(txtPassword.Text) Then
-            sql &= ", PasswordHash = @password"
+            sql &= ", Password = @password"
         End If
         
         sql &= " WHERE UserID = @userId"

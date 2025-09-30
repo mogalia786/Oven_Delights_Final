@@ -4,10 +4,13 @@ Imports Microsoft.Data.SqlClient
 Public Class InterBranchFulfillForm
     Private ReadOnly _requestId As Integer
     Private ReadOnly _svc As New InterBranchTransferService()
+    Private ReadOnly stockroomService As New StockroomService()
+    Private currentBranchId As Integer
 
     Public Sub New(requestId As Integer)
         InitializeComponent()
         _requestId = requestId
+        currentBranchId = stockroomService.GetCurrentUserBranchId()
         lblHeader.Text = $"Fulfil Request #{_requestId}"
         LoadLines()
     End Sub

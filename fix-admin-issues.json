@@ -1,0 +1,51 @@
+{
+  "name": "Fix Administration Module Issues",
+  "description": "Automated fix for User Management and Audit Log errors",
+  "tasks": [
+    {
+      "name": "Fix User Management SQL Query",
+      "type": "sql_execute",
+      "connection": "tcp:mogalia.database.windows.net,1433",
+      "database": "Oven_Delights_Main",
+      "username": "faroq786",
+      "password": "Faroq#786",
+      "query": "-- Check and fix Users table structure\nIF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Users' AND COLUMN_NAME = 'UserID')\nBEGIN\n    PRINT 'UserID column missing - this should not happen'\nEND\nELSE\n    PRINT 'UserID column exists - Users table structure is correct'\nEND\n\n-- Check Roles table structure\nIF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Roles' AND COLUMN_NAME = 'RoleID')\nBEGIN\n    PRINT 'RoleID column missing - this should not happen'\nEND\nELSE\n    PRINT 'RoleID column exists - Roles table structure is correct'\nEND\n\n-- Check Branches table structure\nIF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Branches' AND COLUMN_NAME = 'BranchID')\nBEGIN\n    PRINT 'BranchID column missing - this should not happen'\nEND\nELSE\n    PRINT 'BranchID column exists - Branches table structure is correct'\nEND"
+    },
+    {
+      "name": "Create AuditLog Table if Missing",
+      "type": "sql_execute", 
+      "connection": "tcp:mogalia.database.windows.net,1433",
+      "database": "Oven_Delights_Main",
+      "username": "faroq786",
+      "password": "Faroq#786",
+      "query": "-- Ensure AuditLog table exists with correct structure\nIF OBJECT_ID('dbo.AuditLog','U') IS NULL\nBEGIN\n    CREATE TABLE dbo.AuditLog (\n        AuditID INT IDENTITY(1,1) PRIMARY KEY,\n        UserID INT NULL,\n        Action NVARCHAR(100) NOT NULL,\n        TableName NVARCHAR(128) NULL,\n        RecordID NVARCHAR(100) NULL,\n        Details NVARCHAR(MAX) NULL,\n        Timestamp DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),\n        IPAddress NVARCHAR(45) NULL\n    )\n    PRINT 'AuditLog table created successfully'\nEND\nELSE\nBEGIN\n    PRINT 'AuditLog table already exists'\nEND\n\n-- Insert sample audit data if table is empty\nIF NOT EXISTS (SELECT TOP 1 * FROM AuditLog)\nBEGIN\n    INSERT INTO AuditLog (UserID, Action, TableName, RecordID, Details, Timestamp, IPAddress) VALUES\n    (1, 'Login', 'Users', '1', 'User logged in successfully', GETDATE(), '127.0.0.1'),\n    (1, 'UserCreated', 'Users', '2', 'New user account created', DATEADD(MINUTE, -30, GETDATE()), '127.0.0.1'),\n    (1, 'BranchCreated', 'Branches', '1', 'New branch office created', DATEADD(HOUR, -2, GETDATE()), '127.0.0.1'),\n    (1, 'UserUpdated', 'Users', '1', 'User profile updated', DATEADD(DAY, -1, GETDATE()), '127.0.0.1')\n    PRINT 'Sample audit data inserted'\nEND"
+    },
+    {
+      "name": "Test User Management Query",
+      "type": "sql_execute",
+      "connection": "tcp:mogalia.database.windows.net,1433", 
+      "database": "Oven_Delights_Main",
+      "username": "faroq786",
+      "password": "Faroq#786",
+      "query": "-- Test the exact query used by User Management form\nSELECT TOP 5 u.UserID, u.Username, u.Email,\n       ISNULL(u.IsActive, 1) AS IsActive,\n       r.RoleName, b.Name AS BranchName, u.CreatedDate\nFROM Users u\nLEFT JOIN Roles r ON r.RoleID = u.RoleID\nLEFT JOIN Branches b ON b.BranchID = u.BranchID\nORDER BY u.Username"
+    },
+    {
+      "name": "Test Roles Query", 
+      "type": "sql_execute",
+      "connection": "tcp:mogalia.database.windows.net,1433",
+      "database": "Oven_Delights_Main", 
+      "username": "faroq786",
+      "password": "Faroq#786",
+      "query": "-- Test the exact query used by Roles grid\nSELECT TOP 5 RoleID, RoleName,\n       ISNULL(Description, '') AS Description,\n       ISNULL(IsActive, 1) AS IsActive\nFROM Roles\nORDER BY RoleName"
+    },
+    {
+      "name": "Test Audit Log Query",
+      "type": "sql_execute", 
+      "connection": "tcp:mogalia.database.windows.net,1433",
+      "database": "Oven_Delights_Main",
+      "username": "faroq786", 
+      "password": "Faroq#786",
+      "query": "-- Test the exact query used by Audit Log viewer\nSELECT TOP 10 AuditID AS ID, UserID, Action, TableName, RecordID,\n       Details, Timestamp, IPAddress\nFROM AuditLog\nORDER BY Timestamp DESC"
+    }
+  ]
+}

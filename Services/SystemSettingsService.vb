@@ -1,4 +1,4 @@
-Imports Microsoft.Data.SqlClient
+Imports System.Data.SqlClient
 Imports System.Configuration
 Imports System.Collections.Generic
 Imports System.Data
@@ -68,21 +68,13 @@ Public Class SystemSettingsService
             conn.Open()
             Using transaction = conn.BeginTransaction()
                 Try
-                    Dim query = """
-                        IF EXISTS (SELECT 1 FROM SystemSettings WHERE SettingName = @SettingName)
-                            UPDATE SystemSettings 
-                            SET SettingValue = @SettingValue,
-                                ModifiedBy = @ModifiedBy,
-                                ModifiedDate = GETDATE()
-                            WHERE SettingName = @SettingName
-                        ELSE
-                            INSERT INTO SystemSettings 
-                                (SettingName, SettingValue, DataType, Category, CreatedBy, CreatedDate, ModifiedBy, ModifiedDate)
-                            VALUES 
-                                (@SettingName, @SettingValue, 'String', @Category, @ModifiedBy, GETDATE(), @ModifiedBy, GETDATE())
-                    """
+                    Dim updateQuery = "UPDATE SystemSettings " & _
+                                     "SET SettingValue = @SettingValue, " & _
+                                     "ModifiedBy = @ModifiedBy, " & _
+                                     "ModifiedDate = GETDATE() " & _
+                                     "WHERE SettingName = @SettingName"
                     
-                    Using cmd As New SqlCommand(query, conn, transaction)
+                    Using cmd As New SqlCommand(updateQuery, conn, transaction)
                         cmd.Parameters.Add("@SettingName", SqlDbType.NVarChar, 100)
                         cmd.Parameters.Add("@SettingValue", SqlDbType.NVarChar, -1)
                         cmd.Parameters.Add("@Category", SqlDbType.NVarChar, 50)
@@ -94,7 +86,16 @@ Public Class SystemSettingsService
                         For Each setting In settings
                             cmd.Parameters("@SettingName").Value = setting.Key
                             cmd.Parameters("@SettingValue").Value = If(setting.Value, DBNull.Value)
-                            cmd.ExecuteNonQuery()
+                            
+                            Dim rowsAffected = cmd.ExecuteNonQuery()
+                            
+                            If rowsAffected = 0 Then
+                                cmd.CommandText = "INSERT INTO SystemSettings " & _
+                                                 "(SettingName, SettingValue, DataType, Category, CreatedBy, CreatedDate, ModifiedBy, ModifiedDate) " & _
+                                                 "VALUES (@SettingName, @SettingValue, 'String', @Category, @ModifiedBy, GETDATE(), @ModifiedBy, GETDATE())"
+                                cmd.ExecuteNonQuery()
+                                cmd.CommandText = updateQuery
+                            End If
                         Next
                         
                         transaction.Commit()

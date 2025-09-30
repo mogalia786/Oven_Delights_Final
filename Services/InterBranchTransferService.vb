@@ -3,6 +3,8 @@ Imports Microsoft.Data.SqlClient
 
 Public Class InterBranchTransferService
     Private ReadOnly _connStr As String
+    Private ReadOnly stockroomService As New StockroomService()
+    
     Public Sub New()
         _connStr = System.Configuration.ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
     End Sub

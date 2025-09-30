@@ -2,14 +2,20 @@ Imports System.Drawing
 
 Namespace UI
     Public Module Theme
-        ' Core palette (can be tweaked later). Made mutable so we can derive from logo dynamically.
-        Public Primary As Color = Color.FromArgb(0, 153, 102) ' default green brand
-        Public Accent As Color = Color.FromArgb(255, 179, 0)  ' default amber
-        Public Secondary As Color = Color.FromArgb(10, 127, 97)
-        Public Background As Color = Color.FromArgb(245, 255, 245)
+        ' Modern professional palette with enhanced colors
+        Public Primary As Color = Color.FromArgb(33, 150, 243) ' Modern blue
+        Public Accent As Color = Color.FromArgb(255, 152, 0)   ' Vibrant orange
+        Public Secondary As Color = Color.FromArgb(21, 101, 192) ' Darker blue
+        Public Success As Color = Color.FromArgb(76, 175, 80)  ' Green for success states
+        Public Warning As Color = Color.FromArgb(255, 193, 7)  ' Yellow for warnings
+        Public Danger As Color = Color.FromArgb(244, 67, 54)   ' Red for errors
+        Public Background As Color = Color.FromArgb(248, 249, 250) ' Light gray background
         Public Surface As Color = Color.White
-        Public TextPrimary As Color = Color.FromArgb(43, 43, 43)
-        Public TextMuted As Color = Color.FromArgb(158, 158, 158)
+        Public SurfaceElevated As Color = Color.FromArgb(255, 255, 255) ' Cards/panels
+        Public Border As Color = Color.FromArgb(224, 224, 224) ' Subtle borders
+        Public TextPrimary As Color = Color.FromArgb(33, 37, 41)
+        Public TextSecondary As Color = Color.FromArgb(108, 117, 125)
+        Public TextMuted As Color = Color.FromArgb(173, 181, 189)
 
         ' Apply base theme to a form. Optional: pass a logo to render in the top-left corner.
         Public Sub Apply(form As Form, Optional logo As Image = Nothing)
@@ -77,31 +83,73 @@ Namespace UI
         Public Sub StyleGrid(grid As DataGridView)
             grid.BackgroundColor = Surface
             grid.EnableHeadersVisualStyles = False
-            grid.ColumnHeadersDefaultCellStyle.BackColor = Lighten(Primary, 0.7F)
-            grid.ColumnHeadersDefaultCellStyle.ForeColor = TextPrimary
-            grid.ColumnHeadersDefaultCellStyle.Font = New Font("Segoe UI Semibold", 9.5F, FontStyle.Bold)
-            grid.AlternatingRowsDefaultCellStyle.BackColor = Lighten(Primary, 0.9F)
-            grid.GridColor = Primary
+            grid.ColumnHeadersDefaultCellStyle.BackColor = Primary
+            grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.White
+            grid.ColumnHeadersDefaultCellStyle.Font = New Font("Segoe UI", 9.5F, FontStyle.Bold)
+            grid.ColumnHeadersDefaultCellStyle.Padding = New Padding(8, 6, 8, 6)
+            grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(250, 250, 250)
+            grid.DefaultCellStyle.BackColor = Surface
+            grid.DefaultCellStyle.ForeColor = TextPrimary
+            grid.DefaultCellStyle.SelectionBackColor = Lighten(Primary, 0.8F)
+            grid.DefaultCellStyle.SelectionForeColor = TextPrimary
+            grid.GridColor = Border
             grid.RowHeadersVisible = False
             grid.BorderStyle = BorderStyle.None
             grid.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal
+            grid.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None
+            grid.ColumnHeadersHeight = 40
+            grid.RowTemplate.Height = 32
         End Sub
 
-        Public Function GreenButtonStyle() As DataGridViewCellStyle
+        Public Function SuccessButtonStyle() As DataGridViewCellStyle
             Dim s As New DataGridViewCellStyle()
-            s.BackColor = Color.FromArgb(0, 150, 99)
+            s.BackColor = Success
             s.ForeColor = Color.White
             s.Alignment = DataGridViewContentAlignment.MiddleCenter
+            s.Font = New Font("Segoe UI", 9.0F, FontStyle.Bold)
             Return s
         End Function
 
-        Public Function RedButtonStyle() As DataGridViewCellStyle
+        Public Function DangerButtonStyle() As DataGridViewCellStyle
             Dim s As New DataGridViewCellStyle()
-            s.BackColor = Color.FromArgb(198, 40, 40)
+            s.BackColor = Danger
             s.ForeColor = Color.White
             s.Alignment = DataGridViewContentAlignment.MiddleCenter
+            s.Font = New Font("Segoe UI", 9.0F, FontStyle.Bold)
             Return s
         End Function
+
+        Public Function WarningButtonStyle() As DataGridViewCellStyle
+            Dim s As New DataGridViewCellStyle()
+            s.BackColor = Warning
+            s.ForeColor = TextPrimary
+            s.Alignment = DataGridViewContentAlignment.MiddleCenter
+            s.Font = New Font("Segoe UI", 9.0F, FontStyle.Bold)
+            Return s
+        End Function
+
+        ' Modern card-style panel
+        Public Sub StyleCard(panel As Panel)
+            panel.BackColor = SurfaceElevated
+            panel.Padding = New Padding(16)
+            panel.Margin = New Padding(8)
+        End Sub
+
+        ' Modern input styling
+        Public Sub StyleTextBox(textBox As TextBox)
+            textBox.BorderStyle = BorderStyle.FixedSingle
+            textBox.BackColor = Surface
+            textBox.ForeColor = TextPrimary
+            textBox.Font = New Font("Segoe UI", 9.5F)
+            textBox.Padding = New Padding(8)
+        End Sub
+
+        Public Sub StyleComboBox(comboBox As ComboBox)
+            comboBox.FlatStyle = FlatStyle.Flat
+            comboBox.BackColor = Surface
+            comboBox.ForeColor = TextPrimary
+            comboBox.Font = New Font("Segoe UI", 9.5F)
+        End Sub
 
         ' Simple spacing helpers
         Public Sub Pad(control As Control, Optional all As Integer = 8)

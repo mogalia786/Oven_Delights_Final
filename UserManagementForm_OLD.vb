@@ -3,7 +3,7 @@ Imports System.Drawing
 Imports Oven_Delights_ERP.UI
 Imports System.ComponentModel
 Imports System.Data
-Imports Microsoft.Data.SqlClient
+Imports System.Data.SqlClient
 Imports System.Configuration
 
 Partial Class UserManagementForm

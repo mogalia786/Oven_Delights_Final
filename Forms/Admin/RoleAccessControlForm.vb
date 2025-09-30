@@ -4,10 +4,12 @@ Imports Microsoft.Data.SqlClient
 Public Class RoleAccessControlForm
     Private _dt As DataTable
     Private _perm As New PermissionService()
-    Private _connStr As String = System.Configuration.ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
+    Private _connectionString As String
+    Private _connStr As String
 
     Private Sub RoleAccessControlForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Me.Text = "Role Access Control"
+        _connStr = System.Configuration.ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString")?.ConnectionString
         Try
             LoadRoles()
             If cboRole.Items.Count > 0 Then
@@ -40,7 +42,7 @@ Public Class RoleAccessControlForm
                 MessageBox.Show("Select a role first.")
                 Return
             End If
-            _perm.SaveRolePermissions(roleId, _dt, AppSession.CurrentUserID)
+            SaveRolePermissions(roleId)
             MessageBox.Show("Permissions saved.")
         Catch ex As Exception
             MessageBox.Show("Failed to save: " & ex.Message)
@@ -57,31 +59,37 @@ Public Class RoleAccessControlForm
 
     Private Sub ReloadGrid()
         Try
-            Dim features = _perm.GetAllFeatures()
             Dim roleId As Integer = GetSelectedRoleId()
-            Dim perms As DataTable = Nothing
-            If roleId > 0 Then
-                perms = _perm.GetRolePermissions(roleId)
-            End If
             BuildGrid()
-            If features IsNot Nothing Then
-                For Each fr As DataRow In features.Rows
-                    Dim key As String = Convert.ToString(fr("FeatureKey"))
-                    Dim name As String = Convert.ToString(fr("DisplayName"))
-                    Dim cat As String = Convert.ToString(fr("Category"))
-                    Dim canRead As Boolean = False
-                    Dim canWrite As Boolean = False
-                    If perms IsNot Nothing Then
-                        Dim found() = perms.Select($"FeatureKey = '{key.Replace("'", "''")}'")
-                        If found IsNot Nothing AndAlso found.Length > 0 Then
-                            Dim pr = found(0)
-                            If Not pr.IsNull("CanRead") Then canRead = Convert.ToBoolean(pr("CanRead"))
-                            If Not pr.IsNull("CanWrite") Then canWrite = Convert.ToBoolean(pr("CanWrite"))
-                        End If
-                    End If
-                    _dt.Rows.Add(key, If(String.IsNullOrWhiteSpace(name), key, name), cat, canRead, canWrite)
-                Next
-            End If
+            
+            ' Add standard modules
+            Dim modules() As String = {"Administration", "Inventory", "Manufacturing", "Retail", "Accounting", "Reporting"}
+            
+            For Each moduleName As String In modules
+                Dim canRead As Boolean = False
+                Dim canWrite As Boolean = False
+                
+                If roleId > 0 Then
+                    ' Load existing permissions for this role and module
+                    Using conn As New SqlConnection(_connStr)
+                        conn.Open()
+                        Dim sql = "SELECT CanRead, CanWrite FROM RolePermissions WHERE RoleID = @roleId AND ModuleName = @module"
+                        Using cmd As New SqlCommand(sql, conn)
+                            cmd.Parameters.AddWithValue("@roleId", roleId)
+                            cmd.Parameters.AddWithValue("@module", moduleName)
+                            Using reader = cmd.ExecuteReader()
+                                If reader.Read() Then
+                                    canRead = Convert.ToBoolean(reader("CanRead"))
+                                    canWrite = Convert.ToBoolean(reader("CanWrite"))
+                                End If
+                            End Using
+                        End Using
+                    End Using
+                End If
+                
+                _dt.Rows.Add(moduleName, moduleName, "Module", canRead, canWrite)
+            Next
+            
         Catch ex As Exception
             MessageBox.Show("Failed to load permissions: " & ex.Message)
         End Try
@@ -106,4 +114,35 @@ Public Class RoleAccessControlForm
         If TypeOf v Is DBNull Then Return 0
         Return Convert.ToInt32(v)
     End Function
+
+    Private Sub SaveRolePermissions(roleId As Integer)
+        Using conn As New SqlConnection(_connStr)
+            conn.Open()
+            
+            ' Delete existing permissions for this role
+            Using cmd As New SqlCommand("DELETE FROM RolePermissions WHERE RoleID = @roleId", conn)
+                cmd.Parameters.AddWithValue("@roleId", roleId)
+                cmd.ExecuteNonQuery()
+            End Using
+            
+            ' Insert new permissions
+            For Each row As DataRow In _dt.Rows
+                Dim moduleName As String = row("FeatureKey").ToString()
+                Dim canRead As Boolean = Convert.ToBoolean(row("CanRead"))
+                Dim canWrite As Boolean = Convert.ToBoolean(row("CanWrite"))
+                
+                Using cmd As New SqlCommand("INSERT INTO RolePermissions (RoleID, ModuleName, CanRead, CanWrite) VALUES (@roleId, @module, @canRead, @canWrite)", conn)
+                    cmd.Parameters.AddWithValue("@roleId", roleId)
+                    cmd.Parameters.AddWithValue("@module", moduleName)
+                    cmd.Parameters.AddWithValue("@canRead", canRead)
+                    cmd.Parameters.AddWithValue("@canWrite", canWrite)
+                    cmd.ExecuteNonQuery()
+                End Using
+            Next
+        End Using
+    End Sub
+
+    Private Sub cboRole_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cboRole.SelectedIndexChanged
+        ReloadGrid()
+    End Sub
 End Class

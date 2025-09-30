@@ -11,7 +11,7 @@ Public Class PdfService
     End Function
     Private Shared Function SanitizeToken(input As String) As String
         If String.IsNullOrWhiteSpace(input) Then Return String.Empty
-        Dim invalid = Path.GetInvalidFileNameChars()
+        Dim invalid = IO.Path.GetInvalidFileNameChars()
         Dim sb As New StringBuilder(input.Length)
         For Each ch In input
             If invalid.Contains(ch) Then
@@ -25,7 +25,7 @@ Public Class PdfService
     Private Shared Function EnsureOutputFolder() As String
         ' Store PDFs next to the executable in a single "Documents" folder
         Dim basePath As String = System.Windows.Forms.Application.StartupPath
-        Dim folder As String = Path.Combine(basePath, "Documents")
+        Dim folder As String = IO.Path.Combine(basePath, "Documents")
         If Not Directory.Exists(folder) Then Directory.CreateDirectory(folder)
         Return folder
     End Function
@@ -48,11 +48,11 @@ Public Class PdfService
     Private Shared Function WriteAsPseudoPdf(html As String, baseFileName As String) As String
         ' For now, write HTML alongside a .pdf filename for downstream email/sharing
         Dim folder = EnsureOutputFolder()
-        Dim pdfPath = Path.Combine(folder, baseFileName & ".pdf")
-        Dim htmlPath = Path.Combine(folder, baseFileName & ".html")
-        File.WriteAllText(htmlPath, html, Encoding.UTF8)
+        Dim pdfPath = IO.Path.Combine(folder, baseFileName & ".pdf")
+        Dim htmlPath = IO.Path.Combine(folder, baseFileName & ".html")
+        IO.File.WriteAllText(htmlPath, html, Encoding.UTF8)
         ' Copy to .pdf extension so email clients accept it; replace if exists
-        File.Copy(htmlPath, pdfPath, True)
+        IO.File.Copy(htmlPath, pdfPath, True)
         Return pdfPath
     End Function
 
@@ -60,10 +60,10 @@ Public Class PdfService
     Public Shared Function SavePdfWithDocumentNumber(docNumber As String, html As String) As String
         Dim safeName As String = SanitizeToken(docNumber)
         Dim folder = EnsureOutputFolder()
-        Dim pdfPath = Path.Combine(folder, safeName & ".pdf")
-        Dim htmlPath = Path.Combine(folder, safeName & ".html")
-        File.WriteAllText(htmlPath, html, Encoding.UTF8)
-        File.Copy(htmlPath, pdfPath, True)
+        Dim pdfPath = IO.Path.Combine(folder, safeName & ".pdf")
+        Dim htmlPath = IO.Path.Combine(folder, safeName & ".html")
+        IO.File.WriteAllText(htmlPath, html, Encoding.UTF8)
+        IO.File.Copy(htmlPath, pdfPath, True)
         Return pdfPath
     End Function
 

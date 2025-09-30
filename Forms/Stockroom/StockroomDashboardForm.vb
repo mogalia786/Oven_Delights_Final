@@ -17,6 +17,9 @@ Namespace Stockroom
         Private ReadOnly btnOpenBom As New Button()
         Private ReadOnly kpiChart As New Chart()
         Private ReadOnly refreshTimer As New Timer()
+        Private ReadOnly stockroomService As New StockroomService()
+        Private currentBranchId As Integer
+        Private isSuperAdmin As Boolean
         ' Embedded grid for Retail Orders in the "Reorders Due" tile
         Private dgvRetailOrders As DataGridView
         ' Embedded grid for External (PO) Orders in the "POs Pending" tile
@@ -28,6 +31,10 @@ Namespace Stockroom
         Private blinkState As Boolean = False
 
         Public Sub New()
+            ' Initialize branch and role info
+            currentBranchId = stockroomService.GetCurrentUserBranchId()
+            isSuperAdmin = stockroomService.IsCurrentUserSuperAdmin()
+            
             Me.Text = "Stockroom - Dashboard"
             Me.Name = "StockroomDashboardForm"
             Me.StartPosition = FormStartPosition.CenterParent
@@ -35,7 +42,13 @@ Namespace Stockroom
             Me.Font = New Font("Segoe UI", 9.0F, FontStyle.Regular, GraphicsUnit.Point)
             Me.Size = New Size(1000, 680)
 
-            header.Text = "Stockroom Overview"
+            ' Set header text with branch info
+            If isSuperAdmin Then
+                header.Text = "Stockroom Overview - All Branches"
+            Else
+                Dim branchName As String = GetBranchName(currentBranchId)
+                header.Text = $"Stockroom Overview - {branchName}"
+            End If
             header.Font = New Font("Segoe UI", 16.0F, FontStyle.Bold)
             header.AutoSize = True
             header.Location = New Point(20, 15)
@@ -79,16 +92,16 @@ Namespace Stockroom
             Controls.Add(pnlGrid)
 
             AddHandler Me.Shown, Sub()
-                                      LoadKpisSafely()
-                                      LoadRetailOrdersGridSafely()
-                                      LoadExternalOrdersGridSafely()
-                                      LoadMfgPendingGridSafely()
-                                      LoadFulfilledGridSafely()
-                                  End Sub
+                                     LoadKpisSafely()
+                                     LoadRetailOrdersGridSafely()
+                                     LoadExternalOrdersGridSafely()
+                                     LoadMfgPendingGridSafely()
+                                     LoadFulfilledGridSafely()
+                                 End Sub
 
             ' constructor continues below to finish UI initialization
 
-        ' (method moved below constructor)
+            ' (method moved below constructor)
 
             ' Action button: Open BOM Editor
             btnOpenBom.Text = "Open BOM Fulfill"
@@ -114,13 +127,13 @@ Namespace Stockroom
 
             ' Auto-refresh using configurable interval
             AddHandler refreshTimer.Tick, Sub()
-                                             blinkState = Not blinkState
-                                             LoadKpisSafely()
-                                             LoadRetailOrdersGridSafely()
-                                             LoadExternalOrdersGridSafely()
-                                             LoadMfgPendingGridSafely()
-                                             LoadFulfilledGridSafely()
-                                         End Sub
+                                              blinkState = Not blinkState
+                                              LoadKpisSafely()
+                                              LoadRetailOrdersGridSafely()
+                                              LoadExternalOrdersGridSafely()
+                                              LoadMfgPendingGridSafely()
+                                              LoadFulfilledGridSafely()
+                                          End Sub
             refreshTimer.Interval = GetRefreshIntervalFromConfig()
             ' Do not auto-start; prevent timer-driven resets while navigating
             refreshTimer.Stop()
@@ -129,12 +142,12 @@ Namespace Stockroom
             AddHandler Me.Activated, Sub() ResumeRefresh()
             AddHandler Me.Deactivate, Sub() PauseRefresh()
             AddHandler Me.VisibleChanged, Sub()
-                                            If Me.Visible AndAlso Me.WindowState <> FormWindowState.Minimized Then
-                                                ResumeRefresh()
-                                            Else
-                                                PauseRefresh()
-                                            End If
-                                         End Sub
+                                              If Me.Visible AndAlso Me.WindowState <> FormWindowState.Minimized Then
+                                                  ResumeRefresh()
+                                              Else
+                                                  PauseRefresh()
+                                              End If
+                                          End Sub
 
         End Sub
 
@@ -328,14 +341,14 @@ Namespace Stockroom
                 dgvFulfilled.Columns.Add(btnOpenFul)
                 dgvFulfilled.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "InternalOrderID", .HeaderText = "InternalOrderID", .Visible = False})
                 AddHandler dgvFulfilled.CellClick, Sub(s As Object, ev As DataGridViewCellEventArgs)
-                                                      If ev.RowIndex < 0 Then Return
-                                                      If String.Equals(dgvFulfilled.Columns(ev.ColumnIndex).Name, "Open", StringComparison.OrdinalIgnoreCase) Then
-                                                          Dim ioId As Integer = 0
-                                                          Dim v = dgvFulfilled.Rows(ev.RowIndex).Cells("InternalOrderID").Value
-                                                          If v IsNot Nothing AndAlso v IsNot DBNull.Value Then ioId = Convert.ToInt32(v)
-                                                          OpenStockroomFulfillWithSelection(ioId)
-                                                      End If
-                                                  End Sub
+                                                       If ev.RowIndex < 0 Then Return
+                                                       If String.Equals(dgvFulfilled.Columns(ev.ColumnIndex).Name, "Open", StringComparison.OrdinalIgnoreCase) Then
+                                                           Dim ioId As Integer = 0
+                                                           Dim v = dgvFulfilled.Rows(ev.RowIndex).Cells("InternalOrderID").Value
+                                                           If v IsNot Nothing AndAlso v IsNot DBNull.Value Then ioId = Convert.ToInt32(v)
+                                                           OpenStockroomFulfillWithSelection(ioId)
+                                                       End If
+                                                   End Sub
                 panel.Controls.Add(dgvFulfilled)
             End If
             ' Make tile touch-clickable to open Stockroom fulfill view.
@@ -347,6 +360,14 @@ Namespace Stockroom
             AddHandler lblSub.Click, Sub() OpenStockroomFulfill(autoShortage)
             If Not tileValues.ContainsKey(title) Then tileValues.Add(title, lblValue)
             Return panel
+        End Function
+
+        Private Function GetBranchName(branchId As Integer) As String
+            Try
+                Return "Branch " & branchId.ToString()
+            Catch
+                Return "Unknown Branch"
+            End Try
         End Function
 
         ' Lightweight action tile with a title and subtitle that invokes a zero-argument action on click.
@@ -422,12 +443,12 @@ Namespace Stockroom
                 Dim cs As String = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
                 Using cn As New SqlConnection(cs)
                     cn.Open()
-                    Using cmd As New SqlCommand("SELECT bts.ManufacturerUserID, ISNULL(bts.ManufacturerName, N'Unassigned') AS ManufacturerName, COUNT(1) AS PendingCount " & _
-                                                "FROM dbo.BomTaskStatus bts " & _
-                                                "JOIN dbo.InternalOrderHeader IOH ON IOH.InternalOrderID = bts.InternalOrderID " & _
-                                                "JOIN dbo.InventoryLocations locTo ON locTo.LocationID = IOH.ToLocationID " & _
-                                                "WHERE bts.Status = N'Pending' AND (locTo.BranchID=@b OR @b IS NULL) " & _
-                                                "GROUP BY bts.ManufacturerUserID, ISNULL(bts.ManufacturerName, N'Unassigned') " & _
+                    Using cmd As New SqlCommand("SELECT bts.ManufacturerUserID, ISNULL(bts.ManufacturerName, N'Unassigned') AS ManufacturerName, COUNT(1) AS PendingCount " &
+                                                "FROM dbo.BomTaskStatus bts " &
+                                                "JOIN dbo.InternalOrderHeader IOH ON IOH.InternalOrderID = bts.InternalOrderID " &
+                                                "JOIN dbo.InventoryLocations locTo ON locTo.LocationID = IOH.ToLocationID " &
+                                                "WHERE bts.Status = N'Pending' AND (locTo.BranchID=@b OR @b IS NULL) " &
+                                                "GROUP BY bts.ManufacturerUserID, ISNULL(bts.ManufacturerName, N'Unassigned') " &
                                                 "ORDER BY PendingCount DESC;", cn)
                         cmd.Parameters.AddWithValue("@b", AppSession.CurrentBranchID)
                         Using r = cmd.ExecuteReader()
@@ -504,12 +525,12 @@ Namespace Stockroom
                                                End If
                                            End Sub
                 AddHandler grid.CellDoubleClick, Sub(s, ev)
-                                                    If ev.RowIndex >= 0 Then
-                                                        Dim ioId = Convert.ToInt32(grid.Rows(ev.RowIndex).Cells("InternalOrderID").Value)
-                                                        OpenStockroomFulfillWithSelection(ioId)
-                                                        dlg.Close()
-                                                    End If
-                                                End Sub
+                                                     If ev.RowIndex >= 0 Then
+                                                         Dim ioId = Convert.ToInt32(grid.Rows(ev.RowIndex).Cells("InternalOrderID").Value)
+                                                         OpenStockroomFulfillWithSelection(ioId)
+                                                         dlg.Close()
+                                                     End If
+                                                 End Sub
 
                 dlg.Controls.Add(grid)
 
@@ -519,16 +540,16 @@ Namespace Stockroom
                     cn.Open()
                     Dim sql As String
                     If uid > 0 Then
-                        sql = "SELECT bts.InternalOrderID, bts.ManufacturerName, bts.Status, bts.UpdatedAtUtc " & _
-                              "FROM dbo.BomTaskStatus bts " & _
-                              "JOIN dbo.InternalOrderHeader IOH ON IOH.InternalOrderID=bts.InternalOrderID " & _
-                              "JOIN dbo.InventoryLocations locTo ON locTo.LocationID = IOH.ToLocationID " & _
+                        sql = "SELECT bts.InternalOrderID, bts.ManufacturerName, bts.Status, bts.UpdatedAtUtc " &
+                              "FROM dbo.BomTaskStatus bts " &
+                              "JOIN dbo.InternalOrderHeader IOH ON IOH.InternalOrderID=bts.InternalOrderID " &
+                              "JOIN dbo.InventoryLocations locTo ON locTo.LocationID = IOH.ToLocationID " &
                               "WHERE bts.Status=N'Pending' AND bts.ManufacturerUserID=@u AND (locTo.BranchID=@b OR @b IS NULL) ORDER BY bts.UpdatedAtUtc DESC;"
                     Else
-                        sql = "SELECT bts.InternalOrderID, bts.ManufacturerName, bts.Status, bts.UpdatedAtUtc " & _
-                              "FROM dbo.BomTaskStatus bts " & _
-                              "JOIN dbo.InternalOrderHeader IOH ON IOH.InternalOrderID=bts.InternalOrderID " & _
-                              "JOIN dbo.InventoryLocations locTo ON locTo.LocationID = IOH.ToLocationID " & _
+                        sql = "SELECT bts.InternalOrderID, bts.ManufacturerName, bts.Status, bts.UpdatedAtUtc " &
+                              "FROM dbo.BomTaskStatus bts " &
+                              "JOIN dbo.InternalOrderHeader IOH ON IOH.InternalOrderID=bts.InternalOrderID " &
+                              "JOIN dbo.InventoryLocations locTo ON locTo.LocationID = IOH.ToLocationID " &
                               "WHERE bts.Status=N'Pending' AND bts.ManufacturerUserID IS NULL AND (locTo.BranchID=@b OR @b IS NULL) ORDER BY bts.UpdatedAtUtc DESC;"
                     End If
                     Using cmd As New SqlCommand(sql, cn)
@@ -555,7 +576,7 @@ Namespace Stockroom
             End Try
         End Sub
 
-        
+
 
         Private Sub LoadRetailOrdersGrid()
             If dgvRetailOrders Is Nothing Then Return
@@ -577,14 +598,14 @@ Namespace Stockroom
                         End Using
                     End Using
                     If stockLoc = 0 OrElse mfgLoc = 0 Then Return
-                    Using cmd As New SqlCommand("SELECT IOH.InternalOrderID, IOH.InternalOrderNo, IOH.Status, IOH.RequestedDate, ISNULL(IOH.Notes,N'') AS Notes, " & _
-                                                  "       COALESCE(u.FirstName + ' ' + u.LastName, N'-') AS RequestedByName, " & _
-                                                  "       bts.Status AS EffStatus " & _
-                                                  "FROM dbo.InternalOrderHeader IOH " & _
-                                                  "LEFT JOIN dbo.BomTaskStatus bts ON bts.InternalOrderID = IOH.InternalOrderID " & _
-                                                  "LEFT JOIN dbo.Users u ON u.UserID = IOH.RequestedBy " & _
-                                                  "WHERE IOH.FromLocationID=@fromLoc AND IOH.ToLocationID=@toLoc " & _
-                                                  "  AND ISNULL(IOH.Status,'') IN (N'Open', N'Issued') " & _
+                    Using cmd As New SqlCommand("SELECT IOH.InternalOrderID, IOH.InternalOrderNo, IOH.Status, IOH.RequestedDate, ISNULL(IOH.Notes,N'') AS Notes, " &
+                                                  "       COALESCE(u.FirstName + ' ' + u.LastName, N'-') AS RequestedByName, " &
+                                                  "       bts.Status AS EffStatus " &
+                                                  "FROM dbo.InternalOrderHeader IOH " &
+                                                  "LEFT JOIN dbo.BomTaskStatus bts ON bts.InternalOrderID = IOH.InternalOrderID " &
+                                                  "LEFT JOIN dbo.Users u ON u.UserID = IOH.RequestedBy " &
+                                                  "WHERE IOH.FromLocationID=@fromLoc AND IOH.ToLocationID=@toLoc " &
+                                                  "  AND ISNULL(IOH.Status,'') IN (N'Open', N'Issued') " &
                                                   "ORDER BY IOH.InternalOrderID DESC;", cn)
                         cmd.Parameters.AddWithValue("@fromLoc", stockLoc)
                         cmd.Parameters.AddWithValue("@toLoc", mfgLoc)
@@ -683,8 +704,8 @@ Namespace Stockroom
                 Dim mapped As String = "Created"
                 If String.Equals(ioStatus, "Issued", StringComparison.OrdinalIgnoreCase) Then mapped = "Fulfilled"
                 If String.Equals(ioStatus, "Completed", StringComparison.OrdinalIgnoreCase) Then mapped = "Completed"
-                Using cmdS As New SqlCommand("IF EXISTS(SELECT 1 FROM dbo.BomTaskStatus WHERE InternalOrderID=@id) " & _
-                                             "UPDATE dbo.BomTaskStatus SET ManufacturerUserID=@m, ManufacturerName=@n, Status=@s WHERE InternalOrderID=@id " & _
+                Using cmdS As New SqlCommand("IF EXISTS(SELECT 1 FROM dbo.BomTaskStatus WHERE InternalOrderID=@id) " &
+                                             "UPDATE dbo.BomTaskStatus SET ManufacturerUserID=@m, ManufacturerName=@n, Status=@s WHERE InternalOrderID=@id " &
                                              "ELSE INSERT INTO dbo.BomTaskStatus(InternalOrderID, ManufacturerUserID, ManufacturerName, Status) VALUES(@id, @m, @n, @s);", cn)
                     cmdS.Parameters.AddWithValue("@id", ioId)
                     cmdS.Parameters.AddWithValue("@m", userId)
@@ -738,13 +759,13 @@ Namespace Stockroom
                 _ok.Top = 340
                 _ok.Left = 280
                 AddHandler _ok.Click, Sub()
-                                           If _grid.CurrentRow Is Nothing Then Return
-                                           Dim uid As Integer = Convert.ToInt32(_grid.CurrentRow.Cells("UserID").Value)
-                                           Dim nm As String = Convert.ToString(_grid.CurrentRow.Cells("FullName").Value)
-                                           SelectedUserId = uid
-                                           SelectedUserName = nm
-                                           Me.DialogResult = DialogResult.OK
-                                       End Sub
+                                          If _grid.CurrentRow Is Nothing Then Return
+                                          Dim uid As Integer = Convert.ToInt32(_grid.CurrentRow.Cells("UserID").Value)
+                                          Dim nm As String = Convert.ToString(_grid.CurrentRow.Cells("FullName").Value)
+                                          SelectedUserId = uid
+                                          SelectedUserName = nm
+                                          Me.DialogResult = DialogResult.OK
+                                      End Sub
 
                 _cancel.Text = "Cancel"
                 _cancel.Width = 100
@@ -776,12 +797,13 @@ Namespace Stockroom
                 Catch
                 End Try
             End Sub
+
         End Class
 
         Private Sub UpsertRetailOrdersToday(productId As Integer, orderNumber As String, sku As String, productName As String, qty As Decimal, manufacturerUserId As Integer, manufacturerName As String)
             Try
                 Dim cs As String = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
-                Dim branchId As Integer = AppSession.CurrentBranchID
+                Dim branchId As Integer = currentBranchId
                 Dim locId As Integer = 0
                 Using cn As New SqlConnection(cs)
                     cn.Open()

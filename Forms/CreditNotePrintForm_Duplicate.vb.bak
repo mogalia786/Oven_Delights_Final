@@ -1,0 +1,318 @@
+Imports System.Windows.Forms
+Imports System.Drawing
+Imports System.Drawing.Printing
+Imports System.Net.Mail
+Imports System.Configuration
+
+Public Class CreditNotePrintForm
+    Inherits Form
+
+    Private creditNoteData As CreditNoteData
+    Private printDocument As PrintDocument
+    Private WithEvents btnPrint As Button
+    Private WithEvents btnEmail As Button
+    Private WithEvents btnClose As Button
+    Private rtbCreditNote As RichTextBox
+
+    Public Structure CreditNoteData
+        Public CreditNoteNumber As String
+        Public SupplierName As String
+        Public SupplierAddress As String
+        Public SupplierEmail As String
+        Public IssueDate As DateTime
+        Public MaterialCode As String
+        Public MaterialName As String
+        Public ReturnQuantity As Decimal
+        Public UnitCost As Decimal
+        Public TotalAmount As Decimal
+        Public Reason As String
+        Public Comments As String
+        Public PONumber As String
+        Public DeliveryNote As String
+    End Structure
+
+    Public Sub New(creditNote As CreditNoteData)
+        InitializeComponent()
+        creditNoteData = creditNote
+        GenerateCreditNoteLetter()
+    End Sub
+
+    Private Sub InitializeComponent()
+        Me.Text = "Credit Note - Print/Email"
+        Me.Size = New Size(800, 900)
+        Me.StartPosition = FormStartPosition.CenterParent
+        Me.FormBorderStyle = FormBorderStyle.FixedDialog
+        Me.MaximizeBox = False
+        Me.MinimizeBox = False
+
+        ' RichTextBox for credit note display
+        rtbCreditNote = New RichTextBox()
+        rtbCreditNote.Location = New Point(10, 10)
+        rtbCreditNote.Size = New Size(760, 800)
+        rtbCreditNote.ReadOnly = True
+        rtbCreditNote.Font = New Font("Courier New", 10)
+        rtbCreditNote.BackColor = Color.White
+
+        ' Buttons
+        btnPrint = New Button()
+        btnPrint.Text = "Print"
+        btnPrint.Size = New Size(100, 30)
+        btnPrint.Location = New Point(500, 820)
+
+        btnEmail = New Button()
+        btnEmail.Text = "Email"
+        btnEmail.Size = New Size(100, 30)
+        btnEmail.Location = New Point(610, 820)
+
+        btnClose = New Button()
+        btnClose.Text = "Close"
+        btnClose.Size = New Size(100, 30)
+        btnClose.Location = New Point(720, 820)
+
+        Me.Controls.AddRange(New Control() {rtbCreditNote, btnPrint, btnEmail, btnClose})
+
+        ' Initialize print document
+        printDocument = New PrintDocument()
+        AddHandler printDocument.PrintPage, AddressOf PrintDocument_PrintPage
+    End Sub
+
+    Private Sub GenerateCreditNoteLetter()
+        Dim letter As New System.Text.StringBuilder()
+
+        ' Header
+        letter.AppendLine("OVEN DELIGHTS (PTY) LTD")
+        letter.AppendLine("123 Baker Street")
+        letter.AppendLine("Johannesburg, 2000")
+        letter.AppendLine("Tel: (011) 123-4567")
+        letter.AppendLine("Email: accounts@ovendelights.co.za")
+        letter.AppendLine()
+        letter.AppendLine("".PadRight(60, "="))
+        letter.AppendLine("CREDIT NOTE")
+        letter.AppendLine("".PadRight(60, "="))
+        letter.AppendLine()
+
+        ' Credit Note Details
+        letter.AppendLine($"Credit Note Number: {creditNoteData.CreditNoteNumber}")
+        letter.AppendLine($"Date: {creditNoteData.IssueDate:dd MMMM yyyy}")
+        letter.AppendLine($"PO Number: {creditNoteData.PONumber}")
+        letter.AppendLine($"Delivery Note: {creditNoteData.DeliveryNote}")
+        letter.AppendLine()
+
+        ' Supplier Details
+        letter.AppendLine("TO:")
+        letter.AppendLine(creditNoteData.SupplierName)
+        If Not String.IsNullOrEmpty(creditNoteData.SupplierAddress) Then
+            letter.AppendLine(creditNoteData.SupplierAddress)
+        End If
+        If Not String.IsNullOrEmpty(creditNoteData.SupplierEmail) Then
+            letter.AppendLine($"Email: {creditNoteData.SupplierEmail}")
+        End If
+        letter.AppendLine()
+
+        ' Credit Note Body
+        letter.AppendLine("Dear Sir/Madam,")
+        letter.AppendLine()
+        letter.AppendLine("Please find below details of the credit note issued:")
+        letter.AppendLine()
+
+        ' Item Details
+        letter.AppendLine("ITEM DETAILS:")
+        letter.AppendLine("".PadRight(60, "-"))
+        letter.AppendLine($"Material Code: {creditNoteData.MaterialCode}")
+        letter.AppendLine($"Description: {creditNoteData.MaterialName}")
+        letter.AppendLine($"Quantity Returned: {creditNoteData.ReturnQuantity:N2}")
+        letter.AppendLine($"Unit Cost: R {creditNoteData.UnitCost:N2}")
+        letter.AppendLine($"Total Credit Amount: R {creditNoteData.TotalAmount:N2}")
+        letter.AppendLine()
+
+        ' Reason
+        letter.AppendLine($"Reason for Credit: {creditNoteData.Reason}")
+        If Not String.IsNullOrEmpty(creditNoteData.Comments) Then
+            letter.AppendLine($"Additional Comments: {creditNoteData.Comments}")
+        End If
+        letter.AppendLine()
+
+        ' Footer
+        letter.AppendLine("Please adjust your records accordingly and issue a credit")
+        letter.AppendLine("note against our account for the above amount.")
+        letter.AppendLine()
+        letter.AppendLine("Thank you for your cooperation.")
+        letter.AppendLine()
+        letter.AppendLine("Yours faithfully,")
+        letter.AppendLine()
+        letter.AppendLine("_________________________")
+        letter.AppendLine("Accounts Payable Department")
+        letter.AppendLine("Oven Delights (Pty) Ltd")
+        letter.AppendLine()
+        letter.AppendLine($"Generated on: {DateTime.Now:dd MMMM yyyy HH:mm}")
+
+        rtbCreditNote.Text = letter.ToString()
+    End Sub
+
+    Private Sub btnPrint_Click(sender As Object, e As EventArgs) Handles btnPrint.Click
+        Try
+            Dim printDialog As New PrintDialog()
+            printDialog.Document = printDocument
+            
+            If printDialog.ShowDialog() = DialogResult.OK Then
+                printDocument.Print()
+                MessageBox.Show("Credit note printed successfully!", "Print Complete", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+        Catch ex As Exception
+            MessageBox.Show($"Error printing credit note: {ex.Message}", "Print Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub btnEmail_Click(sender As Object, e As EventArgs) Handles btnEmail.Click
+        Try
+            If String.IsNullOrEmpty(creditNoteData.SupplierEmail) Then
+                MessageBox.Show("No email address available for this supplier.", "Email Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            Dim emailForm As New EmailCreditNoteForm(creditNoteData, rtbCreditNote.Text)
+            emailForm.ShowDialog()
+        Catch ex As Exception
+            MessageBox.Show($"Error preparing email: {ex.Message}", "Email Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub btnClose_Click(sender As Object, e As EventArgs) Handles btnClose.Click
+        Me.Close()
+    End Sub
+
+    Private Sub PrintDocument_PrintPage(sender As Object, e As PrintPageEventArgs)
+        Try
+            Dim font As New Font("Courier New", 10)
+            Dim brush As New SolidBrush(Color.Black)
+            Dim leftMargin As Single = e.MarginBounds.Left
+            Dim topMargin As Single = e.MarginBounds.Top
+            Dim lineHeight As Single = font.GetHeight(e.Graphics)
+            Dim linesPerPage As Integer = CInt(e.MarginBounds.Height / lineHeight)
+
+            Dim lines() As String = rtbCreditNote.Text.Split(vbLf)
+            Dim currentLine As Integer = 0
+
+            For i As Integer = 0 To Math.Min(lines.Length - 1, linesPerPage - 1)
+                Dim yPosition As Single = topMargin + (currentLine * lineHeight)
+                e.Graphics.DrawString(lines(i), font, brush, leftMargin, yPosition)
+                currentLine += 1
+            Next
+
+            e.HasMorePages = False
+        Catch ex As Exception
+            MessageBox.Show($"Error during printing: {ex.Message}", "Print Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+End Class
+
+Public Class EmailCreditNoteForm
+    Inherits Form
+
+    Private creditNoteData As CreditNotePrintForm.CreditNoteData
+    Private creditNoteText As String
+    Private WithEvents txtTo As TextBox
+    Private WithEvents txtSubject As TextBox
+    Private WithEvents txtBody As TextBox
+    Private WithEvents btnSend As Button
+    Private WithEvents btnCancel As Button
+
+    Public Sub New(creditNote As CreditNotePrintForm.CreditNoteData, noteText As String)
+        creditNoteData = creditNote
+        creditNoteText = noteText
+        InitializeComponent()
+        PopulateFields()
+    End Sub
+
+    Private Sub InitializeComponent()
+        Me.Text = "Email Credit Note"
+        Me.Size = New Size(600, 500)
+        Me.StartPosition = FormStartPosition.CenterParent
+        Me.FormBorderStyle = FormBorderStyle.FixedDialog
+        Me.MaximizeBox = False
+
+        Dim lblTo As New Label()
+        lblTo.Text = "To:"
+        lblTo.Location = New Point(10, 15)
+        lblTo.Size = New Size(50, 20)
+
+        txtTo = New TextBox()
+        txtTo.Location = New Point(70, 12)
+        txtTo.Size = New Size(500, 20)
+
+        Dim lblSubject As New Label()
+        lblSubject.Text = "Subject:"
+        lblSubject.Location = New Point(10, 45)
+        lblSubject.Size = New Size(50, 20)
+
+        txtSubject = New TextBox()
+        txtSubject.Location = New Point(70, 42)
+        txtSubject.Size = New Size(500, 20)
+
+        Dim lblBody As New Label()
+        lblBody.Text = "Message:"
+        lblBody.Location = New Point(10, 75)
+        lblBody.Size = New Size(60, 20)
+
+        txtBody = New TextBox()
+        txtBody.Location = New Point(10, 95)
+        txtBody.Size = New Size(560, 350)
+        txtBody.Multiline = True
+        txtBody.ScrollBars = ScrollBars.Vertical
+
+        btnSend = New Button()
+        btnSend.Text = "Send Email"
+        btnSend.Location = New Point(400, 455)
+        btnSend.Size = New Size(80, 30)
+
+        btnCancel = New Button()
+        btnCancel.Text = "Cancel"
+        btnCancel.Location = New Point(490, 455)
+        btnCancel.Size = New Size(80, 30)
+
+        Me.Controls.AddRange(New Control() {lblTo, txtTo, lblSubject, txtSubject, lblBody, txtBody, btnSend, btnCancel})
+    End Sub
+
+    Private Sub PopulateFields()
+        txtTo.Text = creditNoteData.SupplierEmail
+        txtSubject.Text = $"Credit Note {creditNoteData.CreditNoteNumber} - {creditNoteData.SupplierName}"
+        
+        Dim emailBody As New System.Text.StringBuilder()
+        emailBody.AppendLine("Dear Sir/Madam,")
+        emailBody.AppendLine()
+        emailBody.AppendLine($"Please find attached credit note {creditNoteData.CreditNoteNumber} for your records.")
+        emailBody.AppendLine()
+        emailBody.AppendLine("Credit Note Details:")
+        emailBody.AppendLine($"Material: {creditNoteData.MaterialName}")
+        emailBody.AppendLine($"Quantity: {creditNoteData.ReturnQuantity:N2}")
+        emailBody.AppendLine($"Amount: R {creditNoteData.TotalAmount:N2}")
+        emailBody.AppendLine($"Reason: {creditNoteData.Reason}")
+        emailBody.AppendLine()
+        emailBody.AppendLine("Please adjust your records accordingly.")
+        emailBody.AppendLine()
+        emailBody.AppendLine("Kind regards,")
+        emailBody.AppendLine("Accounts Payable Department")
+        emailBody.AppendLine("Oven Delights (Pty) Ltd")
+        
+        txtBody.Text = emailBody.ToString()
+    End Sub
+
+    Private Sub btnSend_Click(sender As Object, e As EventArgs) Handles btnSend.Click
+        Try
+            If String.IsNullOrWhiteSpace(txtTo.Text) Then
+                MessageBox.Show("Please enter a recipient email address.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' Create email (this would need SMTP configuration)
+            MessageBox.Show("Email functionality requires SMTP configuration. Credit note details have been prepared for sending.", "Email Ready", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Me.Close()
+        Catch ex As Exception
+            MessageBox.Show($"Error sending email: {ex.Message}", "Email Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub btnCancel_Click(sender As Object, e As EventArgs) Handles btnCancel.Click
+        Me.Close()
+    End Sub
+End Class

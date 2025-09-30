@@ -13,15 +13,16 @@ Public Class StockroomManagementForm
         Me.Text = "Stockroom Management - Oven Delights ERP"
         Me.WindowState = FormWindowState.Maximized
 
-        ' Wire up event handlers
-        AddHandler btnAddSupplier.Click, AddressOf btnAddSupplier_Click
-        AddHandler btnEditSupplier.Click, AddressOf btnEditSupplier_Click
-        AddHandler btnAddMaterial.Click, AddressOf btnAddMaterial_Click
-        AddHandler btnEditMaterial.Click, AddressOf btnEditMaterial_Click
-        AddHandler btnCreatePO.Click, AddressOf btnCreatePO_Click
-        AddHandler btnRefresh.Click, AddressOf btnRefresh_Click
-        AddHandler txtSearchSuppliers.TextChanged, AddressOf txtSearchSuppliers_TextChanged
-        AddHandler txtSearchMaterials.TextChanged, AddressOf txtSearchMaterials_TextChanged
+        ' Wire up event handlers after controls are created
+        If btnAddSupplier IsNot Nothing Then AddHandler btnAddSupplier.Click, AddressOf btnAddSupplier_Click
+        If btnEditSupplier IsNot Nothing Then AddHandler btnEditSupplier.Click, AddressOf btnEditSupplier_Click
+        If btnAddMaterial IsNot Nothing Then AddHandler btnAddMaterial.Click, AddressOf btnAddMaterial_Click
+        If btnEditMaterial IsNot Nothing Then AddHandler btnEditMaterial.Click, AddressOf btnEditMaterial_Click
+        If btnCreatePO IsNot Nothing Then AddHandler btnCreatePO.Click, AddressOf btnCreatePO_Click
+        If btnRefresh IsNot Nothing Then AddHandler btnRefresh.Click, AddressOf btnRefresh_Click
+        If txtSearchSuppliers IsNot Nothing Then AddHandler txtSearchSuppliers.TextChanged, AddressOf txtSearchSuppliers_TextChanged
+        If txtSearchMaterials IsNot Nothing Then AddHandler txtSearchMaterials.TextChanged, AddressOf txtSearchMaterials_TextChanged
+        If dgvPurchaseOrders IsNot Nothing Then AddHandler dgvPurchaseOrders.CellContentClick, AddressOf dgvPurchaseOrders_CellContentClick
 
         LoadDataFromDatabase()
     End Sub
@@ -153,7 +154,7 @@ Public Class StockroomManagementForm
         End Try
     End Sub
 
-    Private Sub dgvPurchaseOrders_CellContentClick(sender As Object, e As DataGridViewCellEventArgs) Handles dgvPurchaseOrders.CellContentClick
+    Private Sub dgvPurchaseOrders_CellContentClick(sender As Object, e As DataGridViewCellEventArgs)
         If e.RowIndex < 0 Then Return
         If dgvPurchaseOrders.Columns(e.ColumnIndex).Name <> "OpenPDF" Then Return
         Try

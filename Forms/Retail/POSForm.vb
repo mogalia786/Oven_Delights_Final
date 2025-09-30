@@ -123,9 +123,8 @@ Public Partial Class POSForm
             
             Using conn As New SqlConnection(_connString)
                 ' Try to find exact Code/SKU match first, then partial matches
-                Dim sql As String = "SELECT TOP 20 p.ProductID, p.Code, p.SKU, p.Name, ISNULL(pr.SellingPrice, 0) AS CurrentPrice, ISNULL(s.QtyOnHand, 0) AS Stock " &
+                Dim sql As String = "SELECT TOP 20 p.ProductID, p.Code, p.SKU, p.Name, ISNULL(p.SellingPrice, 0) AS CurrentPrice, ISNULL(s.QtyOnHand, 0) AS Stock " &
                                    "FROM dbo.Retail_Product p " &
-                                   "LEFT JOIN dbo.v_Retail_CurrentPrices pr ON pr.ProductID = p.ProductID AND (pr.BranchID = @bid OR pr.BranchID IS NULL) " &
                                    "LEFT JOIN dbo.Retail_Stock s ON s.ProductID = p.ProductID AND s.BranchID = @bid " &
                                    "WHERE p.Code LIKE @sku OR p.SKU LIKE @sku OR p.Name LIKE @sku " &
                                    "ORDER BY CASE WHEN p.Code = @exactSku OR p.SKU = @exactSku THEN 0 ELSE 1 END, p.Name"
@@ -158,9 +157,8 @@ Public Partial Class POSForm
     Private Sub LoadAllProducts()
         Try
             Using conn As New SqlConnection(_connString)
-                Dim sql As String = "SELECT TOP 50 p.ProductID, p.Code, p.SKU, p.Name, ISNULL(pr.SellingPrice, 0) AS CurrentPrice, ISNULL(s.QtyOnHand, 0) AS Stock " &
+                Dim sql As String = "SELECT TOP 50 p.ProductID, p.Code, p.SKU, p.Name, ISNULL(p.SellingPrice, 0) AS CurrentPrice, ISNULL(s.QtyOnHand, 0) AS Stock " &
                                    "FROM dbo.Retail_Product p " &
-                                   "LEFT JOIN dbo.v_Retail_CurrentPrices pr ON pr.ProductID = p.ProductID AND (pr.BranchID = @bid OR pr.BranchID IS NULL) " &
                                    "LEFT JOIN dbo.Retail_Stock s ON s.ProductID = p.ProductID AND s.BranchID = @bid " &
                                    "ORDER BY p.Code, p.Name"
                 
