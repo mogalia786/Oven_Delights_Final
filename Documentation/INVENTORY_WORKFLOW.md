@@ -8,7 +8,8 @@ This document describes the complete inventory flow from purchase to sale, inclu
 ## 1. PURCHASE ORDER → INVOICE CAPTURE FLOW
 
 ### A. EXTERNAL PRODUCTS (Finished Goods)
-**Examples:** Coke, Bread, Water, Ready-made items
+**Examples:** Coke, Bread, Water, Ready-made items  
+**ItemType:** `'External'` in Products table
 
 **Flow:**
 ```
@@ -16,13 +17,16 @@ Purchase Order (External Product)
     ↓
 Capture Invoice
     ↓
-DIRECTLY Updates: Retail_Products_Inventory
+DIRECTLY Updates: Retail_Products_Inventory (Retail_Stock)
+    ↓
+Updates: Products.LastPaidPrice (tracks supplier price)
     ↓
 Available for Retail Sale
 ```
 
 **Database Impact:**
-- Table: `Products` / `Retail_Stock`
+- Table: `Products` (ItemType='External') / `Retail_Stock`
+- Updates: `LastPaidPrice` column with purchase price
 - Ledger: DR Inventory (Products), CR Accounts Payable
 
 ---
@@ -38,11 +42,14 @@ Capture Invoice
     ↓
 Updates: Stockroom_Inventory (RawMaterials)
     ↓
+Updates: RawMaterials.LastPaidPrice (tracks supplier price)
+    ↓
 Available for Manufacturing
 ```
 
 **Database Impact:**
 - Table: `RawMaterials` / `Stockroom_Inventory`
+- Updates: `LastPaidPrice` column with purchase price
 - Ledger: DR Inventory (Raw Materials), CR Accounts Payable
 
 ---
@@ -75,14 +82,19 @@ System REDUCES: Manufacturing_Inventory (Ingredients consumed)
     ↓
 System CALCULATES: Cost of Sale (sum of ingredient costs)
     ↓
+System CREATES/UPDATES: Product with ItemType='Manufactured'
+    ↓
 System ADDS: Retail_Products_Inventory (Finished Product)
 ```
 
 **Database Impact:**
 - Reduce: `Manufacturing_Inventory` (ingredients used)
 - Increase: `Retail_Products_Inventory` (finished product)
-- Update: Product cost with calculated cost of sale
+- Update: `Products` table with ItemType='Manufactured'
+- Update: Product cost with calculated cost of sale (NOT LastPaidPrice)
 - Ledger: DR Finished Goods Inventory, CR Manufacturing Inventory
+
+**Note:** Manufactured products do NOT have LastPaidPrice - their cost comes from BOM calculation
 
 ---
 
@@ -111,10 +123,14 @@ System ADDS: Retail_Products_Inventory (Finished Product)
 ### C. RETAIL PRODUCTS INVENTORY
 **Table:** `Products` / `Retail_Stock`
 **Contains:**
-- Finished products from manufacturing
-- External products ready for sale
+- Manufactured products (ItemType='Manufactured') from manufacturing
+- External products (ItemType='External') purchased complete
 
 **Purpose:** Products available for retail sale
+
+**Product Differentiation:**
+- **Manufactured Products**: Created via BOM, cost from ingredients
+- **External Products**: Purchased complete, LastPaidPrice tracked
 
 ---
 
@@ -340,16 +356,22 @@ Reference: [Auto-generated: BranchPrefix-iTrans-Number]
 - [ ] Variance tracking
 
 ### Inter-Branch Transfer:
-- [ ] From Branch dropdown
-- [ ] To Branch dropdown
-- [ ] Product selection dropdown
-- [ ] Document numbering: BranchPrefix-iTrans-Number
-- [ ] Sender: DR Debtors, CR Inventory
-- [ ] Receiver: DR Inventory, CR Creditors
+- [x] From Branch dropdown
+- [x] To Branch dropdown
+- [x] Product selection dropdown
+- [x] Document numbering: BranchPrefix-iTrans-Number
+- [ ] Sender: DR Debtors, CR Inventory (placeholder)
+- [ ] Receiver: DR Inventory, CR Creditors (placeholder)
 - [ ] Reconciliation report
+
+### Product ItemType and LastPaidPrice:
+- [x] Products.ItemType: 'Manufactured' or 'External'
+- [x] Products.LastPaidPrice: For external products only
+- [x] RawMaterials.LastPaidPrice: For all raw materials
+- [x] Database script created: Update_Products_ItemType_And_LastPaid.sql
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** 2025-09-30  
+**Document Version:** 1.1  
+**Last Updated:** 2025-09-30 20:00  
 **Status:** ACTIVE SPECIFICATION

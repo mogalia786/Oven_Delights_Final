@@ -1839,7 +1839,8 @@ Public Class StockroomService
         Dim dt As New DataTable()
         Using con As New SqlConnection(connectionString)
             Try
-                ' Simple fallback query that works with basic schema
+                ' CRITICAL: Only show Raw Materials and EXTERNAL Products for Purchase Orders
+                ' Manufactured products should NOT appear in PO - they are created via manufacturing
                 Dim sql As String = _
                     "SELECT rm.MaterialID AS MaterialID, rm.MaterialCode AS MaterialCode, " & _
                     "       rm.MaterialName AS MaterialName, ISNULL(rm.AverageCost, 0) AS AverageCost, " & _
@@ -1847,11 +1848,12 @@ Public Class StockroomService
                     "FROM RawMaterials rm " & _
                     "WHERE ISNULL(rm.IsActive, 1) = 1 " & _
                     "UNION ALL " & _
-                    "SELECT p.ProductID AS MaterialID, p.ProductCode AS MaterialCode, " & _
-                    "       p.ProductName AS MaterialName, CAST(0 AS decimal(18,2)) AS AverageCost, " & _
+                    "SELECT p.ProductID AS MaterialID, ISNULL(p.ProductCode, p.SKU) AS MaterialCode, " & _
+                    "       p.ProductName AS MaterialName, ISNULL(p.AverageCost, 0) AS AverageCost, " & _
                     "       'PR' AS ItemSource " & _
                     "FROM Products p " & _
                     "WHERE ISNULL(p.IsActive, 1) = 1 " & _
+                    "  AND p.ItemType = 'External' " & _
                     "ORDER BY MaterialName"
 
                 Using ad As New SqlDataAdapter(sql, con)
@@ -1876,20 +1878,15 @@ Public Class StockroomService
         Dim dt As New DataTable()
         Using con As New SqlConnection(connectionString)
             Try
-                Dim sql = "SELECT ID AS BranchID, BranchName FROM Branches ORDER BY BranchName"
+                Dim sql = "SELECT BranchID, BranchName, BranchCode FROM Branches WHERE ISNULL(IsActive, 1) = 1 ORDER BY BranchName"
                 Using ad As New SqlDataAdapter(sql, con)
                     ad.Fill(dt)
                 End Using
-            Catch
-                ' Fallback if Branches table structure is different
-                Try
-                    Dim fallbackSql = "SELECT 1 AS BranchID, 'Main Branch' AS BranchName"
-                    Using ad As New SqlDataAdapter(fallbackSql, con)
-                        ad.Fill(dt)
-                    End Using
-                Catch
-                    ' Return empty if all fails
-                End Try
+            Catch ex As Exception
+                ' If Branches table doesn't exist or has different structure, create empty table
+                dt.Columns.Add("BranchID", GetType(Integer))
+                dt.Columns.Add("BranchName", GetType(String))
+                dt.Columns.Add("BranchCode", GetType(String))
             End Try
         End Using
         Return dt

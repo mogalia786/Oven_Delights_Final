@@ -1,0 +1,11 @@
+ProductCode | ProductName | SKU | ItemType | CategoryName | SubcategoryName | UnitOfMeasure | ReorderPoint | SellingPrice | LastPaidPrice | AverageCost | Description | IsActive
+BRD-WHT-001 | White Bread Loaf 700g | 7001234567890 | External | Bread | Loaves | ea | 50 | 25.00 | 18.50 | 19.00 | Fresh white bread loaf | TRUE
+BRD-BRN-001 | Brown Bread Loaf 700g | 7001234567891 | External | Bread | Loaves | ea | 50 | 28.00 | 20.00 | 21.00 | Fresh brown bread loaf | TRUE
+BEV-COKE-330 | Coca-Cola 330ml Can | 5449000000996 | External | Beverages | Soft Drinks | ea | 100 | 12.00 | 8.50 | 9.00 | Coca-Cola 330ml can | TRUE
+BEV-COKE-500 | Coca-Cola 500ml PET | 5449000054227 | External | Beverages | Soft Drinks | ea | 80 | 18.00 | 13.00 | 13.50 | Coca-Cola 500ml bottle | TRUE
+SNK-CHIPS-001 | Lays Chips 120g | 6001087340014 | External | Snacks | Chips | ea | 60 | 15.00 | 10.50 | 11.00 | Lays potato chips | TRUE
+CKE-CHOC-001 | Chocolate Cake Slice | CAKE001 | Manufactured | Cakes | Slices | ea | 20 | 45.00 | 0.00 | 25.00 | Homemade chocolate cake slice | TRUE
+CKE-VAN-001 | Vanilla Cake Slice | CAKE002 | Manufactured | Cakes | Slices | ea | 20 | 40.00 | 0.00 | 22.00 | Homemade vanilla cake slice | TRUE
+PST-CROIS-001 | Butter Croissant | PAST001 | Manufactured | Pastries | Croissants | ea | 30 | 18.00 | 0.00 | 8.50 | Fresh butter croissant | TRUE
+PST-CROIS-002 | Chocolate Croissant | PAST002 | Manufactured | Pastries | Croissants | ea | 30 | 22.00 | 0.00 | 10.00 | Chocolate filled croissant | TRUE
+BRD-SOUR-001 | Sourdough Loaf 800g | BREAD001 | Manufactured | Bread | Artisan | ea | 15 | 55.00 | 0.00 | 28.00 | Artisan sourdough bread | TRUE

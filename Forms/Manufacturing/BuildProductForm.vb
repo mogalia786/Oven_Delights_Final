@@ -439,17 +439,33 @@ Namespace Manufacturing
             Using cn As New Microsoft.Data.SqlClient.SqlConnection(_connectionString)
                 cn.Open()
                 Dim hasSku As Boolean = ColumnExists(cn, Nothing, "Products", "SKU")
+                Dim hasItemType As Boolean = ColumnExists(cn, Nothing, "Products", "ItemType")
+                
                 If hasSku Then
-                    Using cmd As New Microsoft.Data.SqlClient.SqlCommand("IF EXISTS (SELECT 1 FROM dbo.Products WHERE SKU=@sku) SELECT ProductID FROM dbo.Products WHERE SKU=@sku ELSE BEGIN INSERT INTO dbo.Products (SKU, ProductName, DefaultUoMID, IsActive) VALUES (@sku, @pname, (SELECT TOP 1 UoMID FROM dbo.UoM WHERE UoMCode='ea'), 1); SELECT SCOPE_IDENTITY(); END", cn)
+                    ' CRITICAL: When manufacturing completes build, create product with ItemType='Manufactured'
+                    Dim insertSql As String = "IF EXISTS (SELECT 1 FROM dbo.Products WHERE SKU=@sku) " & _
+                                              "SELECT ProductID FROM dbo.Products WHERE SKU=@sku " & _
+                                              "ELSE BEGIN " & _
+                                              "INSERT INTO dbo.Products (SKU, ProductName, DefaultUoMID, ItemType, IsActive) " & _
+                                              "VALUES (@sku, @pname, (SELECT TOP 1 UoMID FROM dbo.UoM WHERE UoMCode='ea'), 'Manufactured', 1); " & _
+                                              "SELECT SCOPE_IDENTITY(); END"
+                    Using cmd As New Microsoft.Data.SqlClient.SqlCommand(insertSql, cn)
                         cmd.Parameters.AddWithValue("@sku", code)
                         cmd.Parameters.AddWithValue("@pname", name)
                         Dim obj = cmd.ExecuteScalar()
                         Return Convert.ToInt32(obj)
                     End Using
                 Else
-                    ' ProductCode schema: create if missing using selected Category/Subcategory and defaults
-                    ' Always use new master tables: dbo.Categories and dbo.Subcategories
-                    Using cmd As New Microsoft.Data.SqlClient.SqlCommand("IF EXISTS (SELECT 1 FROM dbo.Products WHERE ProductCode=@code) SELECT ProductID FROM dbo.Products WHERE ProductCode=@code ELSE BEGIN INSERT INTO dbo.Products (ProductCode, ProductName, CategoryID, SubcategoryID, ItemType, BaseUoM, IsActive) VALUES (@code, @pname, @cid, @scid, 'Finished', 'ea', 1); SELECT SCOPE_IDENTITY(); END", cn)
+                    ' ProductCode schema: create if missing using selected Category/Subcategory
+                    ' CRITICAL: Set ItemType='Manufactured' for products created via manufacturing
+                    Dim itemTypeValue As String = If(hasItemType, "'Manufactured'", "'Finished'")
+                    Dim insertSql As String = "IF EXISTS (SELECT 1 FROM dbo.Products WHERE ProductCode=@code) " & _
+                                              "SELECT ProductID FROM dbo.Products WHERE ProductCode=@code " & _
+                                              "ELSE BEGIN " & _
+                                              "INSERT INTO dbo.Products (ProductCode, ProductName, CategoryID, SubcategoryID, ItemType, BaseUoM, IsActive) " & _
+                                              "VALUES (@code, @pname, @cid, @scid, " & itemTypeValue & ", 'ea', 1); " & _
+                                              "SELECT SCOPE_IDENTITY(); END"
+                    Using cmd As New Microsoft.Data.SqlClient.SqlCommand(insertSql, cn)
                         cmd.Parameters.AddWithValue("@code", code)
                         cmd.Parameters.AddWithValue("@pname", name)
                         cmd.Parameters.AddWithValue("@cid", categoryId)

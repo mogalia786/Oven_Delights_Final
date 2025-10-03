@@ -28,7 +28,7 @@ Public Class CreditNoteListForm
         Try
             ' Load GRV info
             Using con As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
-                Dim grvSql As String = "SELECT GRVNumber, SupplierName FROM GoodsReceivedVouchers grv LEFT JOIN Suppliers s ON grv.SupplierID = s.SupplierID WHERE grv.GRVID = @id"
+                Dim grvSql As String = "SELECT GRNNumber AS GRVNumber, s.CompanyName AS SupplierName FROM GoodsReceivedNotes grv LEFT JOIN Suppliers s ON grv.SupplierID = s.SupplierID WHERE grv.GRNID = @id"
                 Using cmd As New SqlCommand(grvSql, con)
                     cmd.Parameters.AddWithValue("@id", grvId)
                     con.Open()

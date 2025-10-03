@@ -1218,12 +1218,12 @@ Partial Class MainDashboard
                                                    OpenMdiSingleton(Of Manufacturing.BuildProductForm)()
                                                End Sub
 
-            Dim miBOM As New ToolStripMenuItem("BOM Editor")
+            Dim miBOM As New ToolStripMenuItem("BOM Management")
             AddHandler miBOM.Click, Sub(sender, e)
                                         OpenMdiSingleton(Of Manufacturing.BOMEditorForm)()
                                     End Sub
 
-            Dim miCompleteBuild As New ToolStripMenuItem("Complete Build of Materials")
+            Dim miCompleteBuild As New ToolStripMenuItem("Complete Build")
             AddHandler miCompleteBuild.Click, Sub(sender, e)
                                                   OpenMdiSingleton(Of Manufacturing.CompleteBuildForm)()
                                               End Sub
@@ -2032,7 +2032,7 @@ Partial Class MainDashboard
         
         ' Reports
         Dim reports As ToolStripMenuItem = EnsureSubMenu(stockroom, "Reports")
-        Dim miStockReport As ToolStripMenuItem = EnsureSubMenu(reports, "Stock Report")
+        Dim miStockReport As ToolStripMenuItem = EnsureSubMenu(reports, "Stock Movement Report")
         RemoveHandler miStockReport.Click, AddressOf OpenStockReport
         AddHandler miStockReport.Click, AddressOf OpenStockReport
 
@@ -3236,6 +3236,48 @@ Partial Class MainDashboard
         Dim miSupp As ToolStripMenuItem = EnsureSubMenu(viewers, "Supplier Ledger (Grid)")
         RemoveHandler miSupp.Click, AddressOf OpenSupplierLedgerGrid
         AddHandler miSupp.Click, AddressOf OpenSupplierLedgerGrid
+        
+        ' Supplier Payments
+        Dim payments As ToolStripMenuItem = EnsureSubMenu(acct, "Payments")
+        Dim miPaySupplier As ToolStripMenuItem = EnsureSubMenu(payments, "Pay Supplier Invoice")
+        RemoveHandler miPaySupplier.Click, AddressOf OpenSupplierPayment
+        AddHandler miPaySupplier.Click, AddressOf OpenSupplierPayment
+        
+        ' Credit Notes
+        Dim creditNotes As ToolStripMenuItem = EnsureSubMenu(acct, "Credit Notes")
+        Dim miViewCreditNotes As ToolStripMenuItem = EnsureSubMenu(creditNotes, "View Credit Notes")
+        RemoveHandler miViewCreditNotes.Click, AddressOf OpenCreditNotesList
+        AddHandler miViewCreditNotes.Click, AddressOf OpenCreditNotesList
+    End Sub
+    
+    Private Sub OpenSupplierPayment(sender As Object, e As EventArgs)
+        Try
+            For Each child As Form In Me.MdiChildren
+                If TypeOf child Is SupplierPaymentForm Then
+                    child.Activate()
+                    child.WindowState = FormWindowState.Maximized
+                    Return
+                End If
+            Next
+            Dim frm As New SupplierPaymentForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Supplier Payment form: " & ex.Message, "Accounting", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    
+    Private Sub OpenCreditNotesList(sender As Object, e As EventArgs)
+        Try
+            ' Show all credit notes for current branch
+            Dim frm As New CreditNoteViewerForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Credit Notes: " & ex.Message, "Accounting", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub OpenJournalsGrid(sender As Object, e As EventArgs)

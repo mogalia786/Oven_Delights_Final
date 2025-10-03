@@ -28,8 +28,9 @@ Public Class ProductAddEditForm
 
 
     Private Sub LoadDropdownData()
-        ' Product Types
-        cboProductType.Items.AddRange({"Internal Product", "External Product"})
+        ' Product Types - CRITICAL: Only allow External products to be created manually
+        ' Manufactured products are created ONLY via manufacturing build process
+        cboProductType.Items.AddRange({"External"})
         cboProductType.SelectedIndex = 0
 
         ' Units of Measure

@@ -76,8 +76,8 @@ Public Class GRVInvoiceMatchForm
             Dim sql As String = "
                 SELECT i.InvoiceID, i.InvoiceNumber + ' - ' + FORMAT(i.InvoiceDate, 'dd/MM/yyyy') + ' - ' + FORMAT(i.TotalAmount, 'C2') AS InvoiceDisplay
                 FROM Invoices i
-                INNER JOIN GoodsReceivedVouchers grv ON i.SupplierID = grv.SupplierID
-                WHERE grv.GRVID = @grvId 
+                INNER JOIN GoodsReceivedNotes grv ON i.SupplierID = grv.SupplierID
+                WHERE grv.GRNID = @grvId 
                 AND i.Status IN ('Pending', 'Approved')
                 AND i.InvoiceID NOT IN (
                     SELECT DISTINCT InvoiceID 

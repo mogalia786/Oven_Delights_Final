@@ -54,10 +54,10 @@ Public Class GRVManagementForm
         Using con As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
             Dim sql As String
             If isSuperAdmin Then
-                sql = "SELECT grv.GRVID, grv.GRVNumber, grv.ReceivedDate, grv.Status, grv.TotalAmount,
+                sql = "SELECT grv.GRNID AS GRVID, grv.GRNNumber AS GRVNumber, grv.ReceivedDate, grv.Status, ISNULL(grv.TotalAmount, 0) AS TotalAmount,
                        s.CompanyName AS SupplierName, po.PONumber, grv.DeliveryNoteNumber,
                        b.BranchName
-                       FROM GoodsReceivedVouchers grv
+                       FROM GoodsReceivedNotes grv
                        LEFT JOIN Suppliers s ON grv.SupplierID = s.SupplierID
                        LEFT JOIN PurchaseOrders po ON grv.PurchaseOrderID = po.PurchaseOrderID
                        LEFT JOIN Branches b ON grv.BranchID = b.BranchID
@@ -65,9 +65,9 @@ Public Class GRVManagementForm
                        AND (@branchId IS NULL OR grv.BranchID = @branchId)
                        ORDER BY grv.ReceivedDate DESC"
             Else
-                sql = "SELECT grv.GRVID, grv.GRVNumber, grv.ReceivedDate, grv.Status, grv.TotalAmount,
+                sql = "SELECT grv.GRNID AS GRVID, grv.GRNNumber AS GRVNumber, grv.ReceivedDate, grv.Status, ISNULL(grv.TotalAmount, 0) AS TotalAmount,
                        s.CompanyName AS SupplierName, po.PONumber, grv.DeliveryNoteNumber
-                       FROM GoodsReceivedVouchers grv
+                       FROM GoodsReceivedNotes grv
                        LEFT JOIN Suppliers s ON grv.SupplierID = s.SupplierID
                        LEFT JOIN PurchaseOrders po ON grv.PurchaseOrderID = po.PurchaseOrderID
                        WHERE (@status = 'All' OR grv.Status = @status)

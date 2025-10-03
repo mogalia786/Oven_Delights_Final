@@ -233,25 +233,78 @@ Public Class InvoiceCaptureForm
             dgvLines.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
             
             ' Show letter in bottom half
+            Dim txtLetter As TextBox
             If Me.Controls.ContainsKey("txtCreditNoteLetter") Then
-                Dim txtLetter = DirectCast(Me.Controls("txtCreditNoteLetter"), TextBox)
+                txtLetter = DirectCast(Me.Controls("txtCreditNoteLetter"), TextBox)
                 txtLetter.Text = letter.ToString()
                 txtLetter.Location = New Point(10, dgvLines.Bottom + 10)
-                txtLetter.Size = New Size(Me.Width - 40, (Me.Height - 200) \ 2 - 50)
+                txtLetter.Size = New Size(Me.Width - 40, (Me.Height - 200) \ 2 - 90)
             Else
-                Dim txtLetter As New TextBox()
+                txtLetter = New TextBox()
                 txtLetter.Name = "txtCreditNoteLetter"
                 txtLetter.Multiline = True
                 txtLetter.ScrollBars = ScrollBars.Vertical
                 txtLetter.Font = New Font("Courier New", 10)
                 txtLetter.Location = New Point(10, dgvLines.Bottom + 10)
-                txtLetter.Size = New Size(Me.Width - 40, (Me.Height - 200) \ 2 - 50)
+                txtLetter.Size = New Size(Me.Width - 40, (Me.Height - 200) \ 2 - 90)
                 txtLetter.Anchor = AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right
                 txtLetter.Text = letter.ToString()
                 Me.Controls.Add(txtLetter)
             End If
             
-            MessageBox.Show("Credit note generated successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            ' Add Print and Email buttons if they don't exist
+            If Not Me.Controls.ContainsKey("btnPrintCreditNote") Then
+                Dim btnPrint As New Button()
+                btnPrint.Name = "btnPrintCreditNote"
+                btnPrint.Text = "🖨️ Print Credit Note"
+                btnPrint.Location = New Point(10, txtLetter.Bottom + 5)
+                btnPrint.Size = New Size(180, 35)
+                btnPrint.BackColor = ColorTranslator.FromHtml("#27AE60")
+                btnPrint.ForeColor = Color.White
+                btnPrint.FlatStyle = FlatStyle.Flat
+                btnPrint.Font = New Font("Segoe UI", 10, FontStyle.Bold)
+                AddHandler btnPrint.Click, Sub()
+                    Try
+                        Dim printDialog As New PrintDialog()
+                        Dim printDoc As New System.Drawing.Printing.PrintDocument()
+                        AddHandler printDoc.PrintPage, Sub(s, ev)
+                            ev.Graphics.DrawString(txtLetter.Text, New Font("Courier New", 10), Brushes.Black, 50, 50)
+                        End Sub
+                        If printDialog.ShowDialog() = DialogResult.OK Then
+                            printDoc.Print()
+                            MessageBox.Show("Credit note printed successfully!", "Print", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                        End If
+                    Catch ex As Exception
+                        MessageBox.Show($"Print error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                    End Try
+                End Sub
+                Me.Controls.Add(btnPrint)
+                
+                Dim btnEmail As New Button()
+                btnEmail.Name = "btnEmailCreditNote"
+                btnEmail.Text = "📧 Email Credit Note"
+                btnEmail.Location = New Point(200, txtLetter.Bottom + 5)
+                btnEmail.Size = New Size(180, 35)
+                btnEmail.BackColor = ColorTranslator.FromHtml("#E67E22")
+                btnEmail.ForeColor = Color.White
+                btnEmail.FlatStyle = FlatStyle.Flat
+                btnEmail.Font = New Font("Segoe UI", 10, FontStyle.Bold)
+                AddHandler btnEmail.Click, Sub()
+                    Try
+                        ' Create mailto link with credit note content
+                        Dim subject = $"Credit Note - CN{DateTime.Now:yyyyMMddHHmmss}"
+                        Dim body = Uri.EscapeDataString(txtLetter.Text)
+                        Dim mailto = $"mailto:?subject={subject}&body={body}"
+                        System.Diagnostics.Process.Start(New System.Diagnostics.ProcessStartInfo(mailto) With {.UseShellExecute = True})
+                        MessageBox.Show("Email client opened with credit note!", "Email", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    Catch ex As Exception
+                        MessageBox.Show($"Email error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                    End Try
+                End Sub
+                Me.Controls.Add(btnEmail)
+            End If
+            
+            MessageBox.Show("Credit note generated successfully! Use Print or Email buttons below.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
             
         Catch ex As Exception
             MessageBox.Show("Error: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -291,8 +344,23 @@ Public Class InvoiceCaptureForm
                 Return
             End If
 
+            ' Calculate totals
+            Dim subTotal As Decimal = 0
+            For Each row As DataGridViewRow In dgvLines.Rows
+                If Not row.IsNewRow Then
+                    Dim receiveNow = If(row.Cells("ReceiveNow").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("ReceiveNow").Value))
+                    Dim unitCost = If(row.Cells("UnitCost").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("UnitCost").Value))
+                    subTotal += receiveNow * unitCost
+                End If
+            Next
+            Dim vatAmount As Decimal = subTotal * 0.15D
+            Dim totalAmount As Decimal = subTotal + vatAmount
+            
             ' Save GRV and update inventory
             Dim grvId = stockroomService.SaveGoodsReceivedVoucher(selectedSupplierId, selectedPOId, txtDeliveryNote.Text, dtpReceived.Value, dgvLines)
+            
+            ' Create Supplier Invoice record
+            CreateSupplierInvoice(selectedSupplierId, txtDeliveryNote.Text, dtpReceived.Value, subTotal, vatAmount, totalAmount, grvId)
             
             ' Update inventory based on ProductType
             For Each row As DataGridViewRow In dgvLines.Rows
@@ -377,5 +445,106 @@ Public Class InvoiceCaptureForm
             ' Ignore calculation errors
         End Try
     End Sub
+    
+    Private Sub CreateSupplierInvoice(supplierId As Integer, invoiceNumber As String, invoiceDate As DateTime, subTotal As Decimal, vatAmount As Decimal, totalAmount As Decimal, grvId As Integer)
+        Try
+            Using con As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                con.Open()
+                Using tx = con.BeginTransaction()
+                    Try
+                        ' Create supplier invoice header
+                        Dim invoiceId As Integer
+                        Dim sql = "INSERT INTO SupplierInvoices (InvoiceNumber, SupplierID, BranchID, InvoiceDate, DueDate, SubTotal, VATAmount, TotalAmount, AmountPaid, AmountOutstanding, Status, GRVID, CreatedBy, CreatedDate) " &
+                                 "OUTPUT INSERTED.InvoiceID VALUES (@InvNum, @SupID, @BranchID, @InvDate, @DueDate, @SubTotal, @VAT, @Total, 0, @Total, 'Unpaid', @GRVID, @UserID, GETDATE())"
+                        Using cmd As New SqlCommand(sql, con, tx)
+                            cmd.Parameters.AddWithValue("@InvNum", invoiceNumber)
+                            cmd.Parameters.AddWithValue("@SupID", supplierId)
+                            cmd.Parameters.AddWithValue("@BranchID", AppSession.CurrentBranchID)
+                            cmd.Parameters.AddWithValue("@InvDate", invoiceDate)
+                            cmd.Parameters.AddWithValue("@DueDate", invoiceDate.AddDays(30))
+                            cmd.Parameters.AddWithValue("@SubTotal", subTotal)
+                            cmd.Parameters.AddWithValue("@VAT", vatAmount)
+                            cmd.Parameters.AddWithValue("@Total", totalAmount)
+                            cmd.Parameters.AddWithValue("@GRVID", grvId)
+                            cmd.Parameters.AddWithValue("@UserID", AppSession.CurrentUserID)
+                            invoiceId = Convert.ToInt32(cmd.ExecuteScalar())
+                        End Using
+                        
+                        ' Create journal entries
+                        CreatePurchaseJournalEntries(supplierId, invoiceNumber, subTotal, vatAmount, totalAmount, con, tx)
+                        
+                        tx.Commit()
+                    Catch
+                        tx.Rollback()
+                        Throw
+                    End Try
+                End Using
+            End Using
+        Catch ex As Exception
+            ' Log error but don't stop the process
+            MessageBox.Show($"Warning: Could not create supplier invoice record: {ex.Message}", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End Try
+    End Sub
+    
+    Private Sub CreatePurchaseJournalEntries(supplierId As Integer, reference As String, subTotal As Decimal, vatAmount As Decimal, totalAmount As Decimal, con As SqlConnection, tx As SqlTransaction)
+        ' Create journal header
+        Dim journalId As Integer
+        Dim jSql = "INSERT INTO JournalHeaders (JournalNumber, BranchID, JournalDate, Reference, Description, IsPosted, CreatedBy, CreatedDate) " &
+                  "OUTPUT INSERTED.JournalID VALUES (@JNum, @BranchID, GETDATE(), @Ref, @Desc, 0, @UserID, GETDATE())"
+        Using cmd As New SqlCommand(jSql, con, tx)
+            cmd.Parameters.AddWithValue("@JNum", $"JNL-{DateTime.Now:yyyyMMddHHmmss}")
+            cmd.Parameters.AddWithValue("@BranchID", AppSession.CurrentBranchID)
+            cmd.Parameters.AddWithValue("@Ref", reference)
+            cmd.Parameters.AddWithValue("@Desc", "Purchase Invoice")
+            cmd.Parameters.AddWithValue("@UserID", AppSession.CurrentUserID)
+            journalId = Convert.ToInt32(cmd.ExecuteScalar())
+        End Using
+        
+        ' DR Inventory
+        Dim dSql = "INSERT INTO JournalDetails (JournalID, AccountID, Debit, Credit, Description) VALUES (@JID, @AcctID, @Amount, 0, @Desc)"
+        Using cmd As New SqlCommand(dSql, con, tx)
+            cmd.Parameters.AddWithValue("@JID", journalId)
+            cmd.Parameters.AddWithValue("@AcctID", GetOrCreateAccountID(con, tx, "1200", "Inventory", "Asset"))
+            cmd.Parameters.AddWithValue("@Amount", subTotal)
+            cmd.Parameters.AddWithValue("@Desc", $"Inventory - {reference}")
+            cmd.ExecuteNonQuery()
+        End Using
+        
+        ' DR VAT Input
+        Using cmd As New SqlCommand(dSql, con, tx)
+            cmd.Parameters.AddWithValue("@JID", journalId)
+            cmd.Parameters.AddWithValue("@AcctID", GetOrCreateAccountID(con, tx, "1300", "VAT Input", "Asset"))
+            cmd.Parameters.AddWithValue("@Amount", vatAmount)
+            cmd.Parameters.AddWithValue("@Desc", $"VAT Input - {reference}")
+            cmd.ExecuteNonQuery()
+        End Using
+        
+        ' CR Accounts Payable
+        Dim cSql = "INSERT INTO JournalDetails (JournalID, AccountID, Debit, Credit, Description) VALUES (@JID, @AcctID, 0, @Amount, @Desc)"
+        Using cmd As New SqlCommand(cSql, con, tx)
+            cmd.Parameters.AddWithValue("@JID", journalId)
+            cmd.Parameters.AddWithValue("@AcctID", GetOrCreateAccountID(con, tx, "2100", "Accounts Payable", "Liability"))
+            cmd.Parameters.AddWithValue("@Amount", totalAmount)
+            cmd.Parameters.AddWithValue("@Desc", $"Accounts Payable - {reference}")
+            cmd.ExecuteNonQuery()
+        End Using
+    End Sub
+    
+    Private Function GetOrCreateAccountID(con As SqlConnection, tx As SqlTransaction, code As String, name As String, accountType As String) As Integer
+        Dim sql = "SELECT AccountID FROM ChartOfAccounts WHERE AccountCode = @Code"
+        Using cmd As New SqlCommand(sql, con, tx)
+            cmd.Parameters.AddWithValue("@Code", code)
+            Dim result = cmd.ExecuteScalar()
+            If result IsNot Nothing Then Return Convert.ToInt32(result)
+        End Using
+        
+        Dim insertSql = "INSERT INTO ChartOfAccounts (AccountCode, AccountName, AccountType, IsActive) OUTPUT INSERTED.AccountID VALUES (@Code, @Name, @Type, 1)"
+        Using cmd As New SqlCommand(insertSql, con, tx)
+            cmd.Parameters.AddWithValue("@Code", code)
+            cmd.Parameters.AddWithValue("@Name", name)
+            cmd.Parameters.AddWithValue("@Type", accountType)
+            Return Convert.ToInt32(cmd.ExecuteScalar())
+        End Using
+    End Function
 
 End Class

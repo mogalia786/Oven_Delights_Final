@@ -155,6 +155,22 @@ Public Class ManufacturingService
                 cmd.Parameters.AddWithValue("@ToLocationCode", If(toLocationCode, String.Empty))
                 cmd.ExecuteNonQuery()
             End Using
+            
+            ' Sync to Retail_Stock for POS system
+            Try
+                Dim bid As Integer = If(branchId.HasValue AndAlso branchId.Value > 0, branchId.Value, stockroomService.GetCurrentUserBranchId())
+                Using cmdSync As New SqlCommand("dbo.sp_Sync_ProductInventory_To_RetailStock", cn)
+                    cmdSync.CommandType = CommandType.StoredProcedure
+                    cmdSync.Parameters.AddWithValue("@ProductID", productId)
+                    cmdSync.Parameters.AddWithValue("@BranchID", If(bid > 0, CType(bid, Object), DBNull.Value))
+                    cmdSync.Parameters.AddWithValue("@Quantity", quantity)
+                    cmdSync.Parameters.AddWithValue("@UnitCost", 0)
+                    cmdSync.ExecuteNonQuery()
+                End Using
+            Catch ex As Exception
+                ' Log but don't fail if sync procedure doesn't exist yet
+                System.Diagnostics.Debug.WriteLine($"Retail_Stock sync skipped: {ex.Message}")
+            End Try
         End Using
     End Sub
 
