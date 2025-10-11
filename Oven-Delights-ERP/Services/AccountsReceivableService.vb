@@ -75,7 +75,7 @@ Public Class AccountsReceivableService
 
     ' Minimal customer reference (extend when Customers master table is finalized)
     Private Function GetCustomerRef(customerId As Integer, con As SqlConnection, tx As SqlTransaction) As String
-        ' Placeholder: try Customers.CustomerCode/CompanyName if table exists, else fallback to ID
+        ' Get customer reference from Customers table or fallback to ID
         Try
             Using cmd As New SqlCommand("SELECT TOP 1 ISNULL(NULLIF(LTRIM(RTRIM(CustomerCode)), ''), CompanyName) FROM Customers WHERE CustomerID = @id", con, tx)
                 cmd.Parameters.AddWithValue("@id", customerId)

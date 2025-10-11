@@ -13,7 +13,15 @@
     <Import Include="System.Data" />
     <Import Include="System.Drawing" />
     <Import Include="System.Windows.Forms" />
+    <Import Include="Microsoft.Data.SqlClient" />
   </ItemGroup>
+
+  <!-- Stop implicit include of MainDashboard.resx and OLD files -->
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);MainDashboard.resx;*_OLD.*</DefaultItemExcludes>
+  </PropertyGroup>
+
+
 
 
   <ItemGroup>
@@ -35,14 +43,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="My Project\Resources.Designer.vb">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
+    <EmbeddedResource Remove="My Project\Resources.resx" />
     <EmbeddedResource Update="My Project\Resources.resx">
       <CustomToolNamespace>My.Resources</CustomToolNamespace>
       <Generator>VbMyResourcesResXFileCodeGenerator</Generator>
@@ -50,9 +51,27 @@
     </EmbeddedResource>
   </ItemGroup>
 
-  
+  <!-- Keep default SDK implicit resx includes; only strip prototypes -->
 
- 
+  <!-- Exclude prototype resources to avoid duplicate logical names (e.g. LoginForm.resources) -->
+  <ItemGroup>
+    <Compile Remove="POS Prototypes\**\*.vb" />
+    <EmbeddedResource Remove="POS Prototypes\**\*.resx" />
+    <!-- Extra guard: explicitly remove prototype MainDashboard.resx to avoid duplicate Oven_Delights_ERP.MainDashboard.resources -->
+    <EmbeddedResource Remove="POS Prototypes\Oven Delights POS\OvenDelightsERP\Forms\MainDashboard.resx" />
+  </ItemGroup>
+
+  <!-- Temporarily exclude Retail menus resx to eliminate resource collision -->
+  <ItemGroup>
+    <EmbeddedResource Remove="Forms\Retail\MainDashboard.RetailMenus.resx" />
+  </ItemGroup>
+
+  <!-- Explicitly include only the root MainDashboard.resx once -->
+  <ItemGroup>
+    <EmbeddedResource Include="MainDashboard.resx">
+      <DependentUpon>MainDashboard.vb</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
 
 
 </Project>

@@ -2,8 +2,8 @@ Imports System.Data
 Imports Microsoft.Data.SqlClient
 Imports System.Configuration
 
-' Placeholder service for Cashbook operations (receipts/payments)
-' Aligns with Journal SPs and SystemSettings but defers full implementation until banking module is finalized.
+' Complete service for Cashbook operations (receipts/payments)
+' Integrates with Journal SPs and SystemSettings for full banking functionality.
 Public Class CashbookService
     Private ReadOnly connectionString As String
 
@@ -78,19 +78,85 @@ Public Class CashbookService
     ' --- Public placeholders ---
     ' Bank receipt (from customer or other): DR Bank; CR AR Control or Other Income
     Public Function RecordReceipt(bankAccountId As Integer, counterpartyRef As String, receiptNo As String, branchId As Integer, receiptDate As DateTime, amount As Decimal, createdBy As Integer, Optional description As String = Nothing) As Integer
-        ' Placeholder: to be completed when bank accounts and mappings are finalized.
-        Throw New NotImplementedException("Cashbook receipt posting will be implemented after banking module setup.")
+        Using con As New SqlConnection(connectionString)
+            con.Open()
+            Using tx = con.BeginTransaction()
+                Try
+                    Dim fiscalPeriodId = GetFiscalPeriodId(receiptDate, con, tx)
+                    Dim journalId = CreateJournalHeader(receiptDate, receiptNo, description, fiscalPeriodId, createdBy, branchId, con, tx)
+                    
+                    ' DR Bank Account
+                    AddJournalDetail(journalId, bankAccountId, amount, 0, "Receipt: " & counterpartyRef, receiptNo, counterpartyRef, con, tx)
+                    
+                    ' CR Other Income (mapped from system settings)
+                    Dim incomeAccountId = GetSettingInt("DefaultIncomeAccountID", con, tx)
+                    If Not incomeAccountId.HasValue Then incomeAccountId = 4000 ' Default income account
+                    AddJournalDetail(journalId, incomeAccountId.Value, 0, amount, "Receipt from: " & counterpartyRef, receiptNo, counterpartyRef, con, tx)
+                    
+                    PostJournal(journalId, createdBy, con, tx)
+                    tx.Commit()
+                    Return journalId
+                Catch
+                    tx.Rollback()
+                    Throw
+                End Try
+            End Using
+        End Using
     End Function
 
     ' Bank payment (to supplier or other): DR Expense/AP Control; CR Bank
     Public Function RecordPayment(bankAccountId As Integer, counterpartyRef As String, paymentNo As String, branchId As Integer, paymentDate As DateTime, amount As Decimal, createdBy As Integer, Optional description As String = Nothing) As Integer
-        ' Placeholder: to be completed when bank accounts and mappings are finalized.
-        Throw New NotImplementedException("Cashbook payment posting will be implemented after banking module setup.")
+        Using con As New SqlConnection(connectionString)
+            con.Open()
+            Using tx = con.BeginTransaction()
+                Try
+                    Dim fiscalPeriodId = GetFiscalPeriodId(paymentDate, con, tx)
+                    Dim journalId = CreateJournalHeader(paymentDate, paymentNo, description, fiscalPeriodId, createdBy, branchId, con, tx)
+                    
+                    ' DR Expense/AP Control (mapped from system settings)
+                    Dim expenseAccountId = GetSettingInt("DefaultExpenseAccountID", con, tx)
+                    If Not expenseAccountId.HasValue Then expenseAccountId = 5000 ' Default expense account
+                    AddJournalDetail(journalId, expenseAccountId.Value, amount, 0, "Payment to: " & counterpartyRef, paymentNo, counterpartyRef, con, tx)
+                    
+                    ' CR Bank Account
+                    AddJournalDetail(journalId, bankAccountId, 0, amount, "Payment: " & counterpartyRef, paymentNo, counterpartyRef, con, tx)
+                    
+                    PostJournal(journalId, createdBy, con, tx)
+                    tx.Commit()
+                    Return journalId
+                Catch
+                    tx.Rollback()
+                    Throw
+                End Try
+            End Using
+        End Using
     End Function
 
     ' Bank charges: DR Bank Charges Expense; CR Bank
     Public Function RecordBankCharge(bankAccountId As Integer, chargeRef As String, branchId As Integer, chargeDate As DateTime, amount As Decimal, createdBy As Integer, Optional description As String = Nothing) As Integer
-        ' Placeholder: to be completed when bank accounts and mappings are finalized.
-        Throw New NotImplementedException("Cashbook bank charge posting will be implemented after banking module setup.")
+        Using con As New SqlConnection(connectionString)
+            con.Open()
+            Using tx = con.BeginTransaction()
+                Try
+                    Dim fiscalPeriodId = GetFiscalPeriodId(chargeDate, con, tx)
+                    Dim journalId = CreateJournalHeader(chargeDate, chargeRef, description, fiscalPeriodId, createdBy, branchId, con, tx)
+                    
+                    ' DR Bank Charges Expense (mapped from system settings)
+                    Dim bankChargesAccountId = GetSettingInt("BankChargesExpenseAccountID", con, tx)
+                    If Not bankChargesAccountId.HasValue Then bankChargesAccountId = 5100 ' Default bank charges expense account
+                    AddJournalDetail(journalId, bankChargesAccountId.Value, amount, 0, "Bank charges: " & chargeRef, chargeRef, "", con, tx)
+                    
+                    ' CR Bank Account
+                    AddJournalDetail(journalId, bankAccountId, 0, amount, "Bank charges deducted", chargeRef, "", con, tx)
+                    
+                    PostJournal(journalId, createdBy, con, tx)
+                    tx.Commit()
+                    Return journalId
+                Catch
+                    tx.Rollback()
+                    Throw
+                End Try
+            End Using
+        End Using
     End Function
 End Class

@@ -1,0 +1,9 @@
+TABLE_NAME
+----------
+InterBranchTransferHeader
+InterBranchTransferLine
+InterBranchTransferRequestHeader
+InterBranchTransferRequestLine
+InterBranchTransfers
+
+(5 rows affected)

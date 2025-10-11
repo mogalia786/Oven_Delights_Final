@@ -1,5 +1,5 @@
 Imports System.Configuration
-Imports Microsoft.Data.SqlClient
+Imports System.Data.SqlClient
 Imports System.Text.RegularExpressions
 Imports System.Net
 Imports System.Security.Cryptography

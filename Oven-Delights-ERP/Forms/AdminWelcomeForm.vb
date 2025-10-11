@@ -26,18 +26,40 @@ Public Class AdminWelcomeForm
         mAdmin.DropDownItems.Add(miGLMappings)
 
         Dim mAccounting As New ToolStripMenuItem("Accounting")
+        
+        ' General Ledger submenu
+        Dim miTrialBalance As New ToolStripMenuItem("Trial Balance")
+        AddHandler miTrialBalance.Click, AddressOf OnOpenTrialBalance
+        Dim miAccountLedger As New ToolStripMenuItem("Account Ledger")
+        AddHandler miAccountLedger.Click, AddressOf OnOpenAccountLedger
         Dim miJournals As New ToolStripMenuItem("Journals Viewer")
         AddHandler miJournals.Click, AddressOf OnOpenJournalsViewer
         Dim miGL As New ToolStripMenuItem("General Ledger Viewer")
         AddHandler miGL.Click, AddressOf OnOpenGLViewer
+        
+        ' Cash Book submenu
+        Dim miCashBook As New ToolStripMenuItem("Cash Book")
+        Dim miMainCashBook As New ToolStripMenuItem("Main Cash Book")
+        AddHandler miMainCashBook.Click, AddressOf OnOpenMainCashBook
+        Dim miPettyCash As New ToolStripMenuItem("Petty Cash")
+        AddHandler miPettyCash.Click, AddressOf OnOpenPettyCash
+        miCashBook.DropDownItems.Add(miMainCashBook)
+        miCashBook.DropDownItems.Add(miPettyCash)
+        
+        ' Other accounting items
         Dim miPayroll As New ToolStripMenuItem("Payroll Journal")
         AddHandler miPayroll.Click, AddressOf OnOpenPayrollJournal
         Dim miExpenseTypes As New ToolStripMenuItem("Expense Types")
         AddHandler miExpenseTypes.Click, AddressOf OnOpenExpenseTypes
         Dim miExpenses As New ToolStripMenuItem("Expenses")
         AddHandler miExpenses.Click, AddressOf OnOpenExpenses
+        
+        mAccounting.DropDownItems.Add(miTrialBalance)
+        mAccounting.DropDownItems.Add(miAccountLedger)
         mAccounting.DropDownItems.Add(miJournals)
         mAccounting.DropDownItems.Add(miGL)
+        mAccounting.DropDownItems.Add(New ToolStripSeparator())
+        mAccounting.DropDownItems.Add(miCashBook)
         mAccounting.DropDownItems.Add(New ToolStripSeparator())
         mAccounting.DropDownItems.Add(miPayroll)
         mAccounting.DropDownItems.Add(New ToolStripSeparator())
@@ -121,6 +143,34 @@ Public Class AdminWelcomeForm
 
     Private Sub OnOpenExpenses(sender As Object, e As EventArgs)
         Using f As New Accounting.ExpensesForm()
+            f.StartPosition = FormStartPosition.CenterParent
+            f.ShowDialog(Me)
+        End Using
+    End Sub
+
+    Private Sub OnOpenTrialBalance(sender As Object, e As EventArgs)
+        Using f As New Accounting.TrialBalanceForm()
+            f.StartPosition = FormStartPosition.CenterParent
+            f.ShowDialog(Me)
+        End Using
+    End Sub
+
+    Private Sub OnOpenAccountLedger(sender As Object, e As EventArgs)
+        Using f As New Accounting.AccountLedgerForm()
+            f.StartPosition = FormStartPosition.CenterParent
+            f.ShowDialog(Me)
+        End Using
+    End Sub
+
+    Private Sub OnOpenMainCashBook(sender As Object, e As EventArgs)
+        Using f As New Accounting.MainCashBookForm()
+            f.StartPosition = FormStartPosition.CenterParent
+            f.ShowDialog(Me)
+        End Using
+    End Sub
+
+    Private Sub OnOpenPettyCash(sender As Object, e As EventArgs)
+        Using f As New Accounting.PettyCashForm()
             f.StartPosition = FormStartPosition.CenterParent
             f.ShowDialog(Me)
         End Using

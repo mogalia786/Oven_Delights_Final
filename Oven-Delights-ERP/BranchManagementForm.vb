@@ -235,11 +235,11 @@ Partial Class BranchManagementForm
         End If
     End Sub
     
-    Private Sub btnRefresh_Click(sender As Object, e As EventArgs) Handles btnRefresh.Click
+    Private Sub btnRefresh_Click(sender As Object, e As EventArgs)
         LoadBranches()
     End Sub
     
-    Private Sub txtSearch_TextChanged(sender As Object, e As EventArgs) Handles txtSearch.TextChanged
+    Private Sub txtSearch_TextChanged(sender As Object, e As EventArgs)
         Try
             If dgvBranches.DataSource IsNot Nothing Then
                 Dim dt = CType(dgvBranches.DataSource, DataTable)

@@ -136,14 +136,12 @@ Public Class ProductsForm
                 sql &= "    p.ProductID," & vbCrLf
                 sql &= "    p.ProductCode AS SKU," & vbCrLf
                 sql &= "    p.ProductName," & vbCrLf
-                sql &= "    ISNULL(pi.QuantityOnHand, 0) AS OnHand," & vbCrLf
+                sql &= "    ISNULL(SUM(rs.QtyOnHand), 0) AS OnHand," & vbCrLf
                 sql &= "    ISNULL(u.FirstName + ' ' + u.LastName, '') AS LastProducer," & vbCrLf
                 sql &= "    pm.MovementDate AS ManufacturedTime" & vbCrLf
                 sql &= "FROM dbo.Products p" & vbCrLf
-                sql &= "LEFT JOIN dbo.ProductInventory pi" & vbCrLf
-                sql &= "  ON pi.ProductID = p.ProductID" & vbCrLf
-                sql &= " AND pi.LocationID = @RetailLoc" & vbCrLf
-                sql &= " AND pi.BranchID = @BranchID" & vbCrLf
+                sql &= "LEFT JOIN dbo.Retail_Variant rv ON rv.ProductID = p.ProductID" & vbCrLf
+                sql &= "LEFT JOIN dbo.Retail_Stock rs ON rs.VariantID = rv.VariantID AND rs.BranchID = @BranchID" & vbCrLf
                 sql &= "LEFT JOIN LastMove lm ON lm.ProductID = p.ProductID" & vbCrLf
                 sql &= "LEFT JOIN dbo.ProductMovements pm ON pm.ProductMovementID = lm.LastMovementID" & vbCrLf
                 sql &= "LEFT JOIN dbo.Users u ON u.UserID = pm.CreatedBy" & vbCrLf
@@ -154,6 +152,7 @@ Public Class ProductsForm
                 If todayOnly Then
                     sql &= vbCrLf & "  AND pm.ProductMovementID IS NOT NULL" & vbCrLf
                 End If
+                sql &= "GROUP BY p.ProductID, p.ProductCode, p.ProductName, u.FirstName, u.LastName, pm.MovementDate, lm.LastMovementID" & vbCrLf
                 sql &= "ORDER BY p.ProductName;"
 
                 Using cmd As New SqlCommand(sql, cn)

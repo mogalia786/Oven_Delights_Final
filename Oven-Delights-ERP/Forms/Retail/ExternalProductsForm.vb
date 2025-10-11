@@ -107,16 +107,18 @@ Namespace Retail
                     sql &= "    p.ProductID," & vbCrLf
                     sql &= "    p.ProductCode AS SKU," & vbCrLf
                     sql &= "    p.ProductName," & vbCrLf
-                    sql &= "    ISNULL(pi.QuantityOnHand, 0) AS OnHand," & vbCrLf
+                    sql &= "    ISNULL(SUM(rs.QtyOnHand), 0) AS OnHand," & vbCrLf
                     sql &= "    pm.MovementDate AS LastMovement" & vbCrLf
                     sql &= "FROM dbo.Products p" & vbCrLf
-                    sql &= "LEFT JOIN dbo.ProductInventory pi ON pi.ProductID = p.ProductID AND pi.LocationID = @RetailLoc AND pi.BranchID = @BranchID" & vbCrLf
+                    sql &= "LEFT JOIN dbo.Retail_Variant rv ON rv.ProductID = p.ProductID" & vbCrLf
+                    sql &= "LEFT JOIN dbo.Retail_Stock rs ON rs.VariantID = rv.VariantID AND rs.BranchID = @BranchID" & vbCrLf
                     sql &= "LEFT JOIN LastMove lm ON lm.ProductID = p.ProductID" & vbCrLf
                     sql &= "LEFT JOIN dbo.ProductMovements pm ON pm.ProductMovementID = lm.LastMovementID" & vbCrLf
                     sql &= "WHERE p.IsActive = 1" & vbCrLf
                     ' External products: no ProductRecipe rows
                     sql &= "  AND NOT EXISTS (SELECT 1 FROM dbo.ProductRecipe r WHERE r.ProductID = p.ProductID)" & vbCrLf
                     sql &= "  AND (@pSearch = '' OR p.ProductCode LIKE '%' + @pSearch + '%' OR p.ProductName LIKE '%' + @pSearch + '%')" & vbCrLf
+                    sql &= "GROUP BY p.ProductID, p.ProductCode, p.ProductName, pm.MovementDate, lm.LastMovementID" & vbCrLf
                     sql &= "ORDER BY p.ProductName;"
 
                     Using cmd As New SqlCommand(sql, cn)

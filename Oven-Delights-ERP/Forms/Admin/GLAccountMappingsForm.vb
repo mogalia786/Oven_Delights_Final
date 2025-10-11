@@ -21,6 +21,7 @@ Public Class GLAccountMappingsForm
     Private accounts As DataTable
 
     Public Sub New()
+        InitializeComponent()
         Me.Text = "GL Account Mappings"
         Me.Width = 820
         Me.Height = 520

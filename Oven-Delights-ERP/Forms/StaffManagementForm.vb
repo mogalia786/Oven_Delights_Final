@@ -71,7 +71,7 @@ Public Class StaffManagementForm
             MessageBox.Show("Staff load error: " & ex.Message & Environment.NewLine & "Ensure the Users and Roles tables exist.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End Try
     End Sub
-    
+
     Private Sub LoadStaff()
         Using con As New SqlConnection(connectionString)
             con.Open()
@@ -105,6 +105,10 @@ Public Class StaffManagementForm
                 LoadStaff()
             End If
         End Using
+    End Sub
+
+    Private Sub InitializeComponent()
+
     End Sub
 
     Private Sub OnDelete(sender As Object, e As EventArgs)

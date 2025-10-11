@@ -9,6 +9,9 @@ Public Class InternalOrdersForm
     Inherits Form
 
     Private ReadOnly svc As New ManufacturingService()
+    Private ReadOnly stockroomService As New StockroomService()
+    Private currentBranchId As Integer
+    Private isSuperAdmin As Boolean
 
     Private dgvHeaders As DataGridView
     Private dgvLines As DataGridView
@@ -28,8 +31,13 @@ Public Class InternalOrdersForm
 
     Private _manufacturerUserId As Integer = 0
     Private _manufacturerName As String = "-"
+    Private _preselectInternalOrderId As Integer = 0
 
     Public Sub New()
+        ' Initialize branch and role info
+        currentBranchId = stockroomService.GetCurrentUserBranchId()
+        isSuperAdmin = stockroomService.IsCurrentUserSuperAdmin()
+        
         Me.Text = "Internal Orders (Bundles)"
         Me.Width = 900
         Me.Height = 560
@@ -42,22 +50,55 @@ Public Class InternalOrdersForm
         AddHandler Me.Shown, Sub(sender, args) OnRefresh(Nothing, EventArgs.Empty)
     End Sub
 
+    Public Sub New(internalOrderId As Integer)
+        Me.New()
+        _preselectInternalOrderId = internalOrderId
+        AddHandler Me.Shown, Sub()
+                                 Try
+                                     PreselectInternalOrder()
+                                 Catch
+                                 End Try
+                             End Sub
+    End Sub
+
+    Private Sub OnHeadersCellFormatting(sender As Object, e As DataGridViewCellFormattingEventArgs)
+        Try
+            If dgvHeaders Is Nothing OrElse e Is Nothing OrElse e.RowIndex < 0 OrElse e.ColumnIndex < 0 Then Return
+            Dim col = dgvHeaders.Columns(e.ColumnIndex)
+            If col Is Nothing Then Return
+            If String.Equals(col.Name, "RequestedDate", StringComparison.OrdinalIgnoreCase) OrElse String.Equals(col.DataPropertyName, "RequestedDate", StringComparison.OrdinalIgnoreCase) Then
+                If e.Value IsNot Nothing AndAlso Not DBNull.Value.Equals(e.Value) Then
+                    Dim d As DateTime
+                    If DateTime.TryParse(e.Value.ToString(), d) Then
+                        Dim dl As DateTime = DateTime.SpecifyKind(d, DateTimeKind.Utc).ToLocalTime()
+                        e.Value = dl.ToString("yyyy-MM-dd HH:mm")
+                        e.FormattingApplied = True
+                    End If
+                End If
+            End If
+        Catch
+        End Try
+    End Sub
+
     Private Sub LoadManufacturers()
         Try
             Using cn As New SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
                 cn.Open()
                 Dim sql As String = _
-                    "SELECT u.UserID, (u.FirstName + ' ' + u.LastName) AS FullName " & _
+                    "SELECT u.UserID, COALESCE(NULLIF(LTRIM(RTRIM(u.FirstName + N' ' + u.LastName)), N''), u.Username) AS DisplayName " & _
                     "FROM dbo.Users u " & _
                     "JOIN dbo.Roles r ON r.RoleID = u.RoleID " & _
-                    "WHERE r.RoleName IN (N'Manufacturing-Manager', N'MM', N'Manufacturer') OR r.RoleName LIKE N'Manufactur%' " & _
-                    "ORDER BY FullName;"
+                    "WHERE r.RoleName = N'Manufacturer' " & _
+                    "  AND u.BranchID = @BranchID " & _
+                    "  AND u.IsActive = 1 " & _
+                    "ORDER BY DisplayName;"
                 Using cmd As New SqlCommand(sql, cn)
+                    cmd.Parameters.Add("@BranchID", SqlDbType.Int).Value = currentBranchId
                     Using rdr = cmd.ExecuteReader()
                         Dim dt As New DataTable()
                         dt.Load(rdr)
                         cboManufacturer.DataSource = dt
-                        cboManufacturer.DisplayMember = "FullName"
+                        cboManufacturer.DisplayMember = "DisplayName"
                         cboManufacturer.ValueMember = "UserID"
                     End Using
                 End Using
@@ -170,6 +211,7 @@ Public Class InternalOrdersForm
         AddHandler btnCreatePO.Click, AddressOf OnCreatePOForShortages
         AddHandler btnFulfill.Click, AddressOf OnFulfill
         AddHandler dgvHeaders.SelectionChanged, AddressOf OnHeaderSelectionChanged
+        AddHandler dgvHeaders.CellFormatting, AddressOf OnHeadersCellFormatting
         AddHandler cboReceived.SelectedIndexChanged, AddressOf OnReceivedSelected
         AddHandler cboFulfilled.SelectedIndexChanged, AddressOf OnFulfilledSelected
         AddHandler btnWorkload.Click, AddressOf OnWorkloadClicked
@@ -235,7 +277,7 @@ Public Class InternalOrdersForm
                     "FROM dbo.InternalOrderHeader IOH " & _
                     "LEFT JOIN dbo.Users u ON u.UserID = IOH.RequestedBy " & _
                     "JOIN dbo.InventoryLocations L ON L.LocationID = IOH.FromLocationID " & _
-                    "WHERE IOH.Status = 'Issued' AND (IOH.Notes LIKE '%Bundle%' OR IOH.Notes LIKE '%BuildOfMaterials%') " & _
+                    "WHERE IOH.Status = 'Completed' AND (IOH.Notes LIKE '%Bundle%' OR IOH.Notes LIKE '%BuildOfMaterials%') " & _
                     "  AND (L.BranchID = @bid OR @bid IS NULL) " & _
                     "ORDER BY IOH.InternalOrderID DESC"
                 Using cmd As New SqlCommand(sql, cn)
@@ -255,7 +297,7 @@ Public Class InternalOrdersForm
         End Try
     End Sub
 
-    ' Manufacturer list removed — manufacturer is chosen earlier (Retail/Stockroom dashboard)
+    ' Manufacturer selection supported via combo and Notes token
 
     Private Sub LoadLinesForSelected()
         Dim id As Integer = GetSelectedInternalOrderID()
@@ -288,16 +330,19 @@ Public Class InternalOrdersForm
                             Dim notes As String = Convert.ToString(dtH.Rows(0)("Notes"))
                             Dim manId As Integer = ExtractInt(notes, "ManufacturerUserID=")
                             If manId > 0 Then
-                                Try
-                                    ' Removed manufacturer combo box
-                                Catch
-                                End Try
+                                _manufacturerUserId = manId
+                                _manufacturerName = GetUserFullName(manId)
+                                SelectManufacturerInCombo()
                             Else
-                                ' Removed manufacturer combo box
+                                _manufacturerUserId = 0
+                                _manufacturerName = "-"
+                                SelectManufacturerInCombo()
                             End If
                         Else
                             lblRequestedByValue.Text = "-"
-                            ' Removed manufacturer combo box
+                            _manufacturerUserId = 0
+                            _manufacturerName = "-"
+                            SelectManufacturerInCombo()
                         End If
                     End Using
                 End Using
@@ -361,13 +406,161 @@ Public Class InternalOrdersForm
             ' Ensure the chosen manufacturer is persisted on IO header notes
             SaveManufacturerOnHeader(id, manId)
 
-            ' Mark the Internal Order as Completed (fulfilled) and stamp a fulfillment time token
+            ' Mark the Internal Order as Issued (fulfilled) and move stock from Stockroom to Manufacturing
             Using cn As New SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
                 cn.Open()
-                ' Update status to Completed if currently Open/Issued
-                Using cmdU As New SqlCommand("UPDATE dbo.InternalOrderHeader SET Status = N'Completed', UpdatedAtUtc = SYSUTCDATETIME() WHERE InternalOrderID=@id;", cn)
-                    cmdU.Parameters.AddWithValue("@id", id)
-                    Try : cmdU.ExecuteNonQuery() : Catch : End Try
+                Using tx = cn.BeginTransaction()
+                    Try
+                        ' Get BranchID from InternalOrderHeader
+                        Dim branchId As Integer = 0
+                        Using cmdBranch As New SqlCommand("SELECT ISNULL(BranchID, 0) FROM dbo.InternalOrderHeader WHERE InternalOrderID=@id", cn, tx)
+                            cmdBranch.Parameters.AddWithValue("@id", id)
+                            Dim obj = cmdBranch.ExecuteScalar()
+                            If obj IsNot Nothing AndAlso Not IsDBNull(obj) Then branchId = Convert.ToInt32(obj)
+                        End Using
+                        If branchId <= 0 Then branchId = AppSession.CurrentBranchID
+                        
+                        ' Load InternalOrderLines to get materials needed
+                        Dim totalValue As Decimal = 0D
+                        Using cmdLines As New SqlCommand("SELECT MaterialID, Quantity FROM dbo.InternalOrderLines WHERE InternalOrderID=@id AND MaterialID IS NOT NULL", cn, tx)
+                            cmdLines.Parameters.AddWithValue("@id", id)
+                            Using reader = cmdLines.ExecuteReader()
+                                Dim materials As New List(Of (MaterialID As Integer, Quantity As Decimal))
+                                While reader.Read()
+                                    materials.Add((reader.GetInt32(0), reader.GetDecimal(1)))
+                                End While
+                                reader.Close()
+                                
+                                ' Process each material
+                                For Each mat In materials
+                                    ' Check Stockroom Inventory availability from RawMaterials
+                                    Dim availableQty As Decimal = 0D
+                                    Dim unitCost As Decimal = 0D
+                                    Using cmdCheck As New SqlCommand("SELECT ISNULL(CurrentStock, 0), ISNULL(AverageCost, 0) FROM dbo.RawMaterials WHERE MaterialID=@mid", cn, tx)
+                                        cmdCheck.Parameters.AddWithValue("@mid", mat.MaterialID)
+                                        Using r = cmdCheck.ExecuteReader()
+                                            If r.Read() Then
+                                                availableQty = r.GetDecimal(0)
+                                                unitCost = r.GetDecimal(1)
+                                            End If
+                                        End Using
+                                    End Using
+                                    
+                                    If availableQty < mat.Quantity Then
+                                        Throw New Exception($"Insufficient stock for MaterialID {mat.MaterialID}. Available: {availableQty}, Required: {mat.Quantity}")
+                                    End If
+                                    
+                                    ' Reduce Stockroom Inventory (RawMaterials table)
+                                    Using cmdReduce As New SqlCommand("UPDATE dbo.RawMaterials SET CurrentStock = CurrentStock - @qty WHERE MaterialID=@mid", cn, tx)
+                                        cmdReduce.Parameters.AddWithValue("@qty", mat.Quantity)
+                                        cmdReduce.Parameters.AddWithValue("@mid", mat.MaterialID)
+                                        cmdReduce.ExecuteNonQuery()
+                                    End Using
+                                    
+                                    ' Increase Manufacturing_Inventory
+                                    Using cmdCheck2 As New SqlCommand("SELECT COUNT(*) FROM dbo.Manufacturing_Inventory WHERE MaterialID=@mid AND BranchID=@bid", cn, tx)
+                                        cmdCheck2.Parameters.AddWithValue("@mid", mat.MaterialID)
+                                        cmdCheck2.Parameters.AddWithValue("@bid", branchId)
+                                        Dim exists = Convert.ToInt32(cmdCheck2.ExecuteScalar()) > 0
+                                        
+                                        If exists Then
+                                            Using cmdUpdate As New SqlCommand("UPDATE dbo.Manufacturing_Inventory SET QtyOnHand = QtyOnHand + @qty, AverageCost = @cost, LastUpdated = GETDATE(), UpdatedBy = @user WHERE MaterialID=@mid AND BranchID=@bid", cn, tx)
+                                                cmdUpdate.Parameters.AddWithValue("@qty", mat.Quantity)
+                                                cmdUpdate.Parameters.AddWithValue("@cost", unitCost)
+                                                cmdUpdate.Parameters.AddWithValue("@user", AppSession.CurrentUserID)
+                                                cmdUpdate.Parameters.AddWithValue("@mid", mat.MaterialID)
+                                                cmdUpdate.Parameters.AddWithValue("@bid", branchId)
+                                                cmdUpdate.ExecuteNonQuery()
+                                            End Using
+                                        Else
+                                            Using cmdInsert As New SqlCommand("INSERT INTO dbo.Manufacturing_Inventory (MaterialID, BranchID, QtyOnHand, AverageCost, LastUpdated, UpdatedBy) VALUES (@mid, @bid, @qty, @cost, GETDATE(), @user)", cn, tx)
+                                                cmdInsert.Parameters.AddWithValue("@mid", mat.MaterialID)
+                                                cmdInsert.Parameters.AddWithValue("@bid", branchId)
+                                                cmdInsert.Parameters.AddWithValue("@qty", mat.Quantity)
+                                                cmdInsert.Parameters.AddWithValue("@cost", unitCost)
+                                                cmdInsert.Parameters.AddWithValue("@user", AppSession.CurrentUserID)
+                                                cmdInsert.ExecuteNonQuery()
+                                            End Using
+                                        End If
+                                    End Using
+                                    
+                                    ' Insert Manufacturing_InventoryMovements
+                                    Using cmdMove As New SqlCommand("INSERT INTO dbo.Manufacturing_InventoryMovements (MaterialID, BranchID, MovementType, QtyDelta, CostPerUnit, Reference, Notes, MovementDate, CreatedBy) VALUES (@mid, @bid, 'Issue from Stockroom', @qty, @cost, @ref, @notes, GETDATE(), @user)", cn, tx)
+                                        cmdMove.Parameters.AddWithValue("@mid", mat.MaterialID)
+                                        cmdMove.Parameters.AddWithValue("@bid", branchId)
+                                        cmdMove.Parameters.AddWithValue("@qty", mat.Quantity)
+                                        cmdMove.Parameters.AddWithValue("@cost", unitCost)
+                                        cmdMove.Parameters.AddWithValue("@ref", $"IO-{id}")
+                                        cmdMove.Parameters.AddWithValue("@notes", $"BOM Fulfillment - Internal Order {id}")
+                                        cmdMove.Parameters.AddWithValue("@user", AppSession.CurrentUserID)
+                                        cmdMove.ExecuteNonQuery()
+                                    End Using
+                                    
+                                    totalValue += mat.Quantity * unitCost
+                                Next
+                            End Using
+                        End Using
+                        
+                        ' Create Journal Entry: DR Manufacturing Inventory, CR Stockroom Inventory
+                        If totalValue > 0 Then
+                            ' Get current fiscal period
+                            Dim fiscalPeriodId As Integer = 0
+                            Using cmdFP As New SqlCommand("SELECT TOP 1 PeriodID FROM dbo.FiscalPeriods WHERE GETDATE() BETWEEN StartDate AND EndDate AND IsClosed = 0 ORDER BY StartDate DESC", cn, tx)
+                                Dim fpResult = cmdFP.ExecuteScalar()
+                                If fpResult IsNot Nothing AndAlso Not IsDBNull(fpResult) Then
+                                    fiscalPeriodId = Convert.ToInt32(fpResult)
+                                End If
+                            End Using
+                            
+                            ' If no fiscal period found, skip journal entry
+                            If fiscalPeriodId <= 0 Then
+                                System.Diagnostics.Debug.WriteLine("Warning: No open fiscal period found. Skipping journal entry.")
+                            Else
+                                Dim journalNumber As String = $"BOM-{id}"
+                                Dim journalId As Integer
+                                Using cmdJH As New SqlCommand("INSERT INTO dbo.JournalHeaders (JournalNumber, BranchID, JournalDate, Reference, Description, FiscalPeriodID, IsPosted, CreatedBy) OUTPUT INSERTED.JournalID VALUES (@jnum, @bid, GETDATE(), @ref, @desc, @fp, 1, @user)", cn, tx)
+                                cmdJH.Parameters.AddWithValue("@jnum", journalNumber)
+                                cmdJH.Parameters.AddWithValue("@bid", branchId)
+                                cmdJH.Parameters.AddWithValue("@ref", $"IO-{id}")
+                                cmdJH.Parameters.AddWithValue("@desc", $"BOM Fulfillment - Issue to Manufacturing")
+                                cmdJH.Parameters.AddWithValue("@fp", fiscalPeriodId)
+                                cmdJH.Parameters.AddWithValue("@user", AppSession.CurrentUserID)
+                                journalId = Convert.ToInt32(cmdJH.ExecuteScalar())
+                            End Using
+                            
+                            ' DR Manufacturing Inventory
+                            Dim mfgInvAcct As Integer = GetAccountID("Manufacturing Inventory", cn, tx)
+                            Using cmdDR As New SqlCommand("INSERT INTO dbo.JournalDetails (JournalID, LineNumber, AccountID, Debit, Credit, Description) VALUES (@jid, 1, @acct, @amt, 0, @desc)", cn, tx)
+                                cmdDR.Parameters.AddWithValue("@jid", journalId)
+                                cmdDR.Parameters.AddWithValue("@acct", mfgInvAcct)
+                                cmdDR.Parameters.AddWithValue("@amt", Math.Round(totalValue, 2))
+                                cmdDR.Parameters.AddWithValue("@desc", "Materials issued to manufacturing")
+                                cmdDR.ExecuteNonQuery()
+                            End Using
+                            
+                            ' CR Stockroom Inventory
+                            Dim stockInvAcct As Integer = GetAccountID("Stockroom Inventory", cn, tx)
+                            Using cmdCR As New SqlCommand("INSERT INTO dbo.JournalDetails (JournalID, LineNumber, AccountID, Debit, Credit, Description) VALUES (@jid, 2, @acct, 0, @amt, @desc)", cn, tx)
+                                cmdCR.Parameters.AddWithValue("@jid", journalId)
+                                cmdCR.Parameters.AddWithValue("@acct", stockInvAcct)
+                                cmdCR.Parameters.AddWithValue("@amt", Math.Round(totalValue, 2))
+                                cmdCR.Parameters.AddWithValue("@desc", "Materials issued to manufacturing")
+                                cmdCR.ExecuteNonQuery()
+                            End Using
+                            End If
+                        End If
+                        
+                        ' Update status to Issued
+                        Using cmdU As New SqlCommand("UPDATE dbo.InternalOrderHeader SET Status = N'Issued' WHERE InternalOrderID=@id", cn, tx)
+                            cmdU.Parameters.AddWithValue("@id", id)
+                            cmdU.ExecuteNonQuery()
+                        End Using
+                        
+                        tx.Commit()
+                    Catch ex As Exception
+                        tx.Rollback()
+                        Throw New Exception($"Stock movement failed: {ex.Message}", ex)
+                    End Try
                 End Using
                 ' Stamp fulfillment time token in Notes (FulfilledAtUtc=...)
                 Dim notes As String = ""
@@ -397,7 +590,48 @@ Public Class InternalOrdersForm
                         cmdF.Parameters.AddWithValue("@StockroomFulfilledAtUtc", DateTime.UtcNow)
                         Try : cmdF.ExecuteNonQuery() : Catch : End Try
                     End Using
+                    ' Look up ManufacturerName and upsert BomTaskStatus to Pending for this IO and manufacturer
+                    Dim mfgName As String = Nothing
+                    Using cmdN As New SqlCommand("SELECT TOP 1 COALESCE(NULLIF(LTRIM(RTRIM(CONCAT(FirstName, N' ', LastName))), N''), Username) FROM dbo.Users WHERE UserID=@m;", cn2)
+                        cmdN.Parameters.AddWithValue("@m", manId)
+                        Dim o = cmdN.ExecuteScalar()
+                        If o IsNot Nothing AndAlso o IsNot DBNull.Value Then mfgName = Convert.ToString(o) Else mfgName = String.Empty
+                    End Using
+                    Using cmdS As New SqlCommand("IF EXISTS(SELECT 1 FROM dbo.BomTaskStatus WHERE InternalOrderID=@id) " & _
+                                                 "UPDATE dbo.BomTaskStatus SET ManufacturerUserID=@m, ManufacturerName=@n, Status=N'Pending', UpdatedAtUtc=SYSUTCDATETIME() WHERE InternalOrderID=@id " & _
+                                                 "ELSE INSERT INTO dbo.BomTaskStatus(InternalOrderID, ManufacturerUserID, ManufacturerName, Status, UpdatedAtUtc) VALUES(@id, @m, @n, N'Pending', SYSUTCDATETIME());", cn2)
+                        cmdS.Parameters.AddWithValue("@id", id)
+                        cmdS.Parameters.AddWithValue("@m", manId)
+                        cmdS.Parameters.AddWithValue("@n", If(mfgName, String.Empty))
+                        Try : cmdS.ExecuteNonQuery() : Catch : End Try
+                    End Using
                 End Using
+            Catch
+            End Try
+
+            ' Locally refresh lists so the IO moves from Received -> Fulfilled
+            Try
+                LoadReceivedList()
+                LoadFulfilledList()
+                If cboReceived IsNot Nothing Then cboReceived.SelectedIndex = -1
+                If cboFulfilled IsNot Nothing Then
+                    Try
+                        cboFulfilled.SelectedValue = id
+                    Catch
+                        ' ignore if not present yet
+                    End Try
+                End If
+            Catch
+            End Try
+
+            ' Refresh Stockroom dashboard if open (so the bottom queries update immediately)
+            Try
+                For Each f As Form In Application.OpenForms
+                    If TypeOf f Is Stockroom.StockroomDashboardForm Then
+                        CType(f, Stockroom.StockroomDashboardForm).RefreshData()
+                        Exit For
+                    End If
+                Next
             Catch
             End Try
 
@@ -451,9 +685,60 @@ Public Class InternalOrdersForm
     End Sub
 
     Private Sub OnFulfilledSelected(sender As Object, e As EventArgs)
-        ' Optional: show the fulfilled IO details if desired, otherwise keep grids clear
-        dgvHeaders.DataSource = Nothing
-        dgvLines.DataSource = Nothing
+        Dim id As Integer = 0
+        Dim parsed As Boolean = False
+        Dim valObj As Object = Nothing
+        If cboFulfilled IsNot Nothing Then
+            valObj = cboFulfilled.SelectedValue
+        End If
+        If valObj IsNot Nothing Then
+            parsed = Integer.TryParse(valObj.ToString(), id)
+        End If
+        If Not parsed Then
+            Dim drv As DataRowView = TryCast(cboFulfilled.SelectedItem, DataRowView)
+            If drv IsNot Nothing AndAlso drv.Row IsNot Nothing AndAlso drv.Row.Table IsNot Nothing AndAlso drv.Row.Table.Columns.Contains("InternalOrderID") Then
+                Dim raw As Object = drv.Row("InternalOrderID")
+                If raw IsNot Nothing AndAlso raw IsNot DBNull.Value Then
+                    id = Convert.ToInt32(raw)
+                    parsed = True
+                End If
+            End If
+        End If
+        If parsed AndAlso id > 0 Then
+            LoadHeaderAndLinesById(id)
+        Else
+            dgvHeaders.DataSource = Nothing
+            dgvLines.DataSource = Nothing
+        End If
+    End Sub
+
+    Private Sub PreselectInternalOrder()
+        Dim id As Integer = _preselectInternalOrderId
+        If id <= 0 Then Return
+        ' Try Received list first
+        Dim found As Boolean = False
+        Try
+            If cboReceived IsNot Nothing AndAlso cboReceived.DataSource IsNot Nothing Then
+                cboReceived.SelectedValue = id
+                If cboReceived.SelectedValue IsNot Nothing AndAlso cboReceived.SelectedValue.ToString() = id.ToString() Then
+                    found = True
+                End If
+            End If
+        Catch
+        End Try
+        If Not found Then
+            Try
+                If cboFulfilled IsNot Nothing AndAlso cboFulfilled.DataSource IsNot Nothing Then
+                    cboFulfilled.SelectedValue = id
+                    If cboFulfilled.SelectedValue IsNot Nothing AndAlso cboFulfilled.SelectedValue.ToString() = id.ToString() Then
+                        found = True
+                    End If
+                End If
+            Catch
+            End Try
+        End If
+        ' Always force load details to ensure population
+        LoadHeaderAndLinesById(id)
     End Sub
 
     Private Sub LoadHeaderAndLinesById(ioId As Integer)
@@ -653,6 +938,38 @@ Public Class InternalOrdersForm
             ' swallow
         End Try
     End Sub
+
+    Private Function GetAccountID(accountName As String, cn As SqlConnection, tx As SqlTransaction) As Integer
+        ' Try to find account by name, create if not exists
+        Using cmd As New SqlCommand("SELECT AccountID FROM dbo.ChartOfAccounts WHERE AccountName = @name", cn, tx)
+            cmd.Parameters.AddWithValue("@name", accountName)
+            Dim result = cmd.ExecuteScalar()
+            If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                Return Convert.ToInt32(result)
+            End If
+        End Using
+        
+        ' Create account if not found
+        Dim accountCode As String = ""
+        Dim accountType As String = "Asset"
+        Select Case accountName
+            Case "Manufacturing Inventory"
+                accountCode = "1320"
+            Case "Stockroom Inventory"
+                accountCode = "1310"
+            Case "Retail Inventory"
+                accountCode = "1330"
+            Case Else
+                accountCode = "1300"
+        End Select
+        
+        Using cmdIns As New SqlCommand("INSERT INTO dbo.ChartOfAccounts (AccountCode, AccountName, AccountType, IsActive) OUTPUT INSERTED.AccountID VALUES (@code, @name, @type, 1)", cn, tx)
+            cmdIns.Parameters.AddWithValue("@code", accountCode)
+            cmdIns.Parameters.AddWithValue("@name", accountName)
+            cmdIns.Parameters.AddWithValue("@type", accountType)
+            Return Convert.ToInt32(cmdIns.ExecuteScalar())
+        End Using
+    End Function
 
     Private Sub OnWorkloadClicked(sender As Object, e As EventArgs)
         ' Show today's workload per manufacturer from RetailOrdersToday

@@ -112,7 +112,14 @@ Namespace Retail
 
             ' Pause/resume refresh when not visible or deactivated
             AddHandler Me.Activated, Sub() ResumeRefresh()
-            AddHandler Me.Deactivate, Sub() PauseRefresh()
+            AddHandler Me.Deactivate, Sub() 
+                ' Only pause if form is actually being deactivated, not just losing focus
+                If Me.WindowState <> FormWindowState.Minimized Then
+                    ' Keep refresh running when form is visible but not active
+                    Return
+                End If
+                PauseRefresh()
+            End Sub
             AddHandler Me.VisibleChanged, Sub()
                                             If Me.Visible AndAlso Me.WindowState <> FormWindowState.Minimized Then
                                                 ResumeRefresh()
@@ -514,8 +521,9 @@ Namespace Retail
                        "  SELECT DISTINCT bh.ProductID FROM dbo.BOMHeader bh " &
                        "  UNION SELECT DISTINCT pr.ProductID FROM dbo.ProductRecipe pr )," &
                        " SOH AS ( " &
-                       "  SELECT pi.ProductID, SUM(ISNULL(pi.QuantityOnHand,0)) AS OnHand FROM dbo.ProductInventory pi " &
-                       "  WHERE pi.BranchID = COALESCE(@b, pi.BranchID) AND pi.LocationID = COALESCE(@loc, pi.LocationID) GROUP BY pi.ProductID )," &
+                       "  SELECT rv.ProductID, SUM(ISNULL(rs.QtyOnHand,0)) AS OnHand FROM dbo.Retail_Stock rs " &
+                       "  INNER JOIN dbo.Retail_Variant rv ON rs.VariantID = rv.VariantID " &
+                       "  WHERE rs.BranchID = COALESCE(@b, rs.BranchID) GROUP BY rv.ProductID )," &
                        " ROTS AS ( " &
                        "  SELECT DISTINCT t.ProductID FROM dbo.RetailOrdersToday t WHERE t.OrderDate = @today AND t.BranchID = COALESCE(@b, t.BranchID) ), " &
                        " RECEIPTS AS ( " &
@@ -527,7 +535,7 @@ Namespace Retail
                        "       CASE WHEN (CASE WHEN m.ProductID IS NULL THEN 0 ELSE 1 END)=1 THEN 10 ELSE 0 END AS ReorderQty, " &
                        "       CASE WHEN rt.ProductID IS NOT NULL AND r.ProductID IS NULL THEN 1 ELSE 0 END AS OrderedToday " &
                        "FROM dbo.Products p " &
-                       "INNER JOIN (SELECT DISTINCT pi.ProductID FROM dbo.ProductInventory pi WHERE pi.BranchID = COALESCE(@b, pi.BranchID)) PB ON PB.ProductID = p.ProductID " &
+                       "INNER JOIN (SELECT DISTINCT rv.ProductID FROM dbo.Retail_Variant rv INNER JOIN dbo.Retail_Stock rs ON rv.VariantID = rs.VariantID WHERE rs.BranchID = COALESCE(@b, rs.BranchID)) PB ON PB.ProductID = p.ProductID " &
                        "LEFT JOIN SOH s ON s.ProductID=p.ProductID " &
                        "LEFT JOIN MFG m ON m.ProductID=p.ProductID " &
                        "LEFT JOIN ROTS rt ON rt.ProductID=p.ProductID " &
@@ -647,7 +655,7 @@ Namespace Retail
                                    "                        WHERE iol.ProductID = p.ProductID AND ioh.Status = 'Open' " &
                                    "                          AND CONVERT(date, ioh.RequestedDate) = @today) THEN 1 ELSE 0 END AS OrderedToday " &
                                    "FROM dbo.Products p " &
-                                   "INNER JOIN (SELECT DISTINCT pi.ProductID FROM dbo.ProductInventory pi WHERE pi.BranchID = COALESCE(@b, pi.BranchID)) PB ON PB.ProductID = p.ProductID " &
+                                   "INNER JOIN (SELECT DISTINCT rv.ProductID FROM dbo.Retail_Variant rv INNER JOIN dbo.Retail_Stock rs ON rv.VariantID = rs.VariantID WHERE rs.BranchID = COALESCE(@b, rs.BranchID)) PB ON PB.ProductID = p.ProductID " &
                                    "LEFT JOIN MFG m ON m.ProductID=p.ProductID " &
                                    "ORDER BY p.ProductName;"
 
@@ -915,7 +923,7 @@ Namespace Retail
                 End Using
 
                 ' 3) Zero stock SKUs (potential alerts)
-                Using cmd As New SqlCommand("SELECT COUNT(1) FROM dbo.ProductInventory pi WHERE pi.LocationID=@loc AND pi.BranchID=@b AND ISNULL(pi.QuantityOnHand,0) = 0;", cn)
+                Using cmd As New SqlCommand("SELECT COUNT(1) FROM dbo.Retail_Stock rs WHERE rs.BranchID=@b AND ISNULL(rs.QtyOnHand,0) = 0;", cn)
                     cmd.Parameters.AddWithValue("@loc", retailLoc)
                     cmd.Parameters.AddWithValue("@b", branchId)
                     vZeroSkus = Convert.ToInt32(cmd.ExecuteScalar())

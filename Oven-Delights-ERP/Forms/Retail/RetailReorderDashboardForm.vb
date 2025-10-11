@@ -178,9 +178,11 @@ Namespace Retail
                     sql &= "  SELECT p.ProductID, p.ProductCode AS SKU, p.ProductName, " & vbCrLf
                     sql &= "         CAST(CASE WHEN EXISTS(SELECT 1 FROM dbo.BOMHeader bh WHERE bh.ProductID=p.ProductID AND bh.IsActive=1 AND (bh.EffectiveTo IS NULL OR bh.EffectiveTo >= CAST(GETDATE() AS DATE))) " & vbCrLf
                     sql &= "              THEN 1 ELSE 0 END AS BIT) AS IsManufactured, " & vbCrLf
-                    sql &= "         ISNULL(pi.QuantityOnHand,0) AS OnHand " & vbCrLf
+                    sql &= "         ISNULL(SUM(rs.QtyOnHand),0) AS OnHand " & vbCrLf
                     sql &= "  FROM dbo.Products p " & vbCrLf
-                    sql &= "  LEFT JOIN dbo.ProductInventory pi ON pi.ProductID = p.ProductID AND pi.LocationID = @RetailLoc AND pi.BranchID = @BranchID " & vbCrLf
+                    sql &= "  LEFT JOIN dbo.Retail_Variant rv ON rv.ProductID = p.ProductID " & vbCrLf
+                    sql &= "  LEFT JOIN dbo.Retail_Stock rs ON rs.VariantID = rv.VariantID AND rs.BranchID = @BranchID " & vbCrLf
+                    sql &= "  GROUP BY p.ProductID, p.ProductCode, p.ProductName " & vbCrLf
                     sql &= ") " & vbCrLf
                     sql &= "SELECT b.ProductID, b.SKU, b.ProductName, b.IsManufactured, b.OnHand, " & vbCrLf
                     sql &= "       CAST(CASE WHEN b.IsManufactured = 1 THEN " & vbCrLf
@@ -195,7 +197,8 @@ Namespace Retail
                     sql &= "           CASE WHEN b.OnHand < 10 THEN 'Red' WHEN b.OnHand BETWEEN 10 AND 14 THEN 'Yellow' ELSE 'Green' END " & vbCrLf
                     sql &= "       END AS NVARCHAR(10)) AS StatusText " & vbCrLf
                     sql &= "FROM Base b " & vbCrLf
-                    sql &= "WHERE (@pSearch = '' OR b.SKU LIKE '%' + @pSearch + '%' OR b.ProductName LIKE '%' + @pSearch + '%') " & vbCrLf
+                    sql &= "WHERE b.IsManufactured = 1 " & vbCrLf
+                    sql &= "  AND (@pSearch = '' OR b.SKU LIKE '%' + @pSearch + '%' OR b.ProductName LIKE '%' + @pSearch + '%') " & vbCrLf
                     sql &= "ORDER BY b.ProductName;"
 
                     Using cmd As New SqlCommand(sql, cn)
@@ -489,7 +492,7 @@ Namespace Retail
                 Dim cs As String = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
                 Using cn As New SqlConnection(cs)
                     cn.Open()
-                    Using cmd As New SqlCommand("SELECT ISNULL(SUM(QuantityOnHand),0) FROM dbo.ProductInventory WHERE ProductID=@p AND ISNULL(BranchID,-1)=ISNULL(@b,-1) AND LocationID=@l", cn)
+                    Using cmd As New SqlCommand("SELECT ISNULL(SUM(rs.QtyOnHand),0) FROM dbo.Retail_Stock rs INNER JOIN dbo.Retail_Variant rv ON rs.VariantID = rv.VariantID WHERE rv.ProductID=@p AND rs.BranchID=@b", cn)
                         cmd.Parameters.AddWithValue("@p", productId)
                         cmd.Parameters.AddWithValue("@b", If(branchId > 0, branchId, CType(DBNull.Value, Object)))
                         cmd.Parameters.AddWithValue("@l", locId)

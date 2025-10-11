@@ -4,6 +4,7 @@ Imports System.Configuration
 
 Public Class ManufacturingService
     Private ReadOnly _cs As String
+    Private ReadOnly stockroomService As New StockroomService()
 
     Public Sub New()
         _cs = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
@@ -24,11 +25,11 @@ Public Class ManufacturingService
                 cmd.CommandType = CommandType.StoredProcedure
                 cmd.Parameters.AddWithValue("@ProductID", productId)
                 cmd.Parameters.AddWithValue("@Quantity", quantity)
-                Dim bid As Integer = If(branchId.HasValue AndAlso branchId.Value > 0, branchId.Value, If(AppSession.CurrentBranchID > 0, AppSession.CurrentBranchID, 0))
+                Dim bid As Integer = If(branchId.HasValue AndAlso branchId.Value > 0, branchId.Value, stockroomService.GetCurrentUserBranchId())
                 Dim pBranch As New SqlParameter("@BranchID", SqlDbType.Int)
                 pBranch.Value = If(bid > 0, CType(bid, Object), DBNull.Value)
                 cmd.Parameters.Add(pBranch)
-                Dim uid As Integer = If(userId.HasValue AndAlso userId.Value > 0, userId.Value, If(AppSession.CurrentUserID > 0, AppSession.CurrentUserID, 0))
+                Dim uid As Integer = If(userId.HasValue AndAlso userId.Value > 0, userId.Value, stockroomService.GetCurrentUserBranchId())
                 Dim pUser As New SqlParameter("@UserID", SqlDbType.Int)
                 pUser.Value = If(uid > 0, CType(uid, Object), DBNull.Value)
                 cmd.Parameters.Add(pUser)
@@ -71,11 +72,11 @@ Public Class ManufacturingService
                 cmd.Parameters.AddWithValue("@UoM", If(uom, String.Empty))
                 cmd.Parameters.AddWithValue("@FromLocationCode", If(fromLocationCode, String.Empty))
                 cmd.Parameters.AddWithValue("@ToLocationCode", If(toLocationCode, String.Empty))
-                Dim bid As Integer = If(branchId.HasValue AndAlso branchId.Value > 0, branchId.Value, If(AppSession.CurrentBranchID > 0, AppSession.CurrentBranchID, 0))
+                Dim bid As Integer = If(branchId.HasValue AndAlso branchId.Value > 0, branchId.Value, stockroomService.GetCurrentUserBranchId())
                 Dim pBranch As New SqlParameter("@BranchID", SqlDbType.Int)
                 pBranch.Value = If(bid > 0, CType(bid, Object), DBNull.Value)
                 cmd.Parameters.Add(pBranch)
-                Dim uid As Integer = If(userId.HasValue AndAlso userId.Value > 0, userId.Value, If(AppSession.CurrentUserID > 0, AppSession.CurrentUserID, 0))
+                Dim uid As Integer = If(userId.HasValue AndAlso userId.Value > 0, userId.Value, stockroomService.GetCurrentUserBranchId())
                 Dim pUser As New SqlParameter("@UserID", SqlDbType.Int)
                 pUser.Value = If(uid > 0, CType(uid, Object), DBNull.Value)
                 cmd.Parameters.Add(pUser)
@@ -108,11 +109,11 @@ Public Class ManufacturingService
                 cmd.Parameters.AddWithValue("@QuantityMade", quantityMade)
                 cmd.Parameters.AddWithValue("@UoM", If(uom, String.Empty))
                 cmd.Parameters.AddWithValue("@ToLocationCode", If(toLocationCode, String.Empty))
-                Dim bid As Integer = If(branchId.HasValue AndAlso branchId.Value > 0, branchId.Value, If(AppSession.CurrentBranchID > 0, AppSession.CurrentBranchID, 0))
+                Dim bid As Integer = If(branchId.HasValue AndAlso branchId.Value > 0, branchId.Value, stockroomService.GetCurrentUserBranchId())
                 Dim pBranch As New SqlParameter("@BranchID", SqlDbType.Int)
                 pBranch.Value = If(bid > 0, CType(bid, Object), DBNull.Value)
                 cmd.Parameters.Add(pBranch)
-                Dim uid As Integer = If(userId.HasValue AndAlso userId.Value > 0, userId.Value, If(AppSession.CurrentUserID > 0, AppSession.CurrentUserID, 0))
+                Dim uid As Integer = If(userId.HasValue AndAlso userId.Value > 0, userId.Value, stockroomService.GetCurrentUserBranchId())
                 Dim pUser As New SqlParameter("@UserID", SqlDbType.Int)
                 pUser.Value = If(uid > 0, CType(uid, Object), DBNull.Value)
                 cmd.Parameters.Add(pUser)
@@ -142,11 +143,11 @@ Public Class ManufacturingService
                 cmd.CommandType = CommandType.StoredProcedure
                 cmd.Parameters.AddWithValue("@ProductID", productId)
                 cmd.Parameters.AddWithValue("@Quantity", quantity)
-                Dim bid As Integer = If(branchId.HasValue AndAlso branchId.Value > 0, branchId.Value, If(AppSession.CurrentBranchID > 0, AppSession.CurrentBranchID, 0))
+                Dim bid As Integer = If(branchId.HasValue AndAlso branchId.Value > 0, branchId.Value, stockroomService.GetCurrentUserBranchId())
                 Dim pBranch As New SqlParameter("@BranchID", SqlDbType.Int)
                 pBranch.Value = If(bid > 0, CType(bid, Object), DBNull.Value)
                 cmd.Parameters.Add(pBranch)
-                Dim uid As Integer = If(userId.HasValue AndAlso userId.Value > 0, userId.Value, If(AppSession.CurrentUserID > 0, AppSession.CurrentUserID, 0))
+                Dim uid As Integer = If(userId.HasValue AndAlso userId.Value > 0, userId.Value, stockroomService.GetCurrentUserBranchId())
                 Dim pUser As New SqlParameter("@UserID", SqlDbType.Int)
                 pUser.Value = If(uid > 0, CType(uid, Object), DBNull.Value)
                 cmd.Parameters.Add(pUser)
@@ -154,6 +155,22 @@ Public Class ManufacturingService
                 cmd.Parameters.AddWithValue("@ToLocationCode", If(toLocationCode, String.Empty))
                 cmd.ExecuteNonQuery()
             End Using
+            
+            ' Sync to Retail_Stock for POS system
+            Try
+                Dim bid As Integer = If(branchId.HasValue AndAlso branchId.Value > 0, branchId.Value, stockroomService.GetCurrentUserBranchId())
+                Using cmdSync As New SqlCommand("dbo.sp_Sync_ProductInventory_To_RetailStock", cn)
+                    cmdSync.CommandType = CommandType.StoredProcedure
+                    cmdSync.Parameters.AddWithValue("@ProductID", productId)
+                    cmdSync.Parameters.AddWithValue("@BranchID", If(bid > 0, CType(bid, Object), DBNull.Value))
+                    cmdSync.Parameters.AddWithValue("@Quantity", quantity)
+                    cmdSync.Parameters.AddWithValue("@UnitCost", 0)
+                    cmdSync.ExecuteNonQuery()
+                End Using
+            Catch ex As Exception
+                ' Log but don't fail if sync procedure doesn't exist yet
+                System.Diagnostics.Debug.WriteLine($"Retail_Stock sync skipped: {ex.Message}")
+            End Try
         End Using
     End Sub
 
@@ -174,11 +191,11 @@ Public Class ManufacturingService
                 cmd.CommandType = CommandType.StoredProcedure
                 cmd.Parameters.AddWithValue("@MOID", moId)
                 cmd.Parameters.AddWithValue("@OutputQty", outputQty)
-                Dim bid As Integer = If(branchId.HasValue AndAlso branchId.Value > 0, branchId.Value, If(AppSession.CurrentBranchID > 0, AppSession.CurrentBranchID, 0))
+                Dim bid As Integer = If(branchId.HasValue AndAlso branchId.Value > 0, branchId.Value, stockroomService.GetCurrentUserBranchId())
                 Dim pBranch As New SqlParameter("@BranchID", SqlDbType.Int)
                 pBranch.Value = If(bid > 0, CType(bid, Object), DBNull.Value)
                 cmd.Parameters.Add(pBranch)
-                Dim uid As Integer = If(userId.HasValue AndAlso userId.Value > 0, userId.Value, If(AppSession.CurrentUserID > 0, AppSession.CurrentUserID, 0))
+                Dim uid As Integer = If(userId.HasValue AndAlso userId.Value > 0, userId.Value, stockroomService.GetCurrentUserBranchId())
                 Dim pUser As New SqlParameter("@UserID", SqlDbType.Int)
                 pUser.Value = If(uid > 0, CType(uid, Object), DBNull.Value)
                 cmd.Parameters.Add(pUser)
@@ -297,7 +314,7 @@ Public Class ManufacturingService
             resolvedUserId = userId.Value
         ElseIf items.Count = 1 Then
             Dim pid As Integer = items(0).Item1
-            Dim bidLookup As Integer = If(branchId.HasValue AndAlso branchId.Value > 0, branchId.Value, If(AppSession.CurrentBranchID > 0, AppSession.CurrentBranchID, 0))
+            Dim bidLookup As Integer = If(branchId.HasValue AndAlso branchId.Value > 0, branchId.Value, stockroomService.GetCurrentUserBranchId())
             resolvedUserId = LookupLastFinisherUserId(pid, bidLookup)
         End If
 
@@ -311,12 +328,12 @@ Public Class ManufacturingService
                 pItems.Value = tvp
                 cmd.Parameters.Add(pItems)
 
-                Dim bid As Integer = If(branchId.HasValue AndAlso branchId.Value > 0, branchId.Value, If(AppSession.CurrentBranchID > 0, AppSession.CurrentBranchID, 0))
+                Dim bid As Integer = If(branchId.HasValue AndAlso branchId.Value > 0, branchId.Value, stockroomService.GetCurrentUserBranchId())
                 Dim pBranch As New SqlParameter("@BranchID", SqlDbType.Int)
                 pBranch.Value = If(bid > 0, CType(bid, Object), DBNull.Value)
                 cmd.Parameters.Add(pBranch)
 
-                Dim uid As Integer = If(resolvedUserId > 0, resolvedUserId, If(AppSession.CurrentUserID > 0, AppSession.CurrentUserID, 0))
+                Dim uid As Integer = If(resolvedUserId > 0, resolvedUserId, stockroomService.GetCurrentUserBranchId())
                 Dim pUser As New SqlParameter("@UserID", SqlDbType.Int)
                 pUser.Value = If(uid > 0, CType(uid, Object), DBNull.Value)
                 cmd.Parameters.Add(pUser)
@@ -368,11 +385,11 @@ Public Class ManufacturingService
             Using cmd As New SqlCommand("dbo.sp_IO_FulfillToMFG", cn)
                 cmd.CommandType = CommandType.StoredProcedure
                 cmd.Parameters.AddWithValue("@InternalOrderID", internalOrderId)
-                Dim bid As Integer = If(branchId.HasValue AndAlso branchId.Value > 0, branchId.Value, If(AppSession.CurrentBranchID > 0, AppSession.CurrentBranchID, 0))
+                Dim bid As Integer = If(branchId.HasValue AndAlso branchId.Value > 0, branchId.Value, stockroomService.GetCurrentUserBranchId())
                 Dim pBranch As New SqlParameter("@BranchID", SqlDbType.Int)
                 pBranch.Value = If(bid > 0, CType(bid, Object), DBNull.Value)
                 cmd.Parameters.Add(pBranch)
-                Dim uid As Integer = If(userId.HasValue AndAlso userId.Value > 0, userId.Value, If(AppSession.CurrentUserID > 0, AppSession.CurrentUserID, 0))
+                Dim uid As Integer = If(userId.HasValue AndAlso userId.Value > 0, userId.Value, stockroomService.GetCurrentUserBranchId())
                 Dim pUser As New SqlParameter("@UserID", SqlDbType.Int)
                 pUser.Value = If(uid > 0, CType(uid, Object), DBNull.Value)
                 cmd.Parameters.Add(pUser)

@@ -5,7 +5,7 @@ Public Class InventoryCatalogCrudForm
     Inherits Form
 
     Private ReadOnly svc As New StockroomService()
-    Private ReadOnly catalogType As String ' RawMaterial not used here; types: SubAssembly, Decoration, Topping, Accessory, Packaging
+    Private ReadOnly catalogType As String ' Types: Internal Product, External Product, SubAssembly, Decoration, Topping, Accessory, Packaging
 
     Private dgv As DataGridView
     Private btnAdd As Button
@@ -101,44 +101,44 @@ Public Class InventoryCatalogCrudForm
     End Sub
 
     Private Sub LoadCatalog()
-        Dim dt As DataTable = svc.GetCatalogItems(catalogType)
-        dgv.DataSource = dt
+        Try
+            ' Load data for the specific catalog type
+            Dim data As DataTable = svc.GetCatalogData(catalogType)
+            dgv.DataSource = data
+        Catch ex As Exception
+            MessageBox.Show($"Error loading {catalogType} catalog: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
 
-        ' Add UoM dropdown if UoMID is present and column not already added
-        Dim hasUoM As Boolean = dt IsNot Nothing AndAlso dt.Columns.Contains("UoMID")
-        If hasUoM AndAlso dgv.Columns("UoMID") Is Nothing Then
-            Dim units As DataTable = svc.GetUnits()
-            Dim col As New DataGridViewComboBoxColumn()
-            col.Name = "UoMID"
-            col.HeaderText = "Unit"
-            col.DataPropertyName = "UoMID"
-            col.DisplayMember = "UnitName"
-            col.ValueMember = "UoMID"
-            col.DataSource = units
-            col.Width = 100
-            ' Insert before Active column if available
-            Dim insertIndex As Integer = dgv.Columns.Count
-            If dgv.Columns.Contains("IsActive") Then insertIndex = dgv.Columns("IsActive").Index
-            dgv.Columns.Insert(insertIndex, col)
-        End If
     End Sub
 
     Private Sub OnAdd(sender As Object, e As EventArgs)
         Dim tbl = CType(dgv.DataSource, DataTable)
         Dim r = tbl.NewRow()
-        r("ItemCode") = ""
-        r("ItemName") = ""
-        r("IsActive") = True
-        r("CurrentCost") = 0D
-        r("LastPaidCost") = DBNull.Value
-        r("LastPurchaseDate") = DBNull.Value
-        r("LastSupplierID") = DBNull.Value
+        
+        ' Set default values based on catalog type
+        If tbl.Columns.Contains("Code") Then r("Code") = ""
+        If tbl.Columns.Contains("Name") Then r("Name") = ""
+        If tbl.Columns.Contains("Description") Then r("Description") = ""
+        If tbl.Columns.Contains("IsActive") Then r("IsActive") = True
+        If tbl.Columns.Contains("LedgerCode") Then r("LedgerCode") = ""
+        
+        ' Legacy columns for backward compatibility
+        If tbl.Columns.Contains("ItemCode") Then r("ItemCode") = ""
+        If tbl.Columns.Contains("ItemName") Then r("ItemName") = ""
+        If tbl.Columns.Contains("CurrentCost") Then r("CurrentCost") = 0D
+        If tbl.Columns.Contains("LastPaidCost") Then r("LastPaidCost") = DBNull.Value
+        If tbl.Columns.Contains("LastPurchaseDate") Then r("LastPurchaseDate") = DBNull.Value
+        If tbl.Columns.Contains("LastSupplierID") Then r("LastSupplierID") = DBNull.Value
         If tbl.Columns.Contains("UoMID") Then r("UoMID") = DBNull.Value
+        
         tbl.Rows.Add(r)
         Dim idx As Integer = dgv.Rows.Count - 1
         If idx >= 0 Then
-            dgv.CurrentCell = dgv.Rows(idx).Cells("ItemName")
-            dgv.BeginEdit(True)
+            Dim nameCol As String = If(tbl.Columns.Contains("Name"), "Name", "ItemName")
+            If dgv.Columns.Contains(nameCol) Then
+                dgv.CurrentCell = dgv.Rows(idx).Cells(nameCol)
+                dgv.BeginEdit(True)
+            End If
         End If
     End Sub
 
@@ -150,7 +150,7 @@ Public Class InventoryCatalogCrudForm
     Private Sub OnSave(sender As Object, e As EventArgs)
         dgv.EndEdit()
         Dim tbl = CType(dgv.DataSource, DataTable)
-        svc.SaveCatalogItems(catalogType, tbl)
+        svc.SaveCatalogData(catalogType, tbl)
         LoadCatalog()
         MessageBox.Show("Saved.")
     End Sub

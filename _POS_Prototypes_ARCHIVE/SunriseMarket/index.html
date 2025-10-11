@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sunrise Market POS - Catalog</title>
+  <style>
+    :root { --sun:#A62323; /* Oven Delights base */ --sun-dark:#7C1717; --slate:#023047; --sky:#8ECAE6; --leaf:#219EBC; --cream:#FEF9F2; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Source Sans 3, system-ui, Segoe UI, Roboto, Arial, sans-serif;background:linear-gradient(180deg,#fffdf7,#fff6e5 60%,#fffdf7);color:#1e293b}
+    header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;background:linear-gradient(0deg,var(--sun),var(--sun-dark));border-bottom:1px solid #6e1212;position:sticky;top:0;color:#fff}
+    .brand{display:flex;align-items:center;gap:10px;font-family:Raleway, Helvetica, Arial, sans-serif;font-weight:800;color:#fff;font-size:22px}
+    .brand img{height:36px;border-radius:6px}
+    .status{display:flex;gap:10px}
+    .status span{background:#eef6ff;border:1px solid #dbeafe;color:#0f172a;padding:6px 10px;border-radius:999px;font-size:12px}
+    .container{display:grid;grid-template-columns:340px 1fr 420px;gap:14px;padding:14px 14px 96px}
+    .panel{background:#fff;border:1px solid #eee;border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+    .cats{padding:12px}
+    .stack{display:flex;flex-direction:column;gap:12px}
+    .cat{padding:16px;border-radius:14px;border:2px solid #eee;cursor:pointer;background:#fff;font-size:18px;font-weight:800;text-align:center}
+    .cat.active{border-color:var(--sun);box-shadow:0 0 0 6px rgba(166,35,35,.16)}
+    .subs{margin-top:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .sub{padding:16px 14px;border-radius:14px;border:2px dashed #e2e8f0;background:#fff;cursor:pointer;text-align:center;font-weight:700;font-size:16px}
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding:12px}
+    .tile{border:2px solid #eee;border-radius:20px;overflow:hidden;background:#fff;cursor:pointer}
+    .tile img{width:100%;height:140px;object-fit:cover;display:block}
+    .meta{display:flex;justify-content:space-between;align-items:center;padding:10px 12px}
+    .price{color:#475569}
+    .plus{position:absolute;right:10px;bottom:10px}
+    .add{position:absolute;right:12px;bottom:12px;background:#219EBC;color:#fff;border:none;border-radius:12px;padding:8px 12px;font-weight:800;box-shadow:0 10px 24px rgba(33,158,188,.35)}
+    .order{padding:12px;display:flex;flex-direction:column;height:calc(100vh - 104px)}
+    .list{flex:1;overflow:auto}
+    .line{display:grid;grid-template-columns:1fr 90px 90px 28px;gap:8px;align-items:center;padding:10px;border-bottom:1px dashed #e2e8f0}
+    .qty{display:flex;gap:8px;justify-content:flex-end}
+    .qty button{width:32px;height:32px;border-radius:10px;border:1px solid #e2e8f0;background:#fff}
+    .tot{border-top:1px solid #e2e8f0;padding-top:10px}
+    .row{display:flex;justify-content:space-between;padding:6px 0}
+    .act{display:flex;gap:10px;margin-top:10px}
+    .pill{padding:12px 16px;border-radius:999px;border:1px solid #e2e8f0;background:#fff}
+    .pay{margin-left:auto;background:#FFB703;color:#0f172a;border:none;border-radius:999px;padding:12px 18px;font-weight:800}
+    a{color:inherit;text-decoration:none}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand"><img src="file:///C:/Users/mogal/Pictures/Screenshots/Screenshot%202025-07-26%20024200.png" alt="Oven Delights"/> Oven Delights — POS</div>
+    <div class="status"><span>Branch: Main</span><span>Cashier: Sam</span><span>Pole: Ready</span><span>Printer: Online</span></div>
+  </header>
+  <div class="container">
+    <aside class="panel cats">
+      <div class="stack" id="cats">
+        <div class="cat active" data-cat="Bread">Bread</div>
+        <div class="cat" data-cat="Pastries">Pastries</div>
+        <div class="cat" data-cat="Cakes">Cakes</div>
+        <div class="cat" data-cat="Cookies">Cookies</div>
+        <div class="cat" data-cat="Drinks">Drinks</div>
+        <div class="cat" data-cat="Savory">Savory</div>
+      </div>
+      <div class="subs" id="subs">
+        <div class="sub" data-sub="Bagels">Bagels</div>
+        <div class="sub" data-sub="Baguette">Baguette</div>
+        <div class="sub" data-sub="Sourdough">Sourdough</div>
+        <div class="sub" data-sub="Rye">Rye</div>
+        <div class="sub" data-sub="Ciabatta">Ciabatta</div>
+      </div>
+    </aside>
+    <main class="panel">
+      <div class="grid">
+        <div class="tile" style="position:relative" data-name="Sesame Bagel" data-price="18.00">
+          <img src="https://images.unsplash.com/photo-1509440159598-8b09d1a77d9d?q=80&w=1200&auto=format&fit=crop" alt="Bagels">
+          <div class="meta"><div>Sesame Bagel</div><div class="price">R 18.00</div></div>
+        </div>
+        <div class="tile" style="position:relative" data-name="French Baguette" data-price="25.00">
+          <img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1200&auto=format&fit=crop" alt="Baguette">
+          <div class="meta"><div>French Baguette</div><div class="price">R 25.00</div></div>
+        </div>
+        <div class="tile" style="position:relative" data-name="Sourdough Loaf" data-price="45.00">
+          <img src="https://images.unsplash.com/photo-1542831371-29b0f74f9713?q=80&w=1200&auto=format&fit=crop" alt="Sourdough">
+          <div class="meta"><div>Sourdough Loaf</div><div class="price">R 45.00</div></div>
+        </div>
+      </div>
+    </main>
+    <aside class="panel order">
+      <div class="list">
+        <div class="line"><div>Sesame Bagel</div><div class="qty"><button>-</button><strong>2</strong><button>+</button></div><div style="text-align:right">R 36.00</div><div>×</div></div>
+      </div>
+      <div class="tot">
+        <div class="row"><span>Subtotal</span><strong>R 36.00</strong></div>
+        <div class="row"><span>VAT (15%)</span><strong>R 5.40</strong></div>
+        <div class="row" style="font-size:18px"><span>Total</span><strong>R 41.40</strong></div>
+      </div>
+      <div class="act">
+        <button class="pill" id="btnHold">F2 Hold</button>
+        <button class="pill" id="btnRecall">F3 Recall</button>
+        <a class="pay" id="btnPay" href="tender.html">F12 Pay</a>
+      </div>
+    </aside>
+  </div>
+  <script>
+    // Minimal cart + persist for tender
+    const VAT=0.15; const order=new Map();
+    function format(n){return 'R '+n.toFixed(2)}
+    function recalc(){let sub=0; order.forEach(v=> sub+=v.qty*v.price); const vat=Math.round(sub*VAT*100)/100; const tot=Math.round((sub+vat)*100)/100; document.querySelector('.row span+strong').textContent=format(sub); document.querySelectorAll('.row strong')[1].textContent=format(vat); document.querySelectorAll('.row strong')[2].textContent=format(tot);}
+    function add(name,price){ if(!order.has(name)) order.set(name,{qty:0,price:parseFloat(price)}); order.get(name).qty++; render(); }
+    function render(){ const list=document.querySelector('.list'); list.innerHTML=''; order.forEach((v,k)=>{ const d=document.createElement('div'); d.className='line'; d.innerHTML=`<div>${k}</div><div class="qty"><button data-a="-" data-n="${k}">-</button><strong>${v.qty}</strong><button data-a="+" data-n="${k}">+</button></div><div style="text-align:right">${format(v.qty*v.price)}</div><div><button data-a="x" data-n="${k}">×</button></div>`; list.appendChild(d); }); recalc(); }
+    document.querySelectorAll('.tile').forEach(t=> t.addEventListener('click',()=> add(t.dataset.name,t.dataset.price)));
+    document.querySelector('.list').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; const n=b.dataset.n; const a=b.dataset.a; if(!order.has(n))return; const v=order.get(n); if(a==='+') v.qty++; else if(a==='-'&&v.qty>1) v.qty--; else order.delete(n); render(); });
+    document.getElementById('btnPay').addEventListener('click',()=>{ const items=[]; order.forEach((v,k)=> items.push({name:k,qty:v.qty,price:v.price})); localStorage.setItem('pos_cart', JSON.stringify(items)); });
+
+    // Category → Subcategory behavior (simple filter/highlight)
+    const cats = document.getElementById('cats');
+    const subs = document.getElementById('subs');
+    cats.addEventListener('click', e=>{
+      const c = e.target.closest('.cat'); if(!c) return;
+      document.querySelectorAll('.cat').forEach(x=>x.classList.remove('active')); c.classList.add('active');
+      // In a real app, fetch subs for c.dataset.cat; here we just highlight
+      subs.scrollIntoView({behavior:'smooth', block:'center'});
+    });
+    subs.addEventListener('click', e=>{
+      const s = e.target.closest('.sub'); if(!s) return;
+      document.querySelectorAll('.sub').forEach(x=>x.classList.remove('active'));
+      s.classList.add('active');
+    });
+  </script>
+</body>
+</html>

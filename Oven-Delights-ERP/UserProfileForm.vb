@@ -1,5 +1,6 @@
 Imports System.Windows.Forms
-Imports Microsoft.Data.SqlClient
+Imports System.Data.SqlClient
+Imports System.Data
 Imports System.Configuration
 Imports System.IO
 Imports System.Drawing
@@ -188,8 +189,8 @@ Partial Class UserProfileForm
     Private Sub SaveProfilePhoto()
         If picProfilePhoto.Image IsNot Nothing Then
             Try
-                Dim photoPath As String = Path.Combine(Application.StartupPath, "Photos", $"user_{currentID}.jpg")
-                Directory.CreateDirectory(Path.GetDirectoryName(photoPath))
+                Dim photoPath As String = IO.Path.Combine(Application.StartupPath, "Photos", $"user_{currentID}.jpg")
+                IO.Directory.CreateDirectory(IO.Path.GetDirectoryName(photoPath))
                 picProfilePhoto.Image.Save(photoPath, System.Drawing.Imaging.ImageFormat.Jpeg)
             Catch ex As Exception
                 MessageBox.Show("Error saving profile photo: " & ex.Message, "Photo Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)

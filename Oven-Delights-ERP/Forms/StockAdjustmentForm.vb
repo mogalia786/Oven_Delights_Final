@@ -5,6 +5,12 @@ Public Class StockAdjustmentForm
 
     Private currentUser As User
 
+    ' Parameterless constructor for design-time support
+    Public Sub New()
+        InitializeComponent()
+        ' Do not load data here to keep designer safe
+    End Sub
+
     Public Sub New(user As User)
         InitializeComponent()
         currentUser = user

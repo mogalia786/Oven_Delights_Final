@@ -75,7 +75,7 @@ Namespace Retail
                     cn.Open()
                     Dim branchId As Integer = If(AppSession.CurrentBranchID > 0, AppSession.CurrentBranchID, 0)
                     If cbAllDays.Checked Then
-                        Using cmd As New SqlCommand("SELECT BookDate, BranchID, ProductID, SKU, ProductName, OrderQty, IsInternal, RequestedAtUtc, RequestedByName, ManufacturerName, PurchaseOrderID, SupplierName, PurchaseOrderCreatedAtUtc, StockroomFulfilledAtUtc, ManufacturingCompletedAtUtc FROM dbo.DailyOrderBook WHERE BranchID = @b ORDER BY BookDate DESC, ProductName", cn)
+                        Using cmd As New SqlCommand("SELECT BookDate, BranchID, ProductID, SKU, ProductName, OrderQty, OrderNumber, InternalOrderID, RequestedAtUtc, RequestedBy, RequestedByName, ManufacturerUserID, ManufacturerName, StockroomFulfilledAtUtc, ManufacturingCompletedAtUtc FROM dbo.DailyOrderBook WHERE BranchID = @b ORDER BY BookDate DESC, ProductName", cn)
                             cmd.Parameters.AddWithValue("@b", branchId)
                             Using rdr = cmd.ExecuteReader()
                                 Dim lastDate As Date = Date.MinValue
@@ -92,13 +92,11 @@ Namespace Retail
                                         Convert.ToString(If(rdr("SKU") Is DBNull.Value, Nothing, rdr("SKU"))),
                                         Convert.ToString(If(rdr("ProductName") Is DBNull.Value, Nothing, rdr("ProductName"))),
                                         Convert.ToDecimal(If(rdr("OrderQty") Is DBNull.Value, 0D, rdr("OrderQty"))),
-                                        If(If(rdr("IsInternal") Is DBNull.Value, True, Convert.ToBoolean(rdr("IsInternal"))), "Internal", "External"),
+                                        Convert.ToString(If(rdr("OrderNumber") Is DBNull.Value, Nothing, rdr("OrderNumber"))),
+                                        Convert.ToString(If(rdr("InternalOrderID") Is DBNull.Value, Nothing, rdr("InternalOrderID"))),
                                         Convert.ToString(If(rdr("RequestedAtUtc") Is DBNull.Value, Nothing, rdr("RequestedAtUtc"))),
                                         Convert.ToString(If(rdr("RequestedByName") Is DBNull.Value, Nothing, rdr("RequestedByName"))),
                                         Convert.ToString(If(rdr("ManufacturerName") Is DBNull.Value, Nothing, rdr("ManufacturerName"))),
-                                        Convert.ToString(If(rdr("PurchaseOrderID") Is DBNull.Value, Nothing, rdr("PurchaseOrderID"))),
-                                        Convert.ToString(If(rdr("SupplierName") Is DBNull.Value, Nothing, rdr("SupplierName"))),
-                                        Convert.ToString(If(rdr("PurchaseOrderCreatedAtUtc") Is DBNull.Value, Nothing, rdr("PurchaseOrderCreatedAtUtc"))),
                                         Convert.ToString(If(rdr("StockroomFulfilledAtUtc") Is DBNull.Value, Nothing, rdr("StockroomFulfilledAtUtc"))),
                                         Convert.ToString(If(rdr("ManufacturingCompletedAtUtc") Is DBNull.Value, Nothing, rdr("ManufacturingCompletedAtUtc")))
                                     })
@@ -106,7 +104,7 @@ Namespace Retail
                             End Using
                         End Using
                     Else
-                        Using cmd As New SqlCommand("SELECT BookDate, BranchID, ProductID, SKU, ProductName, OrderQty, IsInternal, RequestedAtUtc, RequestedByName, ManufacturerName, PurchaseOrderID, SupplierName, PurchaseOrderCreatedAtUtc, StockroomFulfilledAtUtc, ManufacturingCompletedAtUtc FROM dbo.DailyOrderBook WHERE BookDate = @d AND BranchID = @b ORDER BY ProductName", cn)
+                        Using cmd As New SqlCommand("SELECT BookDate, BranchID, ProductID, SKU, ProductName, OrderQty, OrderNumber, InternalOrderID, RequestedAtUtc, RequestedBy, RequestedByName, ManufacturerUserID, ManufacturerName, StockroomFulfilledAtUtc, ManufacturingCompletedAtUtc FROM dbo.DailyOrderBook WHERE BookDate = @d AND BranchID = @b ORDER BY ProductName", cn)
                             cmd.Parameters.AddWithValue("@d", dtp.Value.Date)
                             cmd.Parameters.AddWithValue("@b", branchId)
                             Using rdr = cmd.ExecuteReader()
@@ -118,13 +116,11 @@ Namespace Retail
                                         Convert.ToString(If(rdr("SKU") Is DBNull.Value, Nothing, rdr("SKU"))),
                                         Convert.ToString(If(rdr("ProductName") Is DBNull.Value, Nothing, rdr("ProductName"))),
                                         Convert.ToDecimal(If(rdr("OrderQty") Is DBNull.Value, 0D, rdr("OrderQty"))),
-                                        If(If(rdr("IsInternal") Is DBNull.Value, True, Convert.ToBoolean(rdr("IsInternal"))), "Internal", "External"),
+                                        Convert.ToString(If(rdr("OrderNumber") Is DBNull.Value, Nothing, rdr("OrderNumber"))),
+                                        Convert.ToString(If(rdr("InternalOrderID") Is DBNull.Value, Nothing, rdr("InternalOrderID"))),
                                         Convert.ToString(If(rdr("RequestedAtUtc") Is DBNull.Value, Nothing, rdr("RequestedAtUtc"))),
                                         Convert.ToString(If(rdr("RequestedByName") Is DBNull.Value, Nothing, rdr("RequestedByName"))),
                                         Convert.ToString(If(rdr("ManufacturerName") Is DBNull.Value, Nothing, rdr("ManufacturerName"))),
-                                        Convert.ToString(If(rdr("PurchaseOrderID") Is DBNull.Value, Nothing, rdr("PurchaseOrderID"))),
-                                        Convert.ToString(If(rdr("SupplierName") Is DBNull.Value, Nothing, rdr("SupplierName"))),
-                                        Convert.ToString(If(rdr("PurchaseOrderCreatedAtUtc") Is DBNull.Value, Nothing, rdr("PurchaseOrderCreatedAtUtc"))),
                                         Convert.ToString(If(rdr("StockroomFulfilledAtUtc") Is DBNull.Value, Nothing, rdr("StockroomFulfilledAtUtc"))),
                                         Convert.ToString(If(rdr("ManufacturingCompletedAtUtc") Is DBNull.Value, Nothing, rdr("ManufacturingCompletedAtUtc")))
                                     })

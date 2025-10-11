@@ -38,9 +38,22 @@ Namespace Manufacturing
         Private currentBatchYield As Decimal = 1D
         Private preselectedManufacturerId As Integer = 0
         Private internalOrderIdForFulfill As Integer = 0
+        Private internalOrderNoForFulfill As String = String.Empty
         Private fulfillMode As Boolean = False
         ' Mode: "Create" enables only left side; "Complete" enables only right side; anything else enables both
         Private _bomMode As String = "Both"
+
+        ' Allows caller to preselect a specific fulfilled Internal Order when opening in Complete mode
+        Public Sub PreselectFulfilledInternalOrder(ioId As Integer)
+            internalOrderIdForFulfill = If(ioId > 0, ioId, 0)
+            internalOrderNoForFulfill = String.Empty
+        End Sub
+
+        ' Overload to preselect by both ID and OrderNo as a fallback
+        Public Sub PreselectFulfilledInternalOrder(ioId As Integer, ioNo As String)
+            internalOrderIdForFulfill = If(ioId > 0, ioId, 0)
+            internalOrderNoForFulfill = If(ioNo, String.Empty)
+        End Sub
 
         ' Public API for caller to set the BOM interaction mode
         Public Sub SetMode(mode As String)
@@ -246,6 +259,8 @@ Namespace Manufacturing
             ' Ensure fulfilled list shows when form first displays
             AddHandler Me.Shown, Sub(sender, args)
                                       LoadFulfilledList()
+                                      ' Try to apply any requested preselection after data loads
+                                      TryApplyFulfilledPreselection()
                                       ApplyResponsiveLayout()
                                       ' Apply mode after UI is built
                                       ApplyBomMode()
@@ -256,6 +271,7 @@ Namespace Manufacturing
                                         LoadProducts()
                                         LoadManufacturingUsers()
                                         LoadFulfilledList()
+                                        TryApplyFulfilledPreselection()
                                     End Sub
             ' Clear transient UI when form is hidden/closed
             AddHandler Me.VisibleChanged, Sub(sender, args)
@@ -264,7 +280,10 @@ Namespace Manufacturing
             ' Refresh data when user opens dropdowns
             AddHandler cboProduct.DropDown, Sub(sender, args) LoadProducts()
             AddHandler cboRequester.DropDown, Sub(sender, args) LoadManufacturingUsers()
-            AddHandler cboFulfilled.DropDown, Sub(sender, args) LoadFulfilledList()
+            AddHandler cboFulfilled.DropDown, Sub(sender, args)
+                                                 LoadFulfilledList()
+                                                 TryApplyFulfilledPreselection()
+                                             End Sub
         End Sub
 
         ' Overload to support being opened from Stockroom with a specific IO and Manufacturer
@@ -653,13 +672,79 @@ Namespace Manufacturing
         End Sub
 
         ' ===== Right-hand Fulfilled BOMs workflow =====
+        Private Sub TryApplyFulfilledPreselection()
+            If internalOrderIdForFulfill <= 0 OrElse cboFulfilled Is Nothing Then Return
+            Try
+                ' Ensure ValueMember is set so SelectedValue works
+                If String.IsNullOrWhiteSpace(cboFulfilled.ValueMember) Then
+                    cboFulfilled.ValueMember = "InternalOrderID"
+                End If
+                ' First try the direct SelectedValue assignment (integer)
+                cboFulfilled.SelectedValue = internalOrderIdForFulfill
+                Dim matched As Boolean = (cboFulfilled.SelectedValue IsNot Nothing AndAlso cboFulfilled.SelectedValue.ToString() = internalOrderIdForFulfill.ToString())
+
+                ' If not matched, and the ValueMember column is string-typed, try matching string version of ID
+                If Not matched Then
+                    Dim dt As DataTable = TryCast(cboFulfilled.DataSource, DataTable)
+                    If dt IsNot Nothing AndAlso dt.Columns.Contains("InternalOrderID") Then
+                        Dim isStringColumn As Boolean = (dt.Columns("InternalOrderID").DataType Is GetType(String))
+                        If isStringColumn Then
+                            cboFulfilled.SelectedValue = internalOrderIdForFulfill.ToString()
+                            matched = (cboFulfilled.SelectedValue IsNot Nothing AndAlso cboFulfilled.SelectedValue.ToString() = internalOrderIdForFulfill.ToString())
+                        End If
+                    End If
+                End If
+
+                ' If not matched, iterate the DataSource for a manual match by ID or fallback by OrderNo
+                If Not matched Then
+                    Dim dt As DataTable = TryCast(cboFulfilled.DataSource, DataTable)
+                    If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
+                        Dim targetIndex As Integer = -1
+                        For i As Integer = 0 To dt.Rows.Count - 1
+                            Dim rid As Integer = 0
+                            Try
+                                rid = Convert.ToInt32(dt.Rows(i)("InternalOrderID"))
+                            Catch
+                            End Try
+                            If internalOrderIdForFulfill > 0 AndAlso rid = internalOrderIdForFulfill Then
+                                targetIndex = i
+                                Exit For
+                            End If
+                        Next
+                        ' Fallback: match by InternalOrderNo if given
+                        If targetIndex < 0 AndAlso Not String.IsNullOrWhiteSpace(internalOrderNoForFulfill) Then
+                            For i As Integer = 0 To dt.Rows.Count - 1
+                                Dim rno As String = TryCast(dt.Rows(i)("InternalOrderNo"), String)
+                                If Not String.IsNullOrWhiteSpace(rno) AndAlso String.Equals(rno.Trim(), internalOrderNoForFulfill.Trim(), StringComparison.OrdinalIgnoreCase) Then
+                                    targetIndex = i
+                                    Exit For
+                                End If
+                            Next
+                        End If
+                        If targetIndex >= 0 Then
+                            cboFulfilled.SelectedIndex = targetIndex
+                            matched = True
+                        End If
+                    End If
+                End If
+
+                ' If selection succeeded, clear the pending preselect to avoid overriding user later
+                If matched Then
+                    internalOrderIdForFulfill = 0
+                    internalOrderNoForFulfill = String.Empty
+                End If
+            Catch
+                ' ignore
+            End Try
+        End Sub
+
         Private Sub LoadFulfilledList()
             Try
                 Dim cs = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
                 Using cn As New SqlConnection(cs)
-                    cn.Open()
+                    ' Original logic: list Open/Issued IOs, filtered by FromLocation branch
                     Dim sql As String = _
-                        "SELECT IOH.InternalOrderID, IOH.InternalOrderNo, IOH.Notes, IOH.RequestedBy, " & _
+                        "SELECT IOH.InternalOrderID, IOH.InternalOrderNo, IOH.Notes, " & _
                         "       CASE " & _
                         "           WHEN LTRIM(RTRIM(COALESCE(u.FirstName, '') + ' ' + COALESCE(u.LastName, ''))) = '' THEN u.Username " & _
                         "           ELSE LTRIM(RTRIM(COALESCE(u.FirstName, '') + ' ' + COALESCE(u.LastName, ''))) " & _
@@ -667,7 +752,7 @@ Namespace Manufacturing
                         "FROM dbo.InternalOrderHeader IOH " & _
                         "JOIN dbo.InventoryLocations L ON L.LocationID = IOH.FromLocationID " & _
                         "LEFT JOIN dbo.Users u ON u.UserID = IOH.RequestedBy " & _
-                        "WHERE IOH.Status IN ('Open','Issued') " & _
+                        "WHERE IOH.Status IN ('Open','Issued','Fulfilled') " & _
                         "  AND (L.BranchID = @bid OR @bid IS NULL) " & _
                         "ORDER BY IOH.InternalOrderID DESC"
                     Using cmd As New SqlCommand(sql, cn)
@@ -684,6 +769,7 @@ Namespace Manufacturing
                                     Dim ioNo As String = If(Convert.IsDBNull(row("InternalOrderNo")), "", row("InternalOrderNo").ToString())
                                     Dim notes As String = If(Convert.IsDBNull(row("Notes")), "", row("Notes").ToString())
                                     Dim pid As Integer = ExtractInt(notes, "ProductID=")
+                                    Dim qty As Decimal = 0D
                                     ' Prefer Products: list if present
                                     Dim prodStart As Integer = notes.IndexOf("Products:", StringComparison.OrdinalIgnoreCase)
                                     If prodStart >= 0 Then
@@ -699,6 +785,10 @@ Namespace Manufacturing
                                                 Dim tmp As Integer
                                                 If Integer.TryParse(idStr, tmp) Then
                                                     pid = tmp
+                                                    ' capture qty after '=' if present
+                                                    Dim qtyStr As String = t.Substring(eq + 1).Trim()
+                                                    Dim qtmp As Decimal
+                                                    If Decimal.TryParse(qtyStr, qtmp) Then qty = qtmp
                                                     Exit For
                                                 End If
                                             End If
@@ -713,12 +803,13 @@ Namespace Manufacturing
                                         End Using
                                     Else
                                         ' Fallback: infer from InternalOrderLines finished item
-                                        Using cmdFP As New SqlCommand("SELECT TOP 1 p.ProductID, p.ProductName FROM dbo.InternalOrderLines iol JOIN dbo.Products p ON p.ProductID = iol.ProductID WHERE iol.ItemType = 'Finished' AND iol.InternalOrderID = @id ORDER BY iol.LineNumber", cn2)
+                                        Using cmdFP As New SqlCommand("SELECT TOP 1 p.ProductID, p.ProductName, iol.Quantity FROM dbo.InternalOrderLines iol JOIN dbo.Products p ON p.ProductID = iol.ProductID WHERE iol.ItemType = 'Finished' AND iol.InternalOrderID = @id ORDER BY iol.LineNumber", cn2)
                                             cmdFP.Parameters.AddWithValue("@id", Convert.ToInt32(row("InternalOrderID")))
                                             Using rP = cmdFP.ExecuteReader()
                                                 If rP.Read() Then
                                                     pid = rP.GetInt32(0)
                                                     pname = rP.GetString(1)
+                                                    If qty <= 0D AndAlso Not rP.IsDBNull(2) Then qty = Convert.ToDecimal(rP.GetValue(2))
                                                 End If
                                             End Using
                                         End Using
@@ -730,17 +821,28 @@ Namespace Manufacturing
                                     If dt.Columns.Contains("RequestedByName") AndAlso Not Convert.IsDBNull(row("RequestedByName")) Then
                                         reqName = row("RequestedByName").ToString()
                                     End If
+                                    Dim qtyPart As String = If(qty > 0D, $" x {qty:0.####}", "")
                                     If String.IsNullOrWhiteSpace(reqName) Then
-                                        row("DisplayText") = $"{pname} / {rightText}"
+                                        row("DisplayText") = $"{pname}{qtyPart} / {rightText}"
                                     Else
-                                        row("DisplayText") = $"{pname} / {rightText} — Requested by {reqName}"
+                                        row("DisplayText") = $"{pname}{qtyPart} / {rightText} — Requested by {reqName}"
                                     End If
                                 Next
                             End Using
+                            ' Clear before rebinding to avoid stale bindings resetting selection
+                            cboFulfilled.DataSource = Nothing
+                            cboFulfilled.SelectedIndex = -1
                             cboFulfilled.DataSource = dt
                             cboFulfilled.DisplayMember = "DisplayText"
+                            ' Set ValueMember so we can select by InternalOrderID
                             cboFulfilled.ValueMember = "InternalOrderID"
-                            If dt.Rows.Count > 0 Then cboFulfilled.SelectedIndex = -1
+                            ' Apply any pending preselection immediately after (re)binding
+                            TryApplyFulfilledPreselection()
+                            ' Optionally focus so the user immediately sees the selected item text
+                            Try
+                                If cboFulfilled.Enabled Then cboFulfilled.Focus()
+                            Catch
+                            End Try
                         End Using
                     End Using
                 End Using
@@ -1001,12 +1103,50 @@ Namespace Manufacturing
                     End Using
                 End If
 
-                ' Move finished goods into RETAIL inventory (additive upsert) and log movement if table exists
+                ' Deduct raw materials from Manufacturing_Inventory and add finished goods to RETAIL inventory
                 Try
-                    Dim branchId As Integer = If(AppSession.CurrentBranchID > 0, AppSession.CurrentBranchID, 0)
+                    Dim branchId As Integer = If(AppSession.CurrentBranchID > 0, AppSession.CurrentBranchID, 1)
                     Dim retailLoc As Integer = 0, mfgLoc As Integer = 0
                     Using cn As New SqlConnection(cs)
                         cn.Open()
+                        
+                        ' First, deduct raw materials from Manufacturing_Inventory based on InternalOrderLines
+                        Using cmdMaterials As New SqlCommand("SELECT MaterialID, Quantity FROM dbo.InternalOrderLines WHERE InternalOrderID=@id AND MaterialID IS NOT NULL", cn)
+                            cmdMaterials.Parameters.AddWithValue("@id", ioId)
+                            Using rMat = cmdMaterials.ExecuteReader()
+                                Dim materials As New List(Of Tuple(Of Integer, Decimal))()
+                                While rMat.Read()
+                                    Dim matId As Integer = rMat.GetInt32(0)
+                                    Dim matQty As Decimal = rMat.GetDecimal(1)
+                                    materials.Add(Tuple.Create(matId, matQty))
+                                End While
+                                rMat.Close()
+                                
+                                ' Deduct each material from Manufacturing_Inventory
+                                For Each mat In materials
+                                    Using cmdDeduct As New SqlCommand("UPDATE dbo.Manufacturing_Inventory SET QtyOnHand = QtyOnHand - @qty WHERE MaterialID=@mid AND BranchID=@bid", cn)
+                                        cmdDeduct.Parameters.AddWithValue("@qty", mat.Item2)
+                                        cmdDeduct.Parameters.AddWithValue("@mid", mat.Item1)
+                                        cmdDeduct.Parameters.AddWithValue("@bid", branchId)
+                                        cmdDeduct.ExecuteNonQuery()
+                                    End Using
+                                    
+                                    ' Log the movement
+                                    Try
+                                        Using cmdMove As New SqlCommand("INSERT INTO dbo.Manufacturing_InventoryMovements (MaterialID, BranchID, MovementType, QtyDelta, CostPerUnit, Reference, Notes, MovementDate, CreatedBy) VALUES (@mid, @bid, 'Consumed in Production', -@qty, 0, @ref, @notes, GETDATE(), @user)", cn)
+                                            cmdMove.Parameters.AddWithValue("@mid", mat.Item1)
+                                            cmdMove.Parameters.AddWithValue("@bid", branchId)
+                                            cmdMove.Parameters.AddWithValue("@qty", mat.Item2)
+                                            cmdMove.Parameters.AddWithValue("@ref", $"IO-{ioId}")
+                                            cmdMove.Parameters.AddWithValue("@notes", "BOM Completion")
+                                            cmdMove.Parameters.AddWithValue("@user", AppSession.CurrentUserID)
+                                            cmdMove.ExecuteNonQuery()
+                                        End Using
+                                    Catch
+                                    End Try
+                                Next
+                            End Using
+                        End Using
                         ' Resolve locations
                         Using cmdLoc As New SqlCommand("SELECT dbo.fn_GetLocationId(@b, N'RETAIL') AS RetailLoc, dbo.fn_GetLocationId(@b, N'MFG') AS MfgLoc;", cn)
                             cmdLoc.Parameters.AddWithValue("@b", If(branchId > 0, CType(branchId, Object), DBNull.Value))
@@ -1030,6 +1170,65 @@ Namespace Manufacturing
                                     cmdUp.Parameters.AddWithValue("@b", branchId)
                                     cmdUp.ExecuteNonQuery()
                                 End Using
+                                
+                                ' Update Retail_Stock (uses VariantID which maps to ProductID via Retail_Variant)
+                                Try
+                                    ' Get or create VariantID for this ProductID
+                                    Dim variantId As Integer = 0
+                                    
+                                    ' First try to get existing VariantID
+                                    Using cmdGetVariant As New SqlCommand("SELECT VariantID FROM dbo.Retail_Variant WHERE ProductID=@pid", cn)
+                                        cmdGetVariant.Parameters.AddWithValue("@pid", pid)
+                                        Dim result = cmdGetVariant.ExecuteScalar()
+                                        If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                                            variantId = Convert.ToInt32(result)
+                                        End If
+                                    End Using
+                                    
+                                    ' If not found, create new variant
+                                    If variantId = 0 Then
+                                        Using cmdInsertVariant As New SqlCommand("INSERT INTO dbo.Retail_Variant (ProductID) VALUES (@pid); SELECT SCOPE_IDENTITY();", cn)
+                                            cmdInsertVariant.Parameters.AddWithValue("@pid", pid)
+                                            Dim result = cmdInsertVariant.ExecuteScalar()
+                                            If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                                                variantId = Convert.ToInt32(result)
+                                            End If
+                                        End Using
+                                    End If
+                                    
+                                    If variantId > 0 Then
+                                        ' Check if stock record exists
+                                        Dim stockExists As Boolean = False
+                                        Using cmdCheck As New SqlCommand("SELECT COUNT(*) FROM dbo.Retail_Stock WHERE VariantID=@vid AND BranchID=@b", cn)
+                                            cmdCheck.Parameters.AddWithValue("@vid", variantId)
+                                            cmdCheck.Parameters.AddWithValue("@b", branchId)
+                                            stockExists = Convert.ToInt32(cmdCheck.ExecuteScalar()) > 0
+                                        End Using
+                                        
+                                        If stockExists Then
+                                            ' Update existing stock
+                                            Using cmdUpdate As New SqlCommand("UPDATE dbo.Retail_Stock SET QtyOnHand = QtyOnHand + @q WHERE VariantID=@vid AND BranchID=@b", cn)
+                                                cmdUpdate.Parameters.AddWithValue("@vid", variantId)
+                                                cmdUpdate.Parameters.AddWithValue("@b", branchId)
+                                                cmdUpdate.Parameters.AddWithValue("@q", qty)
+                                                cmdUpdate.ExecuteNonQuery()
+                                            End Using
+                                        Else
+                                            ' Insert new stock record
+                                            Using cmdInsert As New SqlCommand("INSERT INTO dbo.Retail_Stock (VariantID, BranchID, QtyOnHand, ReorderPoint) VALUES (@vid, @b, @q, 10)", cn)
+                                                cmdInsert.Parameters.AddWithValue("@vid", variantId)
+                                                cmdInsert.Parameters.AddWithValue("@b", branchId)
+                                                cmdInsert.Parameters.AddWithValue("@q", qty)
+                                                cmdInsert.ExecuteNonQuery()
+                                            End Using
+                                        End If
+                                        
+                                        MessageBox.Show($"Updated Retail_Stock: ProductID={pid}, VariantID={variantId}, Qty={qty}, Branch={branchId}", "Debug", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                                    End If
+                                Catch ex As Exception
+                                    ' Show error to user for debugging
+                                    MessageBox.Show($"Retail_Stock update failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                                End Try
                                 ' Try to log a movement from MFG -> RETAIL (ignore if table/columns differ)
                                 Try
                                     Using cmdMv As New SqlCommand("IF OBJECT_ID('dbo.ProductMovements','U') IS NOT NULL INSERT INTO dbo.ProductMovements(ProductID, Quantity, FromLocationID, ToLocationID, MovementType, MovementDate, BranchID) VALUES(@p,@q,@fromLoc,@toLoc,N'Production',GETDATE(),CASE WHEN @b=0 THEN NULL ELSE @b END);", cn)

@@ -11,10 +11,12 @@ Imports Oven_Delights_ERP.Accounting
 
 Public Class PurchaseOrderForm
     Inherits Form
-    Implements ISidebarProvider
+    Implements UI.ISidebarProvider
 
     Private ReadOnly service As New StockroomService()
     Private ReadOnly connectionString As String = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
+    Private currentBranchId As Integer
+    Private isSuperAdmin As Boolean
 
     ' Header controls
     Private lblSupplier As Label
@@ -33,6 +35,10 @@ Public Class PurchaseOrderForm
 
     ' Lines grid
     Private dgvLines As DataGridView
+
+    ' Product type indicator
+    Private lblProductType As Label
+    Private cboProductType As ComboBox
 
     ' Totals
     Private lblSubTotal As Label
@@ -55,6 +61,11 @@ Public Class PurchaseOrderForm
     Public Sub New()
         Me.WindowState = FormWindowState.Maximized
         Me.Text = "Purchase Order"
+
+        ' Initialize branch and role info
+        currentBranchId = service.GetCurrentUserBranchId()
+        isSuperAdmin = service.IsCurrentUserSuperAdmin()
+
         InitializeComponent()
         ' Apply theme after controls are created
         Theme.Apply(Me)
@@ -91,7 +102,7 @@ Public Class PurchaseOrderForm
                 If String.IsNullOrWhiteSpace(nextNo) Then
                     Throw New Exception("Document numbering for 'Journal' is not configured. Please configure DocumentNumbering for DocumentType='Journal'.", ex)
                 End If
-                Using cmd As New SqlCommand("INSERT INTO dbo.JournalHeaders (JournalNumber, JournalDate, Reference, Description, FiscalPeriodID, CreatedBy, BranchID, IsPosted) " & _
+                Using cmd As New SqlCommand("INSERT INTO dbo.JournalHeaders (JournalNumber, JournalDate, Reference, Description, FiscalPeriodID, CreatedBy, BranchID, IsPosted) " &
                                             "VALUES (@jn, @jd, @ref, @desc, @fp, @cb, @bid, 0); SELECT CAST(SCOPE_IDENTITY() AS int);", con)
                     cmd.Parameters.AddWithValue("@jn", nextNo)
                     cmd.Parameters.AddWithValue("@jd", jDate)
@@ -147,17 +158,29 @@ Public Class PurchaseOrderForm
         txtReference = New TextBox With {.Width = 260, .Top = lblReference.Top + 18, .Left = 12}
 
         lblNotes = New Label With {.Text = "Notes", .AutoSize = True, .Top = 64, .Left = 290}
-        txtNotes = New TextBox With {.Width = 610, .Top = lblNotes.Top + 18, .Left = 290}
+        txtNotes = New TextBox With {.Width = 400, .Top = lblNotes.Top + 18, .Left = 290}
+
+        ' Product type indicator
+        lblProductType = New Label With {.Text = "Purchase Type", .AutoSize = True, .Top = 64, .Left = 710}
+        cboProductType = New ComboBox With {.Width = 150, .Top = lblProductType.Top + 18, .Left = 710, .DropDownStyle = ComboBoxStyle.DropDownList}
+        cboProductType.Items.AddRange({"External Product", "Raw Material"})
+        cboProductType.SelectedIndex = 1 ' Default to Raw Material
+        AddHandler cboProductType.SelectedIndexChanged, AddressOf cboProductType_SelectedIndexChanged
 
         ' PO Number display (blank until save)
         lblPONumber = New Label With {.Text = "PO: (unsaved)", .AutoSize = True, .Top = 12, .Left = 920, .Font = New Font("Segoe UI", 10.0F, FontStyle.Bold)}
 
-        header.Controls.AddRange(New Control() {lblSupplier, txtSupplier, lblBranch, cboBranch, lblOrderDate, dtpOrderDate, lblRequiredDate, dtpRequiredDate, lblReference, txtReference, lblNotes, txtNotes, lblPONumber})
+        header.Controls.AddRange(New Control() {lblSupplier, txtSupplier, lblBranch, cboBranch, lblOrderDate, dtpOrderDate, lblRequiredDate, dtpRequiredDate, lblReference, txtReference, lblNotes, txtNotes, lblProductType, cboProductType, lblPONumber})
 
         ' Lines grid
         dgvLines = New DataGridView With {.Dock = DockStyle.Fill, .AllowUserToAddRows = True, .AllowUserToDeleteRows = True, .AutoGenerateColumns = False}
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "MaterialID", .HeaderText = "MaterialID", .DataPropertyName = "MaterialID", .Visible = False})
-        dgvLines.Columns.Add(New DataGridViewComboBoxColumn With {.Name = "Material", .HeaderText = "Material", .DataPropertyName = "MaterialID", .DisplayMember = "MaterialName", .ValueMember = "MaterialID", .Width = 300})
+        Dim materialColumn As New DataGridViewComboBoxColumn With {.Name = "Material", .HeaderText = "Material", .Width = 300}
+        materialColumn.DisplayMember = "MaterialName"
+        materialColumn.ValueMember = "MaterialID"
+        materialColumn.DefaultCellStyle.NullValue = Nothing
+        materialColumn.DefaultCellStyle.DataSourceNullValue = DBNull.Value
+        dgvLines.Columns.Add(materialColumn)
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "OrderedQuantity", .HeaderText = "Qty", .DataPropertyName = "OrderedQuantity", .Width = 80, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}})
         ' Optional unit cost (can be blank/null). We keep DataPropertyName = UnitCost to avoid backend changes
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "UnitCost", .HeaderText = "Est. Unit Price", .DataPropertyName = "UnitCost", .Width = 110, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}})
@@ -168,6 +191,7 @@ Public Class PurchaseOrderForm
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LineTotal", .HeaderText = "Expected Total", .ReadOnly = True, .Width = 120, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}})
         AddHandler dgvLines.CellValueChanged, AddressOf dgvLines_CellValueChanged
         AddHandler dgvLines.EditingControlShowing, AddressOf dgvLines_EditingControlShowing
+        AddHandler dgvLines.DataError, AddressOf dgvLines_DataError
         AddHandler dgvLines.CurrentCellDirtyStateChanged, AddressOf dgvLines_CurrentCellDirtyStateChanged
         AddHandler dgvLines.RowsAdded, AddressOf dgvLines_RowsAdded
         AddHandler dgvLines.RowsRemoved, AddressOf dgvLines_RowsRemoved
@@ -200,7 +224,22 @@ Public Class PurchaseOrderForm
         suppliers = service.GetSuppliersLookup()
         materials = service.GetPOItemsLookup()
         branches = service.GetBranchesLookup()
-        ' Branch is taken from session; combo remains hidden
+
+        ' Set branch dropdown
+        If branches IsNot Nothing AndAlso branches.Rows.Count > 0 Then
+            cboBranch.DataSource = Nothing
+            cboBranch.DataSource = branches
+            cboBranch.DisplayMember = "BranchName"
+            cboBranch.ValueMember = "BranchID"
+
+            ' Set default to current user's branch
+            cboBranch.SelectedValue = currentBranchId
+
+            ' Disable branch selection for non-Super Admin users
+            If Not isSuperAdmin Then
+                cboBranch.Enabled = False
+            End If
+        End If
 
         ' React to supplier changes to refresh guidance prices
         AddHandler txtSupplier.TextChanged, Sub(sender, e)
@@ -211,8 +250,9 @@ Public Class PurchaseOrderForm
 
     Private Sub SetupSupplierAutocomplete()
         Dim ac As New AutoCompleteStringCollection()
+        Dim companyNameCol As Integer = suppliers.Columns("CompanyName").Ordinal
         For Each r As DataRow In suppliers.Rows
-            ac.Add(r("CompanyName").ToString())
+            ac.Add(r(companyNameCol).ToString())
         Next
         txtSupplier.AutoCompleteMode = AutoCompleteMode.SuggestAppend
         txtSupplier.AutoCompleteSource = AutoCompleteSource.CustomSource
@@ -222,33 +262,89 @@ Public Class PurchaseOrderForm
     Private Sub SetupMaterialsColumn()
         Dim combo = TryCast(dgvLines.Columns("Material"), DataGridViewComboBoxColumn)
         If combo IsNot Nothing Then
-            combo.DataSource = materials
-            combo.DisplayMember = "MaterialName"
-            combo.ValueMember = "MaterialID"
+            FilterMaterialsByType()
         End If
     End Sub
 
+    Private Sub FilterMaterialsByType()
+        Dim combo = TryCast(dgvLines.Columns("Material"), DataGridViewComboBoxColumn)
+        If combo Is Nothing OrElse materials Is Nothing OrElse materials.Rows.Count = 0 Then Return
+
+        Try
+            ' Create a filtered copy of the materials table
+            Dim filteredTable As New DataTable()
+            filteredTable = materials.Clone() ' Copy structure
+
+            ' Filter based on selected product type
+            Dim itemSourceCol As Integer = materials.Columns("ItemSource").Ordinal
+
+            If cboProductType.SelectedIndex = 0 Then
+                ' External Product - show only Products (ItemSource = 'PR')
+                For Each row As DataRow In materials.Rows
+                    If row(itemSourceCol).ToString() = "PR" Then
+                        filteredTable.ImportRow(row)
+                    End If
+                Next
+            Else
+                ' Raw Material - show only RawMaterials (ItemSource = 'RM')
+                For Each row As DataRow In materials.Rows
+                    If row(itemSourceCol).ToString() = "RM" Then
+                        filteredTable.ImportRow(row)
+                    End If
+                Next
+            End If
+
+            ' Set the filtered data
+            combo.DataSource = Nothing
+            combo.DataSource = filteredTable
+            combo.DisplayMember = "MaterialName"
+            combo.ValueMember = "MaterialID"
+
+            ' Fix black background issue - set on FlatStyle
+            combo.FlatStyle = FlatStyle.Standard
+            combo.DefaultCellStyle.BackColor = Color.White
+            combo.DefaultCellStyle.ForeColor = Color.Black
+            combo.DefaultCellStyle.SelectionBackColor = Color.LightBlue
+            combo.DefaultCellStyle.SelectionForeColor = Color.Black
+        Catch ex As Exception
+            System.Diagnostics.Debug.WriteLine($"FilterMaterialsByType error: {ex.Message}")
+        End Try
+    End Sub
+
+    Private Sub cboProductType_SelectedIndexChanged(sender As Object, e As EventArgs)
+        FilterMaterialsByType()
+    End Sub
+
     Private Sub dgvLines_CellValueChanged(sender As Object, e As DataGridViewCellEventArgs)
-        If e.RowIndex < 0 Then Return
-        Dim row = dgvLines.Rows(e.RowIndex)
-        ' If material changed, refresh guidance prices
-        If dgvLines.Columns(e.ColumnIndex).Name = "Material" Then
-            PopulateGuidancePrices(row)
+        Try
+            If e.RowIndex < 0 Then Return
+            Dim row = dgvLines.Rows(e.RowIndex)
+            ' If material changed, refresh guidance prices
+            If e.ColumnIndex = dgvLines.Columns("Material").Index Then
+                PopulateGuidancePrices(row)
+            End If
+            Dim qty As Decimal = 0D
+            Dim cost As Decimal = 0D
+            Dim lastPaid As Decimal = 0D
+
+            If row.Cells("OrderedQuantity").Value IsNot Nothing Then
+                Decimal.TryParse(Convert.ToString(row.Cells("OrderedQuantity").Value), qty)
+            End If
+            If row.Cells("UnitCost").Value IsNot Nothing Then
+                Decimal.TryParse(Convert.ToString(row.Cells("UnitCost").Value), cost)
+            End If
+            If row.Cells("LastPaidPrice").Value IsNot Nothing Then
+                Decimal.TryParse(Convert.ToString(row.Cells("LastPaidPrice").Value), lastPaid)
+            End If
+
+            Dim effectiveUnit As Decimal = If(cost > 0D, cost, lastPaid)
+            row.Cells("LineTotal").Value = (qty * effectiveUnit)
+            RecalculateTotals()
             RaiseEvent SidebarContextChanged(Me, EventArgs.Empty)
-        End If
-
-        Dim qty As Decimal = 0D
-        Dim cost As Decimal = 0D
-        Dim lastPaid As Decimal = 0D
-
-        Decimal.TryParse(Convert.ToString(row.Cells("OrderedQuantity").Value), qty)
-        Decimal.TryParse(Convert.ToString(row.Cells("UnitCost").Value), cost)
-        Decimal.TryParse(Convert.ToString(row.Cells("LastPaidPrice").Value), lastPaid)
-
-        Dim effectiveUnit As Decimal = If(cost > 0D, cost, lastPaid)
-        row.Cells("LineTotal").Value = (qty * effectiveUnit)
-        RecalculateTotals()
-        RaiseEvent SidebarContextChanged(Me, EventArgs.Empty)
+        Catch ex As Exception
+            ' Ignore cell value conversion errors to prevent dialog spam
+            System.Diagnostics.Debug.WriteLine($"Cell value changed error: {ex.Message}")
+        End Try
     End Sub
 
     Private Sub dgvLines_EditingControlShowing(sender As Object, e As DataGridViewEditingControlShowingEventArgs)
@@ -259,21 +355,29 @@ Public Class PurchaseOrderForm
                 ' Re-fetch latest materials so newly added items appear without reopening the form
                 Try
                     materials = service.GetPOItemsLookup()
-                    cb.DataSource = materials
-                    cb.DisplayMember = "MaterialName"
-                    cb.ValueMember = "MaterialID"
+                    FilterMaterialsByType()
                 Catch
                     ' Non-fatal; keep existing list
                 End Try
                 cb.DropDownStyle = ComboBoxStyle.DropDown
                 cb.AutoCompleteMode = AutoCompleteMode.SuggestAppend
                 cb.AutoCompleteSource = AutoCompleteSource.ListItems
+
+                ' Fix black background on the actual ComboBox control
+                cb.BackColor = Color.White
+                cb.ForeColor = Color.Black
+                cb.FlatStyle = FlatStyle.Standard
             End If
         End If
         ' Enforce numeric-only for numeric columns using shared helper
         UI.InputValidation.AttachNumericOnlyForGrid(dgvLines, e, True, "OrderedQuantity", "UnitCost")
     End Sub
-    
+
+    Private Sub dgvLines_DataError(sender As Object, e As DataGridViewDataErrorEventArgs)
+        ' Suppress the default error dialog and handle the error silently
+        e.Cancel = True
+        System.Diagnostics.Debug.WriteLine($"DataGridView DataError: {e.Exception?.Message}")
+    End Sub
 
     Private Sub dgvLines_CurrentCellDirtyStateChanged(sender As Object, e As EventArgs)
         ' Commit combo box selections immediately so CellValueChanged fires
@@ -297,7 +401,9 @@ Public Class PurchaseOrderForm
         For Each r As DataGridViewRow In dgvLines.Rows
             If r.IsNewRow Then Continue For
             Dim lt As Decimal = 0D
-            Decimal.TryParse(Convert.ToString(r.Cells("LineTotal").Value), lt)
+            If r.Cells("LineTotal").Value IsNot Nothing Then
+                Decimal.TryParse(Convert.ToString(r.Cells("LineTotal").Value), lt)
+            End If
             subTotal += lt
         Next
         Dim vat As Decimal = Math.Round(subTotal * 0.15D, 2)
@@ -332,7 +438,13 @@ Public Class PurchaseOrderForm
             Dim unit As Decimal = 0D
             Decimal.TryParse(Convert.ToString(row.Cells("OrderedQuantity").Value), qty)
             Decimal.TryParse(Convert.ToString(row.Cells("UnitCost").Value), unit)
-            Dim effectiveUnit As Decimal = If(unit > 0D, unit, If(lastPaidNullable.HasValue, lastPaidNullable.Value, lastCost))
+            ' Default UnitCost to last paid price (or last cost) if currently zero/blank; user may edit afterward
+            If unit <= 0D Then
+                Dim defaultUnit = If(lastPaidNullable.HasValue AndAlso lastPaidNullable.Value > 0D, lastPaidNullable.Value, lastCost)
+                row.Cells("UnitCost").Value = defaultUnit
+                unit = defaultUnit
+            End If
+            Dim effectiveUnit As Decimal = unit
             row.Cells("LineTotal").Value = qty * effectiveUnit
         Catch
             ' Swallow guidance errors; avoid blocking PO capture
@@ -344,7 +456,8 @@ Public Class PurchaseOrderForm
         If name = String.Empty Then Return 0
         Dim found() As DataRow = suppliers.Select($"CompanyName = '{name.Replace("'", "''")}'")
         If found Is Nothing OrElse found.Length = 0 Then Return 0
-        Return Convert.ToInt32(found(0)("SupplierID"))
+        Dim supplierIdCol As Integer = suppliers.Columns("SupplierID").Ordinal
+        Return Convert.ToInt32(found(0)(supplierIdCol))
     End Function
 
     Private Function BuildLinesTable() As DataTable
@@ -355,7 +468,19 @@ Public Class PurchaseOrderForm
         For Each r As DataGridViewRow In dgvLines.Rows
             If r.IsNewRow Then Continue For
             If r.Cells("Material").Value Is Nothing Then Continue For
-            Dim materialId = Convert.ToInt32(r.Cells("Material").Value)
+
+            ' Get MaterialID from the ComboBox cell - handle DataRowView properly
+            Dim materialId As Integer = 0
+            Dim cellValue = r.Cells("Material").Value
+            If TypeOf cellValue Is DataRowView Then
+                Dim drv As DataRowView = DirectCast(cellValue, DataRowView)
+                materialId = Convert.ToInt32(drv("MaterialID"))
+            ElseIf TypeOf cellValue Is Integer Then
+                materialId = Convert.ToInt32(cellValue)
+            Else
+                Continue For
+            End If
+
             Dim qty As Decimal
             Dim cost As Decimal
             Decimal.TryParse(Convert.ToString(r.Cells("OrderedQuantity").Value), qty)
@@ -376,18 +501,49 @@ Public Class PurchaseOrderForm
                 Return
             End If
             ' Branch is always taken from the current session
+            ' Validation: every line must have a UnitCost > 0 before saving
+            For Each r As DataGridViewRow In dgvLines.Rows
+                If r.IsNewRow Then Continue For
+                If r.Cells("Material").Value Is Nothing Then Continue For
+                Dim qty As Decimal = 0D
+                Decimal.TryParse(Convert.ToString(r.Cells("OrderedQuantity").Value), qty)
+                If qty <= 0D Then Continue For
+                Dim unit As Decimal = 0D
+                Decimal.TryParse(Convert.ToString(r.Cells("UnitCost").Value), unit)
+                If unit <= 0D Then
+                    dgvLines.CurrentCell = r.Cells("UnitCost")
+                    MessageBox.Show("Enter a Unit Cost for every ordered item before saving the Purchase Order.", "Unit Cost required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    Return
+                End If
+            Next
             Dim lines = BuildLinesTable()
             If lines.Rows.Count = 0 Then
                 MessageBox.Show("Please add at least one line.")
                 Return
             End If
-            Dim branchId = GetCurrentBranchId()
-            Dim poId = service.CreatePurchaseOrder(branchId, supplierId, dtpOrderDate.Value.Date, dtpRequiredDate.Value.Date, txtReference.Text.Trim(), txtNotes.Text.Trim(), AppSession.CurrentUserID, lines)
+            ' Use branch from dropdown if Super Admin, otherwise current user's branch
+            Dim selectedBranchId As Integer
+            If isSuperAdmin AndAlso cboBranch.SelectedItem IsNot Nothing Then
+                Dim row As DataRowView = TryCast(cboBranch.SelectedItem, DataRowView)
+                If row IsNot Nothing Then
+                    Dim branchIdCol As Integer = row.DataView.Table.Columns("BranchID").Ordinal
+                    selectedBranchId = Convert.ToInt32(row(branchIdCol))
+                Else
+                    selectedBranchId = currentBranchId
+                End If
+            Else
+                selectedBranchId = currentBranchId
+            End If
+
+            Dim poId = service.CreatePurchaseOrder(selectedBranchId, supplierId, dtpOrderDate.Value.Date, dtpRequiredDate.Value.Date, txtReference.Text.Trim(), txtNotes.Text.Trim(), AppSession.CurrentUserID, lines)
             ' Fetch PONumber for display
             Dim poHdr = service.GetPurchaseOrderHeader(poId)
             Dim poNumber As String = Nothing
-            If poHdr IsNot Nothing AndAlso poHdr.Rows.Count > 0 AndAlso Not IsDBNull(poHdr.Rows(0)("PONumber")) Then
-                poNumber = Convert.ToString(poHdr.Rows(0)("PONumber"))
+            If poHdr IsNot Nothing AndAlso poHdr.Rows.Count > 0 Then
+                Dim poNumCol As Integer = poHdr.Columns("PONumber").Ordinal
+                If Not IsDBNull(poHdr.Rows(0)(poNumCol)) Then
+                    poNumber = Convert.ToString(poHdr.Rows(0)(poNumCol))
+                End If
             End If
             If Not String.IsNullOrWhiteSpace(poNumber) Then
                 lblPONumber.Text = $"PO: {poNumber}"
@@ -400,7 +556,7 @@ Public Class PurchaseOrderForm
             Try
                 Dim supplierName = txtSupplier.Text.Trim()
                 Dim supplierInvoiceNo As String = txtReference.Text.Trim() ' using Reference as Supplier Invoice
-                PostPurchaseJournal(branchId, dtpOrderDate.Value.Date, poNumber, supplierInvoiceNo, supplierName, lines)
+                PostPurchaseJournal(selectedBranchId, dtpOrderDate.Value.Date, poNumber, supplierInvoiceNo, supplierName, lines)
             Catch jex As Exception
                 ' Non-blocking: inform but do not fail the save flow
                 MessageBox.Show("PO saved but journal posting failed: " & jex.Message, "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning)
@@ -418,11 +574,14 @@ Public Class PurchaseOrderForm
 
         ' Totals: compute from provided lines and VAT = 15%
         Dim subTotal As Decimal = 0D
+        Dim qtyColIdx As Integer = lines.Columns("OrderedQuantity").Ordinal
+        Dim costColIdx As Integer = lines.Columns("UnitCost").Ordinal
+
         For Each r As DataRow In lines.Rows
             Dim qty As Decimal = 0D
             Dim unit As Decimal = 0D
-            If r("OrderedQuantity") IsNot DBNull.Value Then qty = Convert.ToDecimal(r("OrderedQuantity"))
-            If r("UnitCost") IsNot DBNull.Value Then unit = Convert.ToDecimal(r("UnitCost"))
+            If r(qtyColIdx) IsNot DBNull.Value Then qty = Convert.ToDecimal(r(qtyColIdx))
+            If r(costColIdx) IsNot DBNull.Value Then unit = Convert.ToDecimal(r(costColIdx))
             subTotal += (qty * unit)
         Next
         Dim vat As Decimal = Math.Round(subTotal * 0.15D, 2)
@@ -612,9 +771,9 @@ Public Class PurchaseOrderForm
     End Sub
 
     ' ---------------- ISidebarProvider ----------------
-    Public Event SidebarContextChanged As EventHandler Implements ISidebarProvider.SidebarContextChanged
+    Public Event SidebarContextChanged As EventHandler Implements UI.ISidebarProvider.SidebarContextChanged
 
-    Public Function BuildSidebarPanel() As Panel Implements ISidebarProvider.BuildSidebarPanel
+    Public Function BuildSidebarPanel() As Panel Implements UI.ISidebarProvider.BuildSidebarPanel
         Dim p As New Panel() With {.Height = 160, .BackColor = Color.White}
         Dim title As New Label() With {
             .Text = "PO Context",

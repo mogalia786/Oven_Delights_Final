@@ -42,8 +42,8 @@ Namespace UI
                 Dim probe As DirectoryInfo = New DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory)
                 For i As Integer = 0 To 3 ' probe up to 3 parent levels
                     For Each fname In candidates
-                        Dim full = Path.Combine(probe.FullName, fname)
-                        If File.Exists(full) Then
+                        Dim full = IO.Path.Combine(probe.FullName, fname)
+                        If IO.File.Exists(full) Then
                             picHeaderLogo.Image = Image.FromFile(full)
                             Throw New Exception("__LogoLoaded__") ' break out of both loops
                         End If
@@ -87,9 +87,46 @@ Namespace UI
             AddNavButton("Suppliers", "suppliers")
             AddNavButton("Purchase Orders", "po")
             AddNavButton("GRV", "grv")
+            ' Supply Invoices section with explicit submenus as requested
+            AddNavHeader("Supply Invoices")
+            AddNavSubButton("Capture Invoice", "supply_invoices_capture")
+            AddNavSubButton("Edit Invoice", "supply_invoices_edit")
             AddNavButton("Accounts Payable", "ap")
             AddNavButton("Reports", "reports")
             AddHandler Me.Resize, Sub() Invalidate()
+        End Sub
+
+        Private Sub AddNavHeader(text As String)
+            Dim lbl As New Label() With {
+                .Text = text,
+                .Dock = DockStyle.Top,
+                .Height = 30,
+                .Font = New Font("Segoe UI Semibold", 9.0F, FontStyle.Bold),
+                .ForeColor = Color.FromArgb(90, 90, 90),
+                .BackColor = Color.FromArgb(245, 245, 245),
+                .Padding = New Padding(12, 6, 8, 0),
+                .TextAlign = ContentAlignment.MiddleLeft
+            }
+            Controls.Add(lbl)
+            Controls.SetChildIndex(lbl, 1)
+        End Sub
+
+        Private Sub AddNavSubButton(text As String, key As String)
+            Dim btn As New Button() With {
+                .Text = text,
+                .Dock = DockStyle.Top,
+                .Height = 38,
+                .FlatStyle = FlatStyle.Flat,
+                .TextAlign = ContentAlignment.MiddleLeft,
+                .BackColor = Color.White,
+                .ForeColor = Color.FromArgb(60, 60, 60),
+                .Padding = New Padding(28, 0, 8, 0), ' indent to indicate submenu
+                .Tag = key
+            }
+            btn.FlatAppearance.BorderSize = 0
+            AddHandler btn.Click, Sub() RaiseEvent Navigate(CStr(btn.Tag))
+            Controls.Add(btn)
+            Controls.SetChildIndex(btn, 1)
         End Sub
 
         Private Sub AddNavButton(text As String, key As String)

@@ -41,9 +41,7 @@ Partial Class MainDashboard
         ManufacturingToolStripMenuItem = New ToolStripMenuItem()
         RetailToolStripMenuItem = New ToolStripMenuItem()
         AccountingToolStripMenuItem = New ToolStripMenuItem()
-        EcommerceToolStripMenuItem = New ToolStripMenuItem()
         ReportingToolStripMenuItem = New ToolStripMenuItem()
-        BrandingToolStripMenuItem = New ToolStripMenuItem()
         ExitToolStripMenuItem = New ToolStripMenuItem()
         pnlSidebar = New Panel()
         lblSidebarTitle = New Label()
@@ -58,7 +56,7 @@ Partial Class MainDashboard
         ' 
         ' MenuStrip1
         ' 
-        MenuStrip1.Items.AddRange(New ToolStripItem() {AdministratorToolStripMenuItem, StockroomToolStripMenuItem, ManufacturingToolStripMenuItem, RetailToolStripMenuItem, AccountingToolStripMenuItem, EcommerceToolStripMenuItem, ReportingToolStripMenuItem, BrandingToolStripMenuItem, ExitToolStripMenuItem})
+        MenuStrip1.Items.AddRange(New ToolStripItem() {AdministratorToolStripMenuItem, StockroomToolStripMenuItem, ManufacturingToolStripMenuItem, RetailToolStripMenuItem, AccountingToolStripMenuItem, ReportingToolStripMenuItem, ExitToolStripMenuItem})
         MenuStrip1.Location = New Point(0, 0)
         MenuStrip1.Name = "MenuStrip1"
         MenuStrip1.Padding = New Padding(7, 2, 0, 2)
@@ -71,7 +69,7 @@ Partial Class MainDashboard
         AdministratorToolStripMenuItem.DropDownItems.AddRange(New ToolStripItem() {DashboardToolStripMenuItem, UserManagementToolStripMenuItem, BranchManagementToolStripMenuItem, AuditLogToolStripMenuItem, SystemSettingsToolStripMenuItem})
         AdministratorToolStripMenuItem.Name = "AdministratorToolStripMenuItem"
         AdministratorToolStripMenuItem.Size = New Size(92, 20)
-        AdministratorToolStripMenuItem.Text = "Administrator"
+        AdministratorToolStripMenuItem.Text = "Administration"
         ' 
         ' DashboardToolStripMenuItem
         ' 
@@ -170,23 +168,11 @@ Partial Class MainDashboard
         AccountingToolStripMenuItem.Size = New Size(81, 20)
         AccountingToolStripMenuItem.Text = "Accounting"
         ' 
-        ' EcommerceToolStripMenuItem
-        ' 
-        EcommerceToolStripMenuItem.Name = "EcommerceToolStripMenuItem"
-        EcommerceToolStripMenuItem.Size = New Size(87, 20)
-        EcommerceToolStripMenuItem.Text = "E-commerce"
-        ' 
         ' ReportingToolStripMenuItem
         ' 
         ReportingToolStripMenuItem.Name = "ReportingToolStripMenuItem"
         ReportingToolStripMenuItem.Size = New Size(71, 20)
         ReportingToolStripMenuItem.Text = "Reporting"
-        ' 
-        ' BrandingToolStripMenuItem
-        ' 
-        BrandingToolStripMenuItem.Name = "BrandingToolStripMenuItem"
-        BrandingToolStripMenuItem.Size = New Size(67, 20)
-        BrandingToolStripMenuItem.Text = "Branding"
         ' 
         ' ExitToolStripMenuItem
         ' 
@@ -286,9 +272,7 @@ Partial Class MainDashboard
     Friend WithEvents ManufacturingToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents RetailToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents AccountingToolStripMenuItem As ToolStripMenuItem
-    Friend WithEvents EcommerceToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents ReportingToolStripMenuItem As ToolStripMenuItem
-    Friend WithEvents BrandingToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents ExitToolStripMenuItem As ToolStripMenuItem
 
     ' Administrator Submenus

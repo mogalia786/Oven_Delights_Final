@@ -103,19 +103,19 @@ Public Class ExpensesForm
     End Sub
 
     Private Function PickExpenseType(cn As SqlConnection) As Integer
-        Dim hasETName = HasColumn(cn, "ExpenseTypes", "ExpenseTypeName")
-        Dim hasName = HasColumn(cn, "ExpenseTypes", "Name")
-        Dim colExpr As String = If(hasETName, "ExpenseTypeName", If(hasName, "Name", Nothing))
+        Dim hasETName = HasColumn(cn, "ExpenseCategories", "CategoryName")
+        Dim hasName = HasColumn(cn, "ExpenseCategories", "Name")
+        Dim colExpr As String = If(hasETName, "CategoryName", If(hasName, "Name", Nothing))
         If colExpr Is Nothing Then
-            MessageBox.Show("ExpenseTypes schema missing name columns.", "Pick Expense Type", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show("ExpenseCategories schema missing name columns.", "Pick Expense Type", MessageBoxButtons.OK, MessageBoxIcon.Error)
             Return 0
         End If
-        Using cmd As New SqlCommand($"SELECT ExpenseTypeID, {colExpr} AS ExpenseTypeName FROM dbo.ExpenseTypes WHERE IsActive=1 ORDER BY {colExpr}", cn)
+        Using cmd As New SqlCommand($"SELECT CategoryID AS ExpenseTypeID, {colExpr} AS ExpenseTypeName FROM dbo.ExpenseCategories WHERE IsActive=1 ORDER BY {colExpr}", cn)
             Using da As New SqlDataAdapter(cmd)
                 Dim dt As New DataTable()
                 da.Fill(dt)
                 If dt.Rows.Count = 0 Then
-                    MessageBox.Show("No expense types exist.", "Pick Expense Type", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    MessageBox.Show("No expense categories exist.", "Pick Expense Type", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                     Return 0
                 End If
                 Dim names = dt.AsEnumerable().Select(Function(row) row.Field(Of String)("ExpenseTypeName")).ToArray()

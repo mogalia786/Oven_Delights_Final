@@ -245,7 +245,7 @@ Public Class SystemSettingsForm_New
                 
                 ' Load backup settings
                 txtBackupPath.Text = GetSettingValue(conn, "Backup", "BackupPath", 
-                    Path.Combine(Application.StartupPath, "Backups"))
+                    IO.Path.Combine(Application.StartupPath, "Backups"))
                 chkAutoBackup.Checked = Boolean.Parse(GetSettingValue(conn, "Backup", "AutoBackup", "False"))
                 
                 ' Enable save button if any changes are made
@@ -335,24 +335,29 @@ Public Class SystemSettingsForm_New
     End Sub
     
     Private Sub SaveSetting(conn As SqlConnection, transaction As SqlTransaction, category As String, key As String, value As String)
-        Dim query = """
-            IF EXISTS (SELECT 1 FROM SystemSettings WHERE Category = @Category AND SettingKey = @Key)
-                UPDATE SystemSettings 
-                SET SettingValue = @Value,
-                    ModifiedBy = @UserId,
-                    ModifiedDate = GETDATE()
-                WHERE Category = @Category AND SettingKey = @Key
-            ELSE
-                INSERT INTO SystemSettings (Category, SettingKey, SettingValue, CreatedBy, ModifiedBy)
-                VALUES (@Category, @Key, @Value, @UserId, @UserId)
-            """
+        Dim updateQuery = "UPDATE SystemSettings " & _
+                         "SET SettingValue = @Value, " & _
+                         "ModifiedBy = @UserId, " & _
+                         "ModifiedDate = GETDATE() " & _
+                         "WHERE Category = @Category " & _
+                         "AND SettingKey = @Key"
             
-        Using cmd As New SqlCommand(query, conn, transaction)
+        Using cmd As New SqlCommand(updateQuery, conn, transaction)
             cmd.Parameters.AddWithValue("@Category", category)
             cmd.Parameters.AddWithValue("@Key", key)
             cmd.Parameters.AddWithValue("@Value", value)
             cmd.Parameters.AddWithValue("@UserId", _currentUserId)
-            cmd.ExecuteNonQuery()
+            
+            Dim rowsAffected = cmd.ExecuteNonQuery()
+            
+            If rowsAffected = 0 Then
+                cmd.CommandText = "INSERT INTO SystemSettings " & _
+                                 "(Category, SettingKey, SettingValue, " & _
+                                 "CreatedBy, ModifiedBy) " & _
+                                 "VALUES (@Category, @Key, @Value, " & _
+                                 "@UserId, @UserId)"
+                cmd.ExecuteNonQuery()
+            End If
         End Using
     End Sub
     
@@ -390,17 +395,17 @@ Public Class SystemSettingsForm_New
             End If
             
             ' Ensure backup directory exists
-            If Not Directory.Exists(txtBackupPath.Text) Then
-                Directory.CreateDirectory(txtBackupPath.Text)
+            If Not IO.Directory.Exists(txtBackupPath.Text) Then
+                IO.Directory.CreateDirectory(txtBackupPath.Text)
             End If
             
             ' Generate backup filename with timestamp
             Dim timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss")
-            Dim backupFile = Path.Combine(txtBackupPath.Text, $"Backup_{timestamp}.bak")
+            Dim backupFile = IO.Path.Combine(txtBackupPath.Text, $"Backup_{timestamp}.bak")
             
             ' Perform backup (this is a simplified example)
             ' In a real application, you would use SQL Server backup commands
-            File.WriteAllText(backupFile, $"Backup created at {DateTime.Now}")
+            IO.File.WriteAllText(backupFile, $"Backup created at {DateTime.Now}")
             
             MessageBox.Show($"Backup created successfully:{vbCrLf}{backupFile}", "Backup Complete", 
                           MessageBoxButtons.OK, MessageBoxIcon.Information)

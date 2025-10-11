@@ -11,7 +11,7 @@ Public Class PdfService
     End Function
     Private Shared Function SanitizeToken(input As String) As String
         If String.IsNullOrWhiteSpace(input) Then Return String.Empty
-        Dim invalid = Path.GetInvalidFileNameChars()
+        Dim invalid = IO.Path.GetInvalidFileNameChars()
         Dim sb As New StringBuilder(input.Length)
         For Each ch In input
             If invalid.Contains(ch) Then
@@ -25,7 +25,7 @@ Public Class PdfService
     Private Shared Function EnsureOutputFolder() As String
         ' Store PDFs next to the executable in a single "Documents" folder
         Dim basePath As String = System.Windows.Forms.Application.StartupPath
-        Dim folder As String = Path.Combine(basePath, "Documents")
+        Dim folder As String = IO.Path.Combine(basePath, "Documents")
         If Not Directory.Exists(folder) Then Directory.CreateDirectory(folder)
         Return folder
     End Function
@@ -48,11 +48,11 @@ Public Class PdfService
     Private Shared Function WriteAsPseudoPdf(html As String, baseFileName As String) As String
         ' For now, write HTML alongside a .pdf filename for downstream email/sharing
         Dim folder = EnsureOutputFolder()
-        Dim pdfPath = Path.Combine(folder, baseFileName & ".pdf")
-        Dim htmlPath = Path.Combine(folder, baseFileName & ".html")
-        File.WriteAllText(htmlPath, html, Encoding.UTF8)
+        Dim pdfPath = IO.Path.Combine(folder, baseFileName & ".pdf")
+        Dim htmlPath = IO.Path.Combine(folder, baseFileName & ".html")
+        IO.File.WriteAllText(htmlPath, html, Encoding.UTF8)
         ' Copy to .pdf extension so email clients accept it; replace if exists
-        File.Copy(htmlPath, pdfPath, True)
+        IO.File.Copy(htmlPath, pdfPath, True)
         Return pdfPath
     End Function
 
@@ -60,10 +60,10 @@ Public Class PdfService
     Public Shared Function SavePdfWithDocumentNumber(docNumber As String, html As String) As String
         Dim safeName As String = SanitizeToken(docNumber)
         Dim folder = EnsureOutputFolder()
-        Dim pdfPath = Path.Combine(folder, safeName & ".pdf")
-        Dim htmlPath = Path.Combine(folder, safeName & ".html")
-        File.WriteAllText(htmlPath, html, Encoding.UTF8)
-        File.Copy(htmlPath, pdfPath, True)
+        Dim pdfPath = IO.Path.Combine(folder, safeName & ".pdf")
+        Dim htmlPath = IO.Path.Combine(folder, safeName & ".html")
+        IO.File.WriteAllText(htmlPath, html, Encoding.UTF8)
+        IO.File.Copy(htmlPath, pdfPath, True)
         Return pdfPath
     End Function
 
@@ -134,5 +134,34 @@ Public Class PdfService
         Dim suffix As String = ""
         If Not String.IsNullOrWhiteSpace(poNumber) Then suffix = "_" & SanitizeToken(poNumber)
         Return WriteAsPseudoPdf(html, $"INV_{invoiceId}{suffix}")
+    End Function
+
+    ' Generic: export any DataGridView to printable HTML-backed PDF and return the saved path
+    Public Shared Function SaveDataGridViewAsPdf(dgv As System.Windows.Forms.DataGridView, title As String, baseFileName As String) As String
+        If dgv Is Nothing Then Throw New ArgumentNullException(NameOf(dgv))
+        Dim sb As New StringBuilder()
+        sb.AppendLine("<!DOCTYPE html><html><head><meta charset='utf-8'>")
+        sb.AppendLine("<style> body{font-family:Segoe UI,Arial,sans-serif;margin:24px;} h1{font-size:20px;margin:0 0 8px;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #ddd;padding:6px;text-align:left;} th{background:#f6f6f6;} .meta{color:#666;margin-bottom:8px;} </style>")
+        sb.AppendLine("</head><body>")
+        sb.AppendLine($"<h1>{HtmlEncode(title)}</h1>")
+        sb.AppendLine($"<div class='meta'>Generated: {DateTime.Now:yyyy-MM-dd HH:mm}</div>")
+        sb.AppendLine("<table><thead><tr>")
+        For Each col As System.Windows.Forms.DataGridViewColumn In dgv.Columns
+            If col.Visible Then sb.Append("<th>").Append(HtmlEncode(col.HeaderText)).Append("</th>")
+        Next
+        sb.AppendLine("</tr></thead><tbody>")
+        For Each row As System.Windows.Forms.DataGridViewRow In dgv.Rows
+            If row.IsNewRow Then Continue For
+            sb.Append("<tr>")
+            For Each col As System.Windows.Forms.DataGridViewColumn In dgv.Columns
+                If Not col.Visible Then Continue For
+                Dim val = row.Cells(col.Index).Value
+                Dim cellText As String = If(val Is Nothing, "", val.ToString())
+                sb.Append("<td>").Append(HtmlEncode(cellText)).Append("</td>")
+            Next
+            sb.AppendLine("</tr>")
+        Next
+        sb.AppendLine("</tbody></table></body></html>")
+        Return WriteAsPseudoPdf(sb.ToString(), SanitizeToken(baseFileName))
     End Function
 End Class

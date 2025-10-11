@@ -1,5 +1,5 @@
 Imports System.Windows.Forms
-Imports System.Data.SqlClient
+Imports Microsoft.Data.SqlClient
 Imports System.Data
 Imports System.Drawing
 
@@ -36,6 +36,13 @@ Public Class CreditNoteForm
     ' Backing state
     Private selectedSupplierId As Integer?
     Private selectedGRNId As Integer?
+
+    ' Parameterless constructor for design-time support
+    Public Sub New()
+        Me.WindowState = FormWindowState.Maximized
+        InitializeComponent()
+        ' Do not load data/services here to keep designer safe
+    End Sub
 
     Public Sub New(poId As Integer)
         Me.purchaseOrderId = poId
@@ -82,16 +89,21 @@ Public Class CreditNoteForm
         btnSave = New Button() With {.Text = "Save Credit Note", .Location = New Point(20, 620), .Width = 180}
         btnCancel = New Button() With {.Text = "Cancel", .Location = New Point(210, 620), .Width = 100}
 
+        Me.Controls.AddRange(New Control() {lblSupplier, txtSupplier, lstSupplier, lblGRN, cboGRN, lblInvoice, cboInvoice, lblDate, dtpCreditDate, lblReason, txtReason, lblReference, txtReference, lblNotes, txtNotes, dgvLines, btnSave, btnCancel})
+    End Sub
+
+    ' Design-time-safe: wire handlers on Load at runtime only
+    Private Sub CreditNoteForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        If System.ComponentModel.LicenseManager.UsageMode = System.ComponentModel.LicenseUsageMode.Designtime Then
+            Return
+        End If
+        ' Wire up event handlers (moved out of InitializeComponent for designer compatibility)
         AddHandler txtSupplier.TextChanged, AddressOf OnSupplierSearchChanged
         AddHandler lstSupplier.Click, AddressOf OnSupplierSelected
         AddHandler cboGRN.SelectedIndexChanged, AddressOf OnGRNSelected
-        AddHandler cboInvoice.SelectedIndexChanged, Sub(sender, e)
-                                                       ' no-op placeholder to allow future filtering by invoice
-                                                   End Sub
         AddHandler btnSave.Click, AddressOf btnSaveCreditNote_Click
-        AddHandler btnCancel.Click, Sub(sender, e) Me.Close()
-
-        Me.Controls.AddRange(New Control() {lblSupplier, txtSupplier, lstSupplier, lblGRN, cboGRN, lblInvoice, cboInvoice, lblDate, dtpCreditDate, lblReason, txtReason, lblReference, txtReference, lblNotes, txtNotes, dgvLines, btnSave, btnCancel})
+        Dim cancelHandler As EventHandler = Sub(s2, e2) Me.Close()
+        AddHandler btnCancel.Click, cancelHandler
     End Sub
 
     Private Sub btnSaveCreditNote_Click(sender As Object, e As EventArgs)

@@ -1,313 +1,167 @@
 Imports System.Windows.Forms
 Imports System.Data
-Imports System.IO
-Imports Oven_Delights_ERP.UI
+Imports System.Data.SqlClient
+Imports System.Configuration
 
 Public Class InvoiceCaptureForm
-    Inherits Form
-    Implements ISidebarProvider
+    Inherits System.Windows.Forms.Form
 
-    Private ReadOnly service As New StockroomService()
-    ' Email, PDF and dashboard
-    Private ReadOnly emailService As New EmailService()
-    Private ReadOnly pdfService As New PdfService()
-    Private dashboardPanel As Panel
-    Private dashboardBrowser As WebBrowser
+    Private ReadOnly stockroomService As New StockroomService()
+    Private ReadOnly accountingService As New AccountsPayableService()
+    Private selectedSupplierId As Integer
+    Private selectedPOId As Integer
 
-    ' Header controls
-    Private WithEvents cboSupplier As New ComboBox()
-    Private WithEvents cboPO As New ComboBox()
-    Private lblSupplier As New Label()
-    Private lblPO As New Label()
-    Private lblDeliveryNote As New Label()
-    Private txtDeliveryNote As New TextBox()
-    Private lblDate As New Label()
-    Private dtpReceived As New DateTimePicker()
+    Private Sub InvoiceCaptureForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        Try
+            Me.WindowState = FormWindowState.Maximized
+            Me.Show()
+            Me.BringToFront()
 
-    ' Grid and totals
-    Private WithEvents dgvLines As New DataGridView()
-    Private lblSubTotal As New Label()
-    Private txtSubTotal As New TextBox()
-    Private lblVat As New Label()
-    Private txtVat As New TextBox()
-    Private lblTotal As New Label()
-    Private txtTotal As New TextBox()
+            LoadSuppliers()
+            ConfigureTotalsTextBoxes()
+            dtpReceived.Value = DateTime.Now
 
-    ' Actions
-    Private WithEvents btnSave As New Button()
-    Private WithEvents btnCancel As New Button()
+            AddHandler cboSupplier.SelectedIndexChanged, AddressOf cboSupplier_SelectedIndexChanged
+            AddHandler cboPO.SelectedIndexChanged, AddressOf cboPO_SelectedIndexChanged
+            AddHandler btnSave.Click, AddressOf btnSave_Click
+            AddHandler btnCancel.Click, AddressOf btnCancel_Click
 
-    ' State
-    Private selectedSupplierId As Integer = 0
-    Private selectedPOId As Integer = 0
-    Private currentBranchId As Integer
-    Private currentUserId As Integer
-
-    Public Sub New(branchId As Integer, userId As Integer)
-        Me.Text = "Invoice Capture (GRV)"
-        Me.WindowState = FormWindowState.Maximized
-        Me.StartPosition = FormStartPosition.CenterParent
-        Me.currentBranchId = branchId
-        Me.currentUserId = userId
-        InitializeComponent()
-        LoadSuppliers()
-        ApplyTheme()
+        Catch ex As Exception
+            MessageBox.Show($"Error loading Invoice Capture form: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
-    Private Sub InitializeComponent()
-        ' Header layout
-        lblSupplier.Text = "Supplier:" : lblSupplier.AutoSize = True
-        lblPO.Text = "PO:" : lblPO.AutoSize = True
-        lblDeliveryNote.Text = "Delivery Note:" : lblDeliveryNote.AutoSize = True
-        lblDate.Text = "Received Date:" : lblDate.AutoSize = True
+    Private Sub dgvLines_DataBindingComplete(sender As Object, e As DataGridViewBindingCompleteEventArgs) Handles dgvLines.DataBindingComplete
+        Try
+            For Each r As DataGridViewRow In dgvLines.Rows
+                If dgvLines.Columns.Contains("ReceiveNow") Then
+                    Dim v = r.Cells("ReceiveNow").Value
+                    Dim d As Decimal
+                    If v Is Nothing OrElse Not Decimal.TryParse(Convert.ToString(v), d) Then r.Cells("ReceiveNow").Value = 0D
+                End If
+            Next
+        Catch
+        End Try
+    End Sub
 
-        cboSupplier.DropDownStyle = ComboBoxStyle.DropDownList
-        cboPO.DropDownStyle = ComboBoxStyle.DropDownList
-        dtpReceived.Format = DateTimePickerFormat.[Short]
-        dtpReceived.Value = DateTime.Now
-
-        ' Grid
-        dgvLines.AllowUserToAddRows = False
-        dgvLines.AllowUserToDeleteRows = False
-        dgvLines.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
-        dgvLines.RowHeadersVisible = False
-        dgvLines.SelectionMode = DataGridViewSelectionMode.CellSelect
-
-        ' Add columns
-        dgvLines.Columns.Clear()
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "POLineID", .HeaderText = "POLineID", .Visible = False})
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "MaterialID", .HeaderText = "MaterialID", .Visible = False})
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "MaterialCode", .HeaderText = "Code", .ReadOnly = True, .FillWeight = 120})
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "MaterialName", .HeaderText = "Material", .ReadOnly = True, .FillWeight = 180})
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "OrderedQuantity", .HeaderText = "Ordered", .ReadOnly = True, .FillWeight = 90, .DefaultCellStyle = New DataGridViewCellStyle() With {.Format = "N4"}})
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "ReceivedQuantityToDate", .HeaderText = "Received TD", .ReadOnly = True, .FillWeight = 90, .DefaultCellStyle = New DataGridViewCellStyle() With {.Format = "N4"}})
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "ReceiveNow", .HeaderText = "Receive Now", .FillWeight = 90, .DefaultCellStyle = New DataGridViewCellStyle() With {.Format = "N4"}})
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "UnitCost", .HeaderText = "Unit Cost", .FillWeight = 90, .DefaultCellStyle = New DataGridViewCellStyle() With {.Format = "N4"}})
-        ' Cost insight columns
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "LastCost", .HeaderText = "Last Cost", .ReadOnly = True, .FillWeight = 90, .DefaultCellStyle = New DataGridViewCellStyle() With {.Format = "N4"}})
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "AverageCost", .HeaderText = "Avg Cost", .ReadOnly = True, .FillWeight = 90, .DefaultCellStyle = New DataGridViewCellStyle() With {.Format = "N4"}})
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "ReturnQty", .HeaderText = "Return Qty", .FillWeight = 90, .DefaultCellStyle = New DataGridViewCellStyle() With {.Format = "N4"}})
-        ' Per-line credit reason
-        Dim reasonCol As New DataGridViewComboBoxColumn() With {.Name = "CreditReason", .HeaderText = "Credit Reason", .FillWeight = 120}
-        reasonCol.Items.AddRange(New Object() {"No Credit Note", "Short-supply", "Damaged/Expired"})
-        dgvLines.Columns.Add(reasonCol)
-        ' Per-line comments
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "CreditComments", .HeaderText = "Comments", .FillWeight = 180})
-        ' Read-only credit amount derived from ReturnQty * UnitCost
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "CreditAmount", .HeaderText = "Credit Amount", .ReadOnly = True, .FillWeight = 110, .DefaultCellStyle = New DataGridViewCellStyle() With {.Format = "N2"}})
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "LineTotal", .HeaderText = "Line Total", .ReadOnly = True, .FillWeight = 110, .DefaultCellStyle = New DataGridViewCellStyle() With {.Format = "N2"}})
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "Variance", .HeaderText = "Variance", .ReadOnly = True, .FillWeight = 90, .DefaultCellStyle = New DataGridViewCellStyle() With {.Format = "N4"}})
-        Dim btnCol As New DataGridViewButtonColumn() With {.Name = "CreditBtn", .HeaderText = "Credit Note", .Text = "CN", .UseColumnTextForButtonValue = True, .FillWeight = 60}
-        dgvLines.Columns.Add(btnCol)
-
-        ' Totals
-        lblSubTotal.Text = "SubTotal:" : lblSubTotal.AutoSize = True
-        lblVat.Text = "VAT:" : lblVat.AutoSize = True
-        lblTotal.Text = "Total:" : lblTotal.AutoSize = True
-        For Each t In New TextBox() {txtSubTotal, txtVat, txtTotal}
-            t.ReadOnly = True
-            t.TextAlign = HorizontalAlignment.Right
-        Next
-
-        ' Buttons
-        btnSave.Text = "Save GRV"
-        btnCancel.Text = "Cancel"
-
-        ' Layout controls manually (simple flow)
-        Dim pnlTop As New Panel() With {.Dock = DockStyle.Top, .Height = 72}
-        lblSupplier.Location = New Drawing.Point(12, 12)
-        cboSupplier.Location = New Drawing.Point(90, 8) : cboSupplier.Width = 300
-        lblPO.Location = New Drawing.Point(410, 12)
-        cboPO.Location = New Drawing.Point(440, 8) : cboPO.Width = 220
-        lblDeliveryNote.Location = New Drawing.Point(680, 12)
-        txtDeliveryNote.Location = New Drawing.Point(780, 8) : txtDeliveryNote.Width = 180
-        lblDate.Location = New Drawing.Point(980, 12)
-        dtpReceived.Location = New Drawing.Point(1075, 8)
-        pnlTop.Controls.AddRange(New Control() {lblSupplier, cboSupplier, lblPO, cboPO, lblDeliveryNote, txtDeliveryNote, lblDate, dtpReceived})
-
-        Dim pnlBottom As New Panel() With {.Dock = DockStyle.Bottom, .Height = 72}
-        lblSubTotal.Location = New Drawing.Point(680, 14)
-        txtSubTotal.Location = New Drawing.Point(750, 10) : txtSubTotal.Width = 120
-        lblVat.Location = New Drawing.Point(880, 14)
-        txtVat.Location = New Drawing.Point(920, 10) : txtVat.Width = 120
-        lblTotal.Location = New Drawing.Point(1050, 14)
-        txtTotal.Location = New Drawing.Point(1095, 10) : txtTotal.Width = 120
-        btnSave.Location = New Drawing.Point(12, 10)
-        btnCancel.Location = New Drawing.Point(110, 10)
-        pnlBottom.Controls.AddRange(New Control() {btnSave, btnCancel, lblSubTotal, txtSubTotal, lblVat, txtVat, lblTotal, txtTotal})
-
-        ' Dashboard panel intentionally not added to Controls to maximize grid width
-        dashboardPanel = New Panel() With {.Dock = DockStyle.Right, .Width = 0, .Visible = False}
-        dashboardBrowser = New WebBrowser() With {.Dock = DockStyle.Fill, .ScriptErrorsSuppressed = True}
-
-        dgvLines.Dock = DockStyle.Fill
-        dgvLines.Margin = New Padding(0)
-        Me.Padding = New Padding(0)
-
-        Me.Controls.AddRange(New Control() {dgvLines, pnlBottom, pnlTop})
-
-        ' Dashboard is collapsed on this form; skip loading HTML to save resources
+    Private Sub dgvLines_RowsAdded(sender As Object, e As DataGridViewRowsAddedEventArgs) Handles dgvLines.RowsAdded
+        Try
+            For i As Integer = e.RowIndex To (e.RowIndex + e.RowCount - 1)
+                If i >= 0 AndAlso i < dgvLines.Rows.Count Then
+                    If dgvLines.Columns.Contains("ReceiveNow") Then
+                        dgvLines.Rows(i).Cells("ReceiveNow").Value = 0D
+                    End If
+                End If
+            Next
+        Catch
+        End Try
     End Sub
 
     Private Sub LoadSuppliers()
-        Dim dt = service.GetSuppliersLookup()
-        cboSupplier.DisplayMember = "CompanyName"
-        cboSupplier.ValueMember = "SupplierID"
-        cboSupplier.DataSource = dt
-        cboSupplier.SelectedIndex = -1
-    End Sub
-
-    Private Sub LoadPOsForSupplier(supplierId As Integer)
-        Dim dt = service.GetOpenPOsBySupplier(supplierId)
-        cboPO.DisplayMember = "PONumber"
-        cboPO.ValueMember = "PurchaseOrderID"
-        cboPO.DataSource = dt
-        cboPO.SelectedIndex = -1
-    End Sub
-
-    Private Sub LoadPOLines(poId As Integer)
-        dgvLines.Rows.Clear()
-        Dim dt = service.GetPOLines(poId)
-        For Each r As DataRow In dt.Rows
-            Dim ordered As Decimal = Convert.ToDecimal(r("OrderedQuantity"))
-            Dim receivedTD As Decimal = Convert.ToDecimal(r("ReceivedQuantity"))
-            Dim canReceive As Decimal = Math.Max(0D, ordered - receivedTD)
-            Dim unitCost As Decimal = Convert.ToDecimal(r("UnitCost"))
-            Dim idx = dgvLines.Rows.Add()
-            Dim row = dgvLines.Rows(idx)
-            row.Cells("POLineID").Value = r("POLineID")
-            row.Cells("MaterialID").Value = r("MaterialID")
-            row.Cells("MaterialCode").Value = Convert.ToString(r("MaterialCode"))
-            row.Cells("MaterialName").Value = Convert.ToString(r("MaterialName"))
-            row.Cells("OrderedQuantity").Value = ordered
-            row.Cells("ReceivedQuantityToDate").Value = receivedTD
-            row.Cells("ReceiveNow").Value = canReceive
-            row.Cells("UnitCost").Value = unitCost
-            ' Fetch LastCost and AverageCost for the material
-            Try
-                Dim cs = System.Configuration.ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
-                Using con As New Microsoft.Data.SqlClient.SqlConnection(cs)
-                    con.Open()
-                    Using cmd As New Microsoft.Data.SqlClient.SqlCommand("SELECT ISNULL(LastCost,0) AS LastCost, ISNULL(AverageCost,0) AS AverageCost FROM RawMaterials WHERE MaterialID=@M", con)
-                        cmd.Parameters.AddWithValue("@M", CInt(r("MaterialID")))
-                        Using rd = cmd.ExecuteReader()
-                            If rd.Read() Then
-                                row.Cells("LastCost").Value = Convert.ToDecimal(rd("LastCost"))
-                                row.Cells("AverageCost").Value = Convert.ToDecimal(rd("AverageCost"))
-                            Else
-                                row.Cells("LastCost").Value = 0D
-                                row.Cells("AverageCost").Value = 0D
-                            End If
-                        End Using
-                    End Using
-                End Using
-            Catch
-                row.Cells("LastCost").Value = 0D
-                row.Cells("AverageCost").Value = 0D
-            End Try
-            row.Cells("ReturnQty").Value = 0D
-            row.Cells("CreditReason").Value = "No Credit Note"
-            row.Cells("CreditComments").Value = ""
-            row.Cells("CreditAmount").Value = Math.Round(0D * unitCost, 2)
-            row.Cells("LineTotal").Value = Math.Round(canReceive * unitCost, 2)
-            row.Cells("Variance").Value = ordered - (receivedTD + canReceive)
-        Next
-        RecalcTotals()
+        Try
+            Dim suppliers = stockroomService.GetSuppliers()
+            cboSupplier.DataSource = suppliers
+            cboSupplier.DisplayMember = "CompanyName"
+            cboSupplier.ValueMember = "SupplierID"
+            cboSupplier.SelectedIndex = -1
+        Catch ex As Exception
+            MessageBox.Show("Error loading suppliers: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub cboSupplier_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cboSupplier.SelectedIndexChanged
-        If cboSupplier.SelectedIndex >= 0 Then
-            selectedSupplierId = CInt(cboSupplier.SelectedValue)
-            LoadPOsForSupplier(selectedSupplierId)
-        Else
-            selectedSupplierId = 0
-            cboPO.DataSource = Nothing
-            dgvLines.Rows.Clear()
-            RecalcTotals()
-        End If
-        RaiseEvent SidebarContextChanged(Me, EventArgs.Empty)
+        Try
+            If cboSupplier.SelectedValue IsNot Nothing Then
+                selectedSupplierId = Convert.ToInt32(cboSupplier.SelectedValue)
+                LoadPurchaseOrders()
+            Else
+                selectedSupplierId = 0
+                cboPO.DataSource = Nothing
+            End If
+        Catch
+        End Try
+    End Sub
+
+    Private Sub LoadPurchaseOrders()
+        Try
+            If selectedSupplierId > 0 Then
+                Dim dt = stockroomService.GetPurchaseOrdersForSupplier(selectedSupplierId)
+                cboPO.DataSource = dt
+                cboPO.DisplayMember = "PONumber"
+                cboPO.ValueMember = "POID"
+                cboPO.SelectedIndex = -1
+
+                ' Clear grid if no POs available
+                If dt.Rows.Count = 0 Then
+                    dgvLines.DataSource = Nothing
+                    txtSubTotal.Text = "0.00"
+                    txtVat.Text = "0.00"
+                    txtTotal.Text = "0.00"
+                End If
+            End If
+        Catch ex As Exception
+            MessageBox.Show("Error loading purchase orders: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub cboPO_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cboPO.SelectedIndexChanged
-        If cboPO.SelectedIndex >= 0 Then
-            selectedPOId = CInt(cboPO.SelectedValue)
-            LoadPOLines(selectedPOId)
-        Else
-            selectedPOId = 0
-            dgvLines.Rows.Clear()
-            RecalcTotals()
-        End If
-        RaiseEvent SidebarContextChanged(Me, EventArgs.Empty)
-    End Sub
-
-    Private Sub dgvLines_CellValueChanged(sender As Object, e As DataGridViewCellEventArgs) Handles dgvLines.CellValueChanged
-        If e.RowIndex < 0 Then Return
-        Dim col = dgvLines.Columns(e.ColumnIndex).Name
-        If col = "ReceiveNow" OrElse col = "UnitCost" OrElse col = "ReturnQty" OrElse col = "CreditReason" Then
-            Dim row = dgvLines.Rows(e.RowIndex)
-            Dim qty = ToDec(row.Cells("ReceiveNow").Value)
-            Dim cost = ToDec(row.Cells("UnitCost").Value)
-            row.Cells("LineTotal").Value = Math.Round(qty * cost, 2)
-            Dim ordered = ToDec(row.Cells("OrderedQuantity").Value)
-            Dim recTD = ToDec(row.Cells("ReceivedQuantityToDate").Value)
-            row.Cells("Variance").Value = ordered - (recTD + qty)
-
-            ' Auto-suggest ReturnQty when reason is Short-supply
-            Dim reason = Convert.ToString(row.Cells("CreditReason").Value)
-            If String.Equals(reason, "Short-supply", StringComparison.OrdinalIgnoreCase) Then
-                Dim shortage As Decimal = Math.Max(0D, ordered - (recTD + qty))
-                row.Cells("ReturnQty").Value = shortage
+        Try
+            If cboPO.SelectedValue IsNot Nothing Then
+                selectedPOId = Convert.ToInt32(cboPO.SelectedValue)
+                LoadPOLines()
+            Else
+                selectedPOId = 0
+                dgvLines.DataSource = Nothing
             End If
-
-            ' Update credit amount from ReturnQty * UnitCost
-            Dim ret = ToDec(row.Cells("ReturnQty").Value)
-            row.Cells("CreditAmount").Value = Math.Round(ret * cost, 2)
-            RecalcTotals()
-            RaiseEvent SidebarContextChanged(Me, EventArgs.Empty)
-        End If
+        Catch
+        End Try
     End Sub
 
-    Private Sub dgvLines_CurrentCellDirtyStateChanged(sender As Object, e As EventArgs) Handles dgvLines.CurrentCellDirtyStateChanged
-        If dgvLines.IsCurrentCellDirty Then dgvLines.CommitEdit(DataGridViewDataErrorContexts.Commit)
-    End Sub
+    Private Sub LoadPOLines()
+        Try
+            If selectedPOId > 0 Then
+                Dim lines = stockroomService.GetPurchaseOrderLines(selectedPOId)
+                dgvLines.DataSource = lines
 
-    Private Function ToDec(v As Object) As Decimal
-        If v Is Nothing OrElse v Is DBNull.Value Then Return 0D
-        Dim d As Decimal
-        If Decimal.TryParse(v.ToString(), d) Then Return d
-        Return 0D
-    End Function
+                ' Add dropdown for CreditReason column
+                If dgvLines.Columns.Contains("CreditReason") Then
+                    Dim creditReasonColumn As DataGridViewComboBoxColumn = New DataGridViewComboBoxColumn()
+                    creditReasonColumn.Name = "CreditReason"
+                    creditReasonColumn.HeaderText = "Credit Reason"
+                    creditReasonColumn.Items.AddRange({"No Credit Note", "Damaged Goods", "Wrong Item", "Quality Issue", "Overcharge", "Other"})
+                    creditReasonColumn.DefaultCellStyle.NullValue = "No Credit Note"
 
-    Private Sub RecalcTotals()
-        Dim subTot As Decimal = 0D
-        For Each row As DataGridViewRow In dgvLines.Rows
-            subTot += ToDec(row.Cells("LineTotal").Value)
-        Next
-        txtSubTotal.Text = subTot.ToString("N2")
-        ' Show VAT using current admin setting
-        Dim vatRate As Decimal = GetVatRate()
-        Dim vat = Math.Round(subTot * (vatRate / 100D), 2)
-        txtVat.Text = vat.ToString("N2")
-        txtTotal.Text = (subTot + vat).ToString("N2")
+                    Dim oldIndex = dgvLines.Columns("CreditReason").Index
+                    dgvLines.Columns.RemoveAt(oldIndex)
+                    dgvLines.Columns.Insert(oldIndex, creditReasonColumn)
+                End If
+
+                ' Add Credit Note button column
+                If Not dgvLines.Columns.Contains("CreditBtn") Then
+                    Dim btnColumn As New DataGridViewButtonColumn()
+                    btnColumn.Name = "CreditBtn"
+                    btnColumn.HeaderText = "Credit Note"
+                    btnColumn.Text = "Print CN"
+                    btnColumn.UseColumnTextForButtonValue = False
+                    dgvLines.Columns.Add(btnColumn)
+                End If
+            End If
+        Catch ex As Exception
+            MessageBox.Show("Error loading PO lines: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub dgvLines_CellFormatting(sender As Object, e As DataGridViewCellFormattingEventArgs) Handles dgvLines.CellFormatting
         If e.RowIndex < 0 Then Return
         If dgvLines.Columns(e.ColumnIndex).Name = "CreditBtn" Then
             Dim row = dgvLines.Rows(e.RowIndex)
-            Dim ordered = ToDec(row.Cells("OrderedQuantity").Value)
-            Dim recTD = ToDec(row.Cells("ReceivedQuantityToDate").Value)
-            Dim recvNow = ToDec(row.Cells("ReceiveNow").Value)
-            Dim shortage = ordered > (recTD + recvNow)
-            Dim btn = CType(row.Cells("CreditBtn"), DataGridViewButtonCell)
-            If shortage Then
-                btn.Style.BackColor = Drawing.Color.IndianRed
-                btn.Style.ForeColor = Drawing.Color.White
-                btn.FlatStyle = FlatStyle.Popup
+            Dim returnQty = If(row.Cells("ReturnQty").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("ReturnQty").Value))
+            Dim creditReason = Convert.ToString(row.Cells("CreditReason").Value)
+
+            If returnQty > 0 AndAlso creditReason <> "No Credit Note" Then
+                e.Value = "Print CN"
             Else
-                btn.Style.BackColor = Drawing.Color.SeaGreen
-                btn.Style.ForeColor = Drawing.Color.White
-                btn.FlatStyle = FlatStyle.Popup
+                e.Value = ""
             End If
         End If
     End Sub
@@ -316,282 +170,409 @@ Public Class InvoiceCaptureForm
         If e.RowIndex < 0 Then Return
         If dgvLines.Columns(e.ColumnIndex).Name = "CreditBtn" Then
             Dim row = dgvLines.Rows(e.RowIndex)
-            ' Toggle quick-fill of ReturnQty to suggest damaged return equals 0 or a small default
-            Dim current = ToDec(row.Cells("ReturnQty").Value)
-            If current > 0D Then
-                row.Cells("ReturnQty").Value = 0D
+            Dim returnQty = If(row.Cells("ReturnQty").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("ReturnQty").Value))
+            Dim creditReason = Convert.ToString(row.Cells("CreditReason").Value)
+
+            If returnQty > 0 AndAlso creditReason <> "No Credit Note" Then
+                CreateAndPrintCreditNote(row)
             Else
-                ' Default to 0; user must explicitly enter damaged qty
-                row.Cells("ReturnQty").Value = 0D
+                MessageBox.Show("Please enter return quantity and select credit reason.", "Credit Note", MessageBoxButtons.OK, MessageBoxIcon.Information)
             End If
         End If
     End Sub
 
-    Private Function GetVatRate() As Decimal
-        ' Mirror StockroomService VAT lookup with a simple call
-        Dim dt As New DataTable()
-        ' Use service helper indirectly: reuse in form by querying SystemSettings directly is avoided to keep single source of truth
-        ' Here, quickly compute from subtotal using service method via reflection isn't ideal; instead, call a minimal vat getter
-        ' Use a lightweight approach: piggyback on service via a temporary DataTable is overkill; we expose VAT via a small API if needed.
-        ' For now, recompute using the same logic: default 15 if not set.
+    Private Sub CreateAndPrintCreditNote(row As DataGridViewRow)
         Try
-            ' Direct mini-query
-            Dim cs = System.Configuration.ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
-            Using con As New Microsoft.Data.SqlClient.SqlConnection(cs)
-                con.Open()
-                Using cmd As New Microsoft.Data.SqlClient.SqlCommand("SELECT [Value] FROM SystemSettings WHERE [Key]='VATRatePercent'", con)
-                    Dim obj = cmd.ExecuteScalar()
-                    If obj IsNot Nothing AndAlso obj IsNot DBNull.Value Then
-                        Dim s = obj.ToString()
-                        Dim r As Decimal
-                        If Decimal.TryParse(s, r) Then Return r
-                    End If
-                End Using
-            End Using
-        Catch
+            Dim returnQty = Convert.ToDecimal(row.Cells("ReturnQty").Value)
+            Dim unitCost = Convert.ToDecimal(row.Cells("UnitCost").Value)
+            Dim creditReason = Convert.ToString(row.Cells("CreditReason").Value)
+            Dim comments = Convert.ToString(row.Cells("CreditComments").Value)
+            Dim productCode = Convert.ToString(row.Cells("ProductCode").Value)
+            Dim productName = Convert.ToString(row.Cells("ProductName").Value)
+
+            ' Generate credit note letter directly in textbox
+            Dim letter As New System.Text.StringBuilder()
+            letter.AppendLine("OVEN DELIGHTS (PTY) LTD")
+            letter.AppendLine("123 Baker Street, Johannesburg, 2000")
+            letter.AppendLine("Tel: (011) 123-4567")
+            letter.AppendLine("Email: accounts@ovendelights.co.za")
+            letter.AppendLine()
+            letter.AppendLine("CREDIT NOTE")
+            letter.AppendLine("=" & String.Empty.PadRight(50, "="))
+            letter.AppendLine()
+            letter.AppendLine($"Credit Note Number: CN{DateTime.Now:yyyyMMddHHmmss}")
+            letter.AppendLine($"Date: {DateTime.Now:dd MMMM yyyy}")
+            letter.AppendLine($"Supplier: {cboSupplier.Text}")
+            letter.AppendLine($"PO Number: {cboPO.Text}")
+            letter.AppendLine()
+            letter.AppendLine("Dear Sir/Madam,")
+            letter.AppendLine()
+            letter.AppendLine("RE: CREDIT NOTE FOR RETURNED GOODS")
+            letter.AppendLine()
+            letter.AppendLine($"We are issuing this credit note for the following reason: {creditReason}")
+            letter.AppendLine()
+            letter.AppendLine("ITEM DETAILS:")
+            letter.AppendLine($"Product Code: {productCode}")
+            letter.AppendLine($"Description: {productName}")
+            letter.AppendLine($"Quantity Returned: {returnQty:N2}")
+            letter.AppendLine($"Unit Cost: R {unitCost:N2}")
+            letter.AppendLine($"Total Credit Amount: R {(returnQty * unitCost):N2}")
+            letter.AppendLine()
+            If Not String.IsNullOrEmpty(comments) Then
+                letter.AppendLine($"Comments: {comments}")
+                letter.AppendLine()
+            End If
+            letter.AppendLine("Please adjust your records accordingly.")
+            letter.AppendLine()
+            letter.AppendLine("Yours faithfully,")
+            letter.AppendLine("OVEN DELIGHTS ACCOUNTS DEPARTMENT")
+
+            ' Resize grid to top half and full width
+            dgvLines.Location = New Point(10, 150)
+            dgvLines.Size = New Size(Me.Width - 40, (Me.Height - 200) \ 2)
+            dgvLines.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
+
+            ' Show letter in bottom half
+            Dim txtLetter As TextBox
+            If Me.Controls.ContainsKey("txtCreditNoteLetter") Then
+                txtLetter = DirectCast(Me.Controls("txtCreditNoteLetter"), TextBox)
+                txtLetter.Text = letter.ToString()
+                txtLetter.Location = New Point(10, dgvLines.Bottom + 10)
+                txtLetter.Size = New Size(Me.Width - 40, (Me.Height - 200) \ 2 - 90)
+            Else
+                txtLetter = New TextBox()
+                txtLetter.Name = "txtCreditNoteLetter"
+                txtLetter.Multiline = True
+                txtLetter.ScrollBars = ScrollBars.Vertical
+                txtLetter.Font = New Font("Courier New", 10)
+                txtLetter.Location = New Point(10, dgvLines.Bottom + 10)
+                txtLetter.Size = New Size(Me.Width - 40, (Me.Height - 200) \ 2 - 90)
+                txtLetter.Anchor = AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right
+                txtLetter.Text = letter.ToString()
+                Me.Controls.Add(txtLetter)
+            End If
+
+            ' Add Print and Email buttons if they don't exist
+            If Not Me.Controls.ContainsKey("btnPrintCreditNote") Then
+                Dim btnPrint As New Button()
+                btnPrint.Name = "btnPrintCreditNote"
+                btnPrint.Text = "🖨️ Print Credit Note"
+                btnPrint.Location = New Point(10, txtLetter.Bottom + 5)
+                btnPrint.Size = New Size(180, 35)
+                btnPrint.BackColor = ColorTranslator.FromHtml("#27AE60")
+                btnPrint.ForeColor = Color.White
+                btnPrint.FlatStyle = FlatStyle.Flat
+                btnPrint.Font = New Font("Segoe UI", 10, FontStyle.Bold)
+                AddHandler btnPrint.Click, Sub()
+                                               Try
+                                                   Dim printDialog As New PrintDialog()
+                                                   Dim printDoc As New System.Drawing.Printing.PrintDocument()
+                                                   AddHandler printDoc.PrintPage, Sub(s, ev)
+                                                                                      ev.Graphics.DrawString(txtLetter.Text, New Font("Courier New", 10), Brushes.Black, 50, 50)
+                                                                                  End Sub
+                                                   If printDialog.ShowDialog() = DialogResult.OK Then
+                                                       printDoc.Print()
+                                                       MessageBox.Show("Credit note printed successfully!", "Print", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                                                   End If
+                                               Catch ex As Exception
+                                                   MessageBox.Show($"Print error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                                               End Try
+                                           End Sub
+                Me.Controls.Add(btnPrint)
+
+                Dim btnEmail As New Button()
+                btnEmail.Name = "btnEmailCreditNote"
+                btnEmail.Text = "📧 Email Credit Note"
+                btnEmail.Location = New Point(200, txtLetter.Bottom + 5)
+                btnEmail.Size = New Size(180, 35)
+                btnEmail.BackColor = ColorTranslator.FromHtml("#E67E22")
+                btnEmail.ForeColor = Color.White
+                btnEmail.FlatStyle = FlatStyle.Flat
+                btnEmail.Font = New Font("Segoe UI", 10, FontStyle.Bold)
+                AddHandler btnEmail.Click, Sub()
+                                               Try
+                                                   ' Create mailto link with credit note content
+                                                   Dim subject = $"Credit Note - CN{DateTime.Now:yyyyMMddHHmmss}"
+                                                   Dim body = Uri.EscapeDataString(txtLetter.Text)
+                                                   Dim mailto = $"mailto:?subject={subject}&body={body}"
+                                                   System.Diagnostics.Process.Start(New System.Diagnostics.ProcessStartInfo(mailto) With {.UseShellExecute = True})
+                                                   MessageBox.Show("Email client opened with credit note!", "Email", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                                               Catch ex As Exception
+                                                   MessageBox.Show($"Email error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                                               End Try
+                                           End Sub
+                Me.Controls.Add(btnEmail)
+            End If
+
+            MessageBox.Show("Credit note generated successfully! Use Print or Email buttons below.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+        Catch ex As Exception
+            MessageBox.Show("Error: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
-        Return 15D
-    End Function
+    End Sub
 
     Private Sub btnSave_Click(sender As Object, e As EventArgs) Handles btnSave.Click
-        If selectedSupplierId <= 0 Then
-            MessageBox.Show("Select a supplier.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            Return
-        End If
-        If selectedPOId <= 0 Then
-            MessageBox.Show("Select a purchase order.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            Return
-        End If
-
-        ' Build lines datatable for service
-        Dim dt As New DataTable()
-        dt.Columns.Add("POLineID", GetType(Integer))
-        dt.Columns.Add("MaterialID", GetType(Integer))
-        dt.Columns.Add("ReceivedQuantity", GetType(Decimal))
-        dt.Columns.Add("UnitCost", GetType(Decimal))
-
-        For Each row As DataGridViewRow In dgvLines.Rows
-            Dim qty = ToDec(row.Cells("ReceiveNow").Value)
-            Dim cost = ToDec(row.Cells("UnitCost").Value)
-            If qty > 0D Then
-                Dim r = dt.NewRow()
-                r("POLineID") = CInt(row.Cells("POLineID").Value)
-                r("MaterialID") = CInt(row.Cells("MaterialID").Value)
-                r("ReceivedQuantity") = qty
-                r("UnitCost") = cost
-                dt.Rows.Add(r)
-            End If
-        Next
-
-        If dt.Rows.Count = 0 Then
-            MessageBox.Show("Nothing to receive.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Information)
-            Return
-        End If
-
         Try
-            Dim grnId = service.CreateGRN(selectedPOId, selectedSupplierId, currentBranchId, dtpReceived.Value, txtDeliveryNote.Text, Nothing, currentUserId, dt)
+            If selectedSupplierId <= 0 Then
+                MessageBox.Show("Please select a supplier.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
 
-            ' Build credit note lines for credit notes (reason-based)
-            Dim crnDt As New DataTable()
-            crnDt.Columns.Add("GRNLineID", GetType(Integer)) ' optional/nullable; leave null
-            crnDt.Columns.Add("MaterialID", GetType(Integer))
-            crnDt.Columns.Add("ReturnQuantity", GetType(Decimal))
-            crnDt.Columns.Add("UnitCost", GetType(Decimal))
-            crnDt.Columns.Add("Reason", GetType(String))
-            crnDt.Columns.Add("Comments", GetType(String))
+            If selectedPOId <= 0 Then
+                MessageBox.Show("Please select a purchase order.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
 
+            If String.IsNullOrWhiteSpace(txtDeliveryNote.Text) Then
+                MessageBox.Show("Please enter a delivery note number.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            Dim hasReceiveNow As Boolean = False
             For Each row As DataGridViewRow In dgvLines.Rows
-                Dim ret = ToDec(row.Cells("ReturnQty").Value)
-                If ret > 0D Then
-                    Dim reason = Convert.ToString(row.Cells("CreditReason").Value)
-                    If Not String.Equals(reason, "No Credit Note", StringComparison.OrdinalIgnoreCase) Then
-                        Dim r = crnDt.NewRow()
-                        r("GRNLineID") = DBNull.Value
-                        r("MaterialID") = CInt(row.Cells("MaterialID").Value)
-                        r("ReturnQuantity") = ret
-                        r("UnitCost") = ToDec(row.Cells("UnitCost").Value)
-                        r("Reason") = reason
-                        r("Comments") = Convert.ToString(row.Cells("CreditComments").Value)
-                        crnDt.Rows.Add(r)
+                If Not row.IsNewRow Then
+                    Dim receiveNow = If(row.Cells("ReceiveNow").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("ReceiveNow").Value))
+                    If receiveNow > 0 Then
+                        hasReceiveNow = True
+                        Exit For
                     End If
                 End If
             Next
 
-            Dim crnMsg As String = ""
-            Dim creditNoteAttachment As String = Nothing
-            If crnDt.Rows.Count > 0 Then
-                Dim headerReason As String = "Credit Note"
-                Dim crnId = service.CreateCreditNote(selectedSupplierId, currentBranchId, grnId, dtpReceived.Value, headerReason, txtDeliveryNote.Text, Nothing, currentUserId, crnDt)
-                crnMsg = $" and Credit Note ID {crnId}"
-
-                ' Email notification
-                Try
-                    Dim supplierName As String = If(cboSupplier.SelectedIndex >= 0, cboSupplier.Text, "Supplier")
-                    Dim totalAmount As Decimal = 0D
-                    For Each r As DataRow In crnDt.Rows
-                        totalAmount += CDec(r("ReturnQuantity")) * CDec(r("UnitCost"))
-                    Next
-                    ' Generate Credit Note PDF and email it as attachment
-                    creditNoteAttachment = pdfService.GenerateCreditNotePdf(crnId, supplierName, dtpReceived.Value, headerReason, crnDt)
-                    emailService.SendCreditNoteEmail(crnId, supplierName, $"CRN-{crnId}", dtpReceived.Value, totalAmount, Nothing, creditNoteAttachment)
-                Catch
-                    ' Swallow email errors per user preference to not block flow
-                End Try
+            If Not hasReceiveNow Then
+                MessageBox.Show("Please enter quantities to receive.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
             End If
 
-            ' Generate GRV and Invoice PDFs for archive/sharing
-            Try
-                Dim supplierNameG As String = If(cboSupplier.SelectedIndex >= 0, cboSupplier.Text, "Supplier")
-                Dim poText As String = If(cboPO.SelectedIndex >= 0, cboPO.Text, "")
-                ' Build GRV lines DataTable matching PdfService expectations
-                Dim grvLines As New DataTable()
-                grvLines.Columns.Add("MaterialName", GetType(String))
-                grvLines.Columns.Add("OrderedQuantity", GetType(Decimal))
-                grvLines.Columns.Add("ReceivedQuantityToDate", GetType(Decimal))
-                grvLines.Columns.Add("ReceiveNow", GetType(Decimal))
-                grvLines.Columns.Add("UnitCost", GetType(Decimal))
-                For Each gridRow As DataGridViewRow In dgvLines.Rows
-                    Dim recvNow = ToDec(gridRow.Cells("ReceiveNow").Value)
-                    If recvNow > 0D Then
-                        Dim rr = grvLines.NewRow()
-                        rr("MaterialName") = Convert.ToString(gridRow.Cells("MaterialName").Value)
-                        rr("OrderedQuantity") = ToDec(gridRow.Cells("OrderedQuantity").Value)
-                        rr("ReceivedQuantityToDate") = ToDec(gridRow.Cells("ReceivedQuantityToDate").Value)
-                        rr("ReceiveNow") = recvNow
-                        rr("UnitCost") = ToDec(gridRow.Cells("UnitCost").Value)
-                        grvLines.Rows.Add(rr)
-                    End If
-                Next
-                Dim subTot As Decimal = 0D
-                Decimal.TryParse(txtSubTotal.Text, subTot)
-                Dim vat As Decimal = 0D
-                Decimal.TryParse(txtVat.Text, vat)
-                Dim tot As Decimal = 0D
-                Decimal.TryParse(txtTotal.Text, tot)
-                Dim grvPath = pdfService.GenerateGrvPdf(grnId, supplierNameG, poText, dtpReceived.Value, txtDeliveryNote.Text, grvLines, subTot, vat, tot)
+            ' Calculate totals
+            Dim subTotal As Decimal = 0
+            For Each row As DataGridViewRow In dgvLines.Rows
+                If Not row.IsNewRow Then
+                    Dim receiveNow = If(row.Cells("ReceiveNow").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("ReceiveNow").Value))
+                    Dim unitCost = If(row.Cells("UnitCost").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("UnitCost").Value))
+                    subTotal += receiveNow * unitCost
+                End If
+            Next
+            Dim vatAmount As Decimal = subTotal * 0.15D
+            Dim totalAmount As Decimal = subTotal + vatAmount
 
-                ' Build Invoice lines from received quantities (as a simple supplier invoice representation)
-                Dim invLines As New DataTable()
-                invLines.Columns.Add("MaterialName", GetType(String))
-                invLines.Columns.Add("Quantity", GetType(Decimal))
-                invLines.Columns.Add("UnitCost", GetType(Decimal))
-                For Each gridRow As DataGridViewRow In dgvLines.Rows
-                    Dim recvNow = ToDec(gridRow.Cells("ReceiveNow").Value)
-                    If recvNow > 0D Then
-                        Dim rr = invLines.NewRow()
-                        rr("MaterialName") = Convert.ToString(gridRow.Cells("MaterialName").Value)
-                        rr("Quantity") = recvNow
-                        rr("UnitCost") = ToDec(gridRow.Cells("UnitCost").Value)
-                        invLines.Rows.Add(rr)
-                    End If
-                Next
-                Dim invoicePath = pdfService.GenerateInvoicePdf(grnId, supplierNameG, dtpReceived.Value, invLines, subTot, vat, tot)
-                ' Paths are created under My Documents/ERP_Documents for user access
-            Catch
-                ' Do not block saving if PDF generation fails
-            End Try
+            ' Save GRV and update inventory
+            Dim grvId = stockroomService.SaveGoodsReceivedVoucher(selectedSupplierId, selectedPOId, txtDeliveryNote.Text, dtpReceived.Value, dgvLines)
 
-            ' Prompt to post AP (creditors) journal immediately using Delivery Note as Supplier Invoice No
-            Try
-                Dim totDec As Decimal = 0D
-                Decimal.TryParse(txtTotal.Text, totDec)
-                If totDec > 0D AndAlso Not String.IsNullOrWhiteSpace(txtDeliveryNote.Text) Then
-                    Dim ans = MessageBox.Show("Post Supplier Invoice to Accounts Payable now using the Delivery Note as the Supplier Invoice Number?", "Post to AP", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
-                    If ans = DialogResult.Yes Then
-                        Dim ap As New AccountsPayableService()
-                        ' Description includes PO and optional credit note info
-                        Dim supplierName As String = If(cboSupplier.SelectedIndex >= 0, cboSupplier.Text, "Supplier")
-                        Dim desc As String = $"AP Inv {txtDeliveryNote.Text} - {supplierName} - PO {If(cboPO.SelectedIndex >= 0, cboPO.Text, selectedPOId.ToString())}"
-                        If Not String.IsNullOrWhiteSpace(crnMsg) Then desc &= $" ({crnMsg.Trim()})"
-                        ap.CreateSupplierInvoice(selectedSupplierId, txtDeliveryNote.Text, currentBranchId, dtpReceived.Value, Math.Round(totDec, 2), currentUserId, desc, Nothing)
+            ' Create Supplier Invoice record
+            CreateSupplierInvoice(selectedSupplierId, txtDeliveryNote.Text, dtpReceived.Value, subTotal, vatAmount, totalAmount, grvId)
+
+            ' Update inventory based on ProductType
+            For Each row As DataGridViewRow In dgvLines.Rows
+                If Not row.IsNewRow Then
+                    Dim receiveNow = If(row.Cells("ReceiveNow").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("ReceiveNow").Value))
+                    If receiveNow > 0 Then
+                        Dim productId = Convert.ToInt32(row.Cells("ProductID").Value)
+                        Dim productType = Convert.ToString(row.Cells("ProductType").Value)
+
+                        If productType = "Raw Material" Then
+                            ' Update RawMaterials.CurrentStock
+                            stockroomService.UpdateRawMaterialStock(productId, receiveNow, "Received from PO " & cboPO.Text)
+                        ElseIf productType = "Product" Then
+                            ' Update Products stock or create new product entry
+                            stockroomService.UpdateProductStock(productId, receiveNow, "Received from PO " & cboPO.Text)
+                        End If
                     End If
                 End If
-            Catch ex As Exception
-                ' Non-blocking: inform user but continue
-                MessageBox.Show("AP posting skipped: " & ex.Message, "Accounts Payable", MessageBoxButtons.OK, MessageBoxIcon.Information)
-            End Try
+            Next
 
-            MessageBox.Show($"GRV saved (GRN ID {grnId}{crnMsg}).", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
-            ClearForm()
+            ' Update PO status to captured/closed
+            stockroomService.UpdatePurchaseOrderStatus(selectedPOId, "Captured")
+
+            MessageBox.Show("GRV saved successfully! Inventory updated.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+            ' Refresh PO dropdown to remove captured PO
+            LoadPurchaseOrders()
+
+            ' Clear the form
+            cboPO.SelectedIndex = -1
+            dgvLines.DataSource = Nothing
+            txtSubTotal.Text = "0.00"
+            txtVat.Text = "0.00"
+            txtTotal.Text = "0.00"
+
+            Me.Close()
+
         Catch ex As Exception
             MessageBox.Show("Error saving GRV: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
-    End Sub
-
-    Private Sub ClearForm()
-        ' Reset selections
-        cboSupplier.SelectedIndex = -1
-        cboPO.DataSource = Nothing
-        selectedSupplierId = 0
-        selectedPOId = 0
-        ' Clear grid and totals
-        dgvLines.Rows.Clear()
-        txtSubTotal.Text = "0.00"
-        txtVat.Text = "0.00"
-        txtTotal.Text = "0.00"
-        ' Reset header fields
-        txtDeliveryNote.Text = String.Empty
-        dtpReceived.Value = DateTime.Now
-        ' Refresh suppliers list to reflect any external changes
-        LoadSuppliers()
-        RaiseEvent SidebarContextChanged(Me, EventArgs.Empty)
     End Sub
 
     Private Sub btnCancel_Click(sender As Object, e As EventArgs) Handles btnCancel.Click
         Me.Close()
     End Sub
 
-    Private Sub ApplyTheme()
-        Me.BackColor = Drawing.Color.White
-        dgvLines.BackgroundColor = Drawing.Color.White
-        dgvLines.AlternatingRowsDefaultCellStyle.BackColor = Drawing.Color.FromArgb(248, 248, 248)
+    Private Sub ConfigureTotalsTextBoxes()
+        txtSubTotal.ReadOnly = True
+        txtSubTotal.TextAlign = HorizontalAlignment.Right
+        txtVat.ReadOnly = True
+        txtVat.TextAlign = HorizontalAlignment.Right
+        txtTotal.ReadOnly = True
+        txtTotal.TextAlign = HorizontalAlignment.Right
+        txtSubTotal.Text = "0.00"
+        txtVat.Text = "0.00"
+        txtTotal.Text = "0.00"
+
+        ' Add event handlers for total calculation
+        AddHandler dgvLines.CellValueChanged, AddressOf CalculateTotals
+        AddHandler dgvLines.RowsAdded, AddressOf CalculateTotals
+        AddHandler dgvLines.RowsRemoved, AddressOf CalculateTotals
     End Sub
-    ' ---------------- ISidebarProvider ----------------
-    Public Event SidebarContextChanged As EventHandler Implements ISidebarProvider.SidebarContextChanged
 
-    Public Function BuildSidebarPanel() As Panel Implements ISidebarProvider.BuildSidebarPanel
-        Dim p As New Panel() With {.Height = 160, .BackColor = Drawing.Color.White}
-        Dim title As New Label() With {
-            .Text = "GRV Context",
-            .Dock = DockStyle.Top,
-            .Height = 24,
-            .Font = New Drawing.Font("Segoe UI", 10.0F, Drawing.FontStyle.Bold),
-            .Padding = New Padding(8, 6, 8, 0)
-        }
-        p.Controls.Add(title)
+    Private Sub CalculateTotals(sender As Object, e As EventArgs)
+        Try
+            Dim subTotal As Decimal = 0
+            For Each row As DataGridViewRow In dgvLines.Rows
+                If Not row.IsNewRow Then
+                    Dim receiveNow = If(row.Cells("ReceiveNow").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("ReceiveNow").Value))
+                    Dim unitCost = If(row.Cells("UnitCost").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("UnitCost").Value))
+                    subTotal += receiveNow * unitCost
+                End If
+            Next
 
-        Dim supplierText As String = If(cboSupplier.SelectedIndex >= 0, cboSupplier.Text, "(none)")
-        Dim poText As String = If(cboPO.SelectedIndex >= 0, cboPO.Text, "(none)")
+            Dim vatAmount As Decimal = subTotal * 0.15D ' 15% VAT
+            Dim total As Decimal = subTotal + vatAmount
 
-        Dim ordered As Decimal = 0D
-        Dim recTD As Decimal = 0D
-        Dim recvNow As Decimal = 0D
-        Dim variance As Decimal = 0D
-        Dim unitCost As Decimal = 0D
-        Dim materialName As String = ""
-        If dgvLines.CurrentRow IsNot Nothing Then
-            materialName = Convert.ToString(dgvLines.CurrentRow.Cells("MaterialName").Value)
-            ordered = ToDec(dgvLines.CurrentRow.Cells("OrderedQuantity").Value)
-            recTD = ToDec(dgvLines.CurrentRow.Cells("ReceivedQuantityToDate").Value)
-            recvNow = ToDec(dgvLines.CurrentRow.Cells("ReceiveNow").Value)
-            unitCost = ToDec(dgvLines.CurrentRow.Cells("UnitCost").Value)
-            variance = ordered - (recTD + recvNow)
+            txtSubTotal.Text = subTotal.ToString("F2")
+            txtVat.Text = vatAmount.ToString("F2")
+            txtTotal.Text = total.ToString("F2")
+        Catch ex As Exception
+            ' Ignore calculation errors
+        End Try
+    End Sub
+
+    Private Sub CreateSupplierInvoice(supplierId As Integer, invoiceNumber As String, invoiceDate As DateTime, subTotal As Decimal, vatAmount As Decimal, totalAmount As Decimal, grvId As Integer)
+        Try
+            Using con As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                con.Open()
+                Using tx = con.BeginTransaction()
+                    Try
+                        ' Create supplier invoice header
+                        Dim invoiceId As Integer
+                        Dim sql = "INSERT INTO SupplierInvoices (InvoiceNumber, SupplierID, BranchID, InvoiceDate, DueDate, SubTotal, VATAmount, TotalAmount, AmountPaid, AmountOutstanding, Status, GRVID, CreatedBy) " &
+                                 "OUTPUT INSERTED.InvoiceID VALUES (@InvNum, @SupID, @BranchID, @InvDate, @DueDate, @SubTotal, @VAT, @Total, 0, @Total, 'Unpaid', @GRVID, @UserID)"
+                        Using cmd As New SqlCommand(sql, con, tx)
+                            cmd.Parameters.AddWithValue("@InvNum", invoiceNumber)
+                            cmd.Parameters.AddWithValue("@SupID", supplierId)
+                            cmd.Parameters.AddWithValue("@BranchID", AppSession.CurrentBranchID)
+                            cmd.Parameters.AddWithValue("@InvDate", invoiceDate)
+                            cmd.Parameters.AddWithValue("@DueDate", invoiceDate.AddDays(30))
+                            cmd.Parameters.AddWithValue("@SubTotal", subTotal)
+                            cmd.Parameters.AddWithValue("@VAT", vatAmount)
+                            cmd.Parameters.AddWithValue("@Total", totalAmount)
+                            cmd.Parameters.AddWithValue("@GRVID", grvId)
+                            cmd.Parameters.AddWithValue("@UserID", AppSession.CurrentUserID)
+                            invoiceId = Convert.ToInt32(cmd.ExecuteScalar())
+                        End Using
+
+                        ' Create journal entries
+                        CreatePurchaseJournalEntries(supplierId, invoiceNumber, subTotal, vatAmount, totalAmount, con, tx)
+
+                        tx.Commit()
+                    Catch
+                        tx.Rollback()
+                        Throw
+                    End Try
+                End Using
+            End Using
+        Catch ex As Exception
+            ' Log error but don't stop the process
+            MessageBox.Show($"Warning: Could not create supplier invoice record: {ex.Message}", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End Try
+    End Sub
+
+    Private Sub CreatePurchaseJournalEntries(supplierId As Integer, reference As String, subTotal As Decimal, vatAmount As Decimal, totalAmount As Decimal, con As SqlConnection, tx As SqlTransaction)
+        ' Create journal header
+        Dim journalId As Integer
+        ' Get fiscal period
+        Dim fiscalPeriodId As Integer = 0
+        Using cmdFP As New SqlCommand("SELECT TOP 1 PeriodID FROM dbo.FiscalPeriods WHERE GETDATE() BETWEEN StartDate AND EndDate AND IsClosed = 0 ORDER BY StartDate DESC", con, tx)
+            Dim fpResult = cmdFP.ExecuteScalar()
+            If fpResult IsNot Nothing AndAlso Not IsDBNull(fpResult) Then
+                fiscalPeriodId = Convert.ToInt32(fpResult)
+            End If
+        End Using
+
+        If fiscalPeriodId <= 0 Then
+            ' No fiscal period - skip journal entry
+            Return
         End If
 
-        Dim info As String = $"Supplier: {supplierText}" & Environment.NewLine &
-                             $"PO: {poText}" & Environment.NewLine &
-                             $"Material: {If(String.IsNullOrEmpty(materialName), "(none)", materialName)}" & Environment.NewLine &
-                             $"Ordered: {ordered:N2}  Rec TD: {recTD:N2}" & Environment.NewLine &
-                             $"Receive Now: {recvNow:N2}  Var: {variance:N2}" & Environment.NewLine &
-                             $"Unit Cost: {unitCost:N2}  Total: {txtTotal.Text}"
+        Dim jSql = "INSERT INTO JournalHeaders (JournalNumber, BranchID, JournalDate, Reference, Description, FiscalPeriodID, IsPosted, CreatedBy) " &
+                  "OUTPUT INSERTED.JournalID VALUES (@JNum, @BranchID, GETDATE(), @Ref, @Desc, @FP, 0, @UserID)"
+        Using cmd As New SqlCommand(jSql, con, tx)
+            cmd.Parameters.AddWithValue("@JNum", $"PI-{reference}")
+            cmd.Parameters.AddWithValue("@BranchID", AppSession.CurrentBranchID)
+            cmd.Parameters.AddWithValue("@Ref", reference)
+            cmd.Parameters.AddWithValue("@Desc", "Purchase Invoice")
+            cmd.Parameters.AddWithValue("@FP", fiscalPeriodId)
+            cmd.Parameters.AddWithValue("@UserID", AppSession.CurrentUserID)
+            journalId = Convert.ToInt32(cmd.ExecuteScalar())
+        End Using
 
-        Dim lbl As New Label() With {
-            .Text = info,
-            .Dock = DockStyle.Fill,
-            .Padding = New Padding(12, 4, 8, 8)
-        }
-        p.Controls.Add(lbl)
-        p.Controls.SetChildIndex(lbl, 0)
-        Return p
+        ' DR Inventory
+        Dim dSql = "INSERT INTO JournalDetails (JournalID, LineNumber, AccountID, Debit, Credit, Description) VALUES (@JID, @LineNum, @AcctID, @Amount, 0, @Desc)"
+        Using cmd As New SqlCommand(dSql, con, tx)
+            cmd.Parameters.AddWithValue("@JID", journalId)
+            cmd.Parameters.AddWithValue("@LineNum", 1)
+            cmd.Parameters.AddWithValue("@AcctID", GetOrCreateAccountID(con, tx, "1200", "Inventory", "Asset"))
+            cmd.Parameters.AddWithValue("@Amount", subTotal)
+            cmd.Parameters.AddWithValue("@Desc", $"Inventory - {reference}")
+            cmd.ExecuteNonQuery()
+        End Using
+
+        ' DR VAT Input
+        Using cmd As New SqlCommand(dSql, con, tx)
+            cmd.Parameters.AddWithValue("@JID", journalId)
+            cmd.Parameters.AddWithValue("@LineNum", 2)
+            cmd.Parameters.AddWithValue("@AcctID", GetOrCreateAccountID(con, tx, "1300", "VAT Input", "Asset"))
+            cmd.Parameters.AddWithValue("@Amount", vatAmount)
+            cmd.Parameters.AddWithValue("@Desc", $"VAT Input - {reference}")
+            cmd.ExecuteNonQuery()
+        End Using
+
+        ' CR Accounts Payable
+        Dim cSql = "INSERT INTO JournalDetails (JournalID, LineNumber, AccountID, Debit, Credit, Description) VALUES (@JID, @LineNum, @AcctID, 0, @Amount, @Desc)"
+        Using cmd As New SqlCommand(cSql, con, tx)
+            cmd.Parameters.AddWithValue("@JID", journalId)
+            cmd.Parameters.AddWithValue("@LineNum", 3)
+            cmd.Parameters.AddWithValue("@AcctID", GetOrCreateAccountID(con, tx, "2100", "Accounts Payable", "Liability"))
+            cmd.Parameters.AddWithValue("@Amount", totalAmount)
+            cmd.Parameters.AddWithValue("@Desc", $"Accounts Payable - {reference}")
+            cmd.ExecuteNonQuery()
+        End Using
+    End Sub
+
+    Private Function GetOrCreateAccountID(con As SqlConnection, tx As SqlTransaction, code As String, name As String, accountType As String) As Integer
+        ' Try GLAccounts first (new table) - uses AccountNumber
+        Dim sql = "SELECT AccountID FROM GLAccounts WHERE AccountNumber = @Code"
+        Using cmd As New SqlCommand(sql, con, tx)
+            cmd.Parameters.AddWithValue("@Code", code)
+            Dim result = cmd.ExecuteScalar()
+            If result IsNot Nothing Then Return Convert.ToInt32(result)
+        End Using
+
+        ' Try ChartOfAccounts (legacy table) - uses AccountCode
+        sql = "SELECT AccountID FROM ChartOfAccounts WHERE AccountCode = @Code"
+        Using cmd As New SqlCommand(sql, con, tx)
+            cmd.Parameters.AddWithValue("@Code", code)
+            Dim result = cmd.ExecuteScalar()
+            If result IsNot Nothing Then Return Convert.ToInt32(result)
+        End Using
+
+        ' Create in GLAccounts - uses AccountNumber, AccountName, AccountType
+        Dim insertSql = "INSERT INTO GLAccounts (AccountNumber, AccountName, AccountType, IsActive) OUTPUT INSERTED.AccountID VALUES (@Code, @Name, @Type, 1)"
+        Using cmd As New SqlCommand(insertSql, con, tx)
+            cmd.Parameters.AddWithValue("@Code", code)
+            cmd.Parameters.AddWithValue("@Name", name)
+            cmd.Parameters.AddWithValue("@Type", accountType)
+            Return Convert.ToInt32(cmd.ExecuteScalar())
+        End Using
     End Function
+
 End Class

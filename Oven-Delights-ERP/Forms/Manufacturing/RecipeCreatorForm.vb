@@ -225,17 +225,10 @@ Public Class RecipeCreatorForm
         productsDt = New DataTable()
         Using cn As New Microsoft.Data.SqlClient.SqlConnection(_connectionString)
             cn.Open()
-            Dim hasSku As Boolean = ColumnExists(cn, Nothing, "Products", "SKU")
-            If hasSku Then
-                Using cmd As New Microsoft.Data.SqlClient.SqlCommand("SELECT ProductID, SKU, ProductName, DefaultUoMID FROM dbo.Products WHERE IsActive=1 ORDER BY ProductName", cn)
-                    productsDt.Load(cmd.ExecuteReader())
-                End Using
-            Else
-                ' Fallback to schema where ProductCode and BaseUoM (varchar) exist; join to UoM to resolve UoMID
-                Using cmd As New Microsoft.Data.SqlClient.SqlCommand("SELECT p.ProductID, p.ProductCode AS SKU, p.ProductName, u.UoMID AS DefaultUoMID FROM dbo.Products p LEFT JOIN dbo.UoM u ON u.UoMCode = p.BaseUoM WHERE p.IsActive=1 ORDER BY p.ProductName", cn)
-                    productsDt.Load(cmd.ExecuteReader())
-                End Using
-            End If
+            ' Products table uses BaseUoM (varchar) not DefaultUoMID - always use fallback
+            Using cmd As New Microsoft.Data.SqlClient.SqlCommand("SELECT p.ProductID, ISNULL(p.SKU, p.ProductCode) AS SKU, p.ProductName, u.UoMID AS DefaultUoMID FROM dbo.Products p LEFT JOIN dbo.UoM u ON u.UoMCode = p.BaseUoM WHERE p.IsActive=1 ORDER BY p.ProductName", cn)
+                productsDt.Load(cmd.ExecuteReader())
+            End Using
         End Using
         ' Add display column: SKU - Name
         If Not productsDt.Columns.Contains("Display") Then
@@ -382,14 +375,21 @@ Public Class RecipeCreatorForm
                     Using cmdCheck As New Microsoft.Data.SqlClient.SqlCommand("SELECT CASE WHEN EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Products' AND COLUMN_NAME='SKU') THEN 1 ELSE 0 END", cn, tx)
                         hasSku = (Convert.ToInt32(cmdCheck.ExecuteScalar()) = 1)
                     End Using
+                    Dim uomCode As String = ""
+                    Using cmdUom As New Microsoft.Data.SqlClient.SqlCommand("SELECT UoMCode FROM dbo.UoM WHERE UoMID=@id", cn, tx)
+                        cmdUom.Parameters.AddWithValue("@id", CInt(cmbYieldUoM.SelectedValue))
+                        Dim o = cmdUom.ExecuteScalar()
+                        If o IsNot Nothing AndAlso o IsNot DBNull.Value Then uomCode = Convert.ToString(o)
+                    End Using
                     If hasSku Then
-                        ' Schema with SKU and DefaultUoMID
-                        Using cmd As New Microsoft.Data.SqlClient.SqlCommand("IF EXISTS (SELECT 1 FROM dbo.Products WHERE SKU=@sku) SELECT ProductID FROM dbo.Products WHERE SKU=@sku ELSE BEGIN INSERT INTO dbo.Products (SKU, ProductName, DefaultUoMID, IsActive) VALUES (@sku, @pname, @uomid, 1); SELECT SCOPE_IDENTITY(); END", cn, tx)
+                        ' Schema with SKU
+                        Using cmd As New Microsoft.Data.SqlClient.SqlCommand("IF EXISTS (SELECT 1 FROM dbo.Products WHERE SKU=@sku) SELECT ProductID FROM dbo.Products WHERE SKU=@sku ELSE BEGIN INSERT INTO dbo.Products (SKU, ProductName, BaseUoM, ItemType, CategoryID, SubcategoryID, IsActive) VALUES (@sku, @pname, @uom, 'Manufactured', @cid, @sid, 1); SELECT SCOPE_IDENTITY(); END", cn, tx)
                             cmd.Parameters.AddWithValue("@sku", txtSKU.Text.Trim())
                             cmd.Parameters.AddWithValue("@pname", txtProductName.Text.Trim())
-                            cmd.Parameters.AddWithValue("@uomid", CInt(cmbYieldUoM.SelectedValue))
-                            Dim obj = cmd.ExecuteScalar()
-                            productId = Convert.ToInt32(obj)
+                            cmd.Parameters.AddWithValue("@uom", If(String.IsNullOrWhiteSpace(uomCode), "ea", uomCode))
+                            cmd.Parameters.AddWithValue("@cid", cmbCategory.SelectedValue)
+                            cmd.Parameters.AddWithValue("@sid", cmbSubcategory.SelectedValue)
+                            productId = Convert.ToInt32(cmd.ExecuteScalar())
                         End Using
                     Else
                         ' Schema with ProductCode and BaseUoM (cannot safely insert without ProductCategories mapping). Require pre-existing product.

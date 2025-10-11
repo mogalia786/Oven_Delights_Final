@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Artisan Glow POS - Catalog</title>
+  <style>
+    :root {
+      /* Oven Delights brand: rich reds and warm creams */
+      --brand:#A62323; --brand-dark:#7c1717; --accent:#F5B942; --cream:#FAF7F2; --chip:#fff; --chip-b:#ead9c5;
+      --glass: rgba(255,255,255,0.55); --glass-b: rgba(255,255,255,0.2);
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:
+      radial-gradient(1200px 800px at 10% 0%, #fff6e5 0%, #fff 40%, #f7f3ea 60%, #efe9e0 100%);
+      color:#241c1c; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:10px 16px; position:sticky; top:0; backdrop-filter: blur(8px); background:linear-gradient(0deg, var(--brand), var(--brand-dark)); border-bottom:1px solid #7a2626; color:#fff; }
+    .brand { display:flex; align-items:center; gap:12px; font-family: 'Playfair Display', Georgia, serif; font-size:22px; letter-spacing:.5px; color:#fff; }
+    .brand img { height:36px; width:auto; border-radius:6px; }
+    .status { display:flex; gap:12px; font-size:12px; color:#ffe8e8; }
+    .status span { padding:6px 10px; border-radius:999px; background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.25); }
+    .container { display:grid; grid-template-columns: 360px 1fr; gap:12px; padding:12px 12px 92px; }
+    .panel { background: var(--glass); border:1px solid var(--glass-b); border-radius:18px; box-shadow: 0 2px 25px rgba(60,45,25,0.08), inset 0 1px 0 rgba(255,255,255,0.5); }
+    .categories { padding:12px; }
+    .cat { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; }
+    .chip { padding:18px 16px; border-radius:14px; background:var(--chip); border:2px solid var(--chip-b); cursor:pointer; transition:.15s; font-weight:700; font-size:18px; text-align:center; box-shadow:0 4px 14px rgba(0,0,0,.05); }
+    .chip.active, .chip:hover { background:#ffe3e3; color:#5b1212; border-color:#e7b0b0; box-shadow:0 0 0 6px rgba(166,35,35,.13); }
+    .subcats { margin-top:12px; display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; }
+    .subchip { padding:16px 14px; border-radius:14px; background:#fff; border:2px dashed #e2c9c9; font-weight:600; font-size:16px; text-align:center; cursor:pointer; }
+    .grid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:14px; padding:12px; }
+    .tile { position:relative; border-radius:20px; overflow:hidden; border:2px solid #f0d9d0; background:#fff; box-shadow: 0 12px 34px rgba(40,30,15,0.08); cursor:pointer; }
+    .tile img { width:100%; height:140px; object-fit:cover; display:block; }
+    .tile .meta { padding:10px 12px; display:flex; align-items:center; justify-content:space-between; }
+    .tile .name { font-weight:600; }
+    .tile .price { color:#6b5f5f; }
+    /* Bottom cart dock */
+    footer.cart { position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:2px solid #ead9c5; box-shadow:0 -8px 24px rgba(0,0,0,.08); padding:8px 12px; }
+    .cart-wrap{ display:grid; grid-template-columns: 1fr 320px; gap:12px; align-items:start; }
+    .order-list { max-height: 26vh; overflow:auto; padding-right:6px; }
+    .line { display:grid; grid-template-columns: 1fr 120px 110px 32px; gap:12px; align-items:center; padding:10px; border-bottom:1px dashed #e3d8c7; font-size:18px; }
+    .qty { display:flex; gap:10px; align-items:center; justify-content:flex-end; }
+    .qty button { width:42px; height:42px; border-radius:12px; border:2px solid #ddcab1; background:#fff; font-size:20px; font-weight:800; }
+    .totals { border-left:2px solid #ead9c5; padding-left:12px; }
+    .totals .row { display:flex; justify-content:space-between; padding:8px 0; font-size:18px; }
+    .shortcuts { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+    .sc { padding:12px 14px; border-radius:12px; border:1px solid #e8dcc7; background:#fff7f7; font-weight:700; }
+    .pay { background:var(--brand); color:#fff; border:none; border-radius:12px; padding:14px 18px; font-weight:800; font-size:18px; }
+    .pill { padding:12px 14px; border-radius:12px; border:1px solid #e8dcc7; background:#fff; font-weight:700; }
+    .search { display:flex; gap:8px; padding:8px 12px; }
+    .search input { flex:1; padding:16px 14px; border-radius:12px; border:2px solid #e6dccb; font-size:18px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand"><img src="file:///C:/Users/mogal/Pictures/Screenshots/Screenshot%202025-07-26%20024200.png" alt="Oven Delights"/> Oven Delights — POS</div>
+    <div class="status">
+      <span>Branch: Main</span>
+      <span>Cashier: Jane</span>
+      <span>Pole: Ready</span>
+      <span>Printer: Online</span>
+    </div>
+  </header>
+  <div class="container">
+    <aside class="panel categories">
+      <div class="cat">
+        <div class="chip active" data-cat="Bread">Bread</div>
+        <div class="chip" data-cat="Pastries">Pastries</div>
+        <div class="chip" data-cat="Cakes">Cakes</div>
+        <div class="chip" data-cat="Cookies">Cookies</div>
+        <div class="chip" data-cat="Drinks">Drinks</div>
+        <div class="chip" data-cat="Savory">Savory</div>
+      </div>
+      <div class="subcats" id="subcats">
+        <div class="subchip" data-sub="Sourdough">Sourdough</div>
+        <div class="subchip" data-sub="Ciabatta">Ciabatta</div>
+        <div class="subchip" data-sub="Rye">Rye</div>
+        <div class="subchip" data-sub="Baguette">Baguette</div>
+        <div class="subchip" data-sub="Brioche">Brioche</div>
+      </div>
+      <div class="search">
+        <input placeholder="Scan / Search products (F5)" />
+      </div>
+    </aside>
+    <main class="panel">
+      <div class="grid">
+        <div class="tile" data-name="Sourdough Loaf" data-price="45.00">
+          <img src="https://images.unsplash.com/photo-1542831371-29b0f74f9713?q=80&w=1200&auto=format&fit=crop" alt="Sourdough" />
+          <div class="meta">
+            <div class="name">Sourdough Loaf</div>
+            <div class="price">R 45.00</div>
+          </div>
+        </div>
+        <div class="tile" data-name="Ciabatta" data-price="28.00">
+          <img src="https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?q=80&w=1200&auto=format&fit=crop" alt="Ciabatta" />
+          <div class="meta"><div class="name">Ciabatta</div><div class="price">R 28.00</div></div>
+        </div>
+        <div class="tile" data-name="Rye Bread" data-price="32.00">
+          <img src="https://images.unsplash.com/photo-1565958011703-44f9829ba187?q=80&w=1200&auto=format&fit=crop" alt="Rye" />
+          <div class="meta"><div class="name">Rye Bread</div><div class="price">R 32.00</div></div>
+        </div>
+        <div class="tile" data-name="Baguette" data-price="25.00">
+          <img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1200&auto=format&fit=crop" alt="Baguette" />
+          <div class="meta"><div class="name">Baguette</div><div class="price">R 25.00</div></div>
+        </div>
+        <div class="tile" data-name="Brioche" data-price="35.00">
+          <img src="https://images.unsplash.com/photo-1509440159598-8b09d1a77d9d?q=80&w=1200&auto=format&fit=crop" alt="Brioche" />
+          <div class="meta"><div class="name">Brioche</div><div class="price">R 35.00</div></div>
+        </div>
+        <div class="tile" data-name="Butter Croissant" data-price="22.00">
+          <img src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?q=80&w=1200&auto=format&fit=crop" alt="Croissant" />
+          <div class="meta"><div class="name">Butter Croissant</div><div class="price">R 22.00</div></div>
+        </div>
+      </div>
+    </main>
+    <!-- Right order panel removed in favor of bottom cart dock -->
+  </div>
+  <footer class="cart">
+    <div class="cart-wrap">
+      <div>
+        <div class="order-list" id="orderList"></div>
+        <div class="shortcuts">
+          <div class="sc">F2 Hold</div>
+          <div class="sc">F3 Recall</div>
+          <div class="sc">F4 Qty</div>
+          <div class="sc">F5 Search</div>
+          <div class="sc">F6 Discount</div>
+          <div class="sc">Del Remove</div>
+          <div class="sc">F12 Pay</div>
+        </div>
+      </div>
+      <div class="totals">
+        <div class="row"><span>Subtotal</span><strong id="subTot">R 0.00</strong></div>
+        <div class="row"><span>VAT (15%)</span><strong id="vat">R 0.00</strong></div>
+        <div class="row" style="font-size:20px"><span>Total</span><strong id="total">R 0.00</strong></div>
+        <div style="display:flex; gap:8px; margin-top:8px; justify-content:flex-end;">
+          <button class="pill" id="btnHold">Hold (F2)</button>
+          <button class="pill" id="btnRecall">Recall (F3)</button>
+          <a class="pay" id="btnPay" href="tender.html">Pay (F12)</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const VAT_RATE = 0.15;
+    const order = new Map(); // key=name, value={qty, price}
+    const orderList = document.getElementById('orderList');
+    const subTotEl = document.getElementById('subTot');
+    const vatEl = document.getElementById('vat');
+    const totalEl = document.getElementById('total');
+
+    function format(n){ return 'R ' + n.toFixed(2); }
+    function recalc(){
+      let sub = 0;
+      order.forEach(v=>{ sub += v.qty * v.price; });
+      const vat = Math.round((sub * VAT_RATE) * 100) / 100;
+      const tot = Math.round((sub + vat) * 100) / 100;
+      subTotEl.textContent = format(sub);
+      vatEl.textContent = format(vat);
+      totalEl.textContent = format(tot);
+    }
+    function render(){
+      orderList.innerHTML = '';
+      order.forEach((v,k)=>{
+        const line = document.createElement('div');
+        line.className = 'line';
+        line.innerHTML = `<div>${k}</div>
+          <div class="qty"><button data-act="-" data-name="${k}">-</button><strong>${v.qty}</strong><button data-act="+" data-name="${k}">+</button></div>
+          <div style="text-align:right">${format(v.qty*v.price)}</div>
+          <div><button data-act="x" data-name="${k}">×</button></div>`;
+        orderList.appendChild(line);
+      });
+      recalc();
+    }
+    function addItem(name, price){
+      if(!order.has(name)) order.set(name, {qty:0, price:parseFloat(price)});
+      order.get(name).qty++;
+      render();
+    }
+    function adjust(name, act){
+      if(!order.has(name)) return;
+      const v = order.get(name);
+      if(act === '+') v.qty++;
+      else if(act === '-' && v.qty>1) v.qty--;
+      else if(act === '-' && v.qty===1) order.delete(name);
+      else if(act === 'x') order.delete(name);
+      render();
+    }
+    // Tile tap to add
+    document.querySelectorAll('.tile').forEach(t=>{
+      t.addEventListener('click',()=> addItem(t.dataset.name, t.dataset.price));
+    });
+    // Qty buttons in cart
+    orderList.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button');
+      if(!btn) return;
+      const name = btn.getAttribute('data-name');
+      const act = btn.getAttribute('data-act');
+      if(name && act) adjust(name, act);
+    });
+    // Search shortcut (F5)
+    const searchInput = document.querySelector('.search input');
+    window.addEventListener('keydown', (e)=>{
+      if(e.key === 'F5'){ e.preventDefault(); searchInput.focus(); }
+      if(e.key === 'F12'){ document.getElementById('btnPay').click(); }
+      if(e.key === 'Delete'){
+        // remove last line
+        const last = Array.from(order.keys()).pop();
+        if(last) { order.delete(last); render(); }
+      }
+      if(e.key === 'F2'){ /* Hold stub */ alert('Held (mock)'); }
+      if(e.key === 'F3'){ /* Recall stub */ alert('Recall list (mock)'); }
+      if(e.key === 'F4'){
+        const last = Array.from(order.keys()).pop();
+        if(!last) return;
+        const cur = order.get(last);
+        const val = prompt('Enter quantity for '+last, cur.qty);
+        const n = parseFloat(val||cur.qty);
+        if(!isNaN(n) && n>0){ cur.qty = n; render(); }
+      }
+      if(e.key === 'F6'){
+        alert('Discount (mock)');
+      }
+    });
+    // Subcategory selection mock
+    document.getElementById('subcats').addEventListener('click', (e)=>{
+      const sub = e.target.closest('.subchip');
+      if(!sub) return; document.querySelectorAll('.subchip').forEach(s=>s.classList.remove('active'));
+      sub.classList.add('active');
+    });
+    // Category selection mock
+    document.querySelectorAll('.chip').forEach(ch=>{
+      ch.addEventListener('click',()=>{
+        document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+        ch.classList.add('active');
+      });
+    });
+
+    // Persist cart on Pay for tender page to consume
+    document.getElementById('btnPay').addEventListener('click', ()=>{
+      const items = [];
+      order.forEach((v,k)=> items.push({ name:k, qty:v.qty, price:v.price }));
+      localStorage.setItem('pos_cart', JSON.stringify(items));
+    });
+  </script>
+</body>
+</html>

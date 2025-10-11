@@ -68,6 +68,8 @@ Public Class NewSystemSettingsForm
                 Throw New ConfigurationErrorsException("Database connection string is not configured.")
             End If
             
+            ' Ensure settings table exists prior to any operations
+            EnsureSystemSettingsTable()
             InitializeForm()
             LoadSettings()
             
@@ -77,6 +79,28 @@ Public Class NewSystemSettingsForm
                          MessageBoxButtons.OK, MessageBoxIcon.Error)
             Me.DialogResult = DialogResult.Abort
             Me.Close()
+        End Try
+    End Sub
+
+    Private Sub EnsureSystemSettingsTable()
+        Try
+            Using cn As New SqlConnection(_connectionString)
+                cn.Open()
+                Dim sql As String = "IF OBJECT_ID('dbo.SystemSettings','U') IS NULL BEGIN " & _
+                                    "CREATE TABLE dbo.SystemSettings (" & _
+                                    " SettingID INT IDENTITY(1,1) PRIMARY KEY, " & _
+                                    " Category NVARCHAR(100) NOT NULL, " & _
+                                    " SettingKey NVARCHAR(100) NOT NULL, " & _
+                                    " SettingValue NVARCHAR(MAX) NULL, " & _
+                                    " CreatedBy INT NULL, CreatedDate DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(), " & _
+                                    " ModifiedBy INT NULL, ModifiedDate DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()); " & _
+                                    "CREATE UNIQUE INDEX UX_SystemSettings ON dbo.SystemSettings(Category, SettingKey); END;"
+                Using cmd As New SqlCommand(sql, cn)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+        Catch ex As Exception
+            _logger.LogError($"Failed ensuring SystemSettings table: {ex.Message}")
         End Try
     End Sub
     
@@ -305,7 +329,7 @@ Public Class NewSystemSettingsForm
                 LoadSetting(conn, "Email", "FromName", txtFromName)
                 
                 ' Load backup settings
-                Dim defaultBackupPath = Path.Combine(Application.StartupPath, "Backups")
+                Dim defaultBackupPath = IO.Path.Combine(Application.StartupPath, "Backups")
                 LoadSetting(conn, "Backup", "BackupPath", txtBackupPath, defaultBackupPath)
                 LoadSetting(conn, "Backup", "AutoBackup", chkAutoBackup, "False")
                 LoadSetting(conn, "Backup", "BackupFrequency", cboBackupFrequency, "Daily")
@@ -428,13 +452,12 @@ Public Class NewSystemSettingsForm
     Private Sub SaveSetting(conn As SqlConnection, category As String, key As String, value As String, Optional transaction As SqlTransaction = Nothing)
         Try
             ' First, try to update the existing record
-            Dim updateQuery = """
-                UPDATE SystemSettings 
-                SET SettingValue = @Value,
-                    ModifiedBy = @UserId,
-                    ModifiedDate = GETDATE()
-                WHERE Category = @Category AND SettingKey = @Key
-                """
+            Dim updateQuery = "UPDATE SystemSettings " & _
+                             "SET SettingValue = @Value, " & _
+                             "ModifiedBy = @UserId, " & _
+                             "ModifiedDate = GETDATE() " & _
+                             "WHERE Category = @Category " & _
+                             "AND SettingKey = @Key"
                 
             Using cmd As New SqlCommand(updateQuery, conn, transaction)
                 cmd.Parameters.AddWithValue("@Category", category)
@@ -446,10 +469,11 @@ Public Class NewSystemSettingsForm
                 
                 ' If no rows were updated, insert a new record
                 If rowsAffected = 0 Then
-                    cmd.CommandText = """
-                        INSERT INTO SystemSettings (Category, SettingKey, SettingValue, CreatedBy, ModifiedBy, CreatedDate, ModifiedDate)
-                        VALUES (@Category, @Key, @Value, @UserId, @UserId, GETDATE(), GETDATE())
-                        """
+                    cmd.CommandText = "INSERT INTO SystemSettings " & _
+                                     "(Category, SettingKey, SettingValue, " & _
+                                     "CreatedBy, ModifiedBy, CreatedDate, ModifiedDate) " & _
+                                     "VALUES (@Category, @Key, @Value, " & _
+                                     "@UserId, @UserId, GETDATE(), GETDATE())"
                     rowsAffected = cmd.ExecuteNonQuery()
                 End If
                 
@@ -504,17 +528,17 @@ Public Class NewSystemSettingsForm
             End If
             
             ' Ensure backup directory exists
-            If Not Directory.Exists(txtBackupPath.Text) Then
-                Directory.CreateDirectory(txtBackupPath.Text)
+            If Not IO.Directory.Exists(txtBackupPath.Text) Then
+                IO.Directory.CreateDirectory(txtBackupPath.Text)
             End If
             
             ' Generate backup filename with timestamp
             Dim timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss")
-            Dim backupFile = Path.Combine(txtBackupPath.Text, $"Backup_{timestamp}.bak")
+            Dim backupFile = IO.Path.Combine(txtBackupPath.Text, $"Backup_{timestamp}.bak")
             
             ' Perform backup (this is a simplified example)
             ' In a real application, you would use SQL Server backup commands
-            File.WriteAllText(backupFile, $"Backup created at {DateTime.Now}")
+            IO.File.WriteAllText(backupFile, $"Backup created at {DateTime.Now}")
             
             ' Log the backup
             _logger.LogInformation($"Backup created: {backupFile}")
