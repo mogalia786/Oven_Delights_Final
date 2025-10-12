@@ -111,7 +111,7 @@ Public Class CategorySubcategorySelector
 
             Using conn As New SqlConnection(_connString)
                 conn.Open()
-                Dim cmd As New SqlCommand("SELECT CategoryID, CategoryName FROM dbo.ProductCategories WHERE IsActive = 1 ORDER BY CategoryName", conn)
+                Dim cmd As New SqlCommand("SELECT CategoryID, CategoryName FROM dbo.Categories WHERE IsActive = 1 ORDER BY CategoryName", conn)
                 Dim adapter As New SqlDataAdapter(cmd)
                 Dim dt As New DataTable()
                 adapter.Fill(dt)
@@ -137,7 +137,7 @@ Public Class CategorySubcategorySelector
 
             Using conn As New SqlConnection(_connString)
                 conn.Open()
-                Dim cmd As New SqlCommand("SELECT SubcategoryID, SubcategoryName FROM dbo.ProductSubcategories WHERE CategoryID = @CategoryID AND IsActive = 1 ORDER BY SubcategoryName", conn)
+                Dim cmd As New SqlCommand("SELECT SubcategoryID, SubcategoryName FROM dbo.Subcategories WHERE CategoryID = @CategoryID AND IsActive = 1 ORDER BY SubcategoryName", conn)
                 cmd.Parameters.AddWithValue("@CategoryID", categoryID)
                 Dim adapter As New SqlDataAdapter(cmd)
                 Dim dt As New DataTable()

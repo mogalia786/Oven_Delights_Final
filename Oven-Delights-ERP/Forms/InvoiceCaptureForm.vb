@@ -25,10 +25,18 @@ Public Class InvoiceCaptureForm
             AddHandler cboPO.SelectedIndexChanged, AddressOf cboPO_SelectedIndexChanged
             AddHandler btnSave.Click, AddressOf btnSave_Click
             AddHandler btnCancel.Click, AddressOf btnCancel_Click
+            AddHandler dgvLines.DataError, AddressOf dgvLines_DataError
 
         Catch ex As Exception
             MessageBox.Show($"Error loading Invoice Capture form: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+    End Sub
+
+    Private Sub dgvLines_DataError(sender As Object, e As DataGridViewDataErrorEventArgs)
+        ' Suppress formatting errors (e.g., large numbers like SKU/Barcode exceeding Int32)
+        ' Just display the value as-is without formatting
+        e.ThrowException = False
+        e.Cancel = False
     End Sub
 
     Private Sub dgvLines_DataBindingComplete(sender As Object, e As DataGridViewBindingCompleteEventArgs) Handles dgvLines.DataBindingComplete
@@ -121,7 +129,18 @@ Public Class InvoiceCaptureForm
         Try
             If selectedPOId > 0 Then
                 Dim lines = stockroomService.GetPurchaseOrderLines(selectedPOId)
+                
+                ' Disable auto-column generation to prevent formatting errors
+                dgvLines.AutoGenerateColumns = True
                 dgvLines.DataSource = lines
+                
+                ' Set string format for any large numeric columns (like SKU/Barcode)
+                For Each col As DataGridViewColumn In dgvLines.Columns
+                    If col.ValueType Is GetType(Long) OrElse col.ValueType Is GetType(Int64) Then
+                        col.DefaultCellStyle.Format = ""
+                        col.ValueType = GetType(String)
+                    End If
+                Next
 
                 ' Add dropdown for CreditReason column
                 If dgvLines.Columns.Contains("CreditReason") Then

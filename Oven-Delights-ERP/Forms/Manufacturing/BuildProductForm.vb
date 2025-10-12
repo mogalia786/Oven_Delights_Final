@@ -4,6 +4,7 @@ Imports Microsoft.Data.SqlClient
 Imports System.Configuration
 Imports System.Linq
 Imports System.Drawing
+Imports System.Drawing.Printing
 
 Namespace Manufacturing
 
@@ -17,7 +18,6 @@ Namespace Manufacturing
         Private ReadOnly ColorDark As Color = Color.FromArgb(110, 44, 0)
         Private ReadOnly ColorLight As Color = Color.FromArgb(245, 222, 179)
 
-        Private WithEvents categorySelector As CategorySubcategorySelector
         Private cmbProduct As ComboBox ' Changed from txtProductName
         Private txtSKU As TextBox
         Private txtProductID As TextBox
@@ -34,7 +34,7 @@ Namespace Manufacturing
         Private lblTotalCost As Label
         Private lblMaterialsCost As Label
         Private lblSubAsmCost As Label
-        
+
         Private _selectedProductId As Integer = 0
 
         ' Add missing method declaration
@@ -53,6 +53,7 @@ Namespace Manufacturing
             InitializeUi()
             AddHandler btnAddComponent.Click, AddressOf OnAddComponent
             AddHandler btnDone.Click, AddressOf OnDone
+            AddHandler btnPrint.Click, AddressOf OnPrint
             AddHandler Me.Load, AddressOf OnFormLoad
             AddHandler txtSKU.Leave, AddressOf OnCodeLeave
             AddHandler txtSKU.KeyDown, AddressOf OnCodeKeyDown
@@ -133,7 +134,7 @@ Namespace Manufacturing
                 .Height = 80,
                 .BackColor = ColorDark
             }
-            
+
             Dim lblHeader As New Label() With {
                 .Text = "✨ Build Product Recipe",
                 .Font = New Font("Segoe UI", 18, FontStyle.Bold),
@@ -142,7 +143,7 @@ Namespace Manufacturing
                 .Left = 30,
                 .Top = 25
             }
-            
+
             Dim lblSubHeader As New Label() With {
                 .Text = "Create recipe for manufactured products",
                 .Font = New Font("Segoe UI", 10),
@@ -151,7 +152,7 @@ Namespace Manufacturing
                 .Left = 30,
                 .Top = 52
             }
-            
+
             pnlHeader.Controls.AddRange({lblHeader, lblSubHeader})
 
             ' Split container for tree and recipe method
@@ -225,7 +226,7 @@ Namespace Manufacturing
             }
 
             pnlProductSelect.Controls.AddRange({lblProduct, cmbProduct, lblSKU, txtSKU, lblProductID, txtProductID})
-            
+
             ' Load products
             LoadProductsWithoutRecipe()
 
@@ -285,7 +286,7 @@ Namespace Manufacturing
             Try
                 Using con As New SqlConnection(_connectionString)
                     con.Open()
-                    Dim sql As String = "SELECT ProductID, ProductName FROM Products WHERE ItemType = 'Manufactured' AND ISNULL(RecipeCreated, 'No') = 'No' AND IsActive = 1 ORDER BY ProductName"
+                    Dim sql As String = "SELECT ProductID, ProductName FROM Products WHERE ItemType IN ('internal', 'Manufactured') AND IsActive = 1 ORDER BY ProductName"
                     Using cmd As New SqlCommand(sql, con)
                         Dim dt As New DataTable()
                         Using reader = cmd.ExecuteReader()
@@ -303,10 +304,10 @@ Namespace Manufacturing
 
         Private Sub OnProductSelected(sender As Object, e As EventArgs)
             If cmbProduct.SelectedValue Is Nothing Then Return
-            
+
             Try
                 _selectedProductId = Convert.ToInt32(cmbProduct.SelectedValue)
-                
+
                 ' Load product details and auto-fill
                 Using con As New SqlConnection(_connectionString)
                     con.Open()
@@ -317,23 +318,19 @@ Namespace Manufacturing
                             If reader.Read() Then
                                 txtProductID.Text = reader("ProductID").ToString()
                                 txtSKU.Text = If(reader("ProductCode") Is DBNull.Value, "", reader("ProductCode").ToString())
-                                
+
                                 ' Auto-fill category and subcategory
-                                If reader("CategoryID") IsNot DBNull.Value AndAlso reader("SubcategoryID") IsNot DBNull.Value Then
-                                    Dim catId As Integer = Convert.ToInt32(reader("CategoryID"))
-                                    Dim subcatId As Integer = Convert.ToInt32(reader("SubcategoryID"))
-                                    categorySelector.SetSelection(catId, subcatId)
-                                End If
+                                ' Category and subcategory are already set in the product - no need to display selector
                             End If
                         End Using
                     End Using
                 End Using
-                
+
                 ' Clear existing recipe
                 treeRecipe.Nodes.Clear()
                 txtRecipeMethod.Clear()
                 RecomputeCosts()
-                
+
             Catch ex As Exception
                 MessageBox.Show($"Error loading product details: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
@@ -344,7 +341,7 @@ Namespace Manufacturing
                 MessageBox.Show("Please select a product first.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
             End If
-            
+
             Using dlg As New ComponentDialog()
                 Dim result = dlg.ShowDialog(Me)
                 If result = DialogResult.OK Then
@@ -425,7 +422,7 @@ Namespace Manufacturing
             Try
                 ' Save the product recipe with method
                 SaveProductRecipe()
-                
+
                 ' Update RecipeCreated flag
                 UpdateRecipeCreatedFlag()
 
@@ -438,44 +435,31 @@ Namespace Manufacturing
                 MessageBox.Show($"Error saving product recipe: {ex.Message}", "Build Product", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
         End Sub
-        
+
         Private Sub UpdateRecipeCreatedFlag()
             Using con As New SqlConnection(_connectionString)
                 con.Open()
-                Dim sql As String = "UPDATE Products SET RecipeCreated = 'Yes', ModifiedDate = GETDATE() WHERE ProductID = @id"
+                ' Check if ModifiedDate column exists
+                Dim hasModifiedDate As Boolean = False
+                Using cmdCheck As New SqlCommand("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Products' AND COLUMN_NAME = 'ModifiedDate'", con)
+                    hasModifiedDate = Convert.ToInt32(cmdCheck.ExecuteScalar()) > 0
+                End Using
+                
+                Dim sql As String = If(hasModifiedDate, 
+                    "UPDATE Products SET RecipeCreated = 'Yes', ModifiedDate = GETDATE() WHERE ProductID = @id",
+                    "UPDATE Products SET RecipeCreated = 'Yes' WHERE ProductID = @id")
                 Using cmd As New SqlCommand(sql, con)
                     cmd.Parameters.AddWithValue("@id", _selectedProductId)
                     cmd.ExecuteNonQuery()
                 End Using
             End Using
         End Sub
-        
+
         Private Sub OldOnDone(sender As Object, e As EventArgs)
-            ' Header validation + resolve ProductID using SKU/ProductCode schema
-            ' Check if category selector exists and validate using it instead of direct combobox access
-            If categorySelector IsNot Nothing Then
-                If Not categorySelector.IsValidSelection Then
-                    MessageBox.Show("Please select a Category and Subcategory.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                    Return
-                End If
-            ElseIf cmbCategory IsNot Nothing AndAlso cmbSubcategory IsNot Nothing Then
-                If cmbCategory.SelectedValue Is Nothing OrElse cmbSubcategory.SelectedValue Is Nothing Then
-                    MessageBox.Show("Please select a Category and Subcategory.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                    Return
-                End If
-            Else
-                MessageBox.Show("Category selection controls not found.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                Return
-            End If
-
+            ' This method is deprecated - use OnDone instead
+            ' Product already has category/subcategory when created in AddProductForm
             Try
-                ' Validate category/subcategory selection first
-                If categorySelector Is Nothing OrElse Not categorySelector.IsValidSelection Then
-                    MessageBox.Show("Please select Category and Subcategory before saving the product recipe.", "Build Product", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                    Return
-                End If
-
-                ' Save the product recipe with category/subcategory
+                ' Save the product recipe
                 SaveProductRecipe()
 
                 ' Trigger sync after successful save
@@ -622,13 +606,13 @@ Namespace Manufacturing
                 cn.Open()
                 Dim hasSku As Boolean = ColumnExists(cn, Nothing, "Products", "SKU")
                 Dim hasItemType As Boolean = ColumnExists(cn, Nothing, "Products", "ItemType")
-                
+
                 ' Products table uses BaseUoM (varchar) not DefaultUoMID, and has ItemType
-                Dim insertSql As String = "IF EXISTS (SELECT 1 FROM dbo.Products WHERE SKU=@sku OR ProductCode=@sku) " & _
-                                          "SELECT ProductID FROM dbo.Products WHERE SKU=@sku OR ProductCode=@sku " & _
-                                          "ELSE BEGIN " & _
-                                          "INSERT INTO dbo.Products (SKU, ProductCode, ProductName, CategoryID, SubcategoryID, ItemType, BaseUoM, IsActive) " & _
-                                          "VALUES (@sku, @sku, @pname, @cid, @scid, 'Manufactured', 'ea', 1); " & _
+                Dim insertSql As String = "IF EXISTS (SELECT 1 FROM dbo.Products WHERE SKU=@sku OR ProductCode=@sku) " &
+                                          "SELECT ProductID FROM dbo.Products WHERE SKU=@sku OR ProductCode=@sku " &
+                                          "ELSE BEGIN " &
+                                          "INSERT INTO dbo.Products (SKU, ProductCode, ProductName, CategoryID, SubcategoryID, ItemType, BaseUoM, IsActive) " &
+                                          "VALUES (@sku, @sku, @pname, @cid, @scid, 'internal', 'ea', 1); " &
                                           "SELECT SCOPE_IDENTITY(); END"
                 Using cmd As New Microsoft.Data.SqlClient.SqlCommand(insertSql, cn)
                     cmd.Parameters.AddWithValue("@sku", code)
@@ -664,19 +648,29 @@ Namespace Manufacturing
         Private Sub AccumulateCostsRecursive(n As TreeNode, ByRef total As Decimal, ByRef raw As Decimal, ByRef subasm As Decimal)
             If n.Tag IsNot Nothing AndAlso TypeOf n.Tag Is Dictionary(Of String, Object) Then
                 Dim bag = DirectCast(n.Tag, Dictionary(Of String, Object))
-                Dim kind = If(TryCast(bag.GetValueOrDefault("Type"), String), Nothing)
-                If Not String.IsNullOrEmpty(kind) AndAlso Not String.Equals(kind, "Component", StringComparison.OrdinalIgnoreCase) Then
-                    Dim lineType = kind
-                    Dim qty As Decimal = 1D
-                    Dim qObj = bag.GetValueOrDefault("Qty")
-                    If qObj IsNot Nothing Then Decimal.TryParse(qObj.ToString(), qty)
-                    Dim unitCost As Decimal = GetLatestCost(lineType, bag)
-                    Dim lineCost As Decimal = unitCost * qty
-                    total += lineCost
-                    If String.Equals(lineType, "Raw Material", StringComparison.OrdinalIgnoreCase) Then
-                        raw += lineCost
-                    ElseIf String.Equals(lineType, "SubAssembly", StringComparison.OrdinalIgnoreCase) Then
-                        subasm += lineCost
+                If bag.ContainsKey("Type") Then
+                    Dim itemType = bag("Type").ToString()
+
+                    ' Get quantity (default to 1 if not specified)
+                    Dim qty As Decimal = 1
+                    If bag.ContainsKey("Qty") AndAlso bag("Qty") IsNot Nothing Then
+                        Decimal.TryParse(bag("Qty").ToString(), qty)
+                    End If
+
+                    ' Calculate cost with quantity
+                    Dim unitCost = GetLatestCost(itemType, bag)
+                    Dim totalCost = unitCost * qty
+
+                    If String.Equals(itemType, "Raw Material", StringComparison.OrdinalIgnoreCase) Then
+                        raw += totalCost
+                        total += totalCost
+                    ElseIf String.Equals(itemType, "SubAssembly", StringComparison.OrdinalIgnoreCase) Then
+                        subasm += totalCost
+                        total += totalCost
+                    Else
+                        ' All other types (Decoration, Toppings, Accessories, Packaging) count as raw materials
+                        raw += totalCost
+                        total += totalCost
                     End If
                 End If
             End If
@@ -687,57 +681,79 @@ Namespace Manufacturing
 
         Private Function GetLatestCost(itemType As String, bag As Dictionary(Of String, Object)) As Decimal
             Dim id As Integer = 0
-            If String.Equals(itemType, "Raw Material", StringComparison.OrdinalIgnoreCase) Then
-                If bag.ContainsKey("MaterialID") AndAlso bag("MaterialID") IsNot Nothing Then
-                    Integer.TryParse(bag("MaterialID").ToString(), id)
-                End If
-            ElseIf String.Equals(itemType, "SubAssembly", StringComparison.OrdinalIgnoreCase) Then
-                ' SubAssemblyProductID maps to Products.ProductID
-                If bag.ContainsKey("SubAssemblyProductID") AndAlso bag("SubAssemblyProductID") IsNot Nothing Then
-                    Integer.TryParse(bag("SubAssemblyProductID").ToString(), id)
-                End If
-            End If
-            If id <= 0 Then Return 0D
-            Using cn As New Microsoft.Data.SqlClient.SqlConnection(_connectionString)
-                cn.Open()
-                ' InventoryCatalogItems may not have CurrentCost/LastPaidCost in some schemas
-                Dim hasCurrent As Boolean = ColumnExists(cn, Nothing, "InventoryCatalogItems", "CurrentCost")
-                Dim hasLastPaid As Boolean = ColumnExists(cn, Nothing, "InventoryCatalogItems", "LastPaidCost")
-                Dim selectExpr As String
-                If hasCurrent AndAlso hasLastPaid Then
-                    selectExpr = "ISNULL(CurrentCost, ISNULL(LastPaidCost, 0))"
-                ElseIf hasCurrent Then
-                    selectExpr = "ISNULL(CurrentCost, 0)"
-                ElseIf hasLastPaid Then
-                    selectExpr = "ISNULL(LastPaidCost, 0)"
-                Else
-                    selectExpr = Nothing
-                End If
+            Dim tableName As String = ""
+            Dim idColumn As String = ""
 
-                Dim viewCost As Decimal = 0D
-                If Not String.IsNullOrEmpty(selectExpr) Then
-                    Dim sql As String = $"SELECT TOP 1 {selectExpr} FROM dbo.InventoryCatalogItems WHERE ItemType=@t AND ItemID=@id"
-                    Using cmd As New Microsoft.Data.SqlClient.SqlCommand(sql, cn)
-                        cmd.Parameters.AddWithValue("@t", If(String.Equals(itemType, "Raw Material", StringComparison.OrdinalIgnoreCase), "RawMaterial", itemType))
+            ' Get ID and determine table/column based on type
+            Select Case itemType
+                Case "Raw Material"
+                    If bag.ContainsKey("MaterialID") AndAlso bag("MaterialID") IsNot Nothing Then
+                        Integer.TryParse(bag("MaterialID").ToString(), id)
+                    End If
+                    tableName = "RawMaterials"
+                    idColumn = "MaterialID"
+
+                Case "SubAssembly"
+                    If bag.ContainsKey("SubAssemblyID") AndAlso bag("SubAssemblyID") IsNot Nothing Then
+                        Integer.TryParse(bag("SubAssemblyID").ToString(), id)
+                    End If
+                    tableName = "SubAssemblies"
+                    idColumn = "SubAssemblyID"
+
+                Case "Toppings", "Topping"
+                    If bag.ContainsKey("ToppingID") AndAlso bag("ToppingID") IsNot Nothing Then
+                        Integer.TryParse(bag("ToppingID").ToString(), id)
+                    End If
+                    tableName = "Toppings"
+                    idColumn = "ToppingID"
+
+                Case "Decoration"
+                    If bag.ContainsKey("DecorationID") AndAlso bag("DecorationID") IsNot Nothing Then
+                        Integer.TryParse(bag("DecorationID").ToString(), id)
+                    End If
+                    tableName = "Decorations"
+                    idColumn = "DecorationID"
+
+                Case "Packaging"
+                    If bag.ContainsKey("PackagingID") AndAlso bag("PackagingID") IsNot Nothing Then
+                        Integer.TryParse(bag("PackagingID").ToString(), id)
+                    End If
+                    tableName = "Packaging"
+                    idColumn = "PackagingID"
+
+                Case "Accessories"
+                    If bag.ContainsKey("AccessoryID") AndAlso bag("AccessoryID") IsNot Nothing Then
+                        Integer.TryParse(bag("AccessoryID").ToString(), id)
+                    End If
+                    tableName = "Accessories"
+                    idColumn = "AccessoryID"
+
+                Case Else
+                    Return 0D
+            End Select
+
+            If id <= 0 OrElse String.IsNullOrEmpty(tableName) Then Return 0D
+
+            ' Get cost from appropriate table
+            Try
+                Using cn As New SqlConnection(_connectionString)
+                    cn.Open()
+                    ' RawMaterials uses LastCost, others use LastPaidCost
+                    Dim costColumn As String = If(itemType = "Raw Material", "LastCost", "LastPaidCost")
+                    Dim sql As String = $"SELECT ISNULL({costColumn}, 0) FROM {tableName} WHERE {idColumn} = @id"
+                    Using cmd As New SqlCommand(sql, cn)
                         cmd.Parameters.AddWithValue("@id", id)
-                        Dim obj = cmd.ExecuteScalar()
-                        If obj IsNot Nothing AndAlso Not IsDBNull(obj) Then
-                            Decimal.TryParse(obj.ToString(), viewCost)
+                        Dim result = cmd.ExecuteScalar()
+                        If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                            Return Convert.ToDecimal(result)
                         End If
                     End Using
-                End If
+                End Using
+            Catch
+                Return 0D
+            End Try
 
-                If viewCost > 0D Then Return viewCost
-
-                ' Fallbacks by type
-                If String.Equals(itemType, "Raw Material", StringComparison.OrdinalIgnoreCase) Then
-                    Return GetRawMaterialFallbackCost(cn, id)
-                ElseIf String.Equals(itemType, "SubAssembly", StringComparison.OrdinalIgnoreCase) Then
-                    Return GetSubAssemblyCost(cn, id)
-                Else
-                    Return 0D
-                End If
-            End Using
+            Return 0D
         End Function
 
         Private Function GetRawMaterialFallbackCost(cn As Microsoft.Data.SqlClient.SqlConnection, materialId As Integer) As Decimal
@@ -992,10 +1008,8 @@ Namespace Manufacturing
         End Sub
 
         Private Sub OnCategorySelectionChanged(sender As Object, e As EventArgs)
-            ' Validate category selection and enable/disable Done button
-            If categorySelector IsNot Nothing Then
-                btnDone.Enabled = categorySelector.IsValidSelection
-            End If
+            ' Product already has category - no validation needed
+            btnDone.Enabled = True
         End Sub
 
         Private Sub SaveProductRecipe()
@@ -1010,9 +1024,12 @@ Namespace Manufacturing
 
                         ' Save recipe structure to RecipeNode table
                         SaveRecipeNodes(_selectedProductId, conn, trans)
-                        
+
                         ' Save recipe method
                         SaveRecipeMethod(_selectedProductId, conn, trans)
+                        
+                        ' Save calculated cost to Products table
+                        SaveProductCost(_selectedProductId, conn, trans)
 
                         trans.Commit()
                     Catch ex As Exception
@@ -1022,15 +1039,54 @@ Namespace Manufacturing
                 End Using
             End Using
         End Sub
-        
+
         Private Sub SaveRecipeMethod(productId As Integer, conn As SqlConnection, trans As SqlTransaction)
-            ' Save recipe method to Products table or separate RecipeMethod table
-            Dim sql As String = "UPDATE Products SET RecipeMethod = @method WHERE ProductID = @id"
-            Using cmd As New SqlCommand(sql, conn, trans)
-                cmd.Parameters.AddWithValue("@id", productId)
-                cmd.Parameters.AddWithValue("@method", If(String.IsNullOrWhiteSpace(txtRecipeMethod.Text), DBNull.Value, txtRecipeMethod.Text.Trim()))
-                cmd.ExecuteNonQuery()
+            ' Save recipe method to Products table if RecipeMethod column exists
+            Dim hasRecipeMethod As Boolean = False
+            Using cmdCheck As New SqlCommand("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Products' AND COLUMN_NAME = 'RecipeMethod'", conn, trans)
+                hasRecipeMethod = Convert.ToInt32(cmdCheck.ExecuteScalar()) > 0
             End Using
+            
+            If hasRecipeMethod Then
+                Dim sql As String = "UPDATE Products SET RecipeMethod = @method WHERE ProductID = @id"
+                Using cmd As New SqlCommand(sql, conn, trans)
+                    cmd.Parameters.AddWithValue("@id", productId)
+                    cmd.Parameters.AddWithValue("@method", If(String.IsNullOrWhiteSpace(txtRecipeMethod.Text), DBNull.Value, txtRecipeMethod.Text.Trim()))
+                    cmd.ExecuteNonQuery()
+                End Using
+            End If
+        End Sub
+        
+        Private Sub SaveProductCost(productId As Integer, conn As SqlConnection, trans As SqlTransaction)
+            ' Calculate and save total cost to Products table
+            Dim total As Decimal = 0D
+            Dim raw As Decimal = 0D
+            Dim subasm As Decimal = 0D
+            
+            For Each root As TreeNode In treeRecipe.Nodes
+                AccumulateCostsRecursive(root, total, raw, subasm)
+            Next
+            
+            ' Update Products table with calculated cost
+            ' Check which cost column exists in Products table
+            Dim costColumn As String = Nothing
+            Using cmdCheck As New SqlCommand("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Products' AND COLUMN_NAME IN ('Cost', 'StandardCost', 'UnitCost', 'ProductCost', 'CostPrice', 'ManufacturingCost')", conn, trans)
+                Using reader = cmdCheck.ExecuteReader()
+                    If reader.Read() Then
+                        costColumn = reader("COLUMN_NAME").ToString()
+                    End If
+                End Using
+            End Using
+            
+            ' Only update if a cost column exists
+            If Not String.IsNullOrEmpty(costColumn) Then
+                Dim sql As String = $"UPDATE Products SET {costColumn} = @cost WHERE ProductID = @id"
+                Using cmd As New SqlCommand(sql, conn, trans)
+                    cmd.Parameters.AddWithValue("@id", productId)
+                    cmd.Parameters.AddWithValue("@cost", total)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End If
         End Sub
 
         Private Sub SaveRecipeNodes(productId As Integer, conn As SqlConnection, trans As SqlTransaction)
@@ -1043,32 +1099,152 @@ Namespace Manufacturing
                     cmd.ExecuteNonQuery()
                 End Using
 
-                ' Save current recipe tree
-                SaveNodeRecursive(treeRecipe.Nodes(0), productId, Nothing, 0, conn, trans)
+                ' Save ALL root nodes and their children
+                For i As Integer = 0 To treeRecipe.Nodes.Count - 1
+                    SaveNodeRecursive(treeRecipe.Nodes(i), productId, Nothing, 0, i + 1, conn, trans)
+                Next
             End If
         End Sub
 
-        Private Sub SaveNodeRecursive(node As TreeNode, productId As Integer, parentNodeId As Integer?, level As Integer, conn As SqlConnection, trans As SqlTransaction)
+        Private Sub SaveNodeRecursive(node As TreeNode, productId As Integer, parentNodeId As Integer?, level As Integer, sortOrder As Integer, conn As SqlConnection, trans As SqlTransaction)
+            ' Extract data from node.Tag
+            Dim nodeKind As String = If(node.Parent Is Nothing, "Component", "Subcomponent")
+            Dim itemType As String = ""
+            Dim itemName As String = node.Text
+            Dim qty As Decimal = 1.0
+            Dim notes As String = ""
+            Dim materialId As Object = DBNull.Value
+            Dim subAsmId As Object = DBNull.Value
+            Dim uomId As Object = DBNull.Value
+            
+            If node.Tag IsNot Nothing AndAlso TypeOf node.Tag Is Dictionary(Of String, Object) Then
+                Dim bag = DirectCast(node.Tag, Dictionary(Of String, Object))
+                
+                If bag.ContainsKey("Type") Then
+                    Dim typeVal = bag("Type").ToString()
+                    If typeVal = "Component" Then
+                        nodeKind = "Component"
+                    Else
+                        nodeKind = "Subcomponent"
+                        itemType = typeVal
+                    End If
+                End If
+                
+                If bag.ContainsKey("Item") Then itemName = bag("Item").ToString()
+                If bag.ContainsKey("Name") Then itemName = bag("Name").ToString()
+                If bag.ContainsKey("Qty") Then Decimal.TryParse(bag("Qty").ToString(), qty)
+                If bag.ContainsKey("Notes") Then notes = bag("Notes").ToString()
+                If bag.ContainsKey("MaterialID") Then materialId = bag("MaterialID")
+                If bag.ContainsKey("SubAssemblyID") Then subAsmId = bag("SubAssemblyID")
+                If bag.ContainsKey("UoMID") Then uomId = bag("UoMID")
+            End If
+
             ' Insert this node
-            Dim sql As String = "INSERT INTO dbo.RecipeNode (ProductID, ParentNodeID, Level, NodeKind, ItemType, ItemName, Qty, Notes, SortOrder) VALUES (@pid, @parent, @level, @kind, @type, @name, @qty, @notes, @sort); SELECT SCOPE_IDENTITY()"
+            Dim sql As String = "INSERT INTO dbo.RecipeNode (ProductID, ParentNodeID, Level, NodeKind, ItemType, MaterialID, SubAssemblyProductID, ItemName, Qty, UoMID, Notes, SortOrder) VALUES (@pid, @parent, @level, @kind, @type, @mat, @sub, @name, @qty, @uom, @notes, @sort); SELECT SCOPE_IDENTITY()"
 
             Dim nodeId As Integer
             Using cmd As New SqlCommand(sql, conn, trans)
                 cmd.Parameters.AddWithValue("@pid", productId)
-                cmd.Parameters.AddWithValue("@parent", If(parentNodeId, DBNull.Value))
+                cmd.Parameters.AddWithValue("@parent", If(parentNodeId.HasValue, CType(parentNodeId.Value, Object), DBNull.Value))
                 cmd.Parameters.AddWithValue("@level", level)
-                cmd.Parameters.AddWithValue("@kind", If(node.Tag?.ToString(), "Material"))
-                cmd.Parameters.AddWithValue("@type", "Raw Material")
-                cmd.Parameters.AddWithValue("@name", node.Text)
-                cmd.Parameters.AddWithValue("@qty", 1.0)
-                cmd.Parameters.AddWithValue("@notes", "")
-                cmd.Parameters.AddWithValue("@sort", node.Index)
+                cmd.Parameters.AddWithValue("@kind", nodeKind)
+                cmd.Parameters.AddWithValue("@type", If(String.IsNullOrEmpty(itemType), DBNull.Value, CType(itemType, Object)))
+                cmd.Parameters.AddWithValue("@mat", materialId)
+                cmd.Parameters.AddWithValue("@sub", subAsmId)
+                cmd.Parameters.AddWithValue("@name", itemName)
+                cmd.Parameters.AddWithValue("@qty", qty)
+                cmd.Parameters.AddWithValue("@uom", uomId)
+                cmd.Parameters.AddWithValue("@notes", If(String.IsNullOrEmpty(notes), DBNull.Value, CType(notes, Object)))
+                cmd.Parameters.AddWithValue("@sort", sortOrder)
                 nodeId = Convert.ToInt32(cmd.ExecuteScalar())
             End Using
 
             ' Save child nodes recursively
-            For Each childNode As TreeNode In node.Nodes
-                SaveNodeRecursive(childNode, productId, nodeId, level + 1, conn, trans)
+            For i As Integer = 0 To node.Nodes.Count - 1
+                SaveNodeRecursive(node.Nodes(i), productId, nodeId, level + 1, i + 1, conn, trans)
+            Next
+        End Sub
+
+        Private Sub OnPrint(sender As Object, e As EventArgs)
+            If _selectedProductId = 0 Then
+                MessageBox.Show("Please select a product first.", "Print Recipe", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            Try
+                Dim productName As String = cmbProduct.Text
+                Dim recipeText As String = GetRecipeTextForPrint(_selectedProductId, productName)
+                
+                Dim printDoc As New PrintDocument()
+                AddHandler printDoc.PrintPage, Sub(s, ev)
+                    Dim font As New Font("Arial", 10)
+                    Dim headerFont As New Font("Arial", 16, FontStyle.Bold)
+                    Dim subHeaderFont As New Font("Arial", 12, FontStyle.Bold)
+                    Dim y As Single = 80
+                    
+                    ' Print company header
+                    ev.Graphics.DrawString("OVEN DELIGHTS", headerFont, New SolidBrush(ColorDark), 50, 30)
+                    ev.Graphics.DrawString("Product Recipe", subHeaderFont, Brushes.Gray, 50, 55)
+                    
+                    ' Print product name
+                    ev.Graphics.DrawString($"Product: {productName}", New Font("Arial", 12, FontStyle.Bold), Brushes.Black, 50, y)
+                    y += 30
+                    ev.Graphics.DrawString(New String("-"c, 100), font, Brushes.Black, 50, y)
+                    y += 30
+                    
+                    ' Print recipe text
+                    Dim lines() As String = recipeText.Split(New String() {Environment.NewLine}, StringSplitOptions.None)
+                    For Each line In lines
+                        If y > ev.PageBounds.Height - 100 Then Exit For
+                        ev.Graphics.DrawString(line, font, Brushes.Black, 50, y)
+                        y += 22
+                    Next
+                End Sub
+                
+                Dim printDialog As New PrintDialog() With {.Document = printDoc}
+                If printDialog.ShowDialog() = DialogResult.OK Then
+                    printDoc.Print()
+                    MessageBox.Show("Recipe sent to printer!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                End If
+            Catch ex As Exception
+                MessageBox.Show($"Error printing recipe: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
+        End Sub
+
+        Private Function GetRecipeTextForPrint(productId As Integer, productName As String) As String
+            Dim result As New System.Text.StringBuilder()
+            
+            Try
+                Using con As New SqlConnection(_connectionString)
+                    con.Open()
+                    
+                    ' Get recipe method
+                    Dim recipeMethod As String = If(String.IsNullOrWhiteSpace(txtRecipeMethod.Text), "No method specified", txtRecipeMethod.Text)
+                    
+                    result.AppendLine("COMPONENTS:")
+                    result.AppendLine()
+                    
+                    ' Build from tree
+                    For Each node As TreeNode In treeRecipe.Nodes
+                        AppendNodeToText(node, result, 0)
+                    Next
+                    
+                    result.AppendLine()
+                    result.AppendLine("METHOD:")
+                    result.AppendLine(recipeMethod)
+                End Using
+            Catch ex As Exception
+                result.AppendLine($"Error: {ex.Message}")
+            End Try
+            
+            Return result.ToString()
+        End Function
+
+        Private Sub AppendNodeToText(node As TreeNode, sb As System.Text.StringBuilder, level As Integer)
+            Dim indent As String = New String(" "c, level * 3)
+            sb.AppendLine($"{indent}• {node.Text}")
+            For Each child As TreeNode In node.Nodes
+                AppendNodeToText(child, sb, level + 1)
             Next
         End Sub
 

@@ -430,10 +430,8 @@ Partial Class MainDashboard
 
     Private Sub OpenInterBranchTransferCreate(sender As Object, e As EventArgs)
         Try
-            Dim frm As New StockTransferForm()
-            frm.MdiParent = Me
-            frm.Show()
-            frm.WindowState = FormWindowState.Maximized
+            Dim frm As New Forms.InterBranchTransferForm()
+            frm.ShowDialog()
         Catch ex As Exception
             MessageBox.Show($"Error opening Inter-Branch Transfer: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
