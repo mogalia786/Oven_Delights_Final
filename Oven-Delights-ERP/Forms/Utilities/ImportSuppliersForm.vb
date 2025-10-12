@@ -764,8 +764,17 @@ Public Class ImportSuppliersForm
                             columns.Add("CreatedDate")
                             parameters.Add("@CreatedDate", DateTime.Now)
                             
-                            columns.Add("CreatedBy")
-                            parameters.Add("@CreatedBy", If(AppSession.CurrentUserID > 0, AppSession.CurrentUserID, 1))
+                            ' Only add CreatedBy if column exists
+                            Try
+                                Using cmdCheck As New SqlCommand("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Suppliers' AND COLUMN_NAME = 'CreatedBy'", conn)
+                                    If Convert.ToInt32(cmdCheck.ExecuteScalar()) > 0 Then
+                                        columns.Add("CreatedBy")
+                                        parameters.Add("@CreatedBy", If(AppSession.CurrentUserID > 0, AppSession.CurrentUserID, 1))
+                                    End If
+                                End Using
+                            Catch
+                                ' Column doesn't exist, skip it
+                            End Try
                             
                             ' Build SQL
                             Dim sql = $"INSERT INTO Suppliers ({String.Join(", ", columns)}) VALUES ({String.Join(", ", columns.Select(Function(c) "@" & c))})"
