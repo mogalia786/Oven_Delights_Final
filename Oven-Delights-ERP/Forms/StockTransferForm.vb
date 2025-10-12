@@ -222,6 +222,9 @@ Public Class StockTransferForm
                     ' Increase inventory at receiver branch
                     UpdateRetailStock(productId, toBranchId, quantity, con, tx)
                     
+                    ' Create Inter-Branch PO at sender branch
+                    Dim intPONumber As String = CreateInterBranchPO(fromBranchId, toBranchId, productId, quantity, productCost, totalValue, transferNumber, con, tx)
+                    
                     ' Create journal entries
                     CreateInterBranchJournalEntries(fromBranchId, toBranchId, totalValue, transferNumber, con, tx)
                     
@@ -233,6 +236,58 @@ Public Class StockTransferForm
             End Using
         End Using
     End Sub
+
+    Private Function CreateInterBranchPO(fromBranchId As Integer, toBranchId As Integer, productId As Integer, quantity As Decimal, unitCost As Decimal, totalValue As Decimal, transferRef As String, con As SqlConnection, tx As SqlTransaction) As String
+        ' Generate INT-PO number: BranchPrefix-INT-PO-#####
+        Dim branchPrefix As String = GetBranchPrefix(fromBranchId, con, tx)
+        
+        ' Get next INT-PO number for this branch
+        Dim nextNumber As Integer = 1
+        Using cmdNext As New SqlCommand("SELECT ISNULL(MAX(CAST(RIGHT(PONumber, 5) AS INT)), 0) + 1 FROM dbo.PurchaseOrders WHERE BranchID = @BranchID AND PONumber LIKE @Pattern", con, tx)
+            cmdNext.Parameters.AddWithValue("@BranchID", fromBranchId)
+            cmdNext.Parameters.AddWithValue("@Pattern", branchPrefix + "-INT-PO-%")
+            Dim result = cmdNext.ExecuteScalar()
+            If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                nextNumber = Convert.ToInt32(result)
+            End If
+        End Using
+        
+        Dim intPONumber As String = $"{branchPrefix}-INT-PO-{nextNumber.ToString("00000")}"
+        
+        ' Create PO record
+        Dim poId As Integer
+        Using cmdPO As New SqlCommand("INSERT INTO PurchaseOrders (PONumber, SupplierID, BranchID, OrderDate, RequiredDate, Status, SubTotal, VATAmount, Reference, Notes, CreatedDate, CreatedBy) OUTPUT INSERTED.PurchaseOrderID VALUES (@PONumber, NULL, @BranchID, @OrderDate, @RequiredDate, 'Inter-Branch', @SubTotal, 0, @Reference, @Notes, GETDATE(), @CreatedBy)", con, tx)
+            cmdPO.Parameters.AddWithValue("@PONumber", intPONumber)
+            cmdPO.Parameters.AddWithValue("@BranchID", fromBranchId)
+            cmdPO.Parameters.AddWithValue("@OrderDate", DateTime.Now)
+            cmdPO.Parameters.AddWithValue("@RequiredDate", DateTime.Now.AddDays(7))
+            cmdPO.Parameters.AddWithValue("@SubTotal", totalValue)
+            cmdPO.Parameters.AddWithValue("@Reference", transferRef)
+            cmdPO.Parameters.AddWithValue("@Notes", $"Inter-Branch Transfer to Branch {toBranchId}: {transferRef}")
+            cmdPO.Parameters.AddWithValue("@CreatedBy", AppSession.CurrentUserID)
+            poId = Convert.ToInt32(cmdPO.ExecuteScalar())
+        End Using
+        
+        ' Create PO line
+        Using cmdLine As New SqlCommand("INSERT INTO PurchaseOrderLines (PurchaseOrderID, ProductID, ItemSource, OrderedQuantity, ReceivedQuantity, UnitCost, LineTotal) VALUES (@POID, @ProductID, 'Product', @Qty, 0, @UnitCost, @LineTotal)", con, tx)
+            cmdLine.Parameters.AddWithValue("@POID", poId)
+            cmdLine.Parameters.AddWithValue("@ProductID", productId)
+            cmdLine.Parameters.AddWithValue("@Qty", quantity)
+            cmdLine.Parameters.AddWithValue("@UnitCost", unitCost)
+            cmdLine.Parameters.AddWithValue("@LineTotal", totalValue)
+            cmdLine.ExecuteNonQuery()
+        End Using
+        
+        Return intPONumber
+    End Function
+    
+    Private Function GetBranchPrefix(branchId As Integer, con As SqlConnection, tx As SqlTransaction) As String
+        Using cmd As New SqlCommand("SELECT COALESCE(NULLIF(LTRIM(RTRIM(Prefix)), ''), UPPER(LEFT(BranchName, 2))) FROM Branches WHERE BranchID = @id", con, tx)
+            cmd.Parameters.AddWithValue("@id", branchId)
+            Dim result = cmd.ExecuteScalar()
+            Return If(result IsNot Nothing, result.ToString(), "BR")
+        End Using
+    End Function
 
     Private Function GetBranchCode(branchId As Integer, con As SqlConnection, tx As SqlTransaction) As String
         Using cmd As New SqlCommand("SELECT TOP 1 BranchCode FROM Branches WHERE BranchID = @id", con, tx)

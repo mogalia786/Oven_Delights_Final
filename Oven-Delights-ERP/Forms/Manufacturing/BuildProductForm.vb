@@ -3,6 +3,7 @@ Imports System.Data
 Imports Microsoft.Data.SqlClient
 Imports System.Configuration
 Imports System.Linq
+Imports System.Drawing
 
 Namespace Manufacturing
 
@@ -11,21 +12,30 @@ Namespace Manufacturing
 
         Private ReadOnly _connectionString As String = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
 
+        ' Logo colors
+        Private ReadOnly ColorPrimary As Color = Color.FromArgb(230, 126, 34)
+        Private ReadOnly ColorDark As Color = Color.FromArgb(110, 44, 0)
+        Private ReadOnly ColorLight As Color = Color.FromArgb(245, 222, 179)
+
         Private WithEvents categorySelector As CategorySubcategorySelector
-        Private txtProductName As TextBox
+        Private cmbProduct As ComboBox ' Changed from txtProductName
         Private txtSKU As TextBox
         Private txtProductID As TextBox
         Private cmbCategory As ComboBox
         Private cmbSubcategory As ComboBox
+        Private txtRecipeMethod As TextBox ' New: Recipe method textbox
 
         Private btnAddComponent As Button
         Private btnDone As Button
+        Private btnPrint As Button ' New: Print button
 
         Private treeRecipe As TreeView
         Private pnlCosting As Panel
         Private lblTotalCost As Label
         Private lblMaterialsCost As Label
         Private lblSubAsmCost As Label
+        
+        Private _selectedProductId As Integer = 0
 
         ' Add missing method declaration
         Private Sub SubcategoryDropDownRefresh(sender As Object, e As EventArgs)
@@ -117,67 +127,175 @@ Namespace Manufacturing
         End Function
 
         Private Sub InitializeUi()
-            ' Header panel (same structure as RecipeCreator header)
+            ' Split container for tree and recipe method
+            Dim splitMain As New SplitContainer() With {
+                .Dock = DockStyle.Fill,
+                .Orientation = Orientation.Vertical,
+                .SplitterDistance = 650
+            }
+
+            ' LEFT PANEL: Tree and components
+            Dim leftPanel As New Panel() With {.Dock = DockStyle.Fill}
+
+            ' Header panel
             Dim pnlHeader As New Panel() With {.Dock = DockStyle.Top, .Height = 140, .BackColor = Color.White}
             Dim header As New Label() With {
-            .Text = "Build Product (Hierarchy)",
-            .Font = New Font("Segoe UI", 14, FontStyle.Bold),
-            .AutoSize = True,
-            .Left = 20,
-            .Top = 10,
-            .ForeColor = Color.FromArgb(183, 58, 46)
-        }
+                .Text = "Build Product Recipe",
+                .Font = New Font("Segoe UI", 14, FontStyle.Bold),
+                .AutoSize = True,
+                .Left = 20,
+                .Top = 10,
+                .ForeColor = Color.FromArgb(183, 58, 46)
+            }
             pnlHeader.Controls.Add(header)
 
             Dim x As Integer = 20
             Dim y As Integer = 44
 
-            ' Product Name field (moved to top for visibility)
-            Dim lblProduct = New Label() With {.Text = "Product Name:", .Left = x, .Top = y, .AutoSize = True}
-            txtProductName = New TextBox() With {.Left = x + 100, .Top = y - 3, .Width = 320}
+            ' Product Dropdown (changed from textbox)
+            Dim lblProduct = New Label() With {.Text = "Select Product:", .Left = x, .Top = y, .AutoSize = True}
+            cmbProduct = New ComboBox() With {
+                .Left = x + 110,
+                .Top = y - 3,
+                .Width = 320,
+                .DropDownStyle = ComboBoxStyle.DropDownList
+            }
+            AddHandler cmbProduct.SelectedIndexChanged, AddressOf OnProductSelected
 
             y += 34
-            ' Add Category/Subcategory Selector
+            ' Category/Subcategory (read-only, auto-filled)
             categorySelector = New CategorySubcategorySelector()
             categorySelector.Location = New Point(x, y)
             categorySelector.Width = 600
-            AddHandler categorySelector.SelectionChanged, AddressOf OnCategorySelectionChanged
+            categorySelector.Enabled = False ' Read-only, auto-filled from product
 
-            Dim lblSKU = New Label() With {.Text = "Product Code/SKU:", .Left = 710, .Top = y, .AutoSize = True}
-            txtSKU = New TextBox() With {.Left = 850, .Top = y - 3, .Width = 160}
+            Dim lblSKU = New Label() With {.Text = "Product Code:", .Left = 640, .Top = y, .AutoSize = True, .Font = New Font("Segoe UI", 10, FontStyle.Bold), .ForeColor = ColorDark}
+            txtSKU = New TextBox() With {.Left = 740, .Top = y - 3, .Width = 160, .ReadOnly = True, .BackColor = ColorLight, .Font = New Font("Segoe UI", 10)}
 
             y += 34
-            Dim lblProductID = New Label() With {.Text = "Product ID:", .Left = 710, .Top = y, .AutoSize = True}
-            txtProductID = New TextBox() With {.Left = 780, .Top = y - 3, .Width = 230, .ReadOnly = True, .BackColor = Color.Gainsboro}
+            Dim lblProductID = New Label() With {.Text = "Product ID:", .Left = 640, .Top = y, .AutoSize = True}
+            txtProductID = New TextBox() With {.Left = 740, .Top = y - 3, .Width = 160, .ReadOnly = True, .BackColor = Color.Gainsboro}
 
-            pnlHeader.Controls.AddRange(New Control() {categorySelector, lblSKU, txtSKU, lblProductID, txtProductID, lblProduct, txtProductName})
+            pnlHeader.Controls.AddRange(New Control() {categorySelector, lblSKU, txtSKU, lblProductID, txtProductID, lblProduct, cmbProduct})
 
             ' Action bar
             Dim pnlActions As New Panel() With {.Dock = DockStyle.Top, .Height = 56, .BackColor = Color.White}
             btnAddComponent = New Button() With {.Text = "Add Component", .Width = 140, .Height = 32, .Left = 20, .Top = 12}
-            btnDone = New Button() With {.Text = "Done", .Width = 100, .Height = 32, .Left = 170, .Top = 12}
-            pnlActions.Controls.AddRange(New Control() {btnAddComponent, btnDone})
+            btnDone = New Button() With {.Text = "Save Recipe", .Width = 120, .Height = 32, .Left = 170, .Top = 12}
+            btnPrint = New Button() With {.Text = "Print", .Width = 100, .Height = 32, .Left = 300, .Top = 12}
+            pnlActions.Controls.AddRange(New Control() {btnAddComponent, btnDone, btnPrint})
 
             ' Hierarchy tree
             treeRecipe = New TreeView() With {.Dock = DockStyle.Fill, .HideSelection = False}
-            ' Ensure right-click selects the node under mouse before context menu actions
             AddHandler treeRecipe.NodeMouseClick, AddressOf OnTreeNodeMouseClick
 
             ' Costing panel (bottom)
             pnlCosting = New Panel() With {.Dock = DockStyle.Bottom, .Height = 64, .BackColor = Color.WhiteSmoke}
-            lblTotalCost = New Label() With {.Left = 20, .Top = 10, .AutoSize = True, .Font = New Font("Segoe UI", 10, FontStyle.Bold), .Text = "Total: 0.00"}
-            lblMaterialsCost = New Label() With {.Left = 220, .Top = 12, .AutoSize = True, .Text = "Raw Materials: 0.00"}
-            lblSubAsmCost = New Label() With {.Left = 420, .Top = 12, .AutoSize = True, .Text = "Sub-Assemblies: 0.00"}
+            lblTotalCost = New Label() With {.Left = 20, .Top = 10, .AutoSize = True, .Font = New Font("Segoe UI", 10, FontStyle.Bold), .Text = "Total Cost: R 0.00"}
+            lblMaterialsCost = New Label() With {.Left = 220, .Top = 12, .AutoSize = True, .Text = "Raw Materials: R 0.00"}
+            lblSubAsmCost = New Label() With {.Left = 450, .Top = 12, .AutoSize = True, .Text = "Sub-Assemblies: R 0.00"}
             pnlCosting.Controls.AddRange(New Control() {lblTotalCost, lblMaterialsCost, lblSubAsmCost})
 
-            ' Compose
-            Me.Controls.Add(treeRecipe)
-            Me.Controls.Add(pnlCosting)
-            Me.Controls.Add(pnlActions)
-            Me.Controls.Add(pnlHeader)
+            ' Compose left panel
+            leftPanel.Controls.Add(treeRecipe)
+            leftPanel.Controls.Add(pnlCosting)
+            leftPanel.Controls.Add(pnlActions)
+            leftPanel.Controls.Add(pnlHeader)
+
+            ' RIGHT PANEL: Recipe Method
+            Dim rightPanel As New Panel() With {.Dock = DockStyle.Fill, .Padding = New Padding(10), .BackColor = Color.White}
+            Dim lblMethod As New Label() With {
+                .Text = "Recipe Method / Instructions:",
+                .Font = New Font("Segoe UI", 11, FontStyle.Bold),
+                .Dock = DockStyle.Top,
+                .Height = 30,
+                .TextAlign = ContentAlignment.MiddleLeft
+            }
+            txtRecipeMethod = New TextBox() With {
+                .Dock = DockStyle.Fill,
+                .Multiline = True,
+                .ScrollBars = ScrollBars.Vertical,
+                .Font = New Font("Segoe UI", 10),
+                .BorderStyle = BorderStyle.FixedSingle
+            }
+            rightPanel.Controls.Add(txtRecipeMethod)
+            rightPanel.Controls.Add(lblMethod)
+
+            ' Add panels to split container
+            splitMain.Panel1.Controls.Add(leftPanel)
+            splitMain.Panel2.Controls.Add(rightPanel)
+
+            ' Add split container to form
+            Me.Controls.Add(splitMain)
+
+            ' Load products with RecipeCreated='No'
+            LoadProductsWithoutRecipe()
+        End Sub
+
+        Private Sub LoadProductsWithoutRecipe()
+            Try
+                Using con As New SqlConnection(_connectionString)
+                    con.Open()
+                    Dim sql As String = "SELECT ProductID, ProductName FROM Products WHERE ItemType = 'Manufactured' AND ISNULL(RecipeCreated, 'No') = 'No' AND IsActive = 1 ORDER BY ProductName"
+                    Using cmd As New SqlCommand(sql, con)
+                        Dim dt As New DataTable()
+                        Using reader = cmd.ExecuteReader()
+                            dt.Load(reader)
+                        End Using
+                        cmbProduct.DisplayMember = "ProductName"
+                        cmbProduct.ValueMember = "ProductID"
+                        cmbProduct.DataSource = dt
+                    End Using
+                End Using
+            Catch ex As Exception
+                MessageBox.Show($"Error loading products: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
+        End Sub
+
+        Private Sub OnProductSelected(sender As Object, e As EventArgs)
+            If cmbProduct.SelectedValue Is Nothing Then Return
+            
+            Try
+                _selectedProductId = Convert.ToInt32(cmbProduct.SelectedValue)
+                
+                ' Load product details and auto-fill
+                Using con As New SqlConnection(_connectionString)
+                    con.Open()
+                    Dim sql As String = "SELECT ProductID, ProductCode, CategoryID, SubcategoryID FROM Products WHERE ProductID = @id"
+                    Using cmd As New SqlCommand(sql, con)
+                        cmd.Parameters.AddWithValue("@id", _selectedProductId)
+                        Using reader = cmd.ExecuteReader()
+                            If reader.Read() Then
+                                txtProductID.Text = reader("ProductID").ToString()
+                                txtSKU.Text = If(reader("ProductCode") Is DBNull.Value, "", reader("ProductCode").ToString())
+                                
+                                ' Auto-fill category and subcategory
+                                If reader("CategoryID") IsNot DBNull.Value AndAlso reader("SubcategoryID") IsNot DBNull.Value Then
+                                    Dim catId As Integer = Convert.ToInt32(reader("CategoryID"))
+                                    Dim subcatId As Integer = Convert.ToInt32(reader("SubcategoryID"))
+                                    categorySelector.SetSelection(catId, subcatId)
+                                End If
+                            End If
+                        End Using
+                    End Using
+                End Using
+                
+                ' Clear existing recipe
+                treeRecipe.Nodes.Clear()
+                txtRecipeMethod.Clear()
+                RecomputeCosts()
+                
+            Catch ex As Exception
+                MessageBox.Show($"Error loading product details: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
         End Sub
 
         Private Sub OnAddComponent(sender As Object, e As EventArgs)
+            If _selectedProductId = 0 Then
+                MessageBox.Show("Please select a product first.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+            
             Using dlg As New ComponentDialog()
                 Dim result = dlg.ShowDialog(Me)
                 If result = DialogResult.OK Then
@@ -244,6 +362,46 @@ Namespace Manufacturing
         End Sub
 
         Private Sub OnDone(sender As Object, e As EventArgs)
+            ' Validation
+            If _selectedProductId = 0 Then
+                MessageBox.Show("Please select a product.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            If treeRecipe.Nodes.Count = 0 Then
+                MessageBox.Show("Please add at least one component to the recipe.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            Try
+                ' Save the product recipe with method
+                SaveProductRecipe()
+                
+                ' Update RecipeCreated flag
+                UpdateRecipeCreatedFlag()
+
+                ' Trigger sync after successful save
+                InventoryEventHandler.OnRawMaterialsChanged()
+
+                MessageBox.Show("Product recipe saved and inventory synced!", "Build Product", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Me.Close()
+            Catch ex As Exception
+                MessageBox.Show($"Error saving product recipe: {ex.Message}", "Build Product", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
+        End Sub
+        
+        Private Sub UpdateRecipeCreatedFlag()
+            Using con As New SqlConnection(_connectionString)
+                con.Open()
+                Dim sql As String = "UPDATE Products SET RecipeCreated = 'Yes', ModifiedDate = GETDATE() WHERE ProductID = @id"
+                Using cmd As New SqlCommand(sql, con)
+                    cmd.Parameters.AddWithValue("@id", _selectedProductId)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+        End Sub
+        
+        Private Sub OldOnDone(sender As Object, e As EventArgs)
             ' Header validation + resolve ProductID using SKU/ProductCode schema
             ' Check if category selector exists and validate using it instead of direct combobox access
             If categorySelector IsNot Nothing Then
@@ -260,15 +418,6 @@ Namespace Manufacturing
                 MessageBox.Show("Category selection controls not found.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
             End If
-            If String.IsNullOrWhiteSpace(txtProductName.Text) Then
-                MessageBox.Show("Please enter a Product name.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                Return
-            End If
-            ' SKU is now optional during recipe creation - can be assigned later by Retail
-            ' If String.IsNullOrWhiteSpace(txtSKU.Text) Then
-            '     MessageBox.Show("Please enter a Product Code/SKU.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            '     Return
-            ' End If
 
             Try
                 ' Validate category/subcategory selection first
@@ -384,23 +533,7 @@ Namespace Manufacturing
         End Sub
 
         Private Sub OnCodeLeave(sender As Object, e As EventArgs)
-            Dim code = txtSKU.Text.Trim()
-            If String.IsNullOrWhiteSpace(code) Then Return
-            Try
-                Dim pid As Integer
-                Dim pname As String = Nothing
-                If TryResolveExistingProduct(code, pid, pname) AndAlso pid > 0 Then
-                    txtProductID.Text = pid.ToString()
-                    If Not String.IsNullOrWhiteSpace(pname) AndAlso String.IsNullOrWhiteSpace(txtProductName.Text) Then
-                        txtProductName.Text = pname
-                    End If
-                    LoadHierarchy(pid)
-                Else
-                    treeRecipe.Nodes.Clear()
-                End If
-            Catch
-                ' ignore non-critical lookup errors
-            End Try
+            ' No longer needed - using dropdown selection
         End Sub
 
         Private Function TryResolveExistingProduct(code As String, ByRef productId As Integer, ByRef productName As String) As Boolean
@@ -822,26 +955,32 @@ Namespace Manufacturing
                 conn.Open()
                 Using trans As SqlTransaction = conn.BeginTransaction()
                     Try
-                        ' Get or create product ID from the form
-                        Dim productId As Integer = 0
-                        If Not String.IsNullOrWhiteSpace(txtProductID.Text) Then
-                            Integer.TryParse(txtProductID.Text, productId)
-                        End If
-
-                        If productId <= 0 Then
-                            Throw New Exception("Please select or create a product first.")
+                        If _selectedProductId <= 0 Then
+                            Throw New Exception("Please select a product first.")
                         End If
 
                         ' Save recipe structure to RecipeNode table
-                        SaveRecipeNodes(productId, conn, trans)
+                        SaveRecipeNodes(_selectedProductId, conn, trans)
+                        
+                        ' Save recipe method
+                        SaveRecipeMethod(_selectedProductId, conn, trans)
 
                         trans.Commit()
-                        MessageBox.Show("Recipe saved successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
                     Catch ex As Exception
                         trans.Rollback()
-                        Throw New Exception("Error saving product recipe: " & ex.Message, ex)
+                        Throw
                     End Try
                 End Using
+            End Using
+        End Sub
+        
+        Private Sub SaveRecipeMethod(productId As Integer, conn As SqlConnection, trans As SqlTransaction)
+            ' Save recipe method to Products table or separate RecipeMethod table
+            Dim sql As String = "UPDATE Products SET RecipeMethod = @method WHERE ProductID = @id"
+            Using cmd As New SqlCommand(sql, conn, trans)
+                cmd.Parameters.AddWithValue("@id", productId)
+                cmd.Parameters.AddWithValue("@method", If(String.IsNullOrWhiteSpace(txtRecipeMethod.Text), DBNull.Value, txtRecipeMethod.Text.Trim()))
+                cmd.ExecuteNonQuery()
             End Using
         End Sub
 
