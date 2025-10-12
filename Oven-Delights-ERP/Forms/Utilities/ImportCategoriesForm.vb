@@ -533,14 +533,49 @@ Public Class ImportCategoriesForm
                             End If
                         End Using
                         
-                        ' Insert category
+                        ' Insert category - check which columns exist
                         Try
-                            Dim sql = "INSERT INTO Categories (CategoryName, Description, IsActive, CreatedDate) VALUES (@name, @desc, @active, GETDATE())"
+                            Dim columns As New List(Of String)
+                            Dim parameters As New Dictionary(Of String, Object)
+                            
+                            columns.Add("CategoryName")
+                            parameters.Add("@CategoryName", categoryName)
+                            
+                            columns.Add("IsActive")
+                            parameters.Add("@IsActive", isActive)
+                            
+                            ' Check if Description column exists
+                            If Not String.IsNullOrEmpty(description) Then
+                                Try
+                                    Using cmdCheck As New SqlCommand("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Categories' AND COLUMN_NAME = 'Description'", conn)
+                                        If Convert.ToInt32(cmdCheck.ExecuteScalar()) > 0 Then
+                                            columns.Add("Description")
+                                            parameters.Add("@Description", description)
+                                        End If
+                                    End Using
+                                Catch
+                                    ' Column doesn't exist, skip it
+                                End Try
+                            End If
+                            
+                            ' Check if CreatedDate column exists
+                            Try
+                                Using cmdCheck As New SqlCommand("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Categories' AND COLUMN_NAME = 'CreatedDate'", conn)
+                                    If Convert.ToInt32(cmdCheck.ExecuteScalar()) > 0 Then
+                                        columns.Add("CreatedDate")
+                                        parameters.Add("@CreatedDate", DateTime.Now)
+                                    End If
+                                End Using
+                            Catch
+                                ' Column doesn't exist, skip it
+                            End Try
+                            
+                            Dim sql = $"INSERT INTO Categories ({String.Join(", ", columns)}) VALUES ({String.Join(", ", columns.Select(Function(c) "@" & c))})"
                             
                             Using cmd As New SqlCommand(sql, conn)
-                                cmd.Parameters.AddWithValue("@name", categoryName)
-                                cmd.Parameters.AddWithValue("@desc", If(String.IsNullOrEmpty(description), DBNull.Value, CType(description, Object)))
-                                cmd.Parameters.AddWithValue("@active", isActive)
+                                For Each param In parameters
+                                    cmd.Parameters.AddWithValue(param.Key, param.Value)
+                                Next
                                 cmd.ExecuteNonQuery()
                                 imported += 1
                             End Using

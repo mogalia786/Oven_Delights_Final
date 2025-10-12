@@ -100,12 +100,18 @@ Namespace Manufacturing
             Using cn As New SqlConnection(_connectionString)
                 cn.Open()
                 Dim hasSku As Boolean = ColumnExists(cn, Nothing, "Products", "SKU")
-                If hasSku Then
+                Dim hasDefaultUoMID As Boolean = ColumnExists(cn, Nothing, "Products", "DefaultUoMID")
+                
+                If hasSku AndAlso hasDefaultUoMID Then
                     Using cmd As New SqlCommand("SELECT p.ProductID, p.SKU AS Code, p.ProductName, u.UoMCode AS UoM, p.IsActive FROM dbo.Products p LEFT JOIN dbo.UoM u ON u.UoMID = p.DefaultUoMID ORDER BY p.ProductName", cn)
                         dt.Load(cmd.ExecuteReader())
                     End Using
+                ElseIf hasSku Then
+                    Using cmd As New SqlCommand("SELECT p.ProductID, p.SKU AS Code, p.ProductName, p.UnitOfMeasure AS UoM, p.IsActive FROM dbo.Products p ORDER BY p.ProductName", cn)
+                        dt.Load(cmd.ExecuteReader())
+                    End Using
                 Else
-                    Using cmd As New SqlCommand("SELECT p.ProductID, p.ProductCode AS Code, p.ProductName, p.BaseUoM AS UoM, p.IsActive FROM dbo.Products p ORDER BY p.ProductName", cn)
+                    Using cmd As New SqlCommand("SELECT p.ProductID, p.ProductCode AS Code, p.ProductName, p.UnitOfMeasure AS UoM, p.IsActive FROM dbo.Products p ORDER BY p.ProductName", cn)
                         dt.Load(cmd.ExecuteReader())
                     End Using
                 End If

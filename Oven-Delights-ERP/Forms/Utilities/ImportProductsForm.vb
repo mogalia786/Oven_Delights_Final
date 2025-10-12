@@ -614,18 +614,42 @@ Public Class ImportProductsForm
                         Dim categoryIdStr = GetMappedValue("CategoryID")
                         Dim categoryName = GetMappedValue("CategoryName")
                         Dim categoryId As Integer = 0
+                        Dim categoryFound As Boolean = False
                         
                         If Not String.IsNullOrEmpty(categoryIdStr) Then
-                            Integer.TryParse(categoryIdStr, categoryId)
+                            If Integer.TryParse(categoryIdStr, categoryId) Then
+                                categoryFound = True
+                            End If
                         ElseIf Not String.IsNullOrEmpty(categoryName) Then
                             ' Lookup category by name
                             Using cmdCat As New SqlCommand("SELECT CategoryID FROM Categories WHERE CategoryName = @name", conn)
                                 cmdCat.Parameters.AddWithValue("@name", categoryName.Trim())
-                                Dim result = cmdCat.ExecuteScalar()
-                                If result IsNot Nothing Then
-                                    categoryId = Convert.ToInt32(result)
+                                Dim catResult = cmdCat.ExecuteScalar()
+                                If catResult IsNot Nothing Then
+                                    categoryId = Convert.ToInt32(catResult)
+                                    categoryFound = True
+                                    System.Diagnostics.Debug.WriteLine($"Row {rowNumber}: Category '{categoryName}' found with ID {categoryId}")
+                                Else
+                                    System.Diagnostics.Debug.WriteLine($"Row {rowNumber}: Category '{categoryName}' NOT FOUND in database")
+                                    errors.Add($"Row {rowNumber}: Category '{categoryName}' not found. Please import categories first.")
+                                    skipped += 1
+                                    Continue While
                                 End If
                             End Using
+                        Else
+                            ' No category specified - check if CategoryID is required
+                            Try
+                                Using cmdCheck As New SqlCommand("SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Products' AND COLUMN_NAME = 'CategoryID'", conn)
+                                    Dim nullable = cmdCheck.ExecuteScalar()?.ToString()
+                                    If nullable = "NO" Then
+                                        errors.Add($"Row {rowNumber}: CategoryID is required but not provided")
+                                        skipped += 1
+                                        Continue While
+                                    End If
+                                End Using
+                            Catch
+                                ' Assume nullable if check fails
+                            End Try
                         End If
                         
                         Dim itemType = GetMappedValue("ItemType")
