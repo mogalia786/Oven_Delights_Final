@@ -163,8 +163,8 @@ Namespace Manufacturing
             categorySelector.Width = 600
             categorySelector.Enabled = False ' Read-only, auto-filled from product
 
-            Dim lblSKU = New Label() With {.Text = "Product Code:", .Left = 640, .Top = y, .AutoSize = True}
-            txtSKU = New TextBox() With {.Left = 740, .Top = y - 3, .Width = 160, .ReadOnly = True, .BackColor = Color.Gainsboro}
+            Dim lblSKU = New Label() With {.Text = "Product Code:", .Left = 640, .Top = y, .AutoSize = True, .Font = New Font("Segoe UI", 10, FontStyle.Bold), .ForeColor = ColorDark}
+            txtSKU = New TextBox() With {.Left = 740, .Top = y - 3, .Width = 160, .ReadOnly = True, .BackColor = ColorLight, .Font = New Font("Segoe UI", 10)}
 
             y += 34
             Dim lblProductID = New Label() With {.Text = "Product ID:", .Left = 640, .Top = y, .AutoSize = True}
