@@ -242,7 +242,7 @@ Public Class ImportSuppliersForm
             {"Email", {"Email", "E-mail", "EmailAddress", "Email Address"}},
             {"Phone", {"Phone", "Telephone", "Tel", "PhoneNumber", "Phone Number"}},
             {"Mobile", {"Mobile", "Cell", "CellPhone", "Mobile Phone"}},
-            {"Address", {"Address", "Street Address", "Physical Address"}},
+            {"Address", {"Address", "Street Address", "Physical Address", "PhysicalAddress"}},
             {"City", {"City", "Town"}},
             {"Province", {"Province", "State", "Region"}},
             {"PostalCode", {"PostalCode", "Postal Code", "Zip", "ZipCode", "Zip Code", "Post Code"}},
@@ -443,17 +443,20 @@ Public Class ImportSuppliersForm
             y += 35
         Next
         
-        ' Add Confirm Mapping button
+        ' Add some spacing before buttons
+        y += 10
+        
+        ' Add Confirm Mapping button at the end of content
         Dim btnConfirmMapping As New Button() With {
             .Text = "✓ Confirm Mapping",
             .Left = 10,
-            .Top = panelHeight - 40,
+            .Top = y,
             .Width = 150,
-            .Height = 30,
+            .Height = 35,
             .BackColor = Color.FromArgb(39, 174, 96),
             .ForeColor = Color.White,
             .FlatStyle = FlatStyle.Flat,
-            .Font = New Font("Segoe UI", 9, FontStyle.Bold)
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold)
         }
         AddHandler btnConfirmMapping.Click, Sub(s, ev)
                                                 ' Validate required field
@@ -461,6 +464,13 @@ Public Class ImportSuppliersForm
                                                     MessageBox.Show("CompanyName is required! Please map it to a CSV column.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                                                     Return
                                                 End If
+                                                
+                                                ' Debug: Show mapping
+                                                System.Diagnostics.Debug.WriteLine("=== COLUMN MAPPING ===")
+                                                For Each kvp In _columnMapping
+                                                    System.Diagnostics.Debug.WriteLine($"{kvp.Key} -> CSV Column Index {kvp.Value} ({If(kvp.Value < _csvHeaders.Length, _csvHeaders(kvp.Value), "OUT OF RANGE")})")
+                                                Next
+                                                System.Diagnostics.Debug.WriteLine("======================")
                                                 
                                                 ' Hide mapping panel
                                                 pnlMapping.Visible = False
@@ -473,13 +483,13 @@ Public Class ImportSuppliersForm
         Dim btnCancelMapping As New Button() With {
             .Text = "✕ Cancel",
             .Left = 170,
-            .Top = panelHeight - 40,
+            .Top = y,
             .Width = 100,
-            .Height = 30,
+            .Height = 35,
             .BackColor = Color.FromArgb(231, 76, 60),
             .ForeColor = Color.White,
             .FlatStyle = FlatStyle.Flat,
-            .Font = New Font("Segoe UI", 9, FontStyle.Bold)
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold)
         }
         AddHandler btnCancelMapping.Click, Sub(s, ev)
                                                pnlMapping.Visible = False
@@ -597,6 +607,7 @@ Public Class ImportSuppliersForm
                         If phone.Length > 50 Then phone = phone.Substring(0, 50)
                         
                         Dim address = GetMappedValue("Address")
+                        System.Diagnostics.Debug.WriteLine($"Row {rowNumber}: Address mapped value = '{address}'")
                         If address.Length > 200 Then address = address.Substring(0, 200)
                         
                         Dim city = GetMappedValue("City")
