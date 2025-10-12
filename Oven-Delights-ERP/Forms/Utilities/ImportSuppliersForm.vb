@@ -236,15 +236,24 @@ Public Class ImportSuppliersForm
         
         ' Define field mappings with variations
         Dim fieldVariations As New Dictionary(Of String, String()) From {
+            {"SupplierCode", {"SupplierCode", "Supplier Code", "Code", "SupplierID"}},
             {"CompanyName", {"CompanyName", "Company Name", "Company", "Supplier Name", "Name"}},
             {"ContactPerson", {"ContactPerson", "Contact Person", "Contact", "Contact Name"}},
             {"Email", {"Email", "E-mail", "EmailAddress", "Email Address"}},
-            {"Phone", {"Phone", "Telephone", "Tel", "PhoneNumber", "Phone Number", "Mobile"}},
+            {"Phone", {"Phone", "Telephone", "Tel", "PhoneNumber", "Phone Number"}},
+            {"Mobile", {"Mobile", "Cell", "CellPhone", "Mobile Phone"}},
             {"Address", {"Address", "Street Address", "Physical Address"}},
             {"City", {"City", "Town"}},
+            {"Province", {"Province", "State", "Region"}},
             {"PostalCode", {"PostalCode", "Postal Code", "Zip", "ZipCode", "Zip Code", "Post Code"}},
             {"Country", {"Country"}},
             {"VATNumber", {"VATNumber", "VAT Number", "VAT", "TaxNumber", "Tax Number"}},
+            {"BankName", {"BankName", "Bank Name", "Bank"}},
+            {"BranchCode", {"BranchCode", "Branch Code", "Branch"}},
+            {"AccountNumber", {"AccountNumber", "Account Number", "Account No", "AccNo"}},
+            {"PaymentTerms", {"PaymentTerms", "Payment Terms", "Terms"}},
+            {"CreditLimit", {"CreditLimit", "Credit Limit", "Credit"}},
+            {"Notes", {"Notes", "Comments", "Remarks"}},
             {"IsActive", {"IsActive", "Active", "Status"}}
         }
         
@@ -268,78 +277,215 @@ Public Class ImportSuppliersForm
         Dim oldPanel = Me.Controls.Find("pnlMapping", True).FirstOrDefault()
         If oldPanel IsNot Nothing Then Me.Controls.Remove(oldPanel)
         
+        ' Calculate height based on CSV columns count
+        Dim rows As Integer = _csvHeaders.Length
+        Dim panelHeight As Integer = 80 + (rows * 35) + 50 ' Title + rows + button
+        If panelHeight > 400 Then panelHeight = 400 ' Max height with scroll
+        
         Dim pnlMapping As New Panel() With {
             .Name = "pnlMapping",
             .Left = 20,
-            .Top = 500,
+            .Top = 400,
             .Width = 900,
-            .Height = 120,
+            .Height = panelHeight,
             .BorderStyle = BorderStyle.FixedSingle,
-            .BackColor = Color.FromArgb(236, 240, 241)
+            .BackColor = Color.FromArgb(236, 240, 241),
+            .AutoScroll = True
         }
         
         Dim lblMappingTitle As New Label() With {
-            .Text = "Column Mapping (adjust if needed):",
+            .Text = "📋 Column Mapping - Map each CSV column to a database field (or Don't Map):",
             .Left = 10,
             .Top = 5,
-            .Width = 300,
+            .Width = 880,
             .Font = New Font("Segoe UI", 10, FontStyle.Bold)
         }
         pnlMapping.Controls.Add(lblMappingTitle)
         
-        Dim x As Integer = 10
-        Dim y As Integer = 30
+        ' Column headers
+        Dim lblCSVHeader As New Label() With {
+            .Text = "CSV Column",
+            .Left = 10,
+            .Top = 30,
+            .Width = 200,
+            .Font = New Font("Segoe UI", 9, FontStyle.Bold),
+            .ForeColor = Color.FromArgb(52, 73, 94)
+        }
         
-        ' Create dropdowns for key fields
-        Dim keyFields As String() = {"CompanyName", "ContactPerson", "Email", "Phone", "PostalCode"}
+        Dim lblArrow As New Label() With {
+            .Text = "→",
+            .Left = 220,
+            .Top = 30,
+            .Width = 30,
+            .Font = New Font("Segoe UI", 12, FontStyle.Bold),
+            .TextAlign = ContentAlignment.MiddleCenter
+        }
         
-        For Each field In keyFields
-            Dim lblField As New Label() With {
-                .Text = field & ":",
-                .Left = x,
+        Dim lblDBHeader As New Label() With {
+            .Text = "Database Field",
+            .Left = 260,
+            .Top = 30,
+            .Width = 200,
+            .Font = New Font("Segoe UI", 9, FontStyle.Bold),
+            .ForeColor = Color.FromArgb(52, 73, 94)
+        }
+        
+        pnlMapping.Controls.AddRange({lblCSVHeader, lblArrow, lblDBHeader})
+        
+        Dim y As Integer = 55
+        
+        ' Get all database fields from Suppliers table
+        Dim dbFieldsList As New List(Of String) From {"(Don't Map)"}
+        Try
+            Using conn As New SqlConnection(_connectionString)
+                conn.Open()
+                Using cmd As New SqlCommand("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Suppliers' AND TABLE_SCHEMA = 'dbo' ORDER BY ORDINAL_POSITION", conn)
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            Dim colName = reader.GetString(0)
+                            ' Exclude auto-generated and system fields
+                            If Not (colName.Equals("SupplierID", StringComparison.OrdinalIgnoreCase) OrElse 
+                                   colName.Equals("CreatedDate", StringComparison.OrdinalIgnoreCase) OrElse 
+                                   colName.Equals("CreatedBy", StringComparison.OrdinalIgnoreCase) OrElse
+                                   colName.Equals("ModifiedDate", StringComparison.OrdinalIgnoreCase) OrElse
+                                   colName.Equals("ModifiedBy", StringComparison.OrdinalIgnoreCase)) Then
+                                dbFieldsList.Add(colName)
+                            End If
+                        End While
+                    End Using
+                End Using
+            End Using
+        Catch ex As Exception
+            ' Fallback to hardcoded list if query fails
+            dbFieldsList.AddRange({"CompanyName", "ContactPerson", "Email", "Phone", "Address", "City", "PostalCode", "Country", "VATNumber", "IsActive"})
+        End Try
+        
+        Dim dbFields As String() = dbFieldsList.ToArray()
+        
+        ' Create mapping row for EACH CSV column
+        For i As Integer = 0 To _csvHeaders.Length - 1
+            Dim csvColumn As String = _csvHeaders(i)
+            
+            Dim lblCSVCol As New Label() With {
+                .Text = csvColumn,
+                .Left = 10,
                 .Top = y,
-                .Width = 120,
-                .Font = New Font("Segoe UI", 8)
+                .Width = 200,
+                .Font = New Font("Segoe UI", 9),
+                .ForeColor = Color.Black
             }
             
-            Dim cboColumn As New ComboBox() With {
-                .Name = "cbo" & field,
-                .Left = x,
-                .Top = y + 18,
-                .Width = 120,
+            Dim lblArrowIcon As New Label() With {
+                .Text = "→",
+                .Left = 220,
+                .Top = y,
+                .Width = 30,
+                .Font = New Font("Segoe UI", 10),
+                .TextAlign = ContentAlignment.MiddleCenter
+            }
+            
+            Dim cboDBField As New ComboBox() With {
+                .Name = "cboCSV_" & i.ToString(),
+                .Tag = i, ' Store CSV column index
+                .Left = 260,
+                .Top = y - 2,
+                .Width = 200,
                 .DropDownStyle = ComboBoxStyle.DropDownList,
-                .Font = New Font("Segoe UI", 8)
+                .Font = New Font("Segoe UI", 9)
             }
             
-            cboColumn.Items.Add("(Not Mapped)")
-            For Each header In _csvHeaders
-                cboColumn.Items.Add(header)
+            ' Add database field options
+            For Each dbField In dbFields
+                cboDBField.Items.Add(dbField)
             Next
             
-            If _columnMapping.ContainsKey(field) Then
-                cboColumn.SelectedIndex = _columnMapping(field) + 1
-            Else
-                cboColumn.SelectedIndex = 0
+            ' Set auto-detected mapping or default to "Don't Map"
+            Dim foundMapping As Boolean = False
+            For Each kvp In _columnMapping
+                If kvp.Value = i Then
+                    ' This CSV column is mapped to this database field
+                    Dim dbFieldIndex = Array.IndexOf(dbFields, kvp.Key)
+                    If dbFieldIndex >= 0 Then
+                        cboDBField.SelectedIndex = dbFieldIndex
+                        cboDBField.BackColor = Color.LightGreen
+                        foundMapping = True
+                        Exit For
+                    End If
+                End If
+            Next
+            
+            If Not foundMapping Then
+                cboDBField.SelectedIndex = 0 ' "Don't Map"
             End If
             
             ' Update mapping when changed
-            AddHandler cboColumn.SelectedIndexChanged, Sub(s, ev)
-                                                           Dim combo = CType(s, ComboBox)
-                                                           Dim fld = combo.Name.Substring(3) ' Remove "cbo" prefix
-                                                           If combo.SelectedIndex > 0 Then
-                                                               _columnMapping(fld) = combo.SelectedIndex - 1
-                                                           ElseIf _columnMapping.ContainsKey(fld) Then
-                                                               _columnMapping.Remove(fld)
-                                                           End If
-                                                       End Sub
+            AddHandler cboDBField.SelectedIndexChanged, Sub(s, ev)
+                                                            Dim combo = CType(s, ComboBox)
+                                                            Dim csvIndex = CInt(combo.Tag)
+                                                            Dim selectedField = combo.SelectedItem.ToString()
+                                                            
+                                                            ' Remove old mapping for this CSV column
+                                                            Dim keysToRemove = _columnMapping.Where(Function(kvp) kvp.Value = csvIndex).Select(Function(kvp) kvp.Key).ToList()
+                                                            For Each key In keysToRemove
+                                                                _columnMapping.Remove(key)
+                                                            Next
+                                                            
+                                                            ' Add new mapping if not "Don't Map"
+                                                            If selectedField <> "(Don't Map)" Then
+                                                                _columnMapping(selectedField) = csvIndex
+                                                                combo.BackColor = Color.LightGreen
+                                                            Else
+                                                                combo.BackColor = Color.White
+                                                            End If
+                                                        End Sub
             
-            pnlMapping.Controls.AddRange({lblField, cboColumn})
-            x += 130
-            If x > 780 Then
-                x = 10
-                y += 60
-            End If
+            pnlMapping.Controls.AddRange({lblCSVCol, lblArrowIcon, cboDBField})
+            y += 35
         Next
+        
+        ' Add Confirm Mapping button
+        Dim btnConfirmMapping As New Button() With {
+            .Text = "✓ Confirm Mapping",
+            .Left = 10,
+            .Top = panelHeight - 40,
+            .Width = 150,
+            .Height = 30,
+            .BackColor = Color.FromArgb(39, 174, 96),
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat,
+            .Font = New Font("Segoe UI", 9, FontStyle.Bold)
+        }
+        AddHandler btnConfirmMapping.Click, Sub(s, ev)
+                                                ' Validate required field
+                                                If Not _columnMapping.ContainsKey("CompanyName") Then
+                                                    MessageBox.Show("CompanyName is required! Please map it to a CSV column.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                                                    Return
+                                                End If
+                                                
+                                                ' Hide mapping panel
+                                                pnlMapping.Visible = False
+                                                
+                                                Dim lblStatus = CType(Me.Controls.Find("lblStatus", True)(0), Label)
+                                                lblStatus.Text = $"Mapping confirmed. {_columnMapping.Count} fields mapped. Ready to import."
+                                                lblStatus.ForeColor = Color.FromArgb(39, 174, 96)
+                                            End Sub
+        
+        Dim btnCancelMapping As New Button() With {
+            .Text = "✕ Cancel",
+            .Left = 170,
+            .Top = panelHeight - 40,
+            .Width = 100,
+            .Height = 30,
+            .BackColor = Color.FromArgb(231, 76, 60),
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat,
+            .Font = New Font("Segoe UI", 9, FontStyle.Bold)
+        }
+        AddHandler btnCancelMapping.Click, Sub(s, ev)
+                                               pnlMapping.Visible = False
+                                           End Sub
+        
+        pnlMapping.Controls.AddRange({btnConfirmMapping, btnCancelMapping})
         
         Me.Controls.Add(pnlMapping)
         pnlMapping.BringToFront()
@@ -351,12 +497,26 @@ Public Class ImportSuppliersForm
             Return
         End If
         
+        ' Check if mapping panel is visible (not confirmed yet)
+        Dim mappingPanel = Me.Controls.Find("pnlMapping", True).FirstOrDefault()
+        If mappingPanel IsNot Nothing AndAlso mappingPanel.Visible Then
+            MessageBox.Show("Please confirm the column mapping first by clicking 'Confirm Mapping' button.", "Mapping Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+        
+        ' Validate required field mapping
+        If Not _columnMapping.ContainsKey("CompanyName") Then
+            MessageBox.Show("CompanyName mapping is required! Please preview the file and map columns first.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+        
         Dim result = MessageBox.Show("Are you sure you want to import these suppliers?" & vbCrLf & "This will add new suppliers to the database.", "Confirm Import", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
         If result <> DialogResult.Yes Then Return
         
         Try
             Dim imported As Integer = 0
             Dim skipped As Integer = 0
+            Dim errors As New List(Of String)
             Dim rowNumber As Integer = 1 ' Track row for error reporting
             
             Using conn As New SqlConnection(_connectionString)
@@ -368,9 +528,12 @@ Public Class ImportSuppliersForm
                     While Not reader.EndOfStream
                         rowNumber += 1
                         Dim line = reader.ReadLine()
+                        If String.IsNullOrWhiteSpace(line) Then Continue While
+                        
                         Dim values = line.Split(","c)
                         
                         If values.Length < 1 Then
+                            errors.Add($"Row {rowNumber}: Empty row")
                             skipped += 1
                             Continue While
                         End If
@@ -385,8 +548,42 @@ Public Class ImportSuppliersForm
                         
                         Dim companyName = GetMappedValue("CompanyName")
                         If String.IsNullOrEmpty(companyName) Then
+                            errors.Add($"Row {rowNumber}: CompanyName is empty or not mapped")
                             skipped += 1
                             Continue While
+                        End If
+                        
+                        ' Generate unique SupplierCode from company name
+                        Dim supplierCode = GetMappedValue("SupplierCode")
+                        If String.IsNullOrEmpty(supplierCode) Then
+                            ' Auto-generate: First 3 letters + number
+                            Dim prefix As String = ""
+                            Dim cleanName = New String(companyName.Where(Function(c) Char.IsLetter(c)).ToArray())
+                            If cleanName.Length >= 3 Then
+                                prefix = cleanName.Substring(0, 3).ToUpper()
+                            ElseIf cleanName.Length > 0 Then
+                                prefix = cleanName.ToUpper().PadRight(3, "X"c)
+                            Else
+                                prefix = "SUP"
+                            End If
+                            
+                            ' Find next available number
+                            Dim codeNumber As Integer = 1
+                            Dim isUnique As Boolean = False
+                            While Not isUnique AndAlso codeNumber < 10000
+                                supplierCode = $"{prefix}{codeNumber:D3}"
+                                Using cmdCheck As New SqlCommand("SELECT COUNT(*) FROM Suppliers WHERE SupplierCode = @code", conn)
+                                    cmdCheck.Parameters.AddWithValue("@code", supplierCode)
+                                    isUnique = Convert.ToInt32(cmdCheck.ExecuteScalar()) = 0
+                                End Using
+                                If Not isUnique Then codeNumber += 1
+                            End While
+                            
+                            If Not isUnique Then
+                                errors.Add($"Row {rowNumber}: Could not generate unique SupplierCode")
+                                skipped += 1
+                                Continue While
+                            End If
                         End If
                         
                         ' Truncate fields to prevent SQL errors
@@ -418,6 +615,32 @@ Public Class ImportSuppliersForm
                         Dim isActiveStr = GetMappedValue("IsActive")
                         Dim isActive = If(isActiveStr = "1" OrElse isActiveStr.Equals("true", StringComparison.OrdinalIgnoreCase) OrElse isActiveStr.Equals("yes", StringComparison.OrdinalIgnoreCase), True, True)
                         
+                        ' Additional fields from CSV
+                        Dim mobile = GetMappedValue("Mobile")
+                        If mobile.Length > 50 Then mobile = mobile.Substring(0, 50)
+                        
+                        Dim province = GetMappedValue("Province")
+                        If province.Length > 100 Then province = province.Substring(0, 100)
+                        
+                        Dim bankName = GetMappedValue("BankName")
+                        If bankName.Length > 100 Then bankName = bankName.Substring(0, 100)
+                        
+                        Dim branchCode = GetMappedValue("BranchCode")
+                        If branchCode.Length > 20 Then branchCode = branchCode.Substring(0, 20)
+                        
+                        Dim accountNumber = GetMappedValue("AccountNumber")
+                        If accountNumber.Length > 50 Then accountNumber = accountNumber.Substring(0, 50)
+                        
+                        Dim paymentTerms = GetMappedValue("PaymentTerms")
+                        If paymentTerms.Length > 50 Then paymentTerms = paymentTerms.Substring(0, 50)
+                        
+                        Dim creditLimitStr = GetMappedValue("CreditLimit")
+                        Dim creditLimit As Decimal = 0
+                        Decimal.TryParse(creditLimitStr, creditLimit)
+                        
+                        Dim notes = GetMappedValue("Notes")
+                        If notes.Length > 500 Then notes = notes.Substring(0, 500)
+                        
                         ' Check if supplier already exists
                         Using cmdCheck As New SqlCommand("SELECT COUNT(*) FROM Suppliers WHERE CompanyName = @name", conn)
                             cmdCheck.Parameters.AddWithValue("@name", companyName)
@@ -427,27 +650,125 @@ Public Class ImportSuppliersForm
                             End If
                         End Using
                         
-                        ' Insert supplier
+                        ' Insert supplier - build dynamic SQL based on mapped columns
                         Try
-                            Dim sql = "INSERT INTO Suppliers (CompanyName, ContactPerson, Email, Phone, Address, City, PostalCode, Country, VATNumber, IsActive, CreatedDate) " &
-                                     "VALUES (@company, @contact, @email, @phone, @address, @city, @postal, @country, @vat, @active, GETDATE())"
+                            ' Build column list and value list
+                            Dim columns As New List(Of String)
+                            Dim parameters As New Dictionary(Of String, Object)
+                            
+                            ' Add mapped fields
+                            If Not String.IsNullOrEmpty(supplierCode) Then
+                                columns.Add("SupplierCode")
+                                parameters.Add("@SupplierCode", supplierCode)
+                            End If
+                            
+                            If Not String.IsNullOrEmpty(companyName) Then
+                                columns.Add("CompanyName")
+                                parameters.Add("@CompanyName", companyName)
+                            End If
+                            
+                            If Not String.IsNullOrEmpty(contactPerson) Then
+                                columns.Add("ContactPerson")
+                                parameters.Add("@ContactPerson", contactPerson)
+                            End If
+                            
+                            If Not String.IsNullOrEmpty(email) Then
+                                columns.Add("Email")
+                                parameters.Add("@Email", email)
+                            End If
+                            
+                            If Not String.IsNullOrEmpty(phone) Then
+                                columns.Add("Phone")
+                                parameters.Add("@Phone", phone)
+                            End If
+                            
+                            If Not String.IsNullOrEmpty(address) Then
+                                columns.Add("Address")
+                                parameters.Add("@Address", address)
+                            End If
+                            
+                            If Not String.IsNullOrEmpty(city) Then
+                                columns.Add("City")
+                                parameters.Add("@City", city)
+                            End If
+                            
+                            If Not String.IsNullOrEmpty(postalCode) Then
+                                columns.Add("PostalCode")
+                                parameters.Add("@PostalCode", postalCode)
+                            End If
+                            
+                            If Not String.IsNullOrEmpty(country) Then
+                                columns.Add("Country")
+                                parameters.Add("@Country", country)
+                            End If
+                            
+                            If Not String.IsNullOrEmpty(vatNumber) Then
+                                columns.Add("VATNumber")
+                                parameters.Add("@VATNumber", vatNumber)
+                            End If
+                            
+                            If Not String.IsNullOrEmpty(mobile) Then
+                                columns.Add("Mobile")
+                                parameters.Add("@Mobile", mobile)
+                            End If
+                            
+                            If Not String.IsNullOrEmpty(province) Then
+                                columns.Add("Province")
+                                parameters.Add("@Province", province)
+                            End If
+                            
+                            If Not String.IsNullOrEmpty(bankName) Then
+                                columns.Add("BankName")
+                                parameters.Add("@BankName", bankName)
+                            End If
+                            
+                            If Not String.IsNullOrEmpty(branchCode) Then
+                                columns.Add("BranchCode")
+                                parameters.Add("@BranchCode", branchCode)
+                            End If
+                            
+                            If Not String.IsNullOrEmpty(accountNumber) Then
+                                columns.Add("AccountNumber")
+                                parameters.Add("@AccountNumber", accountNumber)
+                            End If
+                            
+                            If Not String.IsNullOrEmpty(paymentTerms) Then
+                                columns.Add("PaymentTerms")
+                                parameters.Add("@PaymentTerms", paymentTerms)
+                            End If
+                            
+                            If creditLimit > 0 Then
+                                columns.Add("CreditLimit")
+                                parameters.Add("@CreditLimit", creditLimit)
+                            End If
+                            
+                            If Not String.IsNullOrEmpty(notes) Then
+                                columns.Add("Notes")
+                                parameters.Add("@Notes", notes)
+                            End If
+                            
+                            columns.Add("IsActive")
+                            parameters.Add("@IsActive", isActive)
+                            
+                            columns.Add("CreatedDate")
+                            parameters.Add("@CreatedDate", DateTime.Now)
+                            
+                            columns.Add("CreatedBy")
+                            parameters.Add("@CreatedBy", If(AppSession.CurrentUserID > 0, AppSession.CurrentUserID, 1))
+                            
+                            ' Build SQL
+                            Dim sql = $"INSERT INTO Suppliers ({String.Join(", ", columns)}) VALUES ({String.Join(", ", columns.Select(Function(c) "@" & c))})"
                             
                             Using cmd As New SqlCommand(sql, conn)
-                                cmd.Parameters.AddWithValue("@company", companyName)
-                                cmd.Parameters.AddWithValue("@contact", If(String.IsNullOrEmpty(contactPerson), DBNull.Value, CType(contactPerson, Object)))
-                                cmd.Parameters.AddWithValue("@email", If(String.IsNullOrEmpty(email), DBNull.Value, CType(email, Object)))
-                                cmd.Parameters.AddWithValue("@phone", If(String.IsNullOrEmpty(phone), DBNull.Value, CType(phone, Object)))
-                                cmd.Parameters.AddWithValue("@address", If(String.IsNullOrEmpty(address), DBNull.Value, CType(address, Object)))
-                                cmd.Parameters.AddWithValue("@city", If(String.IsNullOrEmpty(city), DBNull.Value, CType(city, Object)))
-                                cmd.Parameters.AddWithValue("@postal", If(String.IsNullOrEmpty(postalCode), DBNull.Value, CType(postalCode, Object)))
-                                cmd.Parameters.AddWithValue("@country", country)
-                                cmd.Parameters.AddWithValue("@vat", If(String.IsNullOrEmpty(vatNumber), DBNull.Value, CType(vatNumber, Object)))
-                                cmd.Parameters.AddWithValue("@active", isActive)
+                                For Each param In parameters
+                                    cmd.Parameters.AddWithValue(param.Key, param.Value)
+                                Next
                                 cmd.ExecuteNonQuery()
                                 imported += 1
                             End Using
                         Catch ex As Exception
                             ' Log error and skip this row
+                            errors.Add($"Row {rowNumber}: {ex.Message}")
                             System.Diagnostics.Debug.WriteLine($"Error importing row {rowNumber}: {ex.Message}")
                             skipped += 1
                         End Try
@@ -459,9 +780,17 @@ Public Class ImportSuppliersForm
             lblStatus.Text = $"Import complete! Imported: {imported}, Skipped: {skipped}"
             lblStatus.ForeColor = Color.FromArgb(39, 174, 96)
             
-            MessageBox.Show($"Import completed successfully!{vbCrLf}{vbCrLf}Imported: {imported}{vbCrLf}Skipped (duplicates): {skipped}", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            ' Show detailed results
+            Dim resultMsg As String = $"Import completed!{vbCrLf}{vbCrLf}Imported: {imported}{vbCrLf}Skipped: {skipped}"
+            If errors.Count > 0 AndAlso errors.Count <= 10 Then
+                resultMsg &= vbCrLf & vbCrLf & "Errors:" & vbCrLf & String.Join(vbCrLf, errors.Take(10))
+            ElseIf errors.Count > 10 Then
+                resultMsg &= vbCrLf & vbCrLf & $"Errors: {errors.Count} (showing first 10):" & vbCrLf & String.Join(vbCrLf, errors.Take(10))
+            End If
+            
+            MessageBox.Show(resultMsg, "Import Results", MessageBoxButtons.OK, If(imported > 0, MessageBoxIcon.Information, MessageBoxIcon.Warning))
         Catch ex As Exception
-            MessageBox.Show($"Error importing suppliers: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show($"Error importing suppliers: {ex.Message}{vbCrLf}{vbCrLf}Stack Trace:{vbCrLf}{ex.StackTrace}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 End Class
