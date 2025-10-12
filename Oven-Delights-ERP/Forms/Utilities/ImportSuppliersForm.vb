@@ -131,6 +131,17 @@ Public Class ImportSuppliersForm
         }
         y += 335
         
+        ' Progress Bar
+        Dim progressBar As New ProgressBar() With {
+            .Name = "progressBar",
+            .Left = 0,
+            .Top = y,
+            .Width = 900,
+            .Height = 25,
+            .Visible = False
+        }
+        y += 35
+        
         ' Status Label
         Dim lblStatus As New Label() With {
             .Name = "lblStatus",
@@ -184,7 +195,7 @@ Public Class ImportSuppliersForm
         }
         AddHandler btnClose.Click, Sub(s, ev) Me.Close()
         
-        pnlMain.Controls.AddRange({lblInstructions, lblFile, txtFilePath, btnBrowse, lblPreview, dgvPreview, lblStatus, btnPreview, btnImport, btnClose})
+        pnlMain.Controls.AddRange({lblInstructions, lblFile, txtFilePath, btnBrowse, lblPreview, dgvPreview, progressBar, lblStatus, btnPreview, btnImport, btnClose})
         
         Me.Controls.AddRange({pnlHeader, pnlMain})
     End Sub
@@ -529,6 +540,23 @@ Public Class ImportSuppliersForm
             Dim errors As New List(Of String)
             Dim rowNumber As Integer = 1 ' Track row for error reporting
             
+            ' Count total rows first
+            Dim totalRows As Integer = 0
+            Using reader As New StreamReader(_csvFilePath)
+                reader.ReadLine() ' Skip header
+                While Not reader.EndOfStream
+                    reader.ReadLine()
+                    totalRows += 1
+                End While
+            End Using
+            
+            ' Show progress bar
+            Dim progressBar = CType(Me.Controls.Find("progressBar", True)(0), ProgressBar)
+            progressBar.Visible = True
+            progressBar.Minimum = 0
+            progressBar.Maximum = totalRows
+            progressBar.Value = 0
+            
             Using conn As New SqlConnection(_connectionString)
                 conn.Open()
                 Using reader As New StreamReader(_csvFilePath)
@@ -792,13 +820,22 @@ Public Class ImportSuppliersForm
                             System.Diagnostics.Debug.WriteLine($"Error importing row {rowNumber}: {ex.Message}")
                             skipped += 1
                         End Try
+                        
+                        ' Update progress bar
+                        progressBar.Value = rowNumber - 1
+                        Dim lblStatus = CType(Me.Controls.Find("lblStatus", True)(0), Label)
+                        lblStatus.Text = $"Importing... {rowNumber - 1} of {totalRows} rows processed"
+                        Application.DoEvents() ' Allow UI to update
                     End While
                 End Using
             End Using
             
-            Dim lblStatus = CType(Me.Controls.Find("lblStatus", True)(0), Label)
-            lblStatus.Text = $"Import complete! Imported: {imported}, Skipped: {skipped}"
-            lblStatus.ForeColor = Color.FromArgb(39, 174, 96)
+            ' Hide progress bar
+            progressBar.Visible = False
+            
+            Dim lblStatus2 = CType(Me.Controls.Find("lblStatus", True)(0), Label)
+            lblStatus2.Text = $"Import complete! Imported: {imported}, Skipped: {skipped}"
+            lblStatus2.ForeColor = Color.FromArgb(39, 174, 96)
             
             ' Show detailed results
             Dim resultMsg As String = $"Import completed!{vbCrLf}{vbCrLf}Imported: {imported}{vbCrLf}Skipped: {skipped}"
