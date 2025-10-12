@@ -3691,6 +3691,11 @@ Partial Class MainDashboard
             End If
         End If
         
+        ' Add Import Categories submenu
+        Dim importCategories As ToolStripMenuItem = EnsureSubMenu(utilities, "Import Categories from CSV")
+        RemoveHandler importCategories.Click, AddressOf OpenImportCategories
+        AddHandler importCategories.Click, AddressOf OpenImportCategories
+        
         ' Add Import Products submenu
         Dim importProducts As ToolStripMenuItem = EnsureSubMenu(utilities, "Import Products from CSV")
         RemoveHandler importProducts.Click, AddressOf OpenImportProducts
@@ -3700,6 +3705,25 @@ Partial Class MainDashboard
         Dim importSuppliers As ToolStripMenuItem = EnsureSubMenu(utilities, "Import Suppliers from CSV")
         RemoveHandler importSuppliers.Click, AddressOf OpenImportSuppliers
         AddHandler importSuppliers.Click, AddressOf OpenImportSuppliers
+    End Sub
+    
+    Private Sub OpenImportCategories(sender As Object, e As EventArgs)
+        Try
+            For Each child As Form In Me.MdiChildren
+                If TypeOf child Is ImportCategoriesForm Then
+                    child.Activate()
+                    child.WindowState = FormWindowState.Maximized
+                    Return
+                End If
+            Next
+            
+            Dim frm As New ImportCategoriesForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Import Categories: " & ex.Message, "Utilities", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
     
     Private Sub OpenImportProducts(sender As Object, e As EventArgs)

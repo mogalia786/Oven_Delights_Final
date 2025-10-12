@@ -3,16 +3,16 @@ Imports System.Data.SqlClient
 Imports System.Configuration
 Imports System.Linq
 
-Public Class ImportProductsForm
+Public Class ImportCategoriesForm
     Inherits Form
     
     Private _connectionString As String = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
     Private _csvFilePath As String = ""
-    Private _columnMapping As New Dictionary(Of String, Integer) ' Database field -> CSV column index
+    Private _columnMapping As New Dictionary(Of String, Integer)
     Private _csvHeaders As String() = Nothing
     
-    Private Sub ImportProductsForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        Me.Text = "Import Products from CSV - Oven Delights ERP"
+    Private Sub ImportCategoriesForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        Me.Text = "Import Categories from CSV - Oven Delights ERP"
         Me.Size = New Size(1000, 700)
         Me.StartPosition = FormStartPosition.CenterParent
         InitializeUI()
@@ -23,11 +23,11 @@ Public Class ImportProductsForm
         Dim pnlHeader As New Panel() With {
             .Dock = DockStyle.Top,
             .Height = 80,
-            .BackColor = Color.FromArgb(230, 126, 34)
+            .BackColor = Color.FromArgb(155, 89, 182)
         }
         
         Dim lblTitle As New Label() With {
-            .Text = "📥 Import Products from CSV",
+            .Text = "📥 Import Categories from CSV",
             .Font = New Font("Segoe UI", 18, FontStyle.Bold),
             .ForeColor = Color.White,
             .AutoSize = True,
@@ -35,7 +35,7 @@ Public Class ImportProductsForm
         }
         
         Dim lblSubtitle As New Label() With {
-            .Text = "Upload a CSV file to bulk import products into the system",
+            .Text = "Upload a CSV file to bulk import categories into the system",
             .Font = New Font("Segoe UI", 10),
             .ForeColor = Color.White,
             .AutoSize = True,
@@ -56,17 +56,16 @@ Public Class ImportProductsForm
         ' Instructions
         Dim lblInstructions As New Label() With {
             .Text = "CSV Format Requirements:" & vbCrLf &
-                   "Columns: ProductCode, ProductName, CategoryID, ItemType, LastPaidPrice, AverageCost, ReorderLevel, ReorderQuantity, IsActive" & vbCrLf &
-                   "ItemType: 'internal' or 'external'" & vbCrLf &
+                   "Columns: CategoryName, Description, IsActive" & vbCrLf &
                    "IsActive: 1 (active) or 0 (inactive)",
             .Left = 0,
             .Top = y,
             .Width = 900,
-            .Height = 80,
+            .Height = 60,
             .Font = New Font("Segoe UI", 9),
             .ForeColor = Color.FromArgb(52, 73, 94)
         }
-        y += 90
+        y += 70
         
         ' File Selection
         Dim lblFile As New Label() With {
@@ -171,7 +170,7 @@ Public Class ImportProductsForm
         AddHandler btnPreview.Click, AddressOf BtnPreview_Click
         
         Dim btnImport As New Button() With {
-            .Text = "✓ Import Products",
+            .Text = "✓ Import Categories",
             .Left = 160,
             .Top = y,
             .Width = 150,
@@ -210,7 +209,6 @@ Public Class ImportProductsForm
         Try
             Dim dt As New DataTable()
             Using reader As New StreamReader(_csvFilePath)
-                ' Read headers
                 Dim headerLine = reader.ReadLine()
                 _csvHeaders = headerLine.Split(","c).Select(Function(h) h.Trim()).ToArray()
                 
@@ -218,7 +216,6 @@ Public Class ImportProductsForm
                     dt.Columns.Add(header)
                 Next
                 
-                ' Read first 10 rows for preview
                 Dim rowCount As Integer = 0
                 While Not reader.EndOfStream AndAlso rowCount < 10
                     Dim line = reader.ReadLine()
@@ -228,10 +225,7 @@ Public Class ImportProductsForm
                 End While
             End Using
             
-            ' Auto-detect column mapping
             AutoDetectColumnMapping()
-            
-            ' Show mapping UI
             ShowColumnMappingUI()
             
             Dim dgv = CType(Me.Controls.Find("dgvPreview", True)(0), DataGridView)
@@ -248,27 +242,12 @@ Public Class ImportProductsForm
     Private Sub AutoDetectColumnMapping()
         _columnMapping.Clear()
         
-        ' Define field mappings with variations
         Dim fieldVariations As New Dictionary(Of String, String()) From {
-            {"ProductCode", {"ProductCode", "Product Code", "Code", "SKU", "ProductID"}},
-            {"ProductName", {"ProductName", "Product Name", "Name", "Description"}},
-            {"CategoryID", {"CategoryID", "Category ID", "Cat ID"}},
-            {"CategoryName", {"CategoryName", "Category Name", "Category"}},
-            {"ItemType", {"ItemType", "Item Type", "Type", "ProductType"}},
-            {"LastPaidPrice", {"LastPaidPrice", "Last Paid Price", "Cost Price", "Purchase Price", "Cost"}},
-            {"AverageCost", {"AverageCost", "Average Cost", "Avg Cost", "AvgCost"}},
-            {"ReorderLevel", {"ReorderLevel", "Reorder Level", "Min Stock", "MinStock"}},
-            {"ReorderQuantity", {"ReorderQuantity", "Reorder Quantity", "Reorder Qty", "ReorderQty"}},
-            {"IsActive", {"IsActive", "Active", "Status"}},
-            {"BarCode", {"BarCode", "Bar Code", "Barcode", "EAN"}},
-            {"UnitOfMeasure", {"UnitOfMeasure", "Unit Of Measure", "UOM", "Unit"}},
-            {"SupplierID", {"SupplierID", "Supplier ID", "Supplier"}},
-            {"TaxRate", {"TaxRate", "Tax Rate", "VAT Rate", "Tax"}},
-            {"SellingPrice", {"SellingPrice", "Selling Price", "Sale Price", "Price"}},
-            {"Notes", {"Notes", "Comments", "Remarks", "Description"}}
+            {"CategoryName", {"CategoryName", "Category Name", "Name", "Category"}},
+            {"Description", {"Description", "Desc", "Details"}},
+            {"IsActive", {"IsActive", "Active", "Status"}}
         }
         
-        ' Try to match each database field to a CSV column
         For Each field In fieldVariations.Keys
             For i As Integer = 0 To _csvHeaders.Length - 1
                 Dim csvHeader = _csvHeaders(i).Trim()
@@ -284,11 +263,9 @@ Public Class ImportProductsForm
     End Sub
     
     Private Sub ShowColumnMappingUI()
-        ' Remove old mapping panel if exists
         Dim oldPanel = Me.Controls.Find("pnlMapping", True).FirstOrDefault()
         If oldPanel IsNot Nothing Then Me.Controls.Remove(oldPanel)
         
-        ' Calculate height based on CSV columns count
         Dim rows As Integer = _csvHeaders.Length
         Dim panelHeight As Integer = 80 + (rows * 35) + 50
         If panelHeight > 400 Then panelHeight = 400
@@ -313,7 +290,6 @@ Public Class ImportProductsForm
         }
         pnlMapping.Controls.Add(lblMappingTitle)
         
-        ' Column headers
         Dim lblCSVHeader As New Label() With {
             .Text = "CSV Column",
             .Left = 10,
@@ -344,34 +320,8 @@ Public Class ImportProductsForm
         pnlMapping.Controls.AddRange({lblCSVHeader, lblArrow, lblDBHeader})
         
         Dim y As Integer = 55
+        Dim dbFields As String() = {"(Don't Map)", "CategoryName", "Description", "IsActive"}
         
-        ' Get all database fields from Products table
-        Dim dbFieldsList As New List(Of String) From {"(Don't Map)"}
-        Try
-            Using conn As New SqlConnection(_connectionString)
-                conn.Open()
-                Using cmd As New SqlCommand("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Products' AND TABLE_SCHEMA = 'dbo' ORDER BY ORDINAL_POSITION", conn)
-                    Using reader = cmd.ExecuteReader()
-                        While reader.Read()
-                            Dim colName = reader.GetString(0)
-                            If Not (colName.Equals("ProductID", StringComparison.OrdinalIgnoreCase) OrElse 
-                                   colName.Equals("CreatedDate", StringComparison.OrdinalIgnoreCase) OrElse 
-                                   colName.Equals("CreatedBy", StringComparison.OrdinalIgnoreCase) OrElse
-                                   colName.Equals("ModifiedDate", StringComparison.OrdinalIgnoreCase) OrElse
-                                   colName.Equals("ModifiedBy", StringComparison.OrdinalIgnoreCase)) Then
-                                dbFieldsList.Add(colName)
-                            End If
-                        End While
-                    End Using
-                End Using
-            End Using
-        Catch ex As Exception
-            dbFieldsList.AddRange({"ProductCode", "ProductName", "CategoryID", "ItemType", "LastPaidPrice", "AverageCost", "ReorderLevel", "ReorderQuantity", "IsActive"})
-        End Try
-        
-        Dim dbFields As String() = dbFieldsList.ToArray()
-        
-        ' Create mapping row for EACH CSV column
         For i As Integer = 0 To _csvHeaders.Length - 1
             Dim csvColumn As String = _csvHeaders(i)
             
@@ -460,16 +410,10 @@ Public Class ImportProductsForm
             .Font = New Font("Segoe UI", 10, FontStyle.Bold)
         }
         AddHandler btnConfirmMapping.Click, Sub(s, ev)
-                                                If Not _columnMapping.ContainsKey("ProductName") Then
-                                                    MessageBox.Show("ProductName is required! Please map it to a CSV column.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                                                If Not _columnMapping.ContainsKey("CategoryName") Then
+                                                    MessageBox.Show("CategoryName is required! Please map it to a CSV column.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                                                     Return
                                                 End If
-                                                
-                                                System.Diagnostics.Debug.WriteLine("=== COLUMN MAPPING ===")
-                                                For Each kvp In _columnMapping
-                                                    System.Diagnostics.Debug.WriteLine($"{kvp.Key} -> CSV Column Index {kvp.Value} ({If(kvp.Value < _csvHeaders.Length, _csvHeaders(kvp.Value), "OUT OF RANGE")})")
-                                                Next
-                                                System.Diagnostics.Debug.WriteLine("======================")
                                                 
                                                 pnlMapping.Visible = False
                                                 
@@ -505,19 +449,18 @@ Public Class ImportProductsForm
             Return
         End If
         
-        ' Check if mapping panel is visible
         Dim mappingPanel = Me.Controls.Find("pnlMapping", True).FirstOrDefault()
         If mappingPanel IsNot Nothing AndAlso mappingPanel.Visible Then
             MessageBox.Show("Please confirm the column mapping first by clicking 'Confirm Mapping' button.", "Mapping Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
         
-        If Not _columnMapping.ContainsKey("ProductName") Then
-            MessageBox.Show("ProductName mapping is required! Please preview the file and map columns first.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        If Not _columnMapping.ContainsKey("CategoryName") Then
+            MessageBox.Show("CategoryName mapping is required! Please preview the file and map columns first.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
         
-        Dim result = MessageBox.Show("Are you sure you want to import these products?" & vbCrLf & "This will add new products to the database.", "Confirm Import", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+        Dim result = MessageBox.Show("Are you sure you want to import these categories?" & vbCrLf & "This will add new categories to the database.", "Confirm Import", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
         If result <> DialogResult.Yes Then Return
         
         Try
@@ -526,17 +469,15 @@ Public Class ImportProductsForm
             Dim errors As New List(Of String)
             Dim rowNumber As Integer = 1
             
-            ' Count total rows first
             Dim totalRows As Integer = 0
             Using reader As New StreamReader(_csvFilePath)
-                reader.ReadLine() ' Skip header
+                reader.ReadLine()
                 While Not reader.EndOfStream
                     reader.ReadLine()
                     totalRows += 1
                 End While
             End Using
             
-            ' Show progress bar
             Dim progressBar = CType(Me.Controls.Find("progressBar", True)(0), ProgressBar)
             progressBar.Visible = True
             progressBar.Minimum = 0
@@ -546,7 +487,7 @@ Public Class ImportProductsForm
             Using conn As New SqlConnection(_connectionString)
                 conn.Open()
                 Using reader As New StreamReader(_csvFilePath)
-                    reader.ReadLine() ' Skip header
+                    reader.ReadLine()
                     
                     While Not reader.EndOfStream
                         rowNumber += 1
@@ -561,7 +502,6 @@ Public Class ImportProductsForm
                             Continue While
                         End If
                         
-                        ' Use column mapping to extract values
                         Dim GetMappedValue = Function(field As String) As String
                                                  If _columnMapping.ContainsKey(field) AndAlso _columnMapping(field) < values.Length Then
                                                      Return values(_columnMapping(field)).Trim()
@@ -569,145 +509,54 @@ Public Class ImportProductsForm
                                                  Return ""
                                              End Function
                         
-                        Dim productName = GetMappedValue("ProductName")
-                        If String.IsNullOrEmpty(productName) Then
-                            errors.Add($"Row {rowNumber}: ProductName is empty or not mapped")
+                        Dim categoryName = GetMappedValue("CategoryName")
+                        If String.IsNullOrEmpty(categoryName) Then
+                            errors.Add($"Row {rowNumber}: CategoryName is empty")
                             skipped += 1
                             Continue While
                         End If
                         
-                        ' Truncate product name
-                        If productName.Length > 200 Then productName = productName.Substring(0, 200)
+                        If categoryName.Length > 100 Then categoryName = categoryName.Substring(0, 100)
                         
-                        ' Generate unique ProductCode
-                        Dim productCode = GetMappedValue("ProductCode")
-                        If String.IsNullOrEmpty(productCode) Then
-                            Dim prefix As String = ""
-                            Dim cleanName = New String(productName.Where(Function(c) Char.IsLetter(c)).ToArray())
-                            If cleanName.Length >= 3 Then
-                                prefix = cleanName.Substring(0, 3).ToUpper()
-                            ElseIf cleanName.Length > 0 Then
-                                prefix = cleanName.ToUpper().PadRight(3, "X"c)
-                            Else
-                                prefix = "PRD"
-                            End If
-                            
-                            Dim codeNumber As Integer = 1
-                            Dim isUnique As Boolean = False
-                            While Not isUnique AndAlso codeNumber < 10000
-                                productCode = $"{prefix}{codeNumber:D3}"
-                                Using cmdCheck As New SqlCommand("SELECT COUNT(*) FROM Products WHERE ProductCode = @code", conn)
-                                    cmdCheck.Parameters.AddWithValue("@code", productCode)
-                                    isUnique = Convert.ToInt32(cmdCheck.ExecuteScalar()) = 0
-                                End Using
-                                If Not isUnique Then codeNumber += 1
-                            End While
-                            
-                            If Not isUnique Then
-                                errors.Add($"Row {rowNumber}: Could not generate unique ProductCode")
-                                skipped += 1
-                                Continue While
-                            End If
-                        End If
-                        
-                        ' Get category - lookup by name if not ID
-                        Dim categoryIdStr = GetMappedValue("CategoryID")
-                        Dim categoryName = GetMappedValue("CategoryName")
-                        Dim categoryId As Integer = 0
-                        
-                        If Not String.IsNullOrEmpty(categoryIdStr) Then
-                            Integer.TryParse(categoryIdStr, categoryId)
-                        ElseIf Not String.IsNullOrEmpty(categoryName) Then
-                            ' Lookup category by name
-                            Using cmdCat As New SqlCommand("SELECT CategoryID FROM Categories WHERE CategoryName = @name", conn)
-                                cmdCat.Parameters.AddWithValue("@name", categoryName.Trim())
-                                Dim result = cmdCat.ExecuteScalar()
-                                If result IsNot Nothing Then
-                                    categoryId = Convert.ToInt32(result)
-                                End If
-                            End Using
-                        End If
-                        
-                        Dim itemType = GetMappedValue("ItemType")
-                        If String.IsNullOrEmpty(itemType) Then itemType = "external"
+                        Dim description = GetMappedValue("Description")
+                        If description.Length > 500 Then description = description.Substring(0, 500)
                         
                         Dim isActiveStr = GetMappedValue("IsActive")
                         Dim isActive = If(isActiveStr = "1" OrElse isActiveStr.Equals("true", StringComparison.OrdinalIgnoreCase), True, True)
                         
                         ' Check duplicate
-                        Using cmdCheck As New SqlCommand("SELECT COUNT(*) FROM Products WHERE ProductName = @name", conn)
-                            cmdCheck.Parameters.AddWithValue("@name", productName)
+                        Using cmdCheck As New SqlCommand("SELECT COUNT(*) FROM Categories WHERE CategoryName = @name", conn)
+                            cmdCheck.Parameters.AddWithValue("@name", categoryName)
                             If Convert.ToInt32(cmdCheck.ExecuteScalar()) > 0 Then
                                 skipped += 1
                                 Continue While
                             End If
                         End Using
                         
-                        ' Insert product
+                        ' Insert category
                         Try
-                            Dim columns As New List(Of String)
-                            Dim parameters As New Dictionary(Of String, Object)
-                            
-                            columns.Add("ProductCode")
-                            parameters.Add("@ProductCode", productCode)
-                            
-                            columns.Add("ProductName")
-                            parameters.Add("@ProductName", productName)
-                            
-                            If categoryId > 0 Then
-                                columns.Add("CategoryID")
-                                parameters.Add("@CategoryID", categoryId)
-                            End If
-                            
-                            columns.Add("ItemType")
-                            parameters.Add("@ItemType", itemType)
-                            
-                            columns.Add("IsActive")
-                            parameters.Add("@IsActive", isActive)
-                            
-                            columns.Add("RecipeCreated")
-                            parameters.Add("@RecipeCreated", "No")
-                            
-                            columns.Add("CreatedDate")
-                            parameters.Add("@CreatedDate", DateTime.Now)
-                            
-                            ' Only add CreatedBy if column exists
-                            Try
-                                Using cmdCheck As New SqlCommand("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Products' AND COLUMN_NAME = 'CreatedBy'", conn)
-                                    If Convert.ToInt32(cmdCheck.ExecuteScalar()) > 0 Then
-                                        columns.Add("CreatedBy")
-                                        parameters.Add("@CreatedBy", If(AppSession.CurrentUserID > 0, AppSession.CurrentUserID, 1))
-                                    End If
-                                End Using
-                            Catch
-                                ' Column doesn't exist, skip it
-                            End Try
-                            
-                            Dim sql = $"INSERT INTO Products ({String.Join(", ", columns)}) VALUES ({String.Join(", ", columns.Select(Function(c) "@" & c))})"
+                            Dim sql = "INSERT INTO Categories (CategoryName, Description, IsActive, CreatedDate) VALUES (@name, @desc, @active, GETDATE())"
                             
                             Using cmd As New SqlCommand(sql, conn)
-                                For Each param In parameters
-                                    cmd.Parameters.AddWithValue(param.Key, param.Value)
-                                Next
+                                cmd.Parameters.AddWithValue("@name", categoryName)
+                                cmd.Parameters.AddWithValue("@desc", If(String.IsNullOrEmpty(description), DBNull.Value, CType(description, Object)))
+                                cmd.Parameters.AddWithValue("@active", isActive)
                                 cmd.ExecuteNonQuery()
                                 imported += 1
                             End Using
                         Catch ex As Exception
                             errors.Add($"Row {rowNumber}: {ex.Message}")
-                            System.Diagnostics.Debug.WriteLine($"Error importing row {rowNumber}: {ex.Message}")
                             skipped += 1
                         End Try
                         
-                        ' Update progress bar
                         progressBar.Value = rowNumber - 1
                         Dim lblStatus = CType(Me.Controls.Find("lblStatus", True)(0), Label)
                         lblStatus.Text = $"Importing... {rowNumber - 1} of {totalRows} rows processed"
-                        Application.DoEvents() ' Allow UI to update
+                        Application.DoEvents()
                     End While
                 End Using
             End Using
             
-            ' Hide progress bar
             progressBar.Visible = False
             
             Dim lblStatus2 = CType(Me.Controls.Find("lblStatus", True)(0), Label)
@@ -723,7 +572,7 @@ Public Class ImportProductsForm
             
             MessageBox.Show(resultMsg, "Import Results", MessageBoxButtons.OK, If(imported > 0, MessageBoxIcon.Information, MessageBoxIcon.Warning))
         Catch ex As Exception
-            MessageBox.Show($"Error importing products: {ex.Message}{vbCrLf}{vbCrLf}Stack Trace:{vbCrLf}{ex.StackTrace}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show($"Error importing categories: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 End Class
