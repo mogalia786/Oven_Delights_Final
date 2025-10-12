@@ -127,6 +127,33 @@ Namespace Manufacturing
         End Function
 
         Private Sub InitializeUi()
+            ' Header Panel with professional styling
+            Dim pnlHeader As New Panel() With {
+                .Dock = DockStyle.Top,
+                .Height = 80,
+                .BackColor = ColorDark
+            }
+            
+            Dim lblHeader As New Label() With {
+                .Text = "✨ Build Product Recipe",
+                .Font = New Font("Segoe UI", 18, FontStyle.Bold),
+                .ForeColor = Color.White,
+                .AutoSize = True,
+                .Left = 30,
+                .Top = 25
+            }
+            
+            Dim lblSubHeader As New Label() With {
+                .Text = "Create recipe for manufactured products",
+                .Font = New Font("Segoe UI", 10),
+                .ForeColor = ColorLight,
+                .AutoSize = True,
+                .Left = 30,
+                .Top = 52
+            }
+            
+            pnlHeader.Controls.AddRange({lblHeader, lblSubHeader})
+
             ' Split container for tree and recipe method
             Dim splitMain As New SplitContainer() With {
                 .Dock = DockStyle.Fill,
@@ -137,46 +164,70 @@ Namespace Manufacturing
             ' LEFT PANEL: Tree and components
             Dim leftPanel As New Panel() With {.Dock = DockStyle.Fill}
 
-            ' Header panel
-            Dim pnlHeader As New Panel() With {.Dock = DockStyle.Top, .Height = 140, .BackColor = Color.White}
-            Dim header As New Label() With {
-                .Text = "Build Product Recipe",
-                .Font = New Font("Segoe UI", 14, FontStyle.Bold),
-                .AutoSize = True,
-                .Left = 20,
-                .Top = 10,
-                .ForeColor = Color.FromArgb(183, 58, 46)
-            }
-            pnlHeader.Controls.Add(header)
+            ' Product selection panel
+            Dim pnlProductSelect As New Panel() With {.Dock = DockStyle.Top, .Height = 100, .BackColor = Color.White, .Padding = New Padding(20, 10, 20, 10)}
 
-            Dim x As Integer = 20
-            Dim y As Integer = 44
+            Dim x As Integer = 0
+            Dim y As Integer = 10
 
             ' Product Dropdown (changed from textbox)
-            Dim lblProduct = New Label() With {.Text = "Select Product:", .Left = x, .Top = y, .AutoSize = True}
+            Dim lblProduct = New Label() With {
+                .Text = "Select Product *",
+                .Left = x,
+                .Top = y,
+                .Width = 150,
+                .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+                .ForeColor = ColorDark
+            }
             cmbProduct = New ComboBox() With {
-                .Left = x + 110,
-                .Top = y - 3,
-                .Width = 320,
-                .DropDownStyle = ComboBoxStyle.DropDownList
+                .Left = x,
+                .Top = y + 25,
+                .Width = 400,
+                .DropDownStyle = ComboBoxStyle.DropDownList,
+                .Font = New Font("Segoe UI", 10)
             }
             AddHandler cmbProduct.SelectedIndexChanged, AddressOf OnProductSelected
 
-            y += 34
-            ' Category/Subcategory (read-only, auto-filled)
-            categorySelector = New CategorySubcategorySelector()
-            categorySelector.Location = New Point(x, y)
-            categorySelector.Width = 600
-            categorySelector.Enabled = False ' Read-only, auto-filled from product
+            Dim lblSKU = New Label() With {
+                .Text = "Product Code:",
+                .Left = 420,
+                .Top = y,
+                .AutoSize = True,
+                .Font = New Font("Segoe UI", 9),
+                .ForeColor = Color.Gray
+            }
+            txtSKU = New TextBox() With {
+                .Left = 420,
+                .Top = y + 25,
+                .Width = 150,
+                .ReadOnly = True,
+                .BackColor = ColorLight,
+                .Font = New Font("Segoe UI", 10),
+                .BorderStyle = BorderStyle.FixedSingle
+            }
 
-            Dim lblSKU = New Label() With {.Text = "Product Code:", .Left = 640, .Top = y, .AutoSize = True, .Font = New Font("Segoe UI", 10, FontStyle.Bold), .ForeColor = ColorDark}
-            txtSKU = New TextBox() With {.Left = 740, .Top = y - 3, .Width = 160, .ReadOnly = True, .BackColor = ColorLight, .Font = New Font("Segoe UI", 10)}
+            Dim lblProductID = New Label() With {
+                .Text = "Product ID:",
+                .Left = 590,
+                .Top = y,
+                .AutoSize = True,
+                .Font = New Font("Segoe UI", 9),
+                .ForeColor = Color.Gray
+            }
+            txtProductID = New TextBox() With {
+                .Left = 590,
+                .Top = y + 25,
+                .Width = 100,
+                .ReadOnly = True,
+                .BackColor = ColorLight,
+                .Font = New Font("Segoe UI", 10),
+                .BorderStyle = BorderStyle.FixedSingle
+            }
 
-            y += 34
-            Dim lblProductID = New Label() With {.Text = "Product ID:", .Left = 640, .Top = y, .AutoSize = True}
-            txtProductID = New TextBox() With {.Left = 740, .Top = y - 3, .Width = 160, .ReadOnly = True, .BackColor = Color.Gainsboro}
-
-            pnlHeader.Controls.AddRange(New Control() {categorySelector, lblSKU, txtSKU, lblProductID, txtProductID, lblProduct, cmbProduct})
+            pnlProductSelect.Controls.AddRange({lblProduct, cmbProduct, lblSKU, txtSKU, lblProductID, txtProductID})
+            
+            ' Load products
+            LoadProductsWithoutRecipe()
 
             ' Action bar
             Dim pnlActions As New Panel() With {.Dock = DockStyle.Top, .Height = 56, .BackColor = Color.White}
@@ -200,7 +251,7 @@ Namespace Manufacturing
             leftPanel.Controls.Add(treeRecipe)
             leftPanel.Controls.Add(pnlCosting)
             leftPanel.Controls.Add(pnlActions)
-            leftPanel.Controls.Add(pnlHeader)
+            leftPanel.Controls.Add(pnlProductSelect)
 
             ' RIGHT PANEL: Recipe Method
             Dim rightPanel As New Panel() With {.Dock = DockStyle.Fill, .Padding = New Padding(10), .BackColor = Color.White}
@@ -225,11 +276,9 @@ Namespace Manufacturing
             splitMain.Panel1.Controls.Add(leftPanel)
             splitMain.Panel2.Controls.Add(rightPanel)
 
-            ' Add split container to form
+            ' Add split container and header to form
             Me.Controls.Add(splitMain)
-
-            ' Load products with RecipeCreated='No'
-            LoadProductsWithoutRecipe()
+            Me.Controls.Add(pnlHeader)
         End Sub
 
         Private Sub LoadProductsWithoutRecipe()

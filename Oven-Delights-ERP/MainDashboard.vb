@@ -1337,6 +1337,12 @@ Partial Class MainDashboard
                                              OpenMdiSingleton(Of Manufacturing.ProductForm)()
                                          End Sub
 
+            Dim miAddProduct As New ToolStripMenuItem("Add Product")
+            AddHandler miAddProduct.Click, Sub(sender, e)
+                                              Dim frm As New Manufacturing.AddProductForm()
+                                              frm.ShowDialog()
+                                          End Sub
+
             Dim miRecipeCreator As New ToolStripMenuItem("Recipe Creator")
             AddHandler miRecipeCreator.Click, Sub(sender, e)
                                                   OpenMdiSingleton(Of Manufacturing.RecipeCreatorForm)()
@@ -1346,6 +1352,11 @@ Partial Class MainDashboard
             AddHandler miBuildMyProduct.Click, Sub(sender, e)
                                                    OpenMdiSingleton(Of Manufacturing.BuildProductForm)()
                                                End Sub
+
+            Dim miRecipeViewer As New ToolStripMenuItem("Recipe Viewer")
+            AddHandler miRecipeViewer.Click, Sub(sender, e)
+                                                OpenMdiSingleton(Of Manufacturing.RecipeViewerForm)()
+                                            End Sub
 
             Dim miBOM As New ToolStripMenuItem("BOM Management")
             AddHandler miBOM.Click, Sub(sender, e)
@@ -1363,7 +1374,7 @@ Partial Class MainDashboard
                                           End Sub
 
             ManufacturingToolStripMenuItem.DropDownItems.AddRange(New ToolStripItem() {
-                miCategories, miSubcategories, miProducts, miRecipeCreator, miBuildMyProduct, miBOM, miCompleteBuild, miMOActions
+                miCategories, miSubcategories, miProducts, miAddProduct, miRecipeCreator, miBuildMyProduct, miRecipeViewer, miBOM, miCompleteBuild, miMOActions
             })
         End If
     End Sub

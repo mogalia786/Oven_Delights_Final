@@ -391,22 +391,17 @@ Namespace Manufacturing
                         Integer.TryParse(txtReorderQuantity.Text, reorderQty)
 
                         ' Insert product with RecipeCreated = 'No' and ProductImage
-                        Dim sql As String = "INSERT INTO Products (ProductName, ProductCode, Description, CategoryID, SubcategoryID, ItemType, LastPaidPrice, AverageCost, ReorderLevel, ReorderQuantity, IsActive, RecipeCreated, ProductImage, CreatedDate, CreatedBy) " &
-                                          "VALUES (@Name, @Code, @Desc, @CatID, @SubcatID, 'Manufactured', @LastPaid, @AvgCost, @Reorder, @ReorderQty, @IsActive, 'No', @Image, GETDATE(), @CreatedBy)"
+                        ' Using only columns that exist in Products table
+                        Dim sql As String = "INSERT INTO Products (ProductName, ProductCode, CategoryID, SubcategoryID, ItemType, IsActive, RecipeCreated, ProductImage, CreatedDate) " &
+                                          "VALUES (@Name, @Code, @CatID, @SubcatID, 'Manufactured', @IsActive, 'No', @Image, GETDATE())"
 
                         Using cmd As New SqlCommand(sql, con, tx)
                             cmd.Parameters.AddWithValue("@Name", txtProductName.Text.Trim())
                             cmd.Parameters.AddWithValue("@Code", txtProductCode.Text.Trim())
-                            cmd.Parameters.AddWithValue("@Desc", If(String.IsNullOrWhiteSpace(txtDescription.Text), DBNull.Value, txtDescription.Text.Trim()))
                             cmd.Parameters.AddWithValue("@CatID", categoryId)
                             cmd.Parameters.AddWithValue("@SubcatID", subcategoryId)
-                            cmd.Parameters.AddWithValue("@LastPaid", lastPaidPrice)
-                            cmd.Parameters.AddWithValue("@AvgCost", avgCost)
-                            cmd.Parameters.AddWithValue("@Reorder", reorderLevel)
-                            cmd.Parameters.AddWithValue("@ReorderQty", reorderQty)
                             cmd.Parameters.AddWithValue("@IsActive", chkIsActive.Checked)
                             cmd.Parameters.AddWithValue("@Image", If(_productImageBytes Is Nothing, DBNull.Value, CType(_productImageBytes, Object)))
-                            cmd.Parameters.AddWithValue("@CreatedBy", AppSession.CurrentUserID)
                             cmd.ExecuteNonQuery()
                         End Using
 
