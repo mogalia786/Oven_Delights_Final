@@ -1,0 +1,14 @@
+Status                        
+------------------------------
+Database connection successful
+
+(1 rows affected)
+TABLE_SCHEMA                                                                                                                     TABLE_NAME                                                                                                                      
+-------------------------------------------------------------------------------------------------------------------------------- --------------------------------------------------------------------------------------------------------------------------------
+dbo                                                                                                                              MSreplication_options                                                                                                           
+dbo                                                                                                                              spt_fallback_db                                                                                                                 
+dbo                                                                                                                              spt_fallback_dev                                                                                                                
+dbo                                                                                                                              spt_fallback_usg                                                                                                                
+dbo                                                                                                                              spt_monitor                                                                                                                     
+
+(5 rows affected)

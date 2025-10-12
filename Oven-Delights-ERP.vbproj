@@ -1,0 +1,77 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net7.0-windows</TargetFramework>
+    <RootNamespace>Oven_Delights_ERP</RootNamespace>
+    <StartupObject>Oven_Delights_ERP.LoginForm</StartupObject>
+    <UseWindowsForms>true</UseWindowsForms>
+    <MyType>WindowsForms</MyType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Import Include="System.Data" />
+    <Import Include="System.Drawing" />
+    <Import Include="System.Windows.Forms" />
+    <Import Include="Microsoft.Data.SqlClient" />
+  </ItemGroup>
+
+  <!-- Stop implicit include of MainDashboard.resx and OLD files -->
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);MainDashboard.resx;*_OLD.*</DefaultItemExcludes>
+  </PropertyGroup>
+
+
+
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2210.55" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.0.3" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="7.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.14" />
+    <PackageReference Include="EPPlus" Version="7.0.4" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0" />
+    <PackageReference Include="System.Windows.Forms.DataVisualization" Version="1.0.0-prerelease.20110.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\DashboardCharts.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="My Project\Resources.resx" />
+    <EmbeddedResource Update="My Project\Resources.resx">
+      <CustomToolNamespace>My.Resources</CustomToolNamespace>
+      <Generator>VbMyResourcesResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.vb</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <!-- Keep default SDK implicit resx includes; only strip prototypes -->
+
+  <!-- Exclude prototype resources to avoid duplicate logical names (e.g. LoginForm.resources) -->
+  <ItemGroup>
+    <Compile Remove="POS Prototypes\**\*.vb" />
+    <EmbeddedResource Remove="POS Prototypes\**\*.resx" />
+    <!-- Extra guard: explicitly remove prototype MainDashboard.resx to avoid duplicate Oven_Delights_ERP.MainDashboard.resources -->
+    <EmbeddedResource Remove="POS Prototypes\Oven Delights POS\OvenDelightsERP\Forms\MainDashboard.resx" />
+  </ItemGroup>
+
+  <!-- Temporarily exclude Retail menus resx to eliminate resource collision -->
+  <ItemGroup>
+    <EmbeddedResource Remove="Forms\Retail\MainDashboard.RetailMenus.resx" />
+  </ItemGroup>
+
+  <!-- Explicitly include only the root MainDashboard.resx once -->
+  <ItemGroup>
+    <EmbeddedResource Include="MainDashboard.resx">
+      <DependentUpon>MainDashboard.vb</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+
+
+</Project>

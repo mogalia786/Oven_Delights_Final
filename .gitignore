@@ -1,47 +1,33 @@
-# Visual Studio / .NET
+﻿# Visual Studio / .NET build outputs
 bin/
 obj/
+.vs/
 *.user
 *.suo
-*.cache
-*.dll
-*.exe
+*.userosscache
+*.sln.docstates
 *.pdb
+*.ilk
+*.idb
+*.tlog
+*.cache
 *.log
-.vs/
-packages/
-
-# Build results
-[Dd]ebug/
-[Rr]elease/
-x64/
-x86/
-[Aa][Rr][Mm]/
-[Aa][Rr][Mm]64/
-bld/
-[Bb]in/
-[Oo]bj/
-[Ll]og/
+msbuild.log
+build_output.txt
 
 # NuGet
+packages/
 *.nupkg
-*.snupkg
-.nuget/
 
-# Temporary files
-*.tmp
-*.temp
-*~
+# WebView2 caches
+*.WebView2/
+**/EBWebView/
+**/Default/Cache/
+**/Cache/Cache_Data/
 
-# Database
-*.mdf
-*.ldf
-
-# IDE
-.vscode/
-*.swp
-*.swo
-
-# OS
+# IDE state / temp
+*.db
+*.sqlite
+*.userprefs
 Thumbs.db
 .DS_Store
