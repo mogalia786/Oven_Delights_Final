@@ -18,7 +18,8 @@ Public Class LedgerViewerForm
         _entityName = entityName
     End Sub
     
-    Private Sub LedgerViewerForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
         Me.Text = $"{_ledgerType} Ledger - {_entityName}"
         Me.Size = New Size(1200, 800)
         Me.StartPosition = FormStartPosition.CenterParent
