@@ -297,7 +297,7 @@ Public Class SupplierLedgerForm
         Try
             If e.RowIndex < 0 Then Return ' Header clicked
             
-            ' Get supplier info from selected row or combo box
+            ' Get supplier info and find their GL account
             Dim supplierId As Integer = 0
             Dim supplierName As String = ""
             
@@ -307,9 +307,32 @@ Public Class SupplierLedgerForm
             End If
             
             If supplierId > 0 Then
-                ' Open ledger viewer form
-                Dim ledgerForm As New LedgerViewerForm("Supplier", supplierId, supplierName)
-                ledgerForm.ShowDialog(Me)
+                ' Find the Accounts Payable GL account
+                Using cn As New SqlConnection(_conn)
+                    cn.Open()
+                    Dim accountId As Integer = 0
+                    Dim accountNumber As String = "2100"
+                    Dim accountName As String = "Accounts Payable"
+                    
+                    ' Try to get the actual account from GLAccounts
+                    Using cmd As New SqlCommand("SELECT TOP 1 AccountID, AccountNumber, AccountName FROM GLAccounts WHERE AccountNumber = '2100' OR AccountName LIKE '%Payable%'", cn)
+                        Using reader = cmd.ExecuteReader()
+                            If reader.Read() Then
+                                accountId = reader.GetInt32(0)
+                                accountNumber = reader.GetString(1)
+                                accountName = reader.GetString(2)
+                            End If
+                        End Using
+                    End Using
+                    
+                    If accountId > 0 Then
+                        ' Open ledger viewer form with GL account AND supplier filter
+                        Dim ledgerForm As New LedgerViewerForm(accountId, accountNumber, accountName, supplierId, supplierName)
+                        ledgerForm.ShowDialog(Me)
+                    Else
+                        MessageBox.Show("Accounts Payable GL account not found. Please set up account 2100 in Chart of Accounts.", "Account Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    End If
+                End Using
             Else
                 MessageBox.Show("Please select a supplier first.", "Supplier Ledger", MessageBoxButtons.OK, MessageBoxIcon.Information)
             End If

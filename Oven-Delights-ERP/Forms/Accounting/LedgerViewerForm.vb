@@ -1,31 +1,45 @@
 Imports System.Data.SqlClient
 Imports System.Configuration
 Imports System.Drawing.Printing
+Imports System.Windows.Forms
 
 Public Class LedgerViewerForm
+    Inherits Form
+    
     Private _connectionString As String
-    Private _ledgerType As String ' "Supplier", "Customer", "Expense", etc.
-    Private _entityId As Integer
-    Private _entityName As String
+    Private _accountId As Integer
+    Private _accountNumber As String
+    Private _accountName As String
     Private _printDocument As PrintDocument
     Private _printDataTable As DataTable
+    Private _supplierId As Integer = 0  ' Optional supplier filter
+    Private _supplierName As String = ""
     
-    Public Sub New(ledgerType As String, entityId As Integer, entityName As String)
+    ' Constructor for GL Account-based ledger
+    Public Sub New(accountId As Integer, accountNumber As String, accountName As String)
         InitializeComponent()
         _connectionString = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
-        _ledgerType = ledgerType
-        _entityId = entityId
-        _entityName = entityName
-    End Sub
-    
-    Protected Overrides Sub OnLoad(e As EventArgs)
-        MyBase.OnLoad(e)
-        Me.Text = $"{_ledgerType} Ledger - {_entityName}"
+        _accountId = accountId
+        _accountNumber = accountNumber
+        _accountName = accountName
+        
+        ' Set form properties and initialize UI
+        Me.Text = $"Ledger - {_accountNumber} {_accountName}"
         Me.Size = New Size(1200, 800)
         Me.StartPosition = FormStartPosition.CenterParent
         
         InitializeUI()
-        LoadLedgerData()
+        
+        ' Load data after form is shown
+        AddHandler Me.Shown, Sub(s, e) LoadLedgerData()
+    End Sub
+    
+    ' Constructor for Supplier-specific ledger
+    Public Sub New(accountId As Integer, accountNumber As String, accountName As String, supplierId As Integer, supplierName As String)
+        Me.New(accountId, accountNumber, accountName)
+        _supplierId = supplierId
+        _supplierName = supplierName
+        Me.Text = $"Supplier Ledger - {supplierName}"
     End Sub
     
     Private Sub InitializeComponent()
@@ -54,7 +68,7 @@ Public Class LedgerViewerForm
         
         ' Ledger Title
         Dim lblTitle As New Label() With {
-            .Text = $"{_ledgerType} Ledger Statement",
+            .Text = If(_supplierId > 0, "Supplier Ledger Statement", "Account Ledger Statement"),
             .Font = New Font("Segoe UI", 14, FontStyle.Bold),
             .ForeColor = Color.White,
             .AutoSize = True,
@@ -63,7 +77,7 @@ Public Class LedgerViewerForm
         
         ' Entity Name
         Dim lblEntity As New Label() With {
-            .Text = $"Account: {_entityName}",
+            .Text = If(_supplierId > 0, $"Supplier: {_supplierName}", $"Account: {_accountNumber} - {_accountName}"),
             .Font = New Font("Segoe UI", 12),
             .ForeColor = Color.White,
             .AutoSize = True,
@@ -240,12 +254,59 @@ Public Class LedgerViewerForm
             Using conn As New SqlConnection(_connectionString)
                 conn.Open()
                 
-                Dim sql As String = GetLedgerQuery()
+                ' Query JournalDetails for this account with running balance
+                ' If supplier filter is set, join to SupplierInvoices to filter by supplier
+                Dim sql As String = ""
+                
+                If _supplierId > 0 Then
+                    ' Filter by supplier - join to SupplierInvoices
+                    sql = "WITH LedgerEntries AS ( " &
+                          "  SELECT h.JournalDate AS [Date], " &
+                          "         h.JournalNumber AS [Journal], " &
+                          "         h.Reference, " &
+                          "         d.Description, " &
+                          "         d.Debit, " &
+                          "         d.Credit, " &
+                          "         ROW_NUMBER() OVER (ORDER BY h.JournalDate, h.JournalID, d.LineNumber) AS RowNum " &
+                          "  FROM JournalDetails d " &
+                          "  INNER JOIN JournalHeaders h ON h.JournalID = d.JournalID " &
+                          "  WHERE d.AccountID = @AccountID " &
+                          "    AND h.JournalDate BETWEEN @FromDate AND @ToDate " &
+                          "    AND (h.Reference IN (SELECT InvoiceNumber FROM SupplierInvoices WHERE SupplierID = @SupplierID) " &
+                          "         OR h.Description LIKE '%' + (SELECT SupplierName FROM Suppliers WHERE SupplierID = @SupplierID) + '%') " &
+                          ") " &
+                          "SELECT [Date], [Journal], Reference, Description, Debit, Credit, " &
+                          "       SUM(Debit - Credit) OVER (ORDER BY RowNum) AS Balance " &
+                          "FROM LedgerEntries " &
+                          "ORDER BY RowNum"
+                Else
+                    ' No supplier filter - show all transactions for this account
+                    sql = "WITH LedgerEntries AS ( " &
+                          "  SELECT h.JournalDate AS [Date], " &
+                          "         h.JournalNumber AS [Journal], " &
+                          "         h.Reference, " &
+                          "         d.Description, " &
+                          "         d.Debit, " &
+                          "         d.Credit, " &
+                          "         ROW_NUMBER() OVER (ORDER BY h.JournalDate, h.JournalID, d.LineNumber) AS RowNum " &
+                          "  FROM JournalDetails d " &
+                          "  INNER JOIN JournalHeaders h ON h.JournalID = d.JournalID " &
+                          "  WHERE d.AccountID = @AccountID " &
+                          "    AND h.JournalDate BETWEEN @FromDate AND @ToDate " &
+                          ") " &
+                          "SELECT [Date], [Journal], Reference, Description, Debit, Credit, " &
+                          "       SUM(Debit - Credit) OVER (ORDER BY RowNum) AS Balance " &
+                          "FROM LedgerEntries " &
+                          "ORDER BY RowNum"
+                End If
                 
                 Using cmd As New SqlCommand(sql, conn)
-                    cmd.Parameters.AddWithValue("@EntityID", _entityId)
+                    cmd.Parameters.AddWithValue("@AccountID", _accountId)
                     cmd.Parameters.AddWithValue("@FromDate", dtpFromDate.Value.Date)
                     cmd.Parameters.AddWithValue("@ToDate", dtpToDate.Value.Date.AddDays(1).AddSeconds(-1))
+                    If _supplierId > 0 Then
+                        cmd.Parameters.AddWithValue("@SupplierID", _supplierId)
+                    End If
                     
                     Using adapter As New SqlDataAdapter(cmd)
                         adapter.Fill(dt)
@@ -268,38 +329,6 @@ Public Class LedgerViewerForm
         End Try
     End Sub
     
-    Private Function GetLedgerQuery() As String
-        Select Case _ledgerType.ToLower()
-            Case "supplier"
-                Return "SELECT TransactionDate AS [Date], TransactionType AS [Type], Reference, Description, " &
-                       "Debit, Credit, Balance " &
-                       "FROM SupplierLedger " &
-                       "WHERE SupplierID = @EntityID AND TransactionDate BETWEEN @FromDate AND @ToDate " &
-                       "ORDER BY TransactionDate, LedgerID"
-            
-            Case "customer"
-                Return "SELECT TransactionDate AS [Date], TransactionType AS [Type], Reference, Description, " &
-                       "Debit, Credit, Balance " &
-                       "FROM CustomerLedger " &
-                       "WHERE CustomerID = @EntityID AND TransactionDate BETWEEN @FromDate AND @ToDate " &
-                       "ORDER BY TransactionDate, LedgerID"
-            
-            Case "expense"
-                Return "SELECT TransactionDate AS [Date], TransactionType AS [Type], Reference, Description, " &
-                       "Amount AS Debit, 0 AS Credit, Amount AS Balance " &
-                       "FROM Expenses " &
-                       "WHERE ExpenseID = @EntityID AND TransactionDate BETWEEN @FromDate AND @ToDate " &
-                       "ORDER BY TransactionDate"
-            
-            Case Else
-                ' Generic ledger query
-                Return "SELECT TransactionDate AS [Date], TransactionType AS [Type], Reference, Description, " &
-                       "Debit, Credit, Balance " &
-                       "FROM GeneralLedger " &
-                       "WHERE EntityID = @EntityID AND TransactionDate BETWEEN @FromDate AND @ToDate " &
-                       "ORDER BY TransactionDate"
-        End Select
-    End Function
     
     Private Sub FormatGridColumns(dgv As DataGridView)
         ' Date column
@@ -308,9 +337,9 @@ Public Class LedgerViewerForm
             dgv.Columns("Date").Width = 100
         End If
         
-        ' Type column
-        If dgv.Columns.Contains("Type") Then
-            dgv.Columns("Type").Width = 100
+        ' Journal column
+        If dgv.Columns.Contains("Journal") Then
+            dgv.Columns("Journal").Width = 120
         End If
         
         ' Reference column
@@ -395,19 +424,32 @@ Public Class LedgerViewerForm
             Using conn As New SqlConnection(_connectionString)
                 conn.Open()
                 
+                ' Calculate opening balance from JournalDetails before the from date
                 Dim sql As String = ""
-                Select Case _ledgerType.ToLower()
-                    Case "supplier"
-                        sql = "SELECT ISNULL(Balance, 0) FROM SupplierLedger WHERE SupplierID = @EntityID AND TransactionDate < @FromDate ORDER BY TransactionDate DESC, LedgerID DESC"
-                    Case "customer"
-                        sql = "SELECT ISNULL(Balance, 0) FROM CustomerLedger WHERE CustomerID = @EntityID AND TransactionDate < @FromDate ORDER BY TransactionDate DESC, LedgerID DESC"
-                    Case Else
-                        Return 0
-                End Select
+                
+                If _supplierId > 0 Then
+                    ' Filter by supplier
+                    sql = "SELECT ISNULL(SUM(d.Debit - d.Credit), 0) " &
+                          "FROM JournalDetails d " &
+                          "INNER JOIN JournalHeaders h ON h.JournalID = d.JournalID " &
+                          "WHERE d.AccountID = @AccountID " &
+                          "  AND h.JournalDate < @FromDate " &
+                          "  AND (h.Reference IN (SELECT InvoiceNumber FROM SupplierInvoices WHERE SupplierID = @SupplierID) " &
+                          "       OR h.Description LIKE '%' + (SELECT SupplierName FROM Suppliers WHERE SupplierID = @SupplierID) + '%')"
+                Else
+                    ' No supplier filter
+                    sql = "SELECT ISNULL(SUM(d.Debit - d.Credit), 0) " &
+                          "FROM JournalDetails d " &
+                          "INNER JOIN JournalHeaders h ON h.JournalID = d.JournalID " &
+                          "WHERE d.AccountID = @AccountID AND h.JournalDate < @FromDate"
+                End If
                 
                 Using cmd As New SqlCommand(sql, conn)
-                    cmd.Parameters.AddWithValue("@EntityID", _entityId)
+                    cmd.Parameters.AddWithValue("@AccountID", _accountId)
                     cmd.Parameters.AddWithValue("@FromDate", fromDate.Date)
+                    If _supplierId > 0 Then
+                        cmd.Parameters.AddWithValue("@SupplierID", _supplierId)
+                    End If
                     
                     Dim result = cmd.ExecuteScalar()
                     If result IsNot Nothing AndAlso Not IsDBNull(result) Then
@@ -458,9 +500,9 @@ Public Class LedgerViewerForm
         ' Print header
         e.Graphics.DrawString("OVEN DELIGHTS", titleFont, Brushes.Black, leftMargin, y)
         y += 30
-        e.Graphics.DrawString($"{_ledgerType} Ledger Statement", boldFont, Brushes.Black, leftMargin, y)
+        e.Graphics.DrawString(If(_supplierId > 0, "Supplier Ledger Statement", "Account Ledger Statement"), boldFont, Brushes.Black, leftMargin, y)
         y += 25
-        e.Graphics.DrawString($"Account: {_entityName}", font, Brushes.Black, leftMargin, y)
+        e.Graphics.DrawString(If(_supplierId > 0, $"Supplier: {_supplierName}", $"Account: {_accountNumber} - {_accountName}"), font, Brushes.Black, leftMargin, y)
         y += 20
         
         Dim dtpFromDate = CType(Me.Controls.Find("dtpFromDate", True)(0), DateTimePicker)
@@ -470,7 +512,7 @@ Public Class LedgerViewerForm
         
         ' Print table header
         e.Graphics.DrawString("Date", boldFont, Brushes.Black, leftMargin, y)
-        e.Graphics.DrawString("Type", boldFont, Brushes.Black, leftMargin + 100, y)
+        e.Graphics.DrawString("Journal", boldFont, Brushes.Black, leftMargin + 100, y)
         e.Graphics.DrawString("Reference", boldFont, Brushes.Black, leftMargin + 200, y)
         e.Graphics.DrawString("Description", boldFont, Brushes.Black, leftMargin + 320, y)
         e.Graphics.DrawString("Debit", boldFont, Brushes.Black, leftMargin + 500, y)
@@ -487,8 +529,8 @@ Public Class LedgerViewerForm
             If y > e.PageBounds.Height - 100 Then Exit For ' Page break
             
             e.Graphics.DrawString(Convert.ToDateTime(row("Date")).ToString("dd/MM/yyyy"), font, Brushes.Black, leftMargin, y)
-            e.Graphics.DrawString(row("Type").ToString(), font, Brushes.Black, leftMargin + 100, y)
-            e.Graphics.DrawString(row("Reference").ToString(), font, Brushes.Black, leftMargin + 200, y)
+            e.Graphics.DrawString(If(row("Journal") IsNot DBNull.Value, row("Journal").ToString(), ""), font, Brushes.Black, leftMargin + 100, y)
+            e.Graphics.DrawString(If(row("Reference") IsNot DBNull.Value, row("Reference").ToString(), ""), font, Brushes.Black, leftMargin + 200, y)
             e.Graphics.DrawString(row("Description").ToString(), font, Brushes.Black, leftMargin + 320, y)
             e.Graphics.DrawString($"R {Convert.ToDecimal(row("Debit")):N2}", font, Brushes.Black, leftMargin + 500, y)
             e.Graphics.DrawString($"R {Convert.ToDecimal(row("Credit")):N2}", font, Brushes.Black, leftMargin + 580, y)
@@ -514,7 +556,10 @@ Public Class LedgerViewerForm
             
             Dim sfd As New SaveFileDialog()
             sfd.Filter = "CSV Files|*.csv"
-            sfd.FileName = $"{_ledgerType}_Ledger_{_entityName}_{DateTime.Now:yyyyMMdd}.csv"
+            Dim fileName As String = If(_supplierId > 0, 
+                                        $"Supplier_Ledger_{_supplierName.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.csv",
+                                        $"Ledger_{_accountNumber}_{DateTime.Now:yyyyMMdd}.csv")
+            sfd.FileName = fileName
             
             If sfd.ShowDialog() = DialogResult.OK Then
                 ExportToCSV(sfd.FileName)
