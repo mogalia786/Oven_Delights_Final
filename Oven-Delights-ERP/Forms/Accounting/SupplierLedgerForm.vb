@@ -103,6 +103,7 @@ Public Class SupplierLedgerForm
         grid.AllowUserToAddRows = False
         grid.AllowUserToDeleteRows = False
         grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+        AddHandler grid.CellDoubleClick, AddressOf Grid_CellDoubleClick
 
         lblTotals.Dock = DockStyle.Bottom
         lblTotals.Height = 28
@@ -291,4 +292,30 @@ Public Class SupplierLedgerForm
         End If
         Return s
     End Function
+    
+    Private Sub Grid_CellDoubleClick(sender As Object, e As DataGridViewCellEventArgs)
+        Try
+            If e.RowIndex < 0 Then Return ' Header clicked
+            
+            ' Get supplier info from selected row or combo box
+            Dim supplierId As Integer = 0
+            Dim supplierName As String = ""
+            
+            If cboSupplier.SelectedValue IsNot Nothing Then
+                supplierId = Convert.ToInt32(cboSupplier.SelectedValue)
+                supplierName = cboSupplier.Text
+            End If
+            
+            If supplierId > 0 Then
+                ' Open ledger viewer form
+                Dim ledgerForm As New LedgerViewerForm("Supplier", supplierId, supplierName)
+                ledgerForm.ShowDialog(Me)
+            Else
+                MessageBox.Show("Please select a supplier first.", "Supplier Ledger", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+            
+        Catch ex As Exception
+            MessageBox.Show($"Error opening ledger: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
 End Class
