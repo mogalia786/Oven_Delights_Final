@@ -1,0 +1,5 @@
+Added Prefix column to Branches table.
+Msg 1770, Level 16, State 1, Server mogalia, Line 127
+Foreign key 'FK_Users_Branches' references invalid column 'BranchID' in referenced table 'Branches'.
+Msg 1750, Level 16, State 1, Server mogalia, Line 127
+Could not create constraint or index. See previous errors.

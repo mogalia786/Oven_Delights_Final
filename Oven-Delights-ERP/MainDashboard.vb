@@ -24,6 +24,7 @@ Partial Class MainDashboard
     Private ReadOnly _branchRuleTimer As New Timer()
 
     Public Sub New(user As User)
+        MessageBox.Show("MainDashboard Constructor STARTED!", "DEBUG", MessageBoxButtons.OK, MessageBoxIcon.Information)
         ' Diagnostic guard: capture any exception thrown inside InitializeComponent
         Try
             InitializeComponent()
@@ -283,6 +284,15 @@ Partial Class MainDashboard
         Try
             SetupManufacturingProductionScheduleMenu()
         Catch
+        End Try
+
+        ' Manufacturing > Orders > New Orders, Ready Orders, All Orders
+        MessageBox.Show("ABOUT TO CALL SetupManufacturingOrdersMenu", "DEBUG", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Try
+            SetupManufacturingOrdersMenu()
+            MessageBox.Show("SetupManufacturingOrdersMenu COMPLETED", "DEBUG", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Catch ex As Exception
+            MessageBox.Show($"ERROR in SetupManufacturingOrdersMenu: {ex.Message}{vbCrLf}{vbCrLf}{ex.StackTrace}", "MENU ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
 
         ' Stockroom > Reports > Stock Movement Report
@@ -2104,6 +2114,8 @@ Partial Class MainDashboard
                 SetupStockroomInvoicesMenus()
             Catch
             End Try
+            
+            ' Manufacturing > Orders menu is in Designer - no setup needed
         Catch
         End Try
     End Sub
@@ -3618,6 +3630,71 @@ Partial Class MainDashboard
         Catch ex As Exception
             MessageBox.Show("Error opening Production Schedule: " & ex.Message, "Manufacturing", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+    End Sub
+
+    Private Sub SetupManufacturingOrdersMenu()
+        MessageBox.Show("SetupManufacturingOrdersMenu CALLED!", "DEBUG", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Dim mfg As ToolStripMenuItem = FindTopMenu("Manufacturing")
+        MessageBox.Show($"Manufacturing menu found: {mfg IsNot Nothing}", "DEBUG", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        If mfg Is Nothing Then mfg = EnsureTopMenu("Manufacturing")
+        If mfg Is Nothing Then 
+            MessageBox.Show("Manufacturing menu is STILL Nothing after EnsureTopMenu!", "DEBUG", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Exit Sub
+        End If
+        Dim orders As ToolStripMenuItem = EnsureSubMenu(mfg, "Orders")
+        MessageBox.Show($"Orders submenu created: {orders IsNot Nothing}", "DEBUG", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        
+        Dim miNew As ToolStripMenuItem = EnsureSubMenu(orders, "New Orders")
+        RemoveHandler miNew.Click, AddressOf OpenNewOrders
+        AddHandler miNew.Click, AddressOf OpenNewOrders
+        
+        Dim miReady As ToolStripMenuItem = EnsureSubMenu(orders, "Ready Orders")
+        RemoveHandler miReady.Click, AddressOf OpenReadyOrders
+        AddHandler miReady.Click, AddressOf OpenReadyOrders
+        
+        Dim miAll As ToolStripMenuItem = EnsureSubMenu(orders, "All Orders")
+        RemoveHandler miAll.Click, AddressOf OpenAllOrders
+        AddHandler miAll.Click, AddressOf OpenAllOrders
+    End Sub
+
+    Private Sub OpenNewOrders(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New ManufacturerOrdersForm("New")
+            frm.ShowDialog()
+        Catch ex As Exception
+            MessageBox.Show("Error opening New Orders: " & ex.Message, "Manufacturing", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenReadyOrders(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New ManufacturerOrdersForm("Ready")
+            frm.ShowDialog()
+        Catch ex As Exception
+            MessageBox.Show("Error opening Ready Orders: " & ex.Message, "Manufacturing", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenAllOrders(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New ManufacturerOrdersForm("All")
+            frm.ShowDialog()
+        Catch ex As Exception
+            MessageBox.Show("Error opening All Orders: " & ex.Message, "Manufacturing", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ' Manufacturing Orders menu event handlers (wired to Designer menu items)
+    Private Sub mnuNewOrders_Click(sender As Object, e As EventArgs) Handles mnuNewOrders.Click
+        OpenNewOrders(sender, e)
+    End Sub
+
+    Private Sub mnuReadyOrders_Click(sender As Object, e As EventArgs) Handles mnuReadyOrders.Click
+        OpenReadyOrders(sender, e)
+    End Sub
+
+    Private Sub mnuAllOrders_Click(sender As Object, e As EventArgs) Handles mnuAllOrders.Click
+        OpenAllOrders(sender, e)
     End Sub
 
     Private Sub SetupStockroomStockMovementReportMenu()

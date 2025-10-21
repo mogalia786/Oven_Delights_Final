@@ -1,0 +1,93 @@
+Oven Delights ERP — Sage Pastel Coverage Confirmation (as of 2025-09-12 20:26 SAST)
+
+Goal
+Confirm which Sage Pastel Partner accounting areas are covered in the current application, and identify gaps. Sources: in‑repo code and DB objects; public product/module descriptions (GL, AR, AP, Cash Book/Bank, Inventory, VAT, Projects/Jobs, Fixed Assets, Multi‑currency, POS).
+
+Summary
+Covered: Core GL journals, AR (customers), AP (suppliers), Bank/Cash Book, Inventory/WIP (manufacturing integrations), Payroll (summary hooks), Retail (operational). 
+Partially covered or pending: VAT reports/audit trail specifics, Bank Reconciliation UI/process, Fixed Assets, Project/Job Costing, Multi‑currency beyond price currency, POS integration, comprehensive GL mappings per product/category.
+
+Breakdown by module (Pastel vs This App)
+
+1) General Ledger (GL)
+- This App: YES (core)
+  - Code: Services/AccountingPostingService.vb: CreateJournalEntry, AddJournalDetail, PostJournal, plus Post* methods for AP/AR/Bank.
+  - DB: GL_Core_Tables.sql, GL_Core_SPs.sql, GL_Posting_Procedures.sql, GL_Master_Setup.sql.
+  - Behavior: Journals created and posted via sp_CreateJournalEntry / sp_AddJournalDetail / sp_PostJournal. Uses SystemAccounts for control/mapping (INVENTORY, WIP, AP_CONTROL, BANK_DEFAULT, GRIR).
+- Pastel baseline: Covered.
+
+2) Accounts Payable (Suppliers)
+- This App: YES
+  - Code: AccountingPostingService.PostAPSupplierInvoice / Credit / Payment (calls sp_AP_Post_* -> @JournalID).
+  - Ledgers: Supplier subledger + AP Control in GL; GRIR/Inventory/Expense as applicable.
+- Pastel baseline: Covered (Supplier aging/statements not reviewed here).
+
+3) Accounts Receivable (Customers)
+- This App: YES
+  - Code: AccountingPostingService.PostARCustomerInvoice / Credit / Receipt (calls sp_AR_Post_* -> @JournalID).
+  - Ledgers: Customer subledger + AR Control; Sales/VAT/COGS/Inventory postings outlined.
+- Pastel baseline: Covered (Customer statements not reviewed here).
+
+4) Cash Book / Bank
+- This App: YES (posting); Reconciliation UI/process not confirmed.
+  - Code: AccountingPostingService.PostBankCharge / PostBankTransfer (calls sp_Bank_Post_* -> @JournalID).
+  - Ledger: Bank (GL) affected; charges expense when applicable.
+  - Reconciliation: No dedicated reconciliation UI found in repo.
+- Pastel baseline: Partially covered (posting: Yes; reconciliation workflow: Pending).
+
+5) Inventory & Manufacturing / WIP
+- This App: YES (operational + GL concepts)
+  - Operational: Retail_Stock / Retail_StockMovements; Stockroom dashboards; Internal Orders; BOM issue/complete.
+  - Manufacturing: sp_MO_CreateBundleFromBOM invoked from RetailReorderDashboard for manufactured items.
+  - GL: Typical Dr/Cr patterns WIP↔Inventory and Adjustments; concrete postings are in GL posting procedures.
+- Pastel baseline: Covered (operation + posting hooks). Serial/batch control not assessed.
+
+6) VAT / Tax
+- This App: PARTIAL
+  - AR invoice path includes VATAmount handling in PostARCustomerInvoice signature.
+  - Specific VAT reports/audit (Pastel‑style VAT 201, tax type mapping, periods, audit trail) not located in repo.
+- Pastel baseline: Pending (reporting/audit specifics).
+
+7) Fixed Assets
+- This App: NOT PRESENT (module not found in repo).
+- Pastel baseline: Missing (Pastel Fixed Assets equivalent not implemented).
+
+8) Project / Job Costing
+- This App: NOT CONFIRMED (no dedicated job/project costing module found).
+- Pastel baseline: Missing/unknown.
+
+9) Multi‑currency
+- This App: PARTIAL
+  - Currency shown for Retail_Price (Currency field), but GL multi‑currency postings/rates not verified.
+- Pastel baseline: Pending full MC support confirmation.
+
+10) POS Integration
+- This App: PLANNED
+  - POS prototypes present; production POS flows to be aligned later.
+- Pastel baseline: Not evaluated here.
+
+11) Bank Reconciliation
+- This App: PENDING
+  - No explicit bank reconciliation workflow/screens identified in repo.
+- Pastel baseline: Missing.
+
+Specific ledgers visibility (where to see/control)
+- Suppliers (AP): AP Control (SystemAccounts 'AP_CONTROL') and supplier subledger via AP posting SPs (sp_AP_Post_*).
+- Sales (Revenue): Posted by AR invoice SP (sp_AR_Post_CustomerInvoice) into mapped revenue accounts (see GL_Posting_Procedures.sql for mapping rules; full product/category mapping to be confirmed).
+- Bank: Posted by AP payments, AR receipts, bank charges/transfers (sp_AP_Post_SupplierPayment, sp_AR_Post_CustomerReceipt, sp_Bank_Post_*); Bank account resolved via SystemAccounts 'BANK_DEFAULT' or parameters.
+
+Actionable Gaps to achieve Pastel‑level parity
+- Add VAT reports & audit trail (returns, detailed tax transactions, period locks).
+- Implement Bank Reconciliation screen/process (statement import, match, reconcile, variance handling).
+- Fixed Assets module (asset register, depreciation journals, disposals).
+- Project/Job Costing (job ledger, WIP by job, budget vs actual, allocations).
+- Multi‑currency GL (FX rate tables, revaluations, realized/unrealized gains/losses).
+- AR/AP statements & age analysis reports (if not elsewhere in repo).
+- GL mappings per product/category/customer/supplier classes with UI to manage.
+
+Verification next steps (optional)
+- Review Database/GL_Posting_Procedures.sql to confirm each Post* SP posts & calls sp_PostJournal (or returns JournalID).
+- Confirm SystemAccounts table contents (INVENTORY, WIP, AP_CONTROL, AR_CONTROL, BANK_DEFAULT, GRIR, VAT_OUTPUT, VAT_INPUT, SALES, COGS, EXPENSE_*).
+- Smoke test AP invoice, AR invoice, Customer receipt, Supplier payment; verify sp_PostJournal run and GL impact.
+
+End of Report.

@@ -39,6 +39,10 @@ Partial Class MainDashboard
         StockTransfersToolStripMenuItem = New ToolStripMenuItem()
         StockAdjustmentsToolStripMenuItem = New ToolStripMenuItem()
         ManufacturingToolStripMenuItem = New ToolStripMenuItem()
+        mnuManufacturingOrders = New ToolStripMenuItem()
+        mnuNewOrders = New ToolStripMenuItem()
+        mnuReadyOrders = New ToolStripMenuItem()
+        mnuAllOrders = New ToolStripMenuItem()
         RetailToolStripMenuItem = New ToolStripMenuItem()
         AccountingToolStripMenuItem = New ToolStripMenuItem()
         ReportingToolStripMenuItem = New ToolStripMenuItem()
@@ -152,9 +156,35 @@ Partial Class MainDashboard
         ' 
         ' ManufacturingToolStripMenuItem
         ' 
+        ManufacturingToolStripMenuItem.DropDownItems.AddRange(New ToolStripItem() {mnuManufacturingOrders})
         ManufacturingToolStripMenuItem.Name = "ManufacturingToolStripMenuItem"
         ManufacturingToolStripMenuItem.Size = New Size(98, 20)
         ManufacturingToolStripMenuItem.Text = "Manufacturing"
+        ' 
+        ' mnuManufacturingOrders
+        ' 
+        mnuManufacturingOrders.DropDownItems.AddRange(New ToolStripItem() {mnuNewOrders, mnuReadyOrders, mnuAllOrders})
+        mnuManufacturingOrders.Name = "mnuManufacturingOrders"
+        mnuManufacturingOrders.Size = New Size(180, 22)
+        mnuManufacturingOrders.Text = "Orders"
+        ' 
+        ' mnuNewOrders
+        ' 
+        mnuNewOrders.Name = "mnuNewOrders"
+        mnuNewOrders.Size = New Size(180, 22)
+        mnuNewOrders.Text = "New Orders"
+        ' 
+        ' mnuReadyOrders
+        ' 
+        mnuReadyOrders.Name = "mnuReadyOrders"
+        mnuReadyOrders.Size = New Size(180, 22)
+        mnuReadyOrders.Text = "Ready Orders"
+        ' 
+        ' mnuAllOrders
+        ' 
+        mnuAllOrders.Name = "mnuAllOrders"
+        mnuAllOrders.Size = New Size(180, 22)
+        mnuAllOrders.Text = "All Orders"
         ' 
         ' RetailToolStripMenuItem
         ' 
@@ -270,6 +300,10 @@ Partial Class MainDashboard
     Friend WithEvents AdministratorToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents StockroomToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents ManufacturingToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents mnuManufacturingOrders As ToolStripMenuItem
+    Friend WithEvents mnuNewOrders As ToolStripMenuItem
+    Friend WithEvents mnuReadyOrders As ToolStripMenuItem
+    Friend WithEvents mnuAllOrders As ToolStripMenuItem
     Friend WithEvents RetailToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents AccountingToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents ReportingToolStripMenuItem As ToolStripMenuItem

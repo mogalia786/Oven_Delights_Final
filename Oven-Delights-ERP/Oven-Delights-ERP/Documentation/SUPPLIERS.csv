@@ -1,0 +1,11 @@
+CompanyName,ContactPerson,Email,Phone,Mobile,Address,City,Province,PostalCode,Country,VATNumber,BankName,BranchCode,AccountNumber,PaymentTerms,CreditLimit,IsActive,Notes
+Coca-Cola Beverages SA,John Smith,orders@ccbsa.co.za,011-123-4567,082-123-4567,123 Main Road,Johannesburg,Gauteng,2000,South Africa,4123456789,FNB,250655,62123456789,30 Days,50000,True,Main beverage supplier
+Tiger Brands Limited,Sarah Johnson,sales@tigerbrands.co.za,011-234-5678,083-234-5678,456 Industrial Ave,Sandton,Gauteng,2196,South Africa,4234567890,ABSA,632005,4071234567,30 Days,75000,True,Bread and snacks supplier
+Premier Foods,Mike Williams,info@premierfoods.co.za,011-345-6789,084-345-6789,789 Factory Street,Germiston,Gauteng,1401,South Africa,4345678901,Nedbank,198765,1234567890,30 Days,60000,True,Flour and baking supplies
+Nestlé South Africa,Lisa Brown,orders@nestle.co.za,011-456-7890,085-456-7890,321 Corporate Drive,Randburg,Gauteng,2194,South Africa,4456789012,Standard Bank,51001,71234567,45 Days,100000,True,Chocolate and ingredients
+Unilever SA,David Jones,sales@unilever.co.za,011-567-8901,086-567-8901,654 Commerce Road,Midrand,Gauteng,1685,South Africa,4567890123,FNB,250655,62987654321,30 Days,80000,True,Butter and margarine
+Clover Industries,Emma Davis,orders@clover.co.za,011-678-9012,087-678-9012,987 Dairy Lane,Roodepoort,Gauteng,1724,South Africa,4678901234,Capitec,470010,1234567890,21 Days,45000,True,Dairy products supplier
+Sasko Bakeries,Tom Wilson,info@sasko.co.za,011-789-0123,088-789-0123,147 Bakery Street,Benoni,Gauteng,1501,South Africa,4789012345,ABSA,632005,4079876543,30 Days,55000,True,Flour and baking ingredients
+Pioneer Foods,Jane Taylor,sales@pioneerfoods.co.za,011-890-1234,089-890-1234,258 Food Park,Boksburg,Gauteng,1459,South Africa,4890123456,Nedbank,198765,1987654321,30 Days,70000,True,Various food products
+Simba Chips,Robert Anderson,orders@simba.co.za,011-901-2345,082-901-2345,369 Snack Avenue,Kempton Park,Gauteng,1619,South Africa,4901234567,Standard Bank,51001,72345678,30 Days,40000,True,Snacks and chips
+Albany Bakeries,Mary Thomas,info@albany.co.za,011-012-3456,083-012-3456,741 Bread Road,Edenvale,Gauteng,1609,South Africa,4012345678,FNB,250655,62555666777,30 Days,65000,True,Bread and baked goods

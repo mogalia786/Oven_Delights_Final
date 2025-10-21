@@ -616,11 +616,30 @@ Public Class StockroomService
 
     Private Function GetNextDocumentNumber(documentType As String, branchId As Integer, userId As Integer, con As SqlConnection, tx As SqlTransaction) As String
         Try
-            ' Simple fallback document numbering
-            Dim prefix As String = documentType.ToUpper()
-            Dim timestamp As String = DateTime.Now.ToString("yyyyMMddHHmmss")
-            Return $"{prefix}-{branchId}-{timestamp}"
-        Catch
+            ' Get branch prefix
+            Dim branchPrefix As String = "BR"
+            Using cmdPrefix As New SqlCommand("SELECT COALESCE(NULLIF(LTRIM(RTRIM(Prefix)), ''), UPPER(LEFT(BranchName, 2))) FROM dbo.Branches WHERE BranchID = @BranchID", con, tx)
+                cmdPrefix.Parameters.AddWithValue("@BranchID", branchId)
+                Dim result = cmdPrefix.ExecuteScalar()
+                If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                    branchPrefix = Convert.ToString(result)
+                End If
+            End Using
+            
+            ' Get next sequential number for this document type and branch
+            Dim nextNumber As Integer = 1
+            Using cmdNext As New SqlCommand("SELECT ISNULL(MAX(CAST(RIGHT(PONumber, 5) AS INT)), 0) + 1 FROM dbo.PurchaseOrders WHERE BranchID = @BranchID AND PONumber LIKE @Pattern", con, tx)
+                cmdNext.Parameters.AddWithValue("@BranchID", branchId)
+                cmdNext.Parameters.AddWithValue("@Pattern", branchPrefix + "-" + documentType.ToUpper() + "-%")
+                Dim result = cmdNext.ExecuteScalar()
+                If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                    nextNumber = Convert.ToInt32(result)
+                End If
+            End Using
+            
+            ' Format: BranchPrefix-PO-00001
+            Return $"{branchPrefix}-{documentType.ToUpper()}-{nextNumber.ToString("00000")}"
+        Catch ex As Exception
             ' Ultimate fallback
             Return $"{documentType.ToUpper()}-{DateTime.Now.Ticks}"
         End Try
@@ -1761,6 +1780,38 @@ Public Class StockroomService
             cmd.ExecuteNonQuery()
         End Using
     End Sub
+    
+    Private Function GetProductLedgerCode(productId As Integer, con As SqlConnection, tx As SqlTransaction) As String
+        ' Get product ledger code with i/x prefix based on ItemType
+        Try
+            Using cmd As New SqlCommand("SELECT CASE WHEN ItemType = 'Manufactured' THEN 'i' + ISNULL(ProductCode, CAST(ProductID AS VARCHAR)) WHEN ItemType = 'External' THEN 'x' + ISNULL(ProductCode, CAST(ProductID AS VARCHAR)) ELSE ISNULL(ProductCode, CAST(ProductID AS VARCHAR)) END FROM Products WHERE ProductID = @id", con, tx)
+                cmd.Parameters.AddWithValue("@id", productId)
+                Dim result = cmd.ExecuteScalar()
+                If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                    Return Convert.ToString(result)
+                End If
+            End Using
+        Catch
+            ' Fallback to product ID
+        End Try
+        Return $"P{productId}"
+    End Function
+    
+    Private Function GetMaterialLedgerCode(materialId As Integer, con As SqlConnection, tx As SqlTransaction) As String
+        ' Get raw material code (no prefix for raw materials)
+        Try
+            Using cmd As New SqlCommand("SELECT ISNULL(MaterialCode, 'M' + CAST(MaterialID AS VARCHAR)) FROM RawMaterials WHERE MaterialID = @id", con, tx)
+                cmd.Parameters.AddWithValue("@id", materialId)
+                Dim result = cmd.ExecuteScalar()
+                If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                    Return Convert.ToString(result)
+                End If
+            End Using
+        Catch
+            ' Fallback
+        End Try
+        Return $"M{materialId}"
+    End Function
 
 
     Public Function GetSuppliers() As DataTable
