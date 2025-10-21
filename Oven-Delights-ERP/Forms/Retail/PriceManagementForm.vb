@@ -500,11 +500,39 @@ Public Class PriceManagementForm
             ofd.Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp;*.gif|All Files|*.*"
             If ofd.ShowDialog(Me) = DialogResult.OK Then
                 Try
-                    Dim bytes = File.ReadAllBytes(ofd.FileName)
-                    Using ms As New MemoryStream(bytes)
-                        picProduct.Image = Image.FromStream(ms)
+                    ' Load and resize image to prevent out of memory errors
+                    Using originalImg As Image = Image.FromFile(ofd.FileName)
+                        ' Resize to max 800x800
+                        Dim maxSize As Integer = 800
+                        Dim newWidth As Integer = originalImg.Width
+                        Dim newHeight As Integer = originalImg.Height
+                        
+                        If originalImg.Width > maxSize OrElse originalImg.Height > maxSize Then
+                            Dim ratio As Double = Math.Min(maxSize / CDbl(originalImg.Width), maxSize / CDbl(originalImg.Height))
+                            newWidth = CInt(originalImg.Width * ratio)
+                            newHeight = CInt(originalImg.Height * ratio)
+                        End If
+                        
+                        ' Create resized image
+                        Dim resizedImg As New Bitmap(newWidth, newHeight)
+                        Using g As Graphics = Graphics.FromImage(resizedImg)
+                            g.InterpolationMode = Drawing2D.InterpolationMode.HighQualityBicubic
+                            g.DrawImage(originalImg, 0, 0, newWidth, newHeight)
+                        End Using
+                        
+                        ' Dispose old image
+                        If picProduct.Image IsNot Nothing Then
+                            picProduct.Image.Dispose()
+                        End If
+                        picProduct.Image = resizedImg
+                        
+                        ' Convert to byte array
+                        Using ms As New MemoryStream()
+                            resizedImg.Save(ms, Imaging.ImageFormat.Jpeg)
+                            Dim bytes = ms.ToArray()
+                            SaveProductImage(bytes)
+                        End Using
                     End Using
-                    SaveProductImage(bytes)
                     MessageBox.Show("Image saved successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
                 Catch ex As Exception
                     MessageBox.Show($"Error saving image: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -550,6 +578,12 @@ Public Class PriceManagementForm
         If _selectedProductId = 0 Then Return
 
         Try
+            ' Dispose old image first
+            If picProduct.Image IsNot Nothing Then
+                picProduct.Image.Dispose()
+                picProduct.Image = Nothing
+            End If
+            
             Using conn As New SqlConnection(_connString)
                 conn.Open()
                 Using cmd As New SqlCommand("SELECT ProductImage FROM Products WHERE ProductID = @pid", conn)
@@ -557,9 +591,14 @@ Public Class PriceManagementForm
                     Dim result = cmd.ExecuteScalar()
                     If result IsNot Nothing AndAlso Not IsDBNull(result) Then
                         Dim bytes = DirectCast(result, Byte())
-                        Using ms As New MemoryStream(bytes)
-                            picProduct.Image = Image.FromStream(ms)
-                        End Using
+                        If bytes.Length > 0 Then
+                            Using ms As New MemoryStream(bytes)
+                                ' Create a copy of the image to avoid memory stream disposal issues
+                                Using tempImg As Image = Image.FromStream(ms)
+                                    picProduct.Image = New Bitmap(tempImg)
+                                End Using
+                            End Using
+                        End If
                     End If
                 End Using
             End Using

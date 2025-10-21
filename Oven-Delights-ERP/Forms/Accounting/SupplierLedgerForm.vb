@@ -103,6 +103,7 @@ Public Class SupplierLedgerForm
         grid.AllowUserToAddRows = False
         grid.AllowUserToDeleteRows = False
         grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+        AddHandler grid.CellDoubleClick, AddressOf Grid_CellDoubleClick
 
         lblTotals.Dock = DockStyle.Bottom
         lblTotals.Height = 28
@@ -291,4 +292,53 @@ Public Class SupplierLedgerForm
         End If
         Return s
     End Function
+    
+    Private Sub Grid_CellDoubleClick(sender As Object, e As DataGridViewCellEventArgs)
+        Try
+            If e.RowIndex < 0 Then Return ' Header clicked
+            
+            ' Get supplier info and find their GL account
+            Dim supplierId As Integer = 0
+            Dim supplierName As String = ""
+            
+            If cboSupplier.SelectedValue IsNot Nothing Then
+                supplierId = Convert.ToInt32(cboSupplier.SelectedValue)
+                supplierName = cboSupplier.Text
+            End If
+            
+            If supplierId > 0 Then
+                ' Find the Accounts Payable GL account
+                Using cn As New SqlConnection(_conn)
+                    cn.Open()
+                    Dim accountId As Integer = 0
+                    Dim accountNumber As String = "2100"
+                    Dim accountName As String = "Accounts Payable"
+                    
+                    ' Try to get the actual account from GLAccounts
+                    Using cmd As New SqlCommand("SELECT TOP 1 AccountID, AccountNumber, AccountName FROM GLAccounts WHERE AccountNumber = '2100' OR AccountName LIKE '%Payable%'", cn)
+                        Using reader = cmd.ExecuteReader()
+                            If reader.Read() Then
+                                accountId = reader.GetInt32(0)
+                                accountNumber = reader.GetString(1)
+                                accountName = reader.GetString(2)
+                            End If
+                        End Using
+                    End Using
+                    
+                    If accountId > 0 Then
+                        ' Open ledger viewer form with GL account AND supplier filter
+                        Dim ledgerForm As New LedgerViewerForm(accountId, accountNumber, accountName, supplierId, supplierName)
+                        ledgerForm.ShowDialog(Me)
+                    Else
+                        MessageBox.Show("Accounts Payable GL account not found. Please set up account 2100 in Chart of Accounts.", "Account Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    End If
+                End Using
+            Else
+                MessageBox.Show("Please select a supplier first.", "Supplier Ledger", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+            
+        Catch ex As Exception
+            MessageBox.Show($"Error opening ledger: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
 End Class

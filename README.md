@@ -1,170 +1,88 @@
-# Oven Delights ERP System
+# Oven Delights ERP — Accounting Module (Sage/Pastel Aligned)
+
+This document tracks the live rollout of the full double-entry accounting module aligned with Sage/Pastel practices. I will update this log and the checklists as I deliver each piece so you can see progress at a glance.
 
 ## Overview
-A comprehensive Enterprise Resource Planning (ERP) system built with VB.NET WinForms, designed with Pastel accounting compatibility and full Azure SQL database integration.
+- Double-entry GL core: Accounts, Journals, JournalLines, SystemAccounts (account mapping keys).
+- Centralized posting service for AP, AR, Expenses, and Bank (Cashbook).
+- Reporting: Journal drill, Ledger drill with running balance, Trial Balance, Income Statement (P&L), Balance Sheet, AP/AR Ageing.
+- Inventory/COGS and GRNI clearing wired where applicable.
 
-## Project Status
+## System Account Keys (mapping)
+The posting service resolves account IDs from a mapping table (SystemAccounts or SystemSettings) using these keys:
+- AP_CONTROL, AR_CONTROL
+- INVENTORY, GRNI, PURCHASE_RETURNS
+- SALES, SALES_RETURNS, COS
+- VAT_INPUT, VAT_OUTPUT
+- BANK_DEFAULT, BANK_CHARGES, ROUNDING
 
-### ✅ COMPLETED MODULES
+You can change the actual AccountIDs later without code changes; the service will pick up the new mappings.
 
-#### 1. Administrator Module (95% Complete)
-**Features Implemented:**
-- ✅ User Management System with CRUD operations
-- ✅ Role-based access control with permissions
-- ✅ Branch management and hierarchy
-- ✅ Advanced security features (BCrypt, JWT, 2FA support)
-- ✅ Comprehensive audit logging
-- ✅ System settings and configuration
-- ✅ Real-time notifications (SignalR)
-- ✅ Dashboard with Chart.js integration
-- ✅ Crystal Reports integration
-- ✅ Session management with timeout
+## Posting Coverage (checklist)
+- [ ] AP: Supplier Invoice (DR Inventory/GRNI; CR AP Control)
+- [x] AP: Supplier Credit Note on returns (DR AP Control; CR Purchase Returns/Inventory)
+- [ ] AP: Supplier Payment (DR AP Control; CR Bank)
+- [ ] AR: Customer Invoice (DR AR; CR Sales [+VAT]; DR COGS; CR Inventory)
+- [ ] AR: Customer Credit Note (reverse Sales/VAT; adjust Inventory if goods returned)
+- [ ] AR: Customer Receipt (DR Bank; CR AR)
+- [ ] Expenses: Bill (DR Expense [+VAT Input]; CR AP/Bank)
+- [ ] Expenses: Payment (DR AP; CR Bank) or direct cashbook (DR Expense; CR Bank)
+- [ ] Bank: Journal/Charges/Transfers (cashbook with reconciliation flags)
 
-**Database Tables:**
-- Users, Roles, Branches, UserSessions, AuditLog
-- UserPermissions, UserPreferences, PasswordHistory
-- Notifications, UserNotifications, SystemSettings
+## Reporting Views (to be provided in Database/GL_Core_Views.sql)
+- v_JournalLines_ByJournal (JournalID)
+- v_JournalLines_ByAccountWithRunning (AccountID, dates)
+- v_TrialBalance (period)
+- v_IncomeStatement (period)
+- v_BalanceSheet (period)
+- v_AP_AgeAnalysis, v_AR_AgeAnalysis
 
-**Forms Completed:**
-- LoginForm, MainDashboard, UserManagementForm
-- UserAddEditForm, UserProfileForm, PasswordChangeForm
-- BranchManagementForm, AuditLogViewer, SystemSettingsForm
+## How to Test (quick)
+1) Journal drill: `SELECT * FROM v_JournalLines_ByJournal WHERE JournalID = @id;`
+2) Ledger drill: `SELECT * FROM v_JournalLines_ByAccountWithRunning WHERE AccountID = @id AND JournalDate BETWEEN @From AND @To ORDER BY JournalDate, JournalID, LineNumber;`
+3) TB/P&L/BS: run the respective views for a period.
+4) AP/AR Ageing: run v_AP_AgeAnalysis and v_AR_AgeAnalysis.
 
-#### 2. Stockroom Module (75% Complete)
-**Features Implemented:**
-- ✅ Supplier management (Creditors)
-- ✅ Raw materials inventory tracking
-- ✅ Purchase order management
-- ✅ Stock level monitoring
-- ✅ Database integration with minimal schema
-- ✅ StockroomManagementForm with 4 functional tabs
-- ✅ StockTransferForm and StockAdjustmentForm
+## Progress Log (live)
+- 2025-09-09 — Added `Services/StockroomService.UpdateInvoiceWithJournal` to persist edits, create supplier credit note (when ReturnQty > 0), and attempt AP reduction posting through AccountingPostingService.
+- 2025-09-10 — Starting GL core scripts (idempotent): tables (Accounts, Journals, JournalLines), SystemAccounts, posting SPs (Create/Add/Post), and reporting views. Wiring AccountingPostingService with generic posting routines.
+- [10-Sep-2025 09:39 SAST] DB: added `Database/GL_Core_Tables.sql` (Accounts, Journals, JournalLines with cashbook fields, SystemAccounts). Idempotent and ready for SPs/Views.
 
-**Database Tables:**
-- Suppliers, RawMaterials, PurchaseOrders
-- JournalEntries, JournalEntryLines (for accounting integration)
+- [10-Sep-2025 13:04 SAST] DB: added `Database/GL_SystemAccounts_Seed.sql` (creates if missing and seeds keys: AP_CONTROL, AR_CONTROL, INVENTORY, GRNI, PURCHASE_RETURNS, SALES, SALES_RETURNS, COS, VAT_INPUT, VAT_OUTPUT, BANK_DEFAULT, BANK_CHARGES, ROUNDING).
+- [10-Sep-2025 13:06 SAST] DB: added `Database/GL_Core_SPs.sql` (idempotent) providing: `sp_CreateJournalEntry`, `sp_AddJournalDetail`, `sp_PostJournal`.
+- [10-Sep-2025 13:08 SAST] DB: added `Database/GL_Core_Views.sql` (idempotent) providing: `v_JournalLines_ByJournal`, `v_JournalLines_ByAccountWithRunning`, `v_TrialBalance`, `v_IncomeStatement`, `v_BalanceSheet`, `v_AP_AgeAnalysis`, `v_AR_AgeAnalysis`.
+- [10-Sep-2025 13:09 SAST] Code: updated `Services/AccountingPostingService.vb` — `GetSystemAccountId(key)` now queries `dbo.SystemAccounts`.
 
-**Forms Completed:**
-- StockroomManagementForm (with tabs: Raw Materials, Suppliers, Purchase Orders, Low Stock)
-- StockTransferForm, StockAdjustmentForm
+- [10-Sep-2025 13:48 SAST] DB: added `Database/GL_Posting_Procedures.sql` (AP/AR/Expenses/Bank posting procs: `sp_AP_Post_SupplierInvoice`, `sp_AP_Post_SupplierCredit`, `sp_AP_Post_SupplierPayment`, `sp_AR_Post_CustomerInvoice`, `sp_AR_Post_CustomerCredit`, `sp_AR_Post_CustomerReceipt`, `sp_Exp_Post_Bill`, `sp_Exp_Post_Payment`, `sp_Bank_Post_Charge`, `sp_Bank_Post_Transfer`) and helper `dbo.ufn_GetSystemAccountId`.
 
-### 🚧 PENDING MODULES
+- [10-Sep-2025 17:05 SAST] Docs: added Setup & Run Order and Smoke Test sections below.
 
-#### 3. Manufacturing Module (15% Complete)
-**Planned Features:**
-- Production planning and scheduling
-- Bill of Materials (BOM) management
-- Work order tracking
-- Quality control processes
-- Equipment maintenance scheduling
+## Notes
+- All SQL will be idempotent (safe to re-run).
+- Posting routines are centralized so AP/AR/Expenses/Bank all follow Sage-like double-entry patterns.
+- Cashbook (Bank) includes receipts, payments, transfers, charges, and running balances with reconciliation-ready flags.
 
-#### 4. Retail & POS Module (8% Complete)
-**Planned Features:**
-- Point of Sale system
-- Customer management
-- Sales transactions
-- Inventory integration
-- Receipt printing
+## Setup and Run Order (Azure SQL)
+Run these scripts in this exact order against your database:
+1) `Database/GL_Core_Tables.sql`
+2) `Database/GL_SystemAccounts_Seed.sql`
+3) `Database/GL_Core_SPs.sql`
+4) `Database/GL_Core_Views.sql`
+5) EITHER set your own mappings in `dbo.SystemAccounts` OR run `Database/GL_Accounts_MinimalSeed.sql`
+6) `Database/GL_Posting_Procedures.sql`
 
-#### 5. Accounting Module (5% Complete)
-**Planned Features:**
-- General Ledger integration
-- Accounts Payable/Receivable
-- Financial reporting
-- Trial Balance, Balance Sheet, Income Statement
-- Multi-currency support
+After running, verify mappings:
+```sql
+SELECT * FROM dbo.SystemAccounts ORDER BY SysKey;
+```
 
-#### 6. E-commerce Module (3% Complete)
-**Planned Features:**
-- Online store integration
-- Product catalog management
-- Order synchronization
-- Customer portal
+## Smoke Test
+Run this script to post sample AP/AR/Expense/Bank journals and query views:
+- `Database/GL_SmokeTest.sql`
 
-#### 7. Reporting Module (5% Complete)
-**Planned Features:**
-- Custom report builder
-- Financial reports
-- Operational reports
-- Business intelligence dashboard
-
-#### 8. Branding Module (2% Complete)
-**Planned Features:**
-- Brand asset management
-- Marketing materials
-- Corporate identity management
-
-## Technical Architecture
-
-### Database
-- **Platform:** Azure SQL Database
-- **Server:** mogalia.database.windows.net
-- **Database:** OvenDelightsERP
-- **Connection:** Integrated via Microsoft.Data.SqlClient
-
-### Framework
-- **Platform:** .NET Framework 4.8
-- **UI:** Windows Forms (WinForms)
-- **Language:** VB.NET
-- **IDE:** Visual Studio
-
-### Key Dependencies
-- Microsoft.Data.SqlClient (Database connectivity)
-- BCrypt.Net-Next (Password hashing)
-- Microsoft.Web.WebView2 (Chart integration)
-- System.IdentityModel.Tokens.Jwt (JWT authentication)
-- Microsoft.AspNetCore.SignalR.Client (Real-time features)
-- EPPlus (Excel export)
-
-## Database Schema
-Comprehensive database documentation available in:
-`Documentation/DatabaseSchema.md`
-
-## Getting Started
-
-### Prerequisites
-- Visual Studio 2019 or later
-- .NET Framework 4.8
-- Azure SQL Database access
-
-### Login Credentials
-- **Username:** R@j3np1ll@y
-- **Password:** 12345678
-
-### Build Instructions
-1. Clone the repository
-2. Open `Oven-Delights-ERP.sln` in Visual Studio
-3. Restore NuGet packages
-4. Build solution
-5. Run application
-
-## Development Notes
-
-### Current Issues
-- StockroomService compilation errors due to duplicate functions (being resolved)
-- Workflow module display issues (under investigation)
-- Database schema documentation needs updates for new tables
-
-### Next Development Priorities
-1. **Fix StockroomService compilation errors**
-2. **Implement full CRUD operations for Stockroom module**
-3. **Begin Manufacturing module development**
-4. **Enhance accounting integration**
-5. **Implement comprehensive reporting features**
-
-## Workflow Integration
-The system includes an AI-powered workflow assistant that guides development through each module's implementation. The workflow system provides:
-- Module-specific task guidance
-- Comprehensive prompts for Cascade AI integration
-- Progress tracking across all 8 modules
-- Developer mode with password protection (od1)
-
-## Contributing
-This is an internal ERP development project. All development should follow the established patterns and maintain compatibility with the existing database schema.
-
-## License
-Internal use only - Oven Delights ERP System
-
----
-*Last Updated: 2025-08-02*
-*Version: 1.0.0-alpha*
+Quick verification queries:
+```sql
+SELECT TOP 50 * FROM dbo.v_TrialBalance ORDER BY AccountCode;
+SELECT TOP 50 * FROM dbo.v_JournalLines_ByJournal ORDER BY JournalID, LineNumber;
+SELECT TOP 50 * FROM dbo.v_JournalLines_ByAccountWithRunning ORDER BY AccountID, JournalDate, JournalID, LineNumber;
+```

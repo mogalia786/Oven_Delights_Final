@@ -327,6 +327,13 @@ Partial Class MainDashboard
         Catch
             ' non-fatal
         End Try
+        
+        ' Utilities menu (CSV imports)
+        Try
+            SetupUtilitiesMenu()
+        Catch
+            ' non-fatal
+        End Try
 
         ' Start global branch lock rule enforcement for non–Super Admins
         Try
@@ -440,10 +447,8 @@ Partial Class MainDashboard
 
     Private Sub OpenInterBranchTransferCreate(sender As Object, e As EventArgs)
         Try
-            Dim frm As New StockTransferForm()
-            frm.MdiParent = Me
-            frm.Show()
-            frm.WindowState = FormWindowState.Maximized
+            Dim frm As New Forms.InterBranchTransferForm()
+            frm.ShowDialog()
         Catch ex As Exception
             MessageBox.Show($"Error opening Inter-Branch Transfer: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
@@ -1347,6 +1352,12 @@ Partial Class MainDashboard
                                              OpenMdiSingleton(Of Manufacturing.ProductForm)()
                                          End Sub
 
+            Dim miAddProduct As New ToolStripMenuItem("Add Product")
+            AddHandler miAddProduct.Click, Sub(sender, e)
+                                              Dim frm As New Manufacturing.AddProductForm()
+                                              frm.ShowDialog()
+                                          End Sub
+
             Dim miRecipeCreator As New ToolStripMenuItem("Recipe Creator")
             AddHandler miRecipeCreator.Click, Sub(sender, e)
                                                   OpenMdiSingleton(Of Manufacturing.RecipeCreatorForm)()
@@ -1356,6 +1367,11 @@ Partial Class MainDashboard
             AddHandler miBuildMyProduct.Click, Sub(sender, e)
                                                    OpenMdiSingleton(Of Manufacturing.BuildProductForm)()
                                                End Sub
+
+            Dim miRecipeViewer As New ToolStripMenuItem("Recipe Viewer")
+            AddHandler miRecipeViewer.Click, Sub(sender, e)
+                                                OpenMdiSingleton(Of Manufacturing.RecipeViewerForm)()
+                                            End Sub
 
             Dim miBOM As New ToolStripMenuItem("BOM Management")
             AddHandler miBOM.Click, Sub(sender, e)
@@ -1373,7 +1389,7 @@ Partial Class MainDashboard
                                           End Sub
 
             ManufacturingToolStripMenuItem.DropDownItems.AddRange(New ToolStripItem() {
-                miCategories, miSubcategories, miProducts, miRecipeCreator, miBuildMyProduct, miBOM, miCompleteBuild, miMOActions
+                miCategories, miSubcategories, miProducts, miAddProduct, miRecipeCreator, miBuildMyProduct, miRecipeViewer, miBOM, miCompleteBuild, miMOActions
             })
         End If
     End Sub
@@ -3722,6 +3738,106 @@ Partial Class MainDashboard
             frm.WindowState = FormWindowState.Maximized
         Catch ex As Exception
             MessageBox.Show("Error opening Stock Movement Report: " & ex.Message, "Stockroom Reports", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ' =============================
+    ' Utilities Menu Setup
+    ' =============================
+    Private Sub SetupUtilitiesMenu()
+        If Me.MenuStrip1 Is Nothing Then Exit Sub
+        
+        ' Find Reporting menu to insert Utilities before it
+        Dim reportingIndex As Integer = -1
+        For i As Integer = 0 To Me.MenuStrip1.Items.Count - 1
+            Dim item = TryCast(Me.MenuStrip1.Items(i), ToolStripMenuItem)
+            If item IsNot Nothing AndAlso item.Text.Replace("&", "").Trim().Equals("Reporting", StringComparison.OrdinalIgnoreCase) Then
+                reportingIndex = i
+                Exit For
+            End If
+        Next
+        
+        ' Create or find Utilities menu
+        Dim utilities As ToolStripMenuItem = FindTopMenu("Utilities")
+        If utilities Is Nothing Then
+            utilities = New ToolStripMenuItem("Utilities")
+            If reportingIndex >= 0 Then
+                Me.MenuStrip1.Items.Insert(reportingIndex, utilities)
+            Else
+                Me.MenuStrip1.Items.Add(utilities)
+            End If
+        End If
+        
+        ' Add Import Categories submenu
+        Dim importCategories As ToolStripMenuItem = EnsureSubMenu(utilities, "Import Categories from CSV")
+        RemoveHandler importCategories.Click, AddressOf OpenImportCategories
+        AddHandler importCategories.Click, AddressOf OpenImportCategories
+        
+        ' Add Import Products submenu
+        Dim importProducts As ToolStripMenuItem = EnsureSubMenu(utilities, "Import Products from CSV")
+        RemoveHandler importProducts.Click, AddressOf OpenImportProducts
+        AddHandler importProducts.Click, AddressOf OpenImportProducts
+        
+        ' Add Import Suppliers submenu
+        Dim importSuppliers As ToolStripMenuItem = EnsureSubMenu(utilities, "Import Suppliers from CSV")
+        RemoveHandler importSuppliers.Click, AddressOf OpenImportSuppliers
+        AddHandler importSuppliers.Click, AddressOf OpenImportSuppliers
+    End Sub
+    
+    Private Sub OpenImportCategories(sender As Object, e As EventArgs)
+        Try
+            For Each child As Form In Me.MdiChildren
+                If TypeOf child Is ImportCategoriesForm Then
+                    child.Activate()
+                    child.WindowState = FormWindowState.Maximized
+                    Return
+                End If
+            Next
+            
+            Dim frm As New ImportCategoriesForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Import Categories: " & ex.Message, "Utilities", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    
+    Private Sub OpenImportProducts(sender As Object, e As EventArgs)
+        Try
+            For Each child As Form In Me.MdiChildren
+                If TypeOf child Is ImportProductsForm Then
+                    child.Activate()
+                    child.WindowState = FormWindowState.Maximized
+                    Return
+                End If
+            Next
+            
+            Dim frm As New ImportProductsForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Import Products: " & ex.Message, "Utilities", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    
+    Private Sub OpenImportSuppliers(sender As Object, e As EventArgs)
+        Try
+            For Each child As Form In Me.MdiChildren
+                If TypeOf child Is ImportSuppliersForm Then
+                    child.Activate()
+                    child.WindowState = FormWindowState.Maximized
+                    Return
+                End If
+            Next
+            
+            Dim frm As New ImportSuppliersForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Import Suppliers: " & ex.Message, "Utilities", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 

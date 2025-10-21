@@ -20,8 +20,11 @@ Namespace Manufacturing
 
         Private WithEvents categorySelector As CategorySubcategorySelector
         Private txtProductName As TextBox
-        Private txtProductCode As TextBox
+        Private WithEvents txtProductCode As TextBox
+        Private txtSKU As TextBox
+        Private picBarcode As PictureBox
         Private txtDescription As TextBox
+        Private cmbItemType As ComboBox
         Private txtLastPaidPrice As TextBox
         Private txtAverageCost As TextBox
         Private txtReorderLevel As TextBox
@@ -36,7 +39,7 @@ Namespace Manufacturing
         Public Sub New()
             Me.Text = "Add New Product - Oven Delights"
             Me.Width = 900
-            Me.Height = 700
+            Me.Height = 800
             Me.StartPosition = FormStartPosition.CenterParent
             Me.FormBorderStyle = FormBorderStyle.FixedDialog
             Me.MaximizeBox = False
@@ -63,7 +66,7 @@ Namespace Manufacturing
             }
             
             Dim lblSubHeader As New Label() With {
-                .Text = "Create a new manufactured product for recipe building",
+                .Text = "Create a new product (internal/manufactured or external/purchased)",
                 .Font = New Font("Segoe UI", 10),
                 .ForeColor = ColorLight,
                 .AutoSize = True,
@@ -82,7 +85,7 @@ Namespace Manufacturing
             }
 
             ' Left side - Form fields
-            Dim pnlLeft As New Panel() With {.Left = 0, .Top = 0, .Width = 520, .Height = 550}
+            Dim pnlLeft As New Panel() With {.Left = 0, .Top = 0, .Width = 520, .Height = 650}
             
             Dim y As Integer = 10
             Dim labelFont As New Font("Segoe UI", 10, FontStyle.Bold)
@@ -123,13 +126,64 @@ Namespace Manufacturing
                 .BorderStyle = BorderStyle.FixedSingle
             }
             y += 70
-
-            ' Category/Subcategory
-            Dim lblCategory As New Label() With {
-                .Text = "Category & Subcategory *",
+            
+            ' SKU (Barcode)
+            Dim lblSKU As New Label() With {
+                .Text = "SKU (Barcode)",
                 .Left = 0,
                 .Top = y,
-                .Width = 250,
+                .Width = 150,
+                .Font = labelFont,
+                .ForeColor = ColorDark
+            }
+            txtSKU = New TextBox() With {
+                .Left = 0,
+                .Top = y + 25,
+                .Width = 230,
+                .Font = textFont,
+                .BorderStyle = BorderStyle.FixedSingle,
+                .ReadOnly = True,
+                .BackColor = ColorLight
+            }
+            
+            ' Barcode image display
+            picBarcode = New PictureBox() With {
+                .Left = 240,
+                .Top = y + 5,
+                .Width = 240,
+                .Height = 60,
+                .BorderStyle = BorderStyle.FixedSingle,
+                .BackColor = Color.White,
+                .SizeMode = PictureBoxSizeMode.CenterImage
+            }
+            y += 70
+            
+            ' Item Type
+            Dim lblItemType As New Label() With {
+                .Text = "Product Type *",
+                .Left = 0,
+                .Top = y,
+                .Width = 150,
+                .Font = labelFont,
+                .ForeColor = ColorDark
+            }
+            cmbItemType = New ComboBox() With {
+                .Left = 0,
+                .Top = y + 25,
+                .Width = 230,
+                .Font = textFont,
+                .DropDownStyle = ComboBoxStyle.DropDownList
+            }
+            cmbItemType.Items.AddRange({"internal", "external"})
+            cmbItemType.SelectedIndex = 0 ' Default to internal
+            y += 70
+
+            ' Category (subcategory optional)
+            Dim lblCategory As New Label() With {
+                .Text = "Category *",
+                .Left = 0,
+                .Top = y,
+                .Width = 150,
                 .Font = labelFont,
                 .ForeColor = ColorDark
             }
@@ -203,10 +257,10 @@ Namespace Manufacturing
                 .ForeColor = ColorDark
             }
 
-            pnlLeft.Controls.AddRange({lblName, txtProductName, lblCode, txtProductCode, lblCategory, categorySelector, lblDesc, txtDescription, pnlPricing, chkIsActive})
+            pnlLeft.Controls.AddRange({lblName, txtProductName, lblCode, txtProductCode, lblSKU, txtSKU, picBarcode, lblItemType, cmbItemType, lblCategory, categorySelector, lblDesc, txtDescription, pnlPricing, chkIsActive})
 
             ' Right side - Image upload
-            Dim pnlRight As New Panel() With {.Left = 540, .Top = 0, .Width = 300, .Height = 550}
+            Dim pnlRight As New Panel() With {.Left = 540, .Top = 0, .Width = 300, .Height = 650}
             
             Dim lblImageHeader As New Label() With {
                 .Text = "📷 Product Image",
@@ -308,6 +362,102 @@ Namespace Manufacturing
             Me.Controls.Add(pnlHeader)
         End Sub
         
+        Private Sub TxtProductCode_TextChanged(sender As Object, e As EventArgs) Handles txtProductCode.TextChanged
+            ' Convert product code to barcode SKU format
+            If Not String.IsNullOrWhiteSpace(txtProductCode.Text) Then
+                ' Generate EAN-13 compatible barcode (13 digits)
+                ' Format: Country(3) + Manufacturer(4) + Product(5) + Check(1)
+                Dim code As String = txtProductCode.Text.Trim().ToUpper()
+                
+                ' Remove non-alphanumeric characters
+                code = System.Text.RegularExpressions.Regex.Replace(code, "[^A-Z0-9]", "")
+                
+                ' Convert to numeric barcode (use ASCII values for letters)
+                Dim barcodeNum As String = ""
+                For Each c As Char In code
+                    If Char.IsDigit(c) Then
+                        barcodeNum &= c
+                    Else
+                        ' Convert letter to number (A=10, B=11, etc.)
+                        barcodeNum &= (Asc(c) - 55).ToString()
+                    End If
+                Next
+                
+                ' Pad or truncate to 12 digits
+                If barcodeNum.Length > 12 Then
+                    barcodeNum = barcodeNum.Substring(0, 12)
+                Else
+                    barcodeNum = barcodeNum.PadRight(12, "0"c)
+                End If
+                
+                ' Calculate EAN-13 check digit
+                Dim sum As Integer = 0
+                For i As Integer = 0 To 11
+                    Dim digit As Integer = Integer.Parse(barcodeNum(i).ToString())
+                    If i Mod 2 = 0 Then
+                        sum += digit
+                    Else
+                        sum += digit * 3
+                    End If
+                Next
+                Dim checkDigit As Integer = (10 - (sum Mod 10)) Mod 10
+                
+                ' Final barcode
+                Dim finalBarcode As String = barcodeNum & checkDigit.ToString()
+                txtSKU.Text = finalBarcode
+                
+                ' Generate barcode image
+                GenerateBarcodeImage(finalBarcode)
+            Else
+                txtSKU.Text = ""
+                picBarcode.Image = Nothing
+            End If
+        End Sub
+        
+        Private Sub GenerateBarcodeImage(barcodeText As String)
+            ' Generate a simple Code 128 style barcode image
+            Try
+                Dim width As Integer = 230
+                Dim height As Integer = 50
+                Dim bmp As New Bitmap(width, height)
+                
+                Using g As Graphics = Graphics.FromImage(bmp)
+                    g.Clear(Color.White)
+                    
+                    ' Draw bars based on barcode digits
+                    Dim barWidth As Single = width / (barcodeText.Length * 2.5F)
+                    Dim x As Single = 5
+                    
+                    For Each c As Char In barcodeText
+                        Dim digit As Integer = Integer.Parse(c.ToString())
+                        ' Alternate between thick and thin bars based on digit value
+                        Dim isThick As Boolean = (digit Mod 2 = 0)
+                        Dim currentBarWidth As Single = If(isThick, barWidth * 1.5F, barWidth)
+                        
+                        ' Draw black bar
+                        g.FillRectangle(Brushes.Black, x, 5, currentBarWidth, height - 20)
+                        x += currentBarWidth
+                        
+                        ' Draw white space
+                        x += barWidth * 0.5F
+                    Next
+                    
+                    ' Draw text below barcode
+                    Dim textFont As New Font("Consolas", 8, FontStyle.Regular)
+                    Dim textSize = g.MeasureString(barcodeText, textFont)
+                    g.DrawString(barcodeText, textFont, Brushes.Black, (width - textSize.Width) / 2, height - 15)
+                End Using
+                
+                ' Dispose old image
+                If picBarcode.Image IsNot Nothing Then
+                    picBarcode.Image.Dispose()
+                End If
+                picBarcode.Image = bmp
+            Catch ex As Exception
+                ' Silently fail if barcode generation fails
+            End Try
+        End Sub
+        
         Private Sub BtnUploadImage_Click(sender As Object, e As EventArgs)
             Using ofd As New OpenFileDialog()
                 ofd.Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp"
@@ -315,25 +465,40 @@ Namespace Manufacturing
                 
                 If ofd.ShowDialog() = DialogResult.OK Then
                     Try
-                        ' Check file size (max 2MB)
-                        Dim fileInfo As New FileInfo(ofd.FileName)
-                        If fileInfo.Length > 2 * 1024 * 1024 Then
-                            MessageBox.Show("Image size must be less than 2MB.", "File Too Large", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                            Return
-                        End If
-                        
-                        ' Load image
-                        Dim img As Image = Image.FromFile(ofd.FileName)
-                        picProductImage.Image = img
-                        
-                        ' Convert to byte array
-                        Using ms As New MemoryStream()
-                            img.Save(ms, img.RawFormat)
-                            _productImageBytes = ms.ToArray()
+                        ' Load and resize image to prevent out of memory errors
+                        Using originalImg As Image = Image.FromFile(ofd.FileName)
+                            ' Resize to max 800x800 to save memory and database space
+                            Dim maxSize As Integer = 800
+                            Dim newWidth As Integer = originalImg.Width
+                            Dim newHeight As Integer = originalImg.Height
+                            
+                            If originalImg.Width > maxSize OrElse originalImg.Height > maxSize Then
+                                Dim ratio As Double = Math.Min(maxSize / CDbl(originalImg.Width), maxSize / CDbl(originalImg.Height))
+                                newWidth = CInt(originalImg.Width * ratio)
+                                newHeight = CInt(originalImg.Height * ratio)
+                            End If
+                            
+                            ' Create resized image
+                            Dim resizedImg As New Bitmap(newWidth, newHeight)
+                            Using g As Graphics = Graphics.FromImage(resizedImg)
+                                g.InterpolationMode = Drawing2D.InterpolationMode.HighQualityBicubic
+                                g.DrawImage(originalImg, 0, 0, newWidth, newHeight)
+                            End Using
+                            
+                            ' Display in picture box
+                            If picProductImage.Image IsNot Nothing Then
+                                picProductImage.Image.Dispose()
+                            End If
+                            picProductImage.Image = resizedImg
+                            
+                            ' Convert to byte array (JPEG format to reduce size)
+                            Using ms As New MemoryStream()
+                                resizedImg.Save(ms, Imaging.ImageFormat.Jpeg)
+                                _productImageBytes = ms.ToArray()
+                            End Using
                         End Using
-                        
                     Catch ex As Exception
-                        MessageBox.Show($"Error loading image: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                        MessageBox.Show($"Error loading image: {ex.Message}", "Image Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
                     End Try
                 End If
             End Using
@@ -352,9 +517,23 @@ Namespace Manufacturing
                 txtProductCode.Focus()
                 Return
             End If
+            
+            ' Check for duplicate Product Code
+            If IsProductCodeExists(txtProductCode.Text.Trim()) Then
+                MessageBox.Show("This Product Code already exists. Please use a unique code.", "Duplicate Product Code", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                txtProductCode.Focus()
+                Return
+            End If
+            
+            ' Check for duplicate SKU/Barcode
+            If Not String.IsNullOrWhiteSpace(txtSKU.Text) AndAlso IsSKUExists(txtSKU.Text.Trim()) Then
+                MessageBox.Show("This SKU/Barcode already exists. Please use a different Product Code.", "Duplicate SKU", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                txtProductCode.Focus()
+                Return
+            End If
 
-            If categorySelector Is Nothing OrElse Not categorySelector.IsValidSelection Then
-                MessageBox.Show("Please select a Category and Subcategory.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            If categorySelector Is Nothing OrElse categorySelector.SelectedCategoryId <= 0 Then
+                MessageBox.Show("Please select a Category.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
             End If
 
@@ -367,15 +546,54 @@ Namespace Manufacturing
                 MessageBox.Show($"Error saving product: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
         End Sub
+        
+        Private Function IsProductCodeExists(productCode As String) As Boolean
+            Try
+                Using con As New SqlConnection(_connectionString)
+                    con.Open()
+                    Dim sql As String = "SELECT COUNT(*) FROM Products WHERE ProductCode = @Code"
+                    Using cmd As New SqlCommand(sql, con)
+                        cmd.Parameters.AddWithValue("@Code", productCode)
+                        Dim count As Integer = Convert.ToInt32(cmd.ExecuteScalar())
+                        Return count > 0
+                    End Using
+                End Using
+            Catch ex As Exception
+                MessageBox.Show($"Error checking product code: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return False
+            End Try
+        End Function
+        
+        Private Function IsSKUExists(sku As String) As Boolean
+            Try
+                Using con As New SqlConnection(_connectionString)
+                    con.Open()
+                    Dim sql As String = "SELECT COUNT(*) FROM Products WHERE SKU = @SKU"
+                    Using cmd As New SqlCommand(sql, con)
+                        cmd.Parameters.AddWithValue("@SKU", sku)
+                        Dim count As Integer = Convert.ToInt32(cmd.ExecuteScalar())
+                        Return count > 0
+                    End Using
+                End Using
+            Catch ex As Exception
+                MessageBox.Show($"Error checking SKU: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return False
+            End Try
+        End Function
 
         Private Sub SaveProduct()
             Using con As New SqlConnection(_connectionString)
                 con.Open()
                 Using tx = con.BeginTransaction()
                     Try
-                        ' Get category and subcategory IDs
+                        ' Get category ID (subcategory not used)
                         Dim categoryId As Integer = categorySelector.SelectedCategoryId
-                        Dim subcategoryId As Integer = categorySelector.SelectedSubcategoryId
+                        Dim subcategoryId As Integer = 0 ' Not using subcategory
+
+                        ' Validate category exists
+                        If categoryId <= 0 Then
+                            Throw New Exception("Please select a valid Category.")
+                        End If
 
                         ' Parse numeric values
                         Dim lastPaidPrice As Decimal = 0D
@@ -391,22 +609,27 @@ Namespace Manufacturing
                         Integer.TryParse(txtReorderQuantity.Text, reorderQty)
 
                         ' Insert product with RecipeCreated = 'No' and ProductImage
-                        Dim sql As String = "INSERT INTO Products (ProductName, ProductCode, Description, CategoryID, SubcategoryID, ItemType, LastPaidPrice, AverageCost, ReorderLevel, ReorderQuantity, IsActive, RecipeCreated, ProductImage, CreatedDate, CreatedBy) " &
-                                          "VALUES (@Name, @Code, @Desc, @CatID, @SubcatID, 'Manufactured', @LastPaid, @AvgCost, @Reorder, @ReorderQty, @IsActive, 'No', @Image, GETDATE(), @CreatedBy)"
+                        ' Using only columns that exist in Products table
+                        ' Make CategoryID and SubcategoryID nullable to avoid FK constraint issues
+                        Dim sql As String = "INSERT INTO Products (ProductName, ProductCode, SKU, CategoryID, SubcategoryID, ItemType, IsActive, RecipeCreated, ProductImage, CreatedDate) " &
+                                          "VALUES (@Name, @Code, @SKU, @CatID, @SubcatID, @ItemType, @IsActive, 'No', @Image, GETDATE())"
 
                         Using cmd As New SqlCommand(sql, con, tx)
                             cmd.Parameters.AddWithValue("@Name", txtProductName.Text.Trim())
                             cmd.Parameters.AddWithValue("@Code", txtProductCode.Text.Trim())
-                            cmd.Parameters.AddWithValue("@Desc", If(String.IsNullOrWhiteSpace(txtDescription.Text), DBNull.Value, txtDescription.Text.Trim()))
-                            cmd.Parameters.AddWithValue("@CatID", categoryId)
-                            cmd.Parameters.AddWithValue("@SubcatID", subcategoryId)
-                            cmd.Parameters.AddWithValue("@LastPaid", lastPaidPrice)
-                            cmd.Parameters.AddWithValue("@AvgCost", avgCost)
-                            cmd.Parameters.AddWithValue("@Reorder", reorderLevel)
-                            cmd.Parameters.AddWithValue("@ReorderQty", reorderQty)
+                            cmd.Parameters.AddWithValue("@SKU", If(String.IsNullOrWhiteSpace(txtSKU.Text), DBNull.Value, CType(txtSKU.Text.Trim(), Object)))
+                            cmd.Parameters.AddWithValue("@ItemType", If(cmbItemType.SelectedItem IsNot Nothing, cmbItemType.SelectedItem.ToString(), "internal"))
+                            cmd.Parameters.AddWithValue("@CatID", If(categoryId > 0, CType(categoryId, Object), DBNull.Value))
+                            cmd.Parameters.AddWithValue("@SubcatID", DBNull.Value) ' Subcategory not used
                             cmd.Parameters.AddWithValue("@IsActive", chkIsActive.Checked)
-                            cmd.Parameters.AddWithValue("@Image", If(_productImageBytes Is Nothing, DBNull.Value, CType(_productImageBytes, Object)))
-                            cmd.Parameters.AddWithValue("@CreatedBy", AppSession.CurrentUserID)
+                            
+                            ' Properly handle binary image data
+                            If _productImageBytes Is Nothing Then
+                                cmd.Parameters.Add("@Image", SqlDbType.VarBinary).Value = DBNull.Value
+                            Else
+                                cmd.Parameters.Add("@Image", SqlDbType.VarBinary, -1).Value = _productImageBytes
+                            End If
+                            
                             cmd.ExecuteNonQuery()
                         End Using
 

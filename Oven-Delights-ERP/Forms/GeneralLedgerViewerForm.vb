@@ -63,6 +63,7 @@ Public Class GeneralLedgerViewerForm
         AddHandler btnSearch.Click, AddressOf OnSearch
         AddHandler grdAccounts.SelectionChanged, AddressOf OnAccountSelected
         AddHandler grdAccounts.CellClick, AddressOf OnAccountSelected
+        AddHandler grdAccounts.CellDoubleClick, AddressOf OnAccountDoubleClick
 
         grdAccounts.AutoGenerateColumns = True
         grdTransactions.AutoGenerateColumns = True
@@ -283,6 +284,28 @@ Public Class GeneralLedgerViewerForm
             lblTotals.Text = $"Debits: {tDebit:N2}    Credits: {tCredit:N2}    Difference: {(tDebit - tCredit):N2}"
         Catch
             lblTotals.Text = String.Empty
+        End Try
+    End Sub
+    
+    Private Sub OnAccountDoubleClick(sender As Object, e As DataGridViewCellEventArgs)
+        Try
+            If e.RowIndex < 0 Then Return ' Header clicked
+            
+            Dim row As DataGridViewRow = grdAccounts.Rows(e.RowIndex)
+            Dim drv As DataRowView = TryCast(row.DataBoundItem, DataRowView)
+            
+            If drv IsNot Nothing AndAlso drv.Row.Table.Columns.Contains("AccountID") Then
+                Dim accountId As Integer = Convert.ToInt32(drv.Row("AccountID"))
+                Dim accountNumber As String = If(drv.Row.Table.Columns.Contains("AccountNumber"), drv.Row("AccountNumber").ToString(), "")
+                Dim accountName As String = If(drv.Row.Table.Columns.Contains("AccountName"), drv.Row("AccountName").ToString(), "")
+                
+                ' Open detailed ledger viewer
+                Dim ledgerForm As New LedgerViewerForm(accountId, accountNumber, accountName)
+                ledgerForm.ShowDialog(Me)
+            End If
+            
+        Catch ex As Exception
+            MessageBox.Show($"Error opening ledger: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 End Class

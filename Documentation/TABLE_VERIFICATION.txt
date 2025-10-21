@@ -1,0 +1,14 @@
+TABLE_NAME Status
+---------- ------
+ExpenseCategories EXISTS
+GoodsReceivedNotes EXISTS
+InternalOrderHeader EXISTS
+ProductRecipe EXISTS
+Products EXISTS
+RecipeNode EXISTS
+Retail_Stock EXISTS
+Retail_Variant EXISTS
+SupplierInvoices EXISTS
+UoM EXISTS
+
+(10 rows affected)

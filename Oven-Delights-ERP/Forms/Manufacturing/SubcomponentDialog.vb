@@ -97,17 +97,29 @@ Namespace Manufacturing
                     bag("UoMID") = uomId
                 End If
             End If
-            ' include IDs when applicable
+            
+            ' Store IDs based on type
             Dim selType = bag("Type").ToString()
-            If selType = "Raw Material" Then
-                If cmbItem.SelectedValue IsNot Nothing AndAlso Integer.TryParse(cmbItem.SelectedValue.ToString(), Nothing) Then
-                    bag("MaterialID") = CInt(cmbItem.SelectedValue)
-                End If
-            ElseIf selType = "SubAssembly" Then
-                If cmbItem.SelectedValue IsNot Nothing AndAlso Integer.TryParse(cmbItem.SelectedValue.ToString(), Nothing) Then
-                    bag("SubAssemblyProductID") = CInt(cmbItem.SelectedValue)
+            If cmbItem.SelectedValue IsNot Nothing Then
+                Dim itemId As Integer
+                If Integer.TryParse(cmbItem.SelectedValue.ToString(), itemId) Then
+                    Select Case selType
+                        Case "Raw Material"
+                            bag("MaterialID") = itemId
+                        Case "SubAssembly"
+                            bag("SubAssemblyID") = itemId
+                        Case "Decoration"
+                            bag("DecorationID") = itemId
+                        Case "Toppings"
+                            bag("ToppingID") = itemId
+                        Case "Accessories"
+                            bag("AccessoryID") = itemId
+                        Case "Packaging"
+                            bag("PackagingID") = itemId
+                    End Select
                 End If
             End If
+            
             bag("Flavor") = txtFlavor.Text
             bag("Notes") = txtNotes.Text
             Return bag
@@ -128,15 +140,23 @@ Namespace Manufacturing
 
         Private Sub OnTypeChanged(sender As Object, e As EventArgs)
             Dim t = If(cmbType.SelectedItem, "").ToString()
-            If t = "Raw Material" Then
-                BindRawMaterials()
-            ElseIf t = "SubAssembly" Then
-                BindSubAssemblies()
-            Else
-                ' Free text for other types
-                cmbItem.DataSource = Nothing
-                cmbItem.DropDownStyle = ComboBoxStyle.DropDown
-            End If
+            Select Case t
+                Case "Raw Material"
+                    BindRawMaterials()
+                Case "SubAssembly"
+                    BindSubAssemblies()
+                Case "Decoration"
+                    BindDecorations()
+                Case "Toppings"
+                    BindToppings()
+                Case "Accessories"
+                    BindAccessories()
+                Case "Packaging"
+                    BindPackaging()
+                Case Else
+                    cmbItem.DataSource = Nothing
+                    cmbItem.DropDownStyle = ComboBoxStyle.DropDown
+            End Select
         End Sub
 
         Private Sub BindRawMaterials()
@@ -172,19 +192,72 @@ Namespace Manufacturing
             End Using
         End Sub
 
+        Private Sub BindDecorations()
+            Using cn As New SqlConnection(_connectionString)
+                cn.Open()
+                Dim dt As New DataTable()
+                Using cmd As New SqlCommand("SELECT DecorationID, (ISNULL(DecorationCode,'') + CASE WHEN ISNULL(DecorationCode,'')<>'' THEN ' - ' ELSE '' END + ISNULL(DecorationName,'')) AS Display, DefaultUoMID FROM dbo.Decorations WHERE ISNULL(IsActive,1)=1 ORDER BY DecorationName", cn)
+                    dt.Load(cmd.ExecuteReader())
+                End Using
+                cmbItem.DataSource = Nothing
+                cmbItem.DisplayMember = "Display"
+                cmbItem.ValueMember = "DecorationID"
+                cmbItem.DataSource = dt
+                cmbItem.DropDownStyle = ComboBoxStyle.DropDownList
+            End Using
+        End Sub
+
+        Private Sub BindToppings()
+            Using cn As New SqlConnection(_connectionString)
+                cn.Open()
+                Dim dt As New DataTable()
+                Using cmd As New SqlCommand("SELECT ToppingID, (ISNULL(ToppingCode,'') + CASE WHEN ISNULL(ToppingCode,'')<>'' THEN ' - ' ELSE '' END + ISNULL(ToppingName,'')) AS Display, DefaultUoMID FROM dbo.Toppings WHERE ISNULL(IsActive,1)=1 ORDER BY ToppingName", cn)
+                    dt.Load(cmd.ExecuteReader())
+                End Using
+                cmbItem.DataSource = Nothing
+                cmbItem.DisplayMember = "Display"
+                cmbItem.ValueMember = "ToppingID"
+                cmbItem.DataSource = dt
+                cmbItem.DropDownStyle = ComboBoxStyle.DropDownList
+            End Using
+        End Sub
+
+        Private Sub BindAccessories()
+            Using cn As New SqlConnection(_connectionString)
+                cn.Open()
+                Dim dt As New DataTable()
+                Using cmd As New SqlCommand("SELECT AccessoryID, (ISNULL(AccessoryCode,'') + CASE WHEN ISNULL(AccessoryCode,'')<>'' THEN ' - ' ELSE '' END + ISNULL(AccessoryName,'')) AS Display, DefaultUoMID FROM dbo.Accessories WHERE ISNULL(IsActive,1)=1 ORDER BY AccessoryName", cn)
+                    dt.Load(cmd.ExecuteReader())
+                End Using
+                cmbItem.DataSource = Nothing
+                cmbItem.DisplayMember = "Display"
+                cmbItem.ValueMember = "AccessoryID"
+                cmbItem.DataSource = dt
+                cmbItem.DropDownStyle = ComboBoxStyle.DropDownList
+            End Using
+        End Sub
+
+        Private Sub BindPackaging()
+            Using cn As New SqlConnection(_connectionString)
+                cn.Open()
+                Dim dt As New DataTable()
+                Using cmd As New SqlCommand("SELECT PackagingID, (ISNULL(PackagingCode,'') + CASE WHEN ISNULL(PackagingCode,'')<>'' THEN ' - ' ELSE '' END + ISNULL(PackagingName,'')) AS Display, DefaultUoMID FROM dbo.Packaging WHERE ISNULL(IsActive,1)=1 ORDER BY PackagingName", cn)
+                    dt.Load(cmd.ExecuteReader())
+                End Using
+                cmbItem.DataSource = Nothing
+                cmbItem.DisplayMember = "Display"
+                cmbItem.ValueMember = "PackagingID"
+                cmbItem.DataSource = dt
+                cmbItem.DropDownStyle = ComboBoxStyle.DropDownList
+            End Using
+        End Sub
+
         Private Sub OnItemChanged(sender As Object, e As EventArgs)
             Dim t = If(cmbType.SelectedItem, "").ToString()
             If cmbItem.SelectedValue Is Nothing Then Return
-            If t = "Raw Material" Then
-                Dim drv = TryCast(cmbItem.SelectedItem, DataRowView)
-                If drv IsNot Nothing AndAlso Not IsDBNull(drv("DefaultUoMID")) Then
-                    cmbUoM.SelectedValue = CInt(drv("DefaultUoMID"))
-                End If
-            ElseIf t = "SubAssembly" Then
-                Dim drv = TryCast(cmbItem.SelectedItem, DataRowView)
-                If drv IsNot Nothing AndAlso Not IsDBNull(drv("DefaultUoMID")) Then
-                    cmbUoM.SelectedValue = CInt(drv("DefaultUoMID"))
-                End If
+            Dim drv = TryCast(cmbItem.SelectedItem, DataRowView)
+            If drv IsNot Nothing AndAlso drv.Row.Table.Columns.Contains("DefaultUoMID") AndAlso Not IsDBNull(drv("DefaultUoMID")) Then
+                cmbUoM.SelectedValue = CInt(drv("DefaultUoMID"))
             End If
         End Sub
 

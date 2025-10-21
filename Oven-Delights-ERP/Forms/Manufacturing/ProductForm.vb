@@ -100,15 +100,32 @@ Namespace Manufacturing
             Using cn As New SqlConnection(_connectionString)
                 cn.Open()
                 Dim hasSku As Boolean = ColumnExists(cn, Nothing, "Products", "SKU")
-                If hasSku Then
-                    Using cmd As New SqlCommand("SELECT p.ProductID, p.SKU AS Code, p.ProductName, u.UoMCode AS UoM, p.IsActive FROM dbo.Products p LEFT JOIN dbo.UoM u ON u.UoMID = p.DefaultUoMID ORDER BY p.ProductName", cn)
-                        dt.Load(cmd.ExecuteReader())
-                    End Using
-                Else
-                    Using cmd As New SqlCommand("SELECT p.ProductID, p.ProductCode AS Code, p.ProductName, p.BaseUoM AS UoM, p.IsActive FROM dbo.Products p ORDER BY p.ProductName", cn)
-                        dt.Load(cmd.ExecuteReader())
-                    End Using
+                Dim hasDefaultUoMID As Boolean = ColumnExists(cn, Nothing, "Products", "DefaultUoMID")
+                Dim hasUnitOfMeasure As Boolean = ColumnExists(cn, Nothing, "Products", "UnitOfMeasure")
+                Dim hasBaseUoM As Boolean = ColumnExists(cn, Nothing, "Products", "BaseUoM")
+                
+                ' Determine UoM column to use
+                Dim uomColumn As String = "'ea'"  ' Default fallback
+                If hasUnitOfMeasure Then
+                    uomColumn = "p.UnitOfMeasure"
+                ElseIf hasBaseUoM Then
+                    uomColumn = "p.BaseUoM"
                 End If
+                
+                ' Determine Code column to use
+                Dim codeColumn As String = If(hasSku, "p.SKU", "p.ProductCode")
+                
+                ' Build query
+                Dim sql As String
+                If hasDefaultUoMID Then
+                    sql = $"SELECT p.ProductID, {codeColumn} AS Code, p.ProductName, ISNULL(u.UoMCode, {uomColumn}) AS UoM, p.IsActive FROM dbo.Products p LEFT JOIN dbo.UoM u ON u.UoMID = p.DefaultUoMID ORDER BY p.ProductName"
+                Else
+                    sql = $"SELECT p.ProductID, {codeColumn} AS Code, p.ProductName, {uomColumn} AS UoM, p.IsActive FROM dbo.Products p ORDER BY p.ProductName"
+                End If
+                
+                Using cmd As New SqlCommand(sql, cn)
+                    dt.Load(cmd.ExecuteReader())
+                End Using
             End Using
             dgv.DataSource = dt
         End Sub
