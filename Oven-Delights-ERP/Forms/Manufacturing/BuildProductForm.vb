@@ -286,8 +286,17 @@ Namespace Manufacturing
             Try
                 Using con As New SqlConnection(_connectionString)
                     con.Open()
-                    Dim sql As String = "SELECT ProductID, ProductName FROM Products WHERE ItemType IN ('internal', 'Manufactured') AND IsActive = 1 ORDER BY ProductName"
+                    ' Filter for branch and only internal (manufactured) products, exclude sub-recipes/ingredients
+                    Dim branchId As Integer = If(AppSession.CurrentBranchID > 0, AppSession.CurrentBranchID, 0)
+                    Dim sql As String = "SELECT p.ProductID, p.Name AS ProductName " & _
+                                        "FROM Demo_Retail_Product p " & _
+                                        "WHERE p.IsActive = 1 " & _
+                                        "  AND (p.BranchID = @branchId OR p.BranchID IS NULL) " & _
+                                        "  AND p.ProductType = 'Internal' " & _
+                                        "  AND NOT EXISTS (SELECT 1 FROM BOMItems bi WHERE bi.ComponentProductID = p.ProductID) " & _
+                                        "ORDER BY p.Name"
                     Using cmd As New SqlCommand(sql, con)
+                        cmd.Parameters.AddWithValue("@branchId", branchId)
                         Dim dt As New DataTable()
                         Using reader = cmd.ExecuteReader()
                             dt.Load(reader)
@@ -311,7 +320,7 @@ Namespace Manufacturing
                 ' Load product details and auto-fill
                 Using con As New SqlConnection(_connectionString)
                     con.Open()
-                    Dim sql As String = "SELECT ProductID, ProductCode, CategoryID, SubcategoryID FROM Products WHERE ProductID = @id"
+                    Dim sql As String = "SELECT ProductID, SKU AS ProductCode, CategoryID FROM Demo_Retail_Product WHERE ProductID = @id"
                     Using cmd As New SqlCommand(sql, con)
                         cmd.Parameters.AddWithValue("@id", _selectedProductId)
                         Using reader = cmd.ExecuteReader()
@@ -319,8 +328,8 @@ Namespace Manufacturing
                                 txtProductID.Text = reader("ProductID").ToString()
                                 txtSKU.Text = If(reader("ProductCode") Is DBNull.Value, "", reader("ProductCode").ToString())
 
-                                ' Auto-fill category and subcategory
-                                ' Category and subcategory are already set in the product - no need to display selector
+                                ' Auto-fill category
+                                ' Category is already set in the product - no need to display selector
                             End If
                         End Using
                     End Using

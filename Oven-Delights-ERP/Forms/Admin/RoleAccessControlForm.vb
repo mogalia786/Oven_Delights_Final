@@ -54,7 +54,9 @@ Public Class RoleAccessControlForm
     End Sub
 
     Private Sub btnReload_Click(sender As Object, e As EventArgs) Handles btnReload.Click
+        MessageBox.Show("Scanning MainDashboard for all menus...", "Refreshing", MessageBoxButtons.OK, MessageBoxIcon.Information)
         ReloadGrid()
+        MessageBox.Show($"Found {_dt.Rows.Count} menu items!", "Complete", MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
 
     Private Sub ReloadGrid()
@@ -62,9 +64,61 @@ Public Class RoleAccessControlForm
             Dim roleId As Integer = GetSelectedRoleId()
             BuildGrid()
             
-            ' Add standard modules
-            Dim modules() As String = {"Administration", "Inventory", "Manufacturing", "Retail", "Accounting", "Reporting"}
+            ' Get all menu items from MainDashboard dynamically
+            Dim modules As New List(Of String)()
             
+            ' Find the MainDashboard form
+            Dim mainDashboard As Form = Nothing
+            Dim formCount As Integer = 0
+            For Each frm As Form In Application.OpenForms
+                formCount += 1
+                System.Diagnostics.Debug.WriteLine($"Found form: {frm.GetType().Name}")
+                If frm.GetType().Name = "MainDashboard" Then
+                    mainDashboard = frm
+                    Exit For
+                End If
+            Next
+            
+            System.Diagnostics.Debug.WriteLine($"Total forms open: {formCount}, MainDashboard found: {mainDashboard IsNot Nothing}")
+            
+            If mainDashboard IsNot Nothing Then
+                ' Get MenuStrip from MainDashboard
+                Dim menuStrip As MenuStrip = Nothing
+                For Each ctrl As Control In mainDashboard.Controls
+                    If TypeOf ctrl Is MenuStrip Then
+                        menuStrip = CType(ctrl, MenuStrip)
+                        System.Diagnostics.Debug.WriteLine($"Found MenuStrip with {menuStrip.Items.Count} top-level items")
+                        Exit For
+                    End If
+                Next
+                
+                If menuStrip IsNot Nothing Then
+                    ' Scan all menu items recursively
+                    For Each topItem As ToolStripMenuItem In menuStrip.Items.OfType(Of ToolStripMenuItem)()
+                        ' Add top-level menu
+                        Dim topMenuText = topItem.Text.Replace("&", "")
+                        modules.Add(topMenuText)
+                        System.Diagnostics.Debug.WriteLine($"Top menu: {topMenuText} ({topItem.DropDownItems.Count} subitems)")
+                        
+                        ' Add all submenus recursively
+                        ScanSubMenus(topItem, topMenuText, modules)
+                    Next
+                    System.Diagnostics.Debug.WriteLine($"Total menus scanned: {modules.Count}")
+                Else
+                    System.Diagnostics.Debug.WriteLine("MenuStrip not found in MainDashboard!")
+                End If
+            Else
+                System.Diagnostics.Debug.WriteLine("MainDashboard form not found!")
+            End If
+            
+            ' If no menus found from MainDashboard, use fallback list
+            If modules.Count = 0 Then
+                modules.AddRange({
+                    "Administration", "Stockroom", "Manufacturing", "Retail", "Accounting", "Reporting", "Utilities"
+                })
+            End If
+            
+            ' Load permissions for each module
             For Each moduleName As String In modules
                 Dim canRead As Boolean = False
                 Dim canWrite As Boolean = False
@@ -93,6 +147,18 @@ Public Class RoleAccessControlForm
         Catch ex As Exception
             MessageBox.Show("Failed to load permissions: " & ex.Message)
         End Try
+    End Sub
+    
+    Private Sub ScanSubMenus(parentItem As ToolStripMenuItem, parentPath As String, ByRef modules As List(Of String))
+        For Each subItem As ToolStripMenuItem In parentItem.DropDownItems.OfType(Of ToolStripMenuItem)()
+            Dim menuPath = parentPath & " > " & subItem.Text.Replace("&", "").Replace("…", "")
+            modules.Add(menuPath)
+            
+            ' Recursively scan deeper levels
+            If subItem.DropDownItems.Count > 0 Then
+                ScanSubMenus(subItem, menuPath, modules)
+            End If
+        Next
     End Sub
 
     Private Sub LoadRoles()

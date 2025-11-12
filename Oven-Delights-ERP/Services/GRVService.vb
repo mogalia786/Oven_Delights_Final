@@ -176,6 +176,9 @@ Public Class GRVService
                     cmdStatus.Parameters.AddWithValue("@by", userId)
                     cmdStatus.ExecuteNonQuery()
                     
+                    ' Update stock from GRV (add to RawMaterials.CurrentStock)
+                    UpdateStockFromGRV(grvId, con, tx)
+                    
                     tx.Commit()
                     
                 Catch ex As Exception

@@ -85,19 +85,17 @@ Namespace Retail
             AddHandler miReorderPts.Click, AddressOf OpenReorderPoints
             inv.DropDownItems.AddRange(New ToolStripItem() {miOnHand, miAdjust, miSerial, miReorderPts})
 
-            ' Transfers
+            ' Transfers - Simplified menu structure
             Dim transfers = New ToolStripMenuItem("Transfers (IBT)")
-            Dim miTO = New ToolStripMenuItem("Transfer Orders")
-            Dim miTOCreate = New ToolStripMenuItem("Create")
+            Dim miTOCreate = New ToolStripMenuItem("Create Transfer")
             AddHandler miTOCreate.Click, AddressOf OpenTransferCreate
-            Dim miTODispatch = New ToolStripMenuItem("Dispatch")
+            Dim miTODispatch = New ToolStripMenuItem("Dispatch Transfer")
             AddHandler miTODispatch.Click, AddressOf OpenTransferDispatch
-            Dim miTOReceive = New ToolStripMenuItem("Receive")
+            Dim miTOReceive = New ToolStripMenuItem("Receive Transfer")
             AddHandler miTOReceive.Click, AddressOf OpenTransferReceive
-            miTO.DropDownItems.AddRange(New ToolStripItem() {miTOCreate, miTODispatch, miTOReceive})
-            Dim miInTransit = New ToolStripMenuItem("In-Transit")
+            Dim miInTransit = New ToolStripMenuItem("View All Transfers")
             AddHandler miInTransit.Click, AddressOf OpenTransferInTransit
-            transfers.DropDownItems.AddRange(New ToolStripItem() {miTO, miInTransit})
+            transfers.DropDownItems.AddRange(New ToolStripItem() {miTOCreate, miTODispatch, miTOReceive, miInTransit})
 
             ' Purchasing
             Dim purchasing = New ToolStripMenuItem("Purchasing")
@@ -240,25 +238,32 @@ Namespace Retail
 
         ' Transfer Methods
         Private Sub OpenTransferCreate(sender As Object, e As EventArgs)
-            MessageBox.Show(Me, "Transfer Order creation coming soon.", "Retail", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Dim form As New Forms.InterBranchTransferForm()
+            form.ShowDialog(Me)
         End Sub
 
         Private Sub OpenTransferDispatch(sender As Object, e As EventArgs)
-            MessageBox.Show(Me, "Transfer Dispatch functionality coming soon.", "Retail", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            ' Open the Transfer Orders list - user selects transfer and clicks Dispatch button
+            Dim listForm As New Forms.TransferOrdersListForm()
+            listForm.ShowDialog(Me)
         End Sub
 
         Private Sub OpenTransferReceive(sender As Object, e As EventArgs)
-            MessageBox.Show(Me, "Transfer Receive functionality coming soon.", "Retail", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            ' Open the Transfer Orders list - user selects transfer and clicks Receive button
+            Dim listForm As New Forms.TransferOrdersListForm()
+            listForm.ShowDialog(Me)
         End Sub
 
         Private Sub OpenTransferInTransit(sender As Object, e As EventArgs)
-            MessageBox.Show(Me, "In-Transit Transfers view coming soon.", "Retail", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            ' Open Transfer Orders list showing all transfers
+            Dim form As New Forms.TransferOrdersListForm()
+            form.ShowDialog(Me)
         End Sub
 
         ' Purchasing Methods
         Private Sub OpenPurchaseOrderNew(sender As Object, e As EventArgs)
             Try
-                Dim frm As New PurchaseOrderForm()
+                Dim frm As New PurchaseOrderFormNew()
                 frm.StartPosition = FormStartPosition.CenterParent
                 frm.ShowDialog(Me)
             Catch ex As Exception

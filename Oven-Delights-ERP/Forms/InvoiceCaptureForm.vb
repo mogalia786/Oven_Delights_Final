@@ -129,11 +129,24 @@ Public Class InvoiceCaptureForm
         Try
             If selectedPOId > 0 Then
                 Dim lines = stockroomService.GetPurchaseOrderLines(selectedPOId)
-                
+
                 ' Disable auto-column generation to prevent formatting errors
                 dgvLines.AutoGenerateColumns = True
                 dgvLines.DataSource = lines
-                
+
+                ' CRITICAL: Verify required columns exist for stock updates
+                Dim missingColumns As New List(Of String)
+                If Not dgvLines.Columns.Contains("MaterialID") Then missingColumns.Add("MaterialID")
+                If Not dgvLines.Columns.Contains("ProductName") Then missingColumns.Add("ProductName")
+                If Not dgvLines.Columns.Contains("ProductType") Then missingColumns.Add("ProductType")
+
+                If missingColumns.Count > 0 Then
+                    MessageBox.Show("CRITICAL ERROR: Missing required columns in PO lines grid!" & vbCrLf & vbCrLf &
+                                  "Missing: " & String.Join(", ", missingColumns) & vbCrLf & vbCrLf &
+                                  "Stock updates will FAIL! Contact system administrator.",
+                                  "Data Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End If
+
                 ' Set string format for any large numeric columns (like SKU/Barcode)
                 For Each col As DataGridViewColumn In dgvLines.Columns
                     If col.ValueType Is GetType(Long) OrElse col.ValueType Is GetType(Int64) Then
@@ -382,19 +395,50 @@ Public Class InvoiceCaptureForm
             CreateSupplierInvoice(selectedSupplierId, txtDeliveryNote.Text, dtpReceived.Value, subTotal, vatAmount, totalAmount, grvId)
 
             ' Update inventory based on ProductType
+            Dim branchId As Integer = If(AppSession.CurrentUser IsNot Nothing AndAlso AppSession.CurrentUser.BranchID.HasValue, AppSession.CurrentUser.BranchID.Value, 0)
+
             For Each row As DataGridViewRow In dgvLines.Rows
                 If Not row.IsNewRow Then
                     Dim receiveNow = If(row.Cells("ReceiveNow").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("ReceiveNow").Value))
                     If receiveNow > 0 Then
-                        Dim productId = Convert.ToInt32(row.Cells("ProductID").Value)
-                        Dim productType = Convert.ToString(row.Cells("ProductType").Value)
+                        Dim productType = If(row.Cells("ProductType").Value, "").ToString().Trim()
+                        Dim unitCost = If(row.Cells("UnitCost").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("UnitCost").Value))
 
-                        If productType = "Raw Material" Then
-                            ' Update RawMaterials.CurrentStock
-                            stockroomService.UpdateRawMaterialStock(productId, receiveNow, "Received from PO " & cboPO.Text)
-                        ElseIf productType = "Product" Then
-                            ' Update Products stock or create new product entry
-                            stockroomService.UpdateProductStock(productId, receiveNow, "Received from PO " & cboPO.Text)
+                        ' Check if it's a raw material (includes ingredients and sub-recipes)
+                        If productType.Contains("Material") OrElse productType.Contains("Ingredient") OrElse productType.Contains("Recipe") Then
+                            ' Get MaterialID for raw materials
+                            Dim materialId As Integer = 0
+                            If dgvLines.Columns.Contains("MaterialID") AndAlso row.Cells("MaterialID").Value IsNot Nothing Then
+                                materialId = Convert.ToInt32(row.Cells("MaterialID").Value)
+                            ElseIf dgvLines.Columns.Contains("ProductID") AndAlso row.Cells("ProductID").Value IsNot Nothing Then
+                                materialId = Convert.ToInt32(row.Cells("ProductID").Value)
+                            End If
+
+                            If materialId > 0 Then
+                                stockroomService.UpdateRawMaterialStock(materialId, receiveNow, "Received from PO " & cboPO.Text)
+                            End If
+                        ElseIf productType.Contains("Product") OrElse productType = "External" Then
+                            ' Get ProductID for external products
+                            Dim productId As Integer = 0
+                            If dgvLines.Columns.Contains("ProductID") AndAlso row.Cells("ProductID").Value IsNot Nothing Then
+                                productId = Convert.ToInt32(row.Cells("ProductID").Value)
+                            End If
+
+                            If productId > 0 Then
+                                UpdateExternalProductInventory(productId, branchId, receiveNow, unitCost)
+                            End If
+                        Else
+                            ' Default to raw material if type is unclear - try MaterialID first, then ProductID
+                            Dim materialId As Integer = 0
+                            If dgvLines.Columns.Contains("MaterialID") AndAlso row.Cells("MaterialID").Value IsNot Nothing Then
+                                materialId = Convert.ToInt32(row.Cells("MaterialID").Value)
+                            ElseIf dgvLines.Columns.Contains("ProductID") AndAlso row.Cells("ProductID").Value IsNot Nothing Then
+                                materialId = Convert.ToInt32(row.Cells("ProductID").Value)
+                            End If
+
+                            If materialId > 0 Then
+                                stockroomService.UpdateRawMaterialStock(materialId, receiveNow, "Received from PO " & cboPO.Text)
+                            End If
                         End If
                     End If
                 End If
@@ -445,21 +489,29 @@ Public Class InvoiceCaptureForm
 
     Private Sub CalculateTotals(sender As Object, e As EventArgs)
         Try
-            Dim subTotal As Decimal = 0
+            ' USER ENTERS: Unit Cost INCLUDING VAT (e.g., 200.00)
+            ' LineTotal = Qty * UnitCost = INCLUDING VAT (e.g., 10 * 200 = 2,000)
+            ' Total = Sum of LineTotals = INCLUDING VAT (e.g., 2,000)
+            ' CALCULATE BACKWARDS:
+            ' SubTotal = Total ÷ 1.15 = EXCLUDING VAT (e.g., 2,000 ÷ 1.15 = 1,739.13)
+            ' VAT = Total - SubTotal (e.g., 2,000 - 1,739.13 = 260.87)
+
+            Dim totalInclVAT As Decimal = 0
             For Each row As DataGridViewRow In dgvLines.Rows
                 If Not row.IsNewRow Then
                     Dim receiveNow = If(row.Cells("ReceiveNow").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("ReceiveNow").Value))
                     Dim unitCost = If(row.Cells("UnitCost").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("UnitCost").Value))
-                    subTotal += receiveNow * unitCost
+                    totalInclVAT += receiveNow * unitCost  ' Total INCLUDING VAT
                 End If
             Next
 
-            Dim vatAmount As Decimal = subTotal * 0.15D ' 15% VAT
-            Dim total As Decimal = subTotal + vatAmount
+            ' Calculate BACKWARDS from VAT-inclusive total
+            Dim subTotal As Decimal = Math.Round(totalInclVAT / 1.15D, 2)  ' Excl VAT
+            Dim vatAmount As Decimal = Math.Round(totalInclVAT - subTotal, 2)  ' VAT amount
 
-            txtSubTotal.Text = subTotal.ToString("F2")
-            txtVat.Text = vatAmount.ToString("F2")
-            txtTotal.Text = total.ToString("F2")
+            txtSubTotal.Text = subTotal.ToString("F2")      ' Excl VAT (calculated)
+            txtVat.Text = vatAmount.ToString("F2")          ' VAT (calculated)
+            txtTotal.Text = totalInclVAT.ToString("F2")     ' Incl VAT (entered)
         Catch ex As Exception
             ' Ignore calculation errors
         End Try
@@ -596,12 +648,12 @@ Public Class InvoiceCaptureForm
             Return Convert.ToInt32(cmd.ExecuteScalar())
         End Using
     End Function
-    
+
     Private Sub CreateSupplierLedgerEntry(supplierId As Integer, invoiceId As Integer, reference As String, amount As Decimal, con As SqlConnection, tx As SqlTransaction)
         ' Create supplier ledger entry for the invoice
         Dim sql = "INSERT INTO SupplierLedger (SupplierID, TransactionDate, TransactionType, Reference, Debit, Credit, Balance, Description, InvoiceID, CreatedBy, CreatedDate) " &
                   "VALUES (@SupplierID, GETDATE(), 'Invoice', @Reference, @Amount, 0, @Amount, @Description, @InvoiceID, @UserID, GETDATE())"
-        
+
         Using cmd As New SqlCommand(sql, con, tx)
             cmd.Parameters.AddWithValue("@SupplierID", supplierId)
             cmd.Parameters.AddWithValue("@Reference", reference)
@@ -611,11 +663,11 @@ Public Class InvoiceCaptureForm
             cmd.Parameters.AddWithValue("@UserID", AppSession.CurrentUserID)
             cmd.ExecuteNonQuery()
         End Using
-        
+
         ' Update running balance for this supplier
         UpdateSupplierBalance(supplierId, con, tx)
     End Sub
-    
+
     Private Sub UpdateSupplierBalance(supplierId As Integer, con As SqlConnection, tx As SqlTransaction)
         ' Recalculate running balance for all supplier ledger entries
         Dim sql = "WITH OrderedLedger AS ( " &
@@ -631,11 +683,92 @@ Public Class InvoiceCaptureForm
                   "UPDATE sl SET sl.Balance = rb.Balance " &
                   "FROM SupplierLedger sl " &
                   "INNER JOIN RunningBalance rb ON sl.LedgerID = rb.LedgerID"
-        
+
         Using cmd As New SqlCommand(sql, con, tx)
             cmd.Parameters.AddWithValue("@SupplierID", supplierId)
             cmd.ExecuteNonQuery()
         End Using
     End Sub
 
+    Private Sub UpdateExternalProductInventory(productId As Integer, branchId As Integer, quantity As Decimal, unitCost As Decimal)
+        Using con As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+            con.Open()
+            Using tx = con.BeginTransaction()
+                Try
+                    ' Update Demo_Retail_Price (unitCost is INCL VAT as entered)
+                    Dim costExclVAT As Decimal = Math.Round(unitCost / 1.15D, 2)
+
+                    Dim updatePriceSql = "UPDATE dbo.Demo_Retail_Price " &
+                                         "SET CostPrice = @CostExclVAT, " &
+                                         "    SellingPrice = @CostInclVAT, " &
+                                         "    SellingPriceExVAT = @CostExclVAT " &
+                                         "WHERE ProductID = @ProductID AND BranchID = @BranchID; " &
+                                         "IF @@ROWCOUNT = 0 " &
+                                         "INSERT INTO dbo.Demo_Retail_Price (ProductID, BranchID, CostPrice, SellingPrice, SellingPriceExVAT, EffectiveFrom, CreatedAt) " &
+                                         "VALUES (@ProductID, @BranchID, @CostExclVAT, @CostInclVAT, @CostExclVAT, GETDATE(), GETDATE())"
+
+                    Using cmd As New SqlCommand(updatePriceSql, con, tx)
+                        cmd.Parameters.AddWithValue("@ProductID", productId)
+                        cmd.Parameters.AddWithValue("@BranchID", branchId)
+                        cmd.Parameters.AddWithValue("@CostExclVAT", costExclVAT)
+                        cmd.Parameters.AddWithValue("@CostInclVAT", unitCost)
+                        cmd.ExecuteNonQuery()
+                    End Using
+
+                    ' Get VariantID for this product
+                    Dim variantId As Integer = 0
+                    Dim getVariantSql = "SELECT TOP 1 VariantID FROM Demo_Retail_Variant WHERE ProductID = @ProductID"
+                    Using cmd As New SqlCommand(getVariantSql, con, tx)
+                        cmd.Parameters.AddWithValue("@ProductID", productId)
+                        Dim result = cmd.ExecuteScalar()
+                        If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                            variantId = Convert.ToInt32(result)
+                        End If
+                    End Using
+
+                    ' Only update stock if variant exists
+                    If variantId > 0 Then
+                        ' Check if stock record exists
+                        Dim checkSql = "SELECT COUNT(*) FROM Demo_Retail_Stock WHERE VariantID = @VariantID AND BranchID = @BranchID"
+                        Dim exists As Boolean = False
+
+                        Using cmd As New SqlCommand(checkSql, con, tx)
+                            cmd.Parameters.AddWithValue("@VariantID", variantId)
+                            cmd.Parameters.AddWithValue("@BranchID", branchId)
+                            exists = Convert.ToInt32(cmd.ExecuteScalar()) > 0
+                        End Using
+
+                        If exists Then
+                            Dim updateSql = "UPDATE Demo_Retail_Stock " &
+                                           "SET QtyOnHand = ISNULL(QtyOnHand, 0) + @Qty, " &
+                                           "    UpdatedAt = GETDATE() " &
+                                           "WHERE VariantID = @VariantID AND BranchID = @BranchID"
+
+                            Using cmd As New SqlCommand(updateSql, con, tx)
+                                cmd.Parameters.AddWithValue("@VariantID", variantId)
+                                cmd.Parameters.AddWithValue("@BranchID", branchId)
+                                cmd.Parameters.AddWithValue("@Qty", quantity)
+                                cmd.ExecuteNonQuery()
+                            End Using
+                        Else
+                            Dim insertSql = "INSERT INTO Demo_Retail_Stock (VariantID, BranchID, QtyOnHand, ReorderPoint, UpdatedAt) " &
+                                           "VALUES (@VariantID, @BranchID, @Qty, 0, GETDATE())"
+
+                            Using cmd As New SqlCommand(insertSql, con, tx)
+                                cmd.Parameters.AddWithValue("@VariantID", variantId)
+                                cmd.Parameters.AddWithValue("@BranchID", branchId)
+                                cmd.Parameters.AddWithValue("@Qty", quantity)
+                                cmd.ExecuteNonQuery()
+                            End Using
+                        End If
+                    End If
+
+                    tx.Commit()
+                Catch
+                    tx.Rollback()
+                    Throw
+                End Try
+            End Using
+        End Using
+    End Sub
 End Class

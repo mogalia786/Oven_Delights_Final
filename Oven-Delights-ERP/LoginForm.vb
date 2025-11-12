@@ -98,16 +98,42 @@ Public Class LoginForm
                                 UpdateLastLogin(loggedInUser.UserID)
 
                                 ' Initialize global session for dashboard and other forms
-                                Dim roleName As String = TryCast(If(reader("RoleName") IsNot DBNull.Value, reader("RoleName").ToString(), Nothing), String)
+                                Dim roleName As String = TryCast(If(reader("RoleName") IsNot DBNull.Value, reader("RoleName").ToString().Trim(), Nothing), String)
                                 Dim branchName As String = TryCast(If(reader("BranchName") IsNot DBNull.Value, reader("BranchName").ToString(), Nothing), String)
                                 Dim branchPrefix As String = TryCast(If(reader("Prefix") IsNot DBNull.Value, reader("Prefix").ToString(), Nothing), String)
 
-                                AppSession.InitializeFromUser(loggedInUser, roleName, branchName, branchPrefix)
-
-                                ' Open main dashboard with user context
-                                Dim dashboard As New MainDashboard(AppSession.CurrentUser)
-                                dashboard.Show()
-                                Me.Hide()
+                                ' Super Administrator: Show branch selection dialog
+                                If Not String.IsNullOrEmpty(roleName) AndAlso roleName.Equals("Super Administrator", StringComparison.OrdinalIgnoreCase) Then
+                                    reader.Close() ' Close reader before showing dialog
+                                    
+                                    Using branchDialog As New BranchSelectionDialog()
+                                        If branchDialog.ShowDialog() = DialogResult.OK Then
+                                            ' Override user's branch with selected branch
+                                            loggedInUser.BranchID = branchDialog.SelectedBranchID
+                                            branchName = branchDialog.SelectedBranchName
+                                            branchPrefix = branchDialog.SelectedBranchPrefix
+                                            
+                                            ' Initialize session with selected branch
+                                            AppSession.InitializeFromUser(loggedInUser, roleName, branchName, branchPrefix)
+                                            
+                                            ' Open main dashboard with user context
+                                            Dim dashboard As New MainDashboard(AppSession.CurrentUser)
+                                            dashboard.Show()
+                                            Me.Hide()
+                                        Else
+                                            ' User cancelled branch selection - return to login
+                                            Return
+                                        End If
+                                    End Using
+                                Else
+                                    ' Regular user: Use assigned branch
+                                    AppSession.InitializeFromUser(loggedInUser, roleName, branchName, branchPrefix)
+                                    
+                                    ' Open main dashboard with user context
+                                    Dim dashboard As New MainDashboard(AppSession.CurrentUser)
+                                    dashboard.Show()
+                                    Me.Hide()
+                                End If
                             Else
                                 ' Password is incorrect, increment failed login attempts
                                 Dim failedAttempts As Integer = CInt(reader("FailedLoginAttempts"))

@@ -6,8 +6,8 @@
 -- Includes: Simulated prices and stock quantities
 -- =============================================
 
-USE [OvenDelightsERP];
-GO
+
+
 
 PRINT '========================================';
 PRINT 'Populating Demo Tables with Data';
@@ -23,14 +23,13 @@ GO
 
 INSERT INTO dbo.Demo_Retail_Product (SKU, Name, Category, Description, IsActive)
 SELECT 
-    ISNULL(ProductCode, 'SKU-' + CAST(ProductID AS VARCHAR(10))) AS SKU,
+    ISNULL(SKU, 'SKU-' + CAST(ProductID AS VARCHAR(10))) AS SKU,
     ProductName AS Name,
-    ISNULL(Category, 'Uncategorized') AS Category,
-    Description,
+    'General' AS Category, -- Default category since Products table doesn't have Category column
+    ProductName AS Description, -- Use ProductName as description
     CASE WHEN IsActive = 1 THEN 1 ELSE 0 END AS IsActive
 FROM dbo.Products
-WHERE ItemType IN ('Internal Product', 'External Product') -- Exclude Raw Materials
-  AND IsActive = 1;
+WHERE IsActive = 1;
 GO
 
 DECLARE @ProductCount INT = @@ROWCOUNT;

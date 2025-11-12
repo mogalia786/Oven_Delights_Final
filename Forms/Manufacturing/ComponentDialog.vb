@@ -67,9 +67,9 @@ Public Class ComponentDialog
 
     Private Sub LoadComponents()
         compsDt = New DataTable()
-        Using cn As New Microsoft.Data.SqlClient.SqlConnection(_connectionString)
+        Using cn As New SqlConnection(_connectionString)
             cn.Open()
-            Using cmd As New Microsoft.Data.SqlClient.SqlCommand("SELECT ComponentID, ComponentName FROM dbo.ComponentDefinition WHERE ISNULL(IsActive,1)=1 ORDER BY ComponentName", cn)
+            Using cmd As New SqlCommand("SELECT ComponentID, ComponentName FROM dbo.ComponentDefinition WHERE ISNULL(IsActive,1)=1 ORDER BY ComponentName", cn)
                 compsDt.Load(cmd.ExecuteReader())
             End Using
         End Using
@@ -84,7 +84,6 @@ Public Class ComponentDialog
                 MessageBox.Show("Please select a component.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
             End If
-            ' Capture selected component ID and display name
             Integer.TryParse(cmbExisting.SelectedValue.ToString(), _selectedComponentId)
             txtName.Text = cmbExisting.Text
         Else
@@ -92,7 +91,6 @@ Public Class ComponentDialog
                 MessageBox.Show("Please enter a component name.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
             End If
-            ' Ensure component exists in master table and capture its ID for reuse across products
             Try
                 _selectedComponentId = EnsureComponentExists(txtName.Text.Trim())
             Catch ex As Exception
@@ -106,7 +104,6 @@ Public Class ComponentDialog
     Public Function GetCreatedComponentTag() As Object
         Dim bag As New Dictionary(Of String, Object)()
         bag("Type") = "Component"
-        ' Always return the selected/created ID and display name
         bag("Name") = Me.ComponentDisplayName
         If _selectedComponentId > 0 Then
             bag("ComponentDefinitionID") = _selectedComponentId
@@ -115,9 +112,9 @@ Public Class ComponentDialog
     End Function
 
     Private Function EnsureComponentExists(name As String) As Integer
-        Using cn As New Microsoft.Data.SqlClient.SqlConnection(_connectionString)
+        Using cn As New SqlConnection(_connectionString)
             cn.Open()
-            Using cmd As New Microsoft.Data.SqlClient.SqlCommand("IF EXISTS (SELECT 1 FROM dbo.ComponentDefinition WHERE ComponentName = @n) SELECT ComponentID FROM dbo.ComponentDefinition WHERE ComponentName=@n ELSE BEGIN INSERT INTO dbo.ComponentDefinition (ComponentName, IsActive) VALUES (@n, 1); SELECT SCOPE_IDENTITY(); END", cn)
+            Using cmd As New SqlCommand("IF EXISTS (SELECT 1 FROM dbo.ComponentDefinition WHERE ComponentName = @n) SELECT ComponentID FROM dbo.ComponentDefinition WHERE ComponentName=@n ELSE BEGIN INSERT INTO dbo.ComponentDefinition (ComponentName, IsActive) VALUES (@n, 1); SELECT SCOPE_IDENTITY(); END", cn)
                 cmd.Parameters.AddWithValue("@n", name)
                 Dim obj = cmd.ExecuteScalar()
                 Return Convert.ToInt32(obj)

@@ -28,6 +28,7 @@ Namespace Manufacturing
         Private lblFulfilled As Label
         Private cboFulfilled As ComboBox
         Private btnCompleted As Button
+        Private btnFulfillFromStock As Button
         Private lvFulfilled As ListView
 
         ' Bottom completed products summary
@@ -59,6 +60,37 @@ Namespace Manufacturing
         Public Sub SetMode(mode As String)
             _bomMode = If(mode, "Both")
             ApplyBomMode()
+        End Sub
+
+        ' Public API to preload products for Re-Order Book
+        Public Sub PreloadProducts(productIDs As List(Of Integer))
+            If productIDs Is Nothing OrElse productIDs.Count = 0 Then Return
+            
+            ' Store for later use after form loads
+            Me.Tag = productIDs
+        End Sub
+
+        ' Public API to set the requester (baker)
+        Public Sub SetRequester(bakerUserID As Integer, bakerName As String)
+            preselectedManufacturerId = bakerUserID
+            If cboRequester IsNot Nothing Then
+                ' Will be set after LoadRequesters is called
+                cboRequester.Tag = New With {.UserID = bakerUserID, .Name = bakerName}
+            End If
+        End Sub
+
+        ' Public API to set production quantity
+        Public Sub SetProductionQuantity(qty As Decimal)
+            If txtProductionQty IsNot Nothing Then
+                txtProductionQty.Value = qty
+            End If
+        End Sub
+
+        ' Public API to lock fields (for Re-Order Book workflow)
+        Public Sub LockFields(locked As Boolean)
+            If cboProduct IsNot Nothing Then cboProduct.Enabled = Not locked
+            If txtProductionQty IsNot Nothing Then txtProductionQty.Enabled = Not locked
+            If cboRequester IsNot Nothing Then cboRequester.Enabled = Not locked
         End Sub
 
         Private Sub ApplyBomMode()
@@ -194,8 +226,9 @@ Namespace Manufacturing
             ' Right-hand fulfilled/completed section
             lblFulfilled = New Label() With {.Text = "Completed BOM", .Left = 620, .Top = 108, .AutoSize = True, .Font = New Font("Segoe UI", 11, FontStyle.Bold)}
             ' Move dropdown lower to avoid overlap with Date/Time
-            cboFulfilled = New ComboBox() With {.Left = 620, .Top = 80, .Width = 420, .DropDownStyle = ComboBoxStyle.DropDownList}
-            btnCompleted = New Button() With {.Text = "Completed", .Left = 940, .Top = 104, .Width = 130}
+            cboFulfilled = New ComboBox() With {.Left = 620, .Top = 80, .Width = 300, .DropDownStyle = ComboBoxStyle.DropDownList}
+            btnFulfillFromStock = New Button() With {.Text = "✓ Fulfill from Stock", .Left = 930, .Top = 78, .Width = 150, .BackColor = Color.FromArgb(40, 167, 69), .ForeColor = Color.White, .Font = New Font("Segoe UI", 9, FontStyle.Bold)}
+            btnCompleted = New Button() With {.Text = "Completed", .Left = 1090, .Top = 104, .Width = 130}
 
             lvFulfilled = New ListView() With {
                 .Left = 620,
@@ -235,13 +268,14 @@ Namespace Manufacturing
             lvCompleted.Columns.Add("Input BOM No", 190)
             lvCompleted.Columns.Add("Fulfilled IO No", 190)
 
-            Controls.AddRange(New Control() {lblProd, cboProduct, lblRequester, cboRequester, lblProdQty, txtProductionQty, lblDate, dtpRequest, btnGenerate, btnSubmit, btnPrint, btnEmail, btnBuildNow, lblLeftHeader, lvIngredients, pnlDivider, lblFulfilled, cboFulfilled, btnCompleted, lvFulfilled, lblCompletedHeader, lvCompleted, lblStatus})
+            Controls.AddRange(New Control() {lblProd, cboProduct, lblRequester, cboRequester, lblProdQty, txtProductionQty, lblDate, dtpRequest, btnGenerate, btnSubmit, btnPrint, btnEmail, btnBuildNow, lblLeftHeader, lvIngredients, pnlDivider, lblFulfilled, cboFulfilled, btnFulfillFromStock, btnCompleted, lvFulfilled, lblCompletedHeader, lvCompleted, lblStatus})
 
             AddHandler btnGenerate.Click, AddressOf GenerateList
             AddHandler btnSubmit.Click, AddressOf OnSubmit
             AddHandler btnPrint.Click, AddressOf BtnPrint_Click
             AddHandler btnEmail.Click, AddressOf OnEmail
             AddHandler btnBuildNow.Click, AddressOf OnBuildNow
+            AddHandler btnFulfillFromStock.Click, AddressOf OnFulfillFromStock
             AddHandler cboProduct.SelectedIndexChanged, Sub(sender, args)
                                                             ' Clear list and state when product changes
                                                             currentBOMID = 0
@@ -315,6 +349,14 @@ Namespace Manufacturing
                 cboRequester.DisplayMember = "FullName"
                 cboRequester.ValueMember = "UserID"
                 cboRequester.SelectedIndex = -1
+                
+                ' If preselected baker, select them
+                If preselectedManufacturerId > 0 Then
+                    Try
+                        cboRequester.SelectedValue = preselectedManufacturerId
+                    Catch
+                    End Try
+                End If
             Catch ex As Exception
                 ' If lookup fails, keep dropdown empty but do not block UI
                 cboRequester.DataSource = Nothing
@@ -427,21 +469,54 @@ Namespace Manufacturing
                 Dim cs = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
                 Using cn As New SqlConnection(cs)
                     cn.Open()
-                    ' List products actually saved by Build My Product: Products having a saved hierarchy in RecipeNode
-                    Dim sql As String = _
-                        "SELECT DISTINCT p.ProductID, p.ProductCode, p.ProductName, (p.ProductCode + ' - ' + p.ProductName) AS DisplayText " & _
-                        "FROM dbo.Products p " & _
-                        "WHERE ISNULL(p.IsActive,1)=1 " & _
-                        "ORDER BY p.ProductName;"
+                    
+                    ' Check if we have preloaded products from Re-Order Book
+                    Dim preloadedIDs As List(Of Integer) = TryCast(Me.Tag, List(Of Integer))
+                    Dim branchId As Integer = If(AppSession.CurrentBranchID > 0, AppSession.CurrentBranchID, 0)
+                    Dim sql As String
+                    
+                    If preloadedIDs IsNot Nothing AndAlso preloadedIDs.Count > 0 Then
+                        ' Filter to only show products from Re-Order Book
+                        Dim idList As String = String.Join(",", preloadedIDs)
+                        sql = "SELECT DISTINCT p.ProductID, p.SKU AS ProductCode, p.Name AS ProductName, (p.SKU + ' - ' + p.Name) AS DisplayText " & _
+                              "FROM dbo.Demo_Retail_Product p " & _
+                              "WHERE ISNULL(p.IsActive,1)=1 " & _
+                              "  AND p.ProductType = 'Internal' " & _
+                              "  AND (p.BranchID = @branchId OR p.BranchID IS NULL) " & _
+                              "  AND p.ProductID IN (" & idList & ") " & _
+                              "ORDER BY p.Name;"
+                    Else
+                        ' Show all internal products for current branch
+                        sql = "SELECT DISTINCT p.ProductID, p.SKU AS ProductCode, p.Name AS ProductName, (p.SKU + ' - ' + p.Name) AS DisplayText " & _
+                              "FROM dbo.Demo_Retail_Product p " & _
+                              "WHERE ISNULL(p.IsActive,1)=1 " & _
+                              "  AND p.ProductType = 'Internal' " & _
+                              "  AND (p.BranchID = @branchId OR p.BranchID IS NULL) " & _
+                              "ORDER BY p.Name;"
+                    End If
+                    
                     Using cmd As New SqlCommand(sql, cn)
+                        cmd.Parameters.AddWithValue("@branchId", branchId)
                         Using da As New SqlDataAdapter(cmd)
                             Dim dt As New DataTable()
                             da.Fill(dt)
+                            
+                            ' Debug: Check if we got products
+                            System.Diagnostics.Debug.WriteLine($"LoadProducts: Found {dt.Rows.Count} products for BranchID={branchId}")
+                            If dt.Rows.Count = 0 Then
+                                System.Diagnostics.Debug.WriteLine($"SQL: {sql}")
+                            End If
+                            
                             cboProduct.DataSource = dt
                             cboProduct.DisplayMember = "DisplayText"
                             cboProduct.ValueMember = "ProductID"
-                            ' Avoid default selection on load; require explicit user choice
-                            If dt.Rows.Count > 0 Then cboProduct.SelectedIndex = -1
+                            
+                            ' If only one product preloaded, auto-select it
+                            If preloadedIDs IsNot Nothing AndAlso preloadedIDs.Count = 1 AndAlso dt.Rows.Count > 0 Then
+                                cboProduct.SelectedValue = preloadedIDs(0)
+                            Else
+                                If dt.Rows.Count > 0 Then cboProduct.SelectedIndex = -1
+                            End If
                         End Using
                     End Using
                 End Using
@@ -460,79 +535,105 @@ Namespace Manufacturing
             lvIngredients.Items.Clear()
             lblStatus.Text = ""
 
-            If cboProduct.SelectedValue Is Nothing Then Return
+            If cboProduct.SelectedValue Is Nothing Then
+                System.Diagnostics.Debug.WriteLine("LoadBOM: No product selected")
+                MessageBox.Show("Please select a product first", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
             Dim pid As Integer
-            If Not Integer.TryParse(cboProduct.SelectedValue.ToString(), pid) Then Return
+            If Not Integer.TryParse(cboProduct.SelectedValue.ToString(), pid) Then
+                System.Diagnostics.Debug.WriteLine("LoadBOM: Invalid ProductID")
+                Return
+            End If
+            System.Diagnostics.Debug.WriteLine($"LoadBOM: Loading BOM for ProductID={pid}")
 
             Try
                 Dim cs = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
                 Using cn As New SqlConnection(cs)
                     cn.Open()
-                    ' Get active BOM header
-                    Dim sqlH As String = "SELECT TOP 1 BOMID, BatchYieldQty FROM dbo.BOMHeader WHERE ProductID = @pid AND IsActive = 1 AND EffectiveFrom <= CAST(GETDATE() AS DATE) AND (EffectiveTo IS NULL OR EffectiveTo >= CAST(GETDATE() AS DATE)) ORDER BY EffectiveFrom DESC, BOMID DESC"
-                    Dim bomId As Integer = 0
-                    Using cmdH As New SqlCommand(sqlH, cn)
-                        cmdH.Parameters.AddWithValue("@pid", pid)
-                        Using r = cmdH.ExecuteReader()
-                            If r.Read() Then
-                                bomId = Convert.ToInt32(r("BOMID"))
-                                currentBatchYield = Convert.ToDecimal(r("BatchYieldQty"))
-                                ' batch yield kept internal only for scaling
-                            End If
-                        End Using
+                    
+                    ' PRIORITY 1: Check new Recipe system first
+                    Dim hasRecipe As Boolean = False
+                    Dim sqlCheckRecipe As String = "SELECT COUNT(*) FROM dbo.Recipe WHERE ProductID = @pid AND IsActive = 1"
+                    Using cmdCheck As New SqlCommand(sqlCheckRecipe, cn)
+                        cmdCheck.Parameters.AddWithValue("@pid", pid)
+                        hasRecipe = Convert.ToInt32(cmdCheck.ExecuteScalar()) > 0
                     End Using
-
-                    If bomId = 0 Then
-                        ' Fallback: generate list directly from Build My Product hierarchy (RecipeNode)
+                    
+                    If hasRecipe Then
+                        ' Load from new Recipe system
                         Dim sqlFromRecipe As String = _
-                            "SELECT ROW_NUMBER() OVER (ORDER BY rn.SortOrder, rn.NodeID) AS LineNumber, " & _
-                            "       rn.ItemName AS ComponentName, " & _
-                            "       rn.Qty AS QuantityPerBatch, " & _
-                            "       ISNULL(u.UoMCode, '') AS UoM, " & _
-                            "       rn.MaterialID AS RawMaterialID " & _
-                            "FROM dbo.RecipeNode rn " & _
-                            "LEFT JOIN dbo.UoM u ON u.UoMID = rn.UoMID " & _
-                            "WHERE rn.ProductID = @pid " & _
-                            "  AND rn.ParentNodeID IS NOT NULL " & _
-                            "  AND (rn.MaterialID IS NOT NULL OR rn.SubAssemblyProductID IS NOT NULL OR rn.ItemName IS NOT NULL) " & _
-                            "ORDER BY rn.SortOrder, rn.NodeID;"
+                            "IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Recipe') " & _
+                            "BEGIN " & _
+                            "    SELECT " & _
+                            "        ri.LineNumber, " & _
+                            "        CASE " & _
+                            "            WHEN rm.MaterialID IS NOT NULL THEN CONCAT(rm.MaterialCode, ' - ', rm.MaterialName) " & _
+                            "            ELSE ISNULL(ri.IngredientName, 'Unknown Component') " & _
+                            "        END AS ComponentName, " & _
+                            "        ri.Quantity AS QuantityPerBatch, " & _
+                            "        ISNULL(ri.UoM, ISNULL(rm.BaseUnit, '')) AS UoM, " & _
+                            "        ri.MaterialID AS RawMaterialID, " & _
+                            "        NULL AS SubAssemblyProductID " & _
+                            "    FROM dbo.Recipe r " & _
+                            "    INNER JOIN dbo.RecipeIngredient ri ON ri.RecipeID = r.RecipeID " & _
+                            "    LEFT JOIN dbo.RawMaterials rm ON rm.MaterialID = ri.MaterialID " & _
+                            "    WHERE r.ProductID = @pid AND r.IsActive = 1 " & _
+                            "    AND ri.MaterialID IS NOT NULL " & _
+                            "    ORDER BY ri.LineNumber; " & _
+                            "END " & _
+                            "ELSE " & _
+                            "BEGIN " & _
+                            "    SELECT ROW_NUMBER() OVER (ORDER BY ISNULL(rn.SortOrder,0), rn.NodeID) AS LineNumber, " & _
+                            "           ISNULL(rn.ItemName, 'Component') AS ComponentName, " & _
+                            "           ISNULL(rn.Qty, 0) AS QuantityPerBatch, " & _
+                            "           ISNULL(u.UoMCode, '') AS UoM, " & _
+                            "           rn.MaterialID AS RawMaterialID " & _
+                            "    FROM dbo.RecipeNode rn " & _
+                            "    LEFT JOIN dbo.UoM u ON u.UoMID = rn.UoMID " & _
+                            "    WHERE rn.ProductID = @pid " & _
+                            "      AND rn.ParentNodeID IS NOT NULL " & _
+                            "      AND (rn.MaterialID IS NOT NULL OR rn.SubAssemblyProductID IS NOT NULL OR rn.ItemName IS NOT NULL) " & _
+                            "    ORDER BY ISNULL(rn.SortOrder,0), rn.NodeID; " & _
+                            "END"
                         Using cmdR As New SqlCommand(sqlFromRecipe, cn)
                             cmdR.Parameters.AddWithValue("@pid", pid)
                             Using daR As New SqlDataAdapter(cmdR)
                                 Dim dtR As New DataTable()
                                 daR.Fill(dtR)
+                                System.Diagnostics.Debug.WriteLine($"LoadBOM: Found {dtR.Rows.Count} components from RecipeNode for ProductID={pid}")
                                 If dtR.Rows.Count = 0 Then
+                                    ' Try to see if there are ANY RecipeNodes for this product
+                                    Dim sqlCheck As String = "SELECT COUNT(*) FROM dbo.RecipeNode WHERE ProductID = @pid"
+                                    Using cmdCheck As New SqlCommand(sqlCheck, cn)
+                                        cmdCheck.Parameters.AddWithValue("@pid", pid)
+                                        Dim totalNodes As Integer = Convert.ToInt32(cmdCheck.ExecuteScalar())
+                                        System.Diagnostics.Debug.WriteLine($"LoadBOM: Total RecipeNodes for ProductID={pid}: {totalNodes}")
+                                    End Using
+                                    
                                     lblStatus.Text = "No active BOM found and no components in product hierarchy."
+                                    MessageBox.Show("No recipe/BOM found for this product. Please create a recipe in 'Build My Product' first.", "No Recipe", MessageBoxButtons.OK, MessageBoxIcon.Information)
                                     Return
                                 End If
+                                
+                                ' Calculate quantities based on production quantity and batch yield
+                                CalculateQuantitiesForProduction(dtR, pid, cn)
+                                
                                 PopulateList(dtR)
-                                lblStatus.Text = "Generated from product hierarchy (no active BOM yet)."
+                                
+                                ' Check ingredient availability
+                                CheckIngredientAvailability(dtR)
+                                
                                 Return
                             End Using
                         End Using
+                    Else
+                        ' No Recipe found
+                        System.Diagnostics.Debug.WriteLine($"LoadBOM: No Recipe found for ProductID={pid}")
+                        lblStatus.Text = "No recipe found for this product."
+                        MessageBox.Show("No recipe found for this product. Please create a recipe in 'Build My Product' first.", "No Recipe", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                        Return
                     End If
-                    currentBOMID = bomId
-
-                    ' Load BOM items (names and UoM): include raw materials and subassemblies; exclude only the finished product itself
-                    Dim sqlI As String = "SELECT bi.LineNumber, bi.ComponentType, bi.RawMaterialID, bi.ComponentProductID, bi.NonStockDesc, bi.QuantityPerBatch, bi.UoM, " +
-                                         "CASE WHEN bi.NonStockDesc IS NOT NULL THEN bi.NonStockDesc " +
-                                         "     WHEN bi.RawMaterialID IS NOT NULL THEN CONCAT(rm.MaterialCode, ' - ', rm.MaterialName) " +
-                                         "     WHEN bi.ComponentProductID IS NOT NULL THEN p.ProductName " +
-                                         "     ELSE 'Component' END AS ComponentName " +
-                                         "FROM dbo.BOMItems bi " +
-                                         "LEFT JOIN dbo.RawMaterials rm ON rm.MaterialID = bi.RawMaterialID " +
-                                         "LEFT JOIN dbo.Products p ON p.ProductID = bi.ComponentProductID " +
-                                         "WHERE bi.BOMID = @bid AND (bi.ComponentProductID IS NULL OR bi.ComponentProductID <> @pid) " +
-                                         "ORDER BY bi.LineNumber"
-                    Using cmdI As New SqlCommand(sqlI, cn)
-                        cmdI.Parameters.AddWithValue("@bid", bomId)
-                        cmdI.Parameters.AddWithValue("@pid", pid)
-                        Using da As New SqlDataAdapter(cmdI)
-                            Dim dt As New DataTable()
-                            da.Fill(dt)
-                            PopulateList(dt)
-                        End Using
-                    End Using
                 End Using
             Catch ex As Exception
                 MessageBox.Show("Load BOM failed: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -587,12 +688,49 @@ Namespace Manufacturing
                             Using cn As New SqlConnection(cs)
                                 cn.Open()
                                 Dim br As Integer = If(AppSession.CurrentBranchID > 0, AppSession.CurrentBranchID, 0)
-                                Dim tag As String = $" | BuildOfMaterials | ProductID={pid}; Qty={qty}; Req={dtpRequest.Value:yyyy-MM-dd HH:mm}; Branch={br}"
+                                Dim tag As String = $" | BuildOfMaterials | ProductID={pid}; Qty={qty}; Req={dtpRequest.Value:yyyy-MM-dd HH:mm}; Branch={br}; ManufacturerUserID={reqUserId}"
                                 Dim sql As String = "UPDATE dbo.InternalOrderHeader SET Notes = CONCAT(ISNULL(Notes,''), @tag) WHERE InternalOrderID = @id"
                                 Using cmd As New SqlCommand(sql, cn)
                                     cmd.Parameters.AddWithValue("@tag", tag)
                                     cmd.Parameters.AddWithValue("@id", ioId)
                                     cmd.ExecuteNonQuery()
+                                End Using
+                                
+                                ' FIX: Populate InternalOrderLines from Recipe (new system)
+                                Dim sqlRecipe = "SELECT RecipeID, BatchYield FROM dbo.Recipe WHERE ProductID = @pid AND IsActive = 1"
+                                Using cmdRecipe As New SqlCommand(sqlRecipe, cn)
+                                    cmdRecipe.Parameters.AddWithValue("@pid", pid)
+                                    Using reader = cmdRecipe.ExecuteReader()
+                                        If reader.Read() Then
+                                            Dim recipeID = reader.GetInt32(0)
+                                            Dim batchYield = reader.GetDecimal(1)
+                                            Dim batchesNeeded = Math.Ceiling(qty / batchYield)
+                                            reader.Close()
+                                            
+                                            ' Clear existing lines (from old BOM system)
+                                            Dim sqlClear = "DELETE FROM dbo.InternalOrderLines WHERE InternalOrderID = @ioId"
+                                            Using cmdClear As New SqlCommand(sqlClear, cn)
+                                                cmdClear.Parameters.AddWithValue("@ioId", ioId)
+                                                cmdClear.ExecuteNonQuery()
+                                            End Using
+                                            
+                                            ' Insert ingredients from Recipe (all as RawMaterial - includes ingredients and sub-recipes)
+                                            Dim sqlInsert = "INSERT INTO dbo.InternalOrderLines (InternalOrderID, LineNumber, ItemType, RawMaterialID, ProductID, Quantity, UoM) " &
+                                                           "SELECT @ioId, ROW_NUMBER() OVER (ORDER BY ri.LineNumber), " &
+                                                           "'RawMaterial', " &
+                                                           "ri.MaterialID, NULL, ri.Quantity * @batches, ri.UoM " &
+                                                           "FROM dbo.RecipeIngredient ri " &
+                                                           "WHERE ri.RecipeID = @recipeID " &
+                                                           "AND ri.MaterialID IS NOT NULL " &
+                                                           "ORDER BY ri.LineNumber"
+                                            Using cmdInsert As New SqlCommand(sqlInsert, cn)
+                                                cmdInsert.Parameters.AddWithValue("@ioId", ioId)
+                                                cmdInsert.Parameters.AddWithValue("@recipeID", recipeID)
+                                                cmdInsert.Parameters.AddWithValue("@batches", batchesNeeded)
+                                                cmdInsert.ExecuteNonQuery()
+                                            End Using
+                                        End If
+                                    End Using
                                 End Using
                             End Using
                         Catch
@@ -603,7 +741,11 @@ Namespace Manufacturing
                     Return
                 End If
                 lblStatus.Text = message & " Sent to Stockroom."
-                MessageBox.Show(message & " Sent to Stockroom.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                MessageBox.Show(message & " Sent to Stockroom. The BOM request is now available in the 'Fulfilled BOMs' section for stockroom to process.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                
+                ' Refresh fulfilled list to show the new BOM request
+                LoadFulfilledList()
+                
                 ClearForm()
             Catch ex As Exception
                 MessageBox.Show("Submit failed: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -796,18 +938,18 @@ Namespace Manufacturing
                                     End If
                                     Dim pname As String = "Product"
                                     If pid > 0 Then
-                                        Using cmdP As New SqlCommand("SELECT TOP 1 ProductName FROM dbo.Products WHERE ProductID=@pid", cn2)
+                                        Using cmdP As New SqlCommand("SELECT TOP 1 Name AS ProductName FROM dbo.Demo_Retail_Product WHERE ProductID=@pid", cn2)
                                             cmdP.Parameters.AddWithValue("@pid", pid)
                                             Dim obj = cmdP.ExecuteScalar()
                                             If obj IsNot Nothing AndAlso obj IsNot DBNull.Value Then pname = obj.ToString()
                                         End Using
                                     Else
                                         ' Fallback: infer from InternalOrderLines finished item
-                                        Using cmdFP As New SqlCommand("SELECT TOP 1 p.ProductID, p.ProductName, iol.Quantity FROM dbo.InternalOrderLines iol JOIN dbo.Products p ON p.ProductID = iol.ProductID WHERE iol.ItemType = 'Finished' AND iol.InternalOrderID = @id ORDER BY iol.LineNumber", cn2)
+                                        Using cmdFP As New SqlCommand("SELECT TOP 1 p.ProductID, ISNULL(p.Name, 'Unknown Product') AS ProductName, iol.Quantity FROM dbo.InternalOrderLines iol LEFT JOIN dbo.Demo_Retail_Product p ON p.ProductID = iol.ProductID WHERE iol.ItemType = 'Finished' AND iol.InternalOrderID = @id ORDER BY iol.LineNumber", cn2)
                                             cmdFP.Parameters.AddWithValue("@id", Convert.ToInt32(row("InternalOrderID")))
                                             Using rP = cmdFP.ExecuteReader()
                                                 If rP.Read() Then
-                                                    pid = rP.GetInt32(0)
+                                                    If Not rP.IsDBNull(0) Then pid = rP.GetInt32(0)
                                                     pname = rP.GetString(1)
                                                     If qty <= 0D AndAlso Not rP.IsDBNull(2) Then qty = Convert.ToDecimal(rP.GetValue(2))
                                                 End If
@@ -869,7 +1011,7 @@ Namespace Manufacturing
 
                     ' Preferred: show Finished lines from InternalOrderLines (what will be received)
                     Dim hasFinished As Boolean = False
-                    Using cmdF As New SqlCommand("SELECT iol.LineNumber, p.ProductName, iol.Quantity, ISNULL(p.BaseUoM,'ea') AS UoM FROM dbo.InternalOrderLines iol JOIN dbo.Products p ON p.ProductID = iol.ProductID WHERE iol.InternalOrderID=@id AND iol.ItemType='Finished' ORDER BY iol.LineNumber", cn)
+                    Using cmdF As New SqlCommand("SELECT iol.LineNumber, ISNULL(p.Name, 'Unknown Product') AS ProductName, iol.Quantity, ISNULL(iol.UoM,'ea') AS UoM FROM dbo.InternalOrderLines iol LEFT JOIN dbo.Demo_Retail_Product p ON p.ProductID = iol.ProductID WHERE iol.InternalOrderID=@id AND iol.ItemType='Finished' ORDER BY iol.LineNumber", cn)
                         cmdF.Parameters.AddWithValue("@id", ioId)
                         Using rF = cmdF.ExecuteReader()
                             Dim line As Integer = 0
@@ -925,7 +1067,7 @@ Namespace Manufacturing
                             lineNo += 1
                             Dim pname As String = $"Product {pe.Item1}"
                             Dim uom As String = "ea"
-                            Using cmdP As New SqlCommand("SELECT TOP 1 ProductName, ISNULL(BaseUoM,'ea') FROM dbo.Products WHERE ProductID=@pid", cn)
+                            Using cmdP As New SqlCommand("SELECT TOP 1 Name AS ProductName, 'ea' AS UoM FROM dbo.Demo_Retail_Product WHERE ProductID=@pid", cn)
                                 cmdP.Parameters.AddWithValue("@pid", pe.Item1)
                                 Using r = cmdP.ExecuteReader()
                                     If r.Read() Then
@@ -944,11 +1086,11 @@ Namespace Manufacturing
                         ' Fallback to showing raw material lines if no product list present
                         Dim sql As String = _
                             "SELECT iol.LineNumber, iol.ItemType, " & _
-                            "       COALESCE(CONCAT(rm.MaterialCode, ' - ', rm.MaterialName), p.ProductName, 'Component') AS Item, " & _
+                            "       COALESCE(CONCAT(rm.MaterialCode, ' - ', rm.MaterialName), p.Name, 'Component') AS Item, " & _
                             "       iol.Quantity, iol.UoM " & _
                             "FROM dbo.InternalOrderLines iol " & _
                             "LEFT JOIN dbo.RawMaterials rm ON rm.MaterialID = iol.RawMaterialID " & _
-                            "LEFT JOIN dbo.Products p ON p.ProductID = iol.ProductID " & _
+                            "LEFT JOIN dbo.Demo_Retail_Product p ON p.ProductID = iol.ProductID " & _
                             "WHERE iol.InternalOrderID = @id " & _
                             "ORDER BY iol.LineNumber"
                         Using cmd As New SqlCommand(sql, cn)
@@ -1039,7 +1181,7 @@ Namespace Manufacturing
                         For Each t In products
                             Dim pname As String = $"Product {t.Item1}"
                             Dim uom As String = "ea"
-                            Using cmdP As New SqlCommand("SELECT TOP 1 ProductName, ISNULL(BaseUoM,'ea') FROM dbo.Products WHERE ProductID=@pid", cn2)
+                            Using cmdP As New SqlCommand("SELECT TOP 1 Name AS ProductName, 'ea' AS UoM FROM dbo.Demo_Retail_Product WHERE ProductID=@pid", cn2)
                                 cmdP.Parameters.AddWithValue("@pid", t.Item1)
                                 Using rp = cmdP.ExecuteReader()
                                     If rp.Read() Then
@@ -1063,7 +1205,7 @@ Namespace Manufacturing
                     ' Fallback: derive finished products from InternalOrderLines
                     Using cn As New SqlConnection(cs)
                         cn.Open()
-                        Using cmdF As New SqlCommand("SELECT iol.ProductID, iol.Quantity, ISNULL(p.BaseUoM,'ea') AS UoM FROM dbo.InternalOrderLines iol JOIN dbo.Products p ON p.ProductID = iol.ProductID WHERE iol.InternalOrderID=@id AND iol.ItemType='Finished' AND iol.ProductID IS NOT NULL", cn)
+                        Using cmdF As New SqlCommand("SELECT iol.ProductID, iol.Quantity, ISNULL(iol.UoM,'ea') AS UoM FROM dbo.InternalOrderLines iol LEFT JOIN dbo.Demo_Retail_Product p ON p.ProductID = iol.ProductID WHERE iol.InternalOrderID=@id AND iol.ItemType='Finished' AND iol.ProductID IS NOT NULL", cn)
                             cmdF.Parameters.AddWithValue("@id", ioId)
                             Using rF = cmdF.ExecuteReader()
                                 While rF.Read()
@@ -1083,7 +1225,7 @@ Namespace Manufacturing
                         For Each t In products
                             Dim pname As String = $"Product {t.Item1}"
                             Dim uom As String = "ea"
-                            Using cmdP As New SqlCommand("SELECT TOP 1 ProductName, ISNULL(BaseUoM,'ea') FROM dbo.Products WHERE ProductID=@pid", cn3)
+                            Using cmdP As New SqlCommand("SELECT TOP 1 Name AS ProductName, 'ea' AS UoM FROM dbo.Demo_Retail_Product WHERE ProductID=@pid", cn3)
                                 cmdP.Parameters.AddWithValue("@pid", t.Item1)
                                 Using rp = cmdP.ExecuteReader()
                                     If rp.Read() Then
@@ -1229,6 +1371,48 @@ Namespace Manufacturing
                                     ' Show error to user for debugging
                                     MessageBox.Show($"Retail_Stock update failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
                                 End Try
+                                
+                                ' ALSO update RetailStock table (used by Stock Levels Report)
+                                Try
+                                    Dim retailStockExists As Boolean = False
+                                    Using cmdCheckRS As New SqlCommand("SELECT COUNT(*) FROM dbo.RetailStock WHERE ProductID=@pid AND BranchID=@b", cn)
+                                        cmdCheckRS.Parameters.AddWithValue("@pid", pid)
+                                        cmdCheckRS.Parameters.AddWithValue("@b", branchId)
+                                        retailStockExists = Convert.ToInt32(cmdCheckRS.ExecuteScalar()) > 0
+                                    End Using
+                                    
+                                    If retailStockExists Then
+                                        Using cmdUpdateRS As New SqlCommand("UPDATE dbo.RetailStock SET Quantity = ISNULL(Quantity, 0) + @q, LastUpdated = GETDATE(), UpdatedBy = @user WHERE ProductID=@pid AND BranchID=@b", cn)
+                                            cmdUpdateRS.Parameters.AddWithValue("@pid", pid)
+                                            cmdUpdateRS.Parameters.AddWithValue("@b", branchId)
+                                            cmdUpdateRS.Parameters.AddWithValue("@q", qty)
+                                            cmdUpdateRS.Parameters.AddWithValue("@user", If(AppSession.CurrentUser IsNot Nothing, AppSession.CurrentUser.Username, "System"))
+                                            cmdUpdateRS.ExecuteNonQuery()
+                                        End Using
+                                    Else
+                                        Using cmdInsertRS As New SqlCommand("INSERT INTO dbo.RetailStock (ProductID, BranchID, Quantity, StockType, LastUpdated, UpdatedBy) VALUES (@pid, @b, @q, 'Internal', GETDATE(), @user)", cn)
+                                            cmdInsertRS.Parameters.AddWithValue("@pid", pid)
+                                            cmdInsertRS.Parameters.AddWithValue("@b", branchId)
+                                            cmdInsertRS.Parameters.AddWithValue("@q", qty)
+                                            cmdInsertRS.Parameters.AddWithValue("@user", If(AppSession.CurrentUser IsNot Nothing, AppSession.CurrentUser.Username, "System"))
+                                            cmdInsertRS.ExecuteNonQuery()
+                                        End Using
+                                    End If
+                                Catch
+                                    ' Ignore if RetailStock table has different schema
+                                End Try
+                                
+                                ' UPDATE Demo_Retail_Product.CurrentStock for this branch
+                                Try
+                                    Using cmdUpdateProduct As New SqlCommand("UPDATE dbo.Demo_Retail_Product SET CurrentStock = ISNULL(CurrentStock, 0) + @q WHERE ProductID = @pid AND BranchID = @b", cn)
+                                        cmdUpdateProduct.Parameters.AddWithValue("@pid", pid)
+                                        cmdUpdateProduct.Parameters.AddWithValue("@b", branchId)
+                                        cmdUpdateProduct.Parameters.AddWithValue("@q", qty)
+                                        cmdUpdateProduct.ExecuteNonQuery()
+                                    End Using
+                                Catch
+                                    ' Ignore if update fails
+                                End Try
                                 ' Try to log a movement from MFG -> RETAIL (ignore if table/columns differ)
                                 Try
                                     Using cmdMv As New SqlCommand("IF OBJECT_ID('dbo.ProductMovements','U') IS NOT NULL INSERT INTO dbo.ProductMovements(ProductID, Quantity, FromLocationID, ToLocationID, MovementType, MovementDate, BranchID) VALUES(@p,@q,@fromLoc,@toLoc,N'Production',GETDATE(),CASE WHEN @b=0 THEN NULL ELSE @b END);", cn)
@@ -1311,5 +1495,195 @@ Namespace Manufacturing
             End Try
             Return Nothing
         End Function
+
+        Private Sub OnFulfillFromStock(sender As Object, e As EventArgs)
+            ' Fulfill BOM request using existing sp_IO_FulfillToMFG procedure
+            If cboFulfilled.SelectedValue Is Nothing Then
+                MessageBox.Show("Please select a BOM request to fulfill.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            Dim ioId As Integer
+            If Not Integer.TryParse(cboFulfilled.SelectedValue.ToString(), ioId) OrElse ioId <= 0 Then
+                MessageBox.Show("Invalid BOM request selected.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            Dim result As DialogResult = MessageBox.Show(
+                "Fulfill this BOM request from existing stockroom inventory?" & vbCrLf & vbCrLf &
+                "This will transfer ingredients from Stockroom to Manufacturing.",
+                "Confirm Fulfillment",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question)
+
+            If result <> DialogResult.Yes Then Return
+
+            Try
+                Dim cs = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
+                Using cn As New SqlConnection(cs)
+                    cn.Open()
+                    Using cmd As New SqlCommand("sp_IO_FulfillToMFG", cn)
+                        cmd.CommandType = CommandType.StoredProcedure
+                        cmd.Parameters.AddWithValue("@InternalOrderID", ioId)
+                        cmd.Parameters.AddWithValue("@BranchID", If(AppSession.CurrentBranchID > 0, CType(AppSession.CurrentBranchID, Object), DBNull.Value))
+                        cmd.Parameters.AddWithValue("@UserID", If(AppSession.CurrentUserID > 0, CType(AppSession.CurrentUserID, Object), DBNull.Value))
+
+                        cmd.ExecuteNonQuery()
+                        
+                        MessageBox.Show(
+                            "BOM fulfilled successfully!" & vbCrLf & vbCrLf &
+                            "Ingredients have been transferred to Manufacturing." & vbCrLf &
+                            "Baker can now start production.",
+                            "Success",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information)
+                        
+                        ' Refresh the fulfilled list
+                        LoadFulfilledList()
+                    End Using
+                End Using
+            Catch ex As Exception
+                MessageBox.Show(
+                    "Error fulfilling BOM:" & vbCrLf & vbCrLf & ex.Message,
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error)
+            End Try
+        End Sub
+
+        ''' <summary>
+        ''' Calculate ingredient quantities based on production quantity and batch yield
+        ''' </summary>
+        Private Sub CalculateQuantitiesForProduction(dt As DataTable, productID As Integer, cn As SqlConnection)
+            Try
+                ' Check if production quantity is set
+                If txtProductionQty Is Nothing OrElse txtProductionQty.Value <= 0 Then
+                    Return ' No calculation needed
+                End If
+
+                Dim productionQty As Decimal = txtProductionQty.Value
+
+                ' Get batch yield from Recipe table
+                Dim batchYield As Decimal = 1D
+                Dim sqlBatch = "SELECT BatchYield FROM dbo.Recipe WHERE ProductID = @pid AND IsActive = 1"
+                Using cmdBatch As New SqlCommand(sqlBatch, cn)
+                    cmdBatch.Parameters.AddWithValue("@pid", productID)
+                    Dim result = cmdBatch.ExecuteScalar()
+                    If result IsNot Nothing Then
+                        batchYield = Convert.ToDecimal(result)
+                    End If
+                End Using
+
+                ' Calculate scale factor (proportional scaling, not batch rounding)
+                Dim scaleFactor As Decimal = productionQty / batchYield
+
+                System.Diagnostics.Debug.WriteLine($"CalculateQuantities: Production={productionQty}, BatchYield={batchYield}, ScaleFactor={scaleFactor}")
+
+                ' Scale all quantities proportionally
+                For Each row As DataRow In dt.Rows
+                    Dim qtyPerBatch As Decimal = Convert.ToDecimal(row("QuantityPerBatch"))
+                    Dim totalQty As Decimal = qtyPerBatch * scaleFactor
+                    row("QuantityPerBatch") = totalQty
+                    System.Diagnostics.Debug.WriteLine($"  - {row("ComponentName")}: {qtyPerBatch} × {scaleFactor} = {totalQty}")
+                Next
+
+                lblStatus.Text = $"✅ Calculated for {productionQty} units (scale: {scaleFactor:0.####}× batch of {batchYield})"
+                lblStatus.ForeColor = Color.Blue
+
+            Catch ex As Exception
+                System.Diagnostics.Debug.WriteLine($"Error calculating quantities: {ex.Message}")
+                lblStatus.Text = "⚠️ Error calculating quantities"
+                lblStatus.ForeColor = Color.Red
+            End Try
+        End Sub
+
+        ''' <summary>
+        ''' Check if ingredients are available in stock
+        ''' </summary>
+        Private Sub CheckIngredientAvailability(dt As DataTable)
+            Try
+                Dim shortages As New DataTable()
+                shortages.Columns.Add("MaterialName", GetType(String))
+                shortages.Columns.Add("Required", GetType(Decimal))
+                shortages.Columns.Add("Available", GetType(Decimal))
+                shortages.Columns.Add("UoM", GetType(String))
+                
+                Dim branchID As Integer = If(AppSession.CurrentBranchID > 0, AppSession.CurrentBranchID, 1)
+
+                Dim cs = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
+                Using cn As New SqlConnection(cs)
+                    cn.Open()
+
+                    For Each row As DataRow In dt.Rows
+                        Dim componentName As String = row("ComponentName").ToString()
+                        Dim requiredQty As Decimal = Convert.ToDecimal(row("QuantityPerBatch"))
+                        Dim uom As String = If(IsDBNull(row("UoM")), "", row("UoM").ToString())
+                        Dim availableQty As Decimal = 0
+                        
+                        ' All ingredients are in RawMaterials table (includes both ingredients and sub-recipes)
+                        If Not IsDBNull(row("RawMaterialID")) Then
+                            Dim materialID As Integer = Convert.ToInt32(row("RawMaterialID"))
+
+                            ' Check stock in StockroomStock table (branch-specific)
+                            ' NOTE: StockroomStock.ProductID actually stores RawMaterials.MaterialID (confusing naming!)
+                            Dim sql = "SELECT ISNULL(SUM(Quantity), 0) FROM dbo.StockroomStock WHERE ProductID = @mid AND BranchID = @bid"
+                            Using cmd As New SqlCommand(sql, cn)
+                                cmd.Parameters.AddWithValue("@mid", materialID)
+                                cmd.Parameters.AddWithValue("@bid", branchID)
+                                availableQty = Convert.ToDecimal(cmd.ExecuteScalar())
+                            End Using
+                            
+                            ' Check if insufficient
+                            If availableQty < requiredQty Then
+                                ' Add to shortages table
+                                Dim shortageRow = shortages.NewRow()
+                                shortageRow("MaterialName") = componentName
+                                shortageRow("Required") = requiredQty
+                                shortageRow("Available") = availableQty
+                                shortageRow("UoM") = uom
+                                shortages.Rows.Add(shortageRow)
+                                
+                                System.Diagnostics.Debug.WriteLine($"INSUFFICIENT: {componentName} - Need {requiredQty}, Have {availableQty}")
+                            Else
+                                System.Diagnostics.Debug.WriteLine($"AVAILABLE: {componentName} - Need {requiredQty}, Have {availableQty}")
+                            End If
+                        End If
+                    Next
+                End Using
+
+                ' Display availability status
+                If shortages.Rows.Count > 0 Then
+                    lblStatus.Text = $"⚠️ {shortages.Rows.Count} ingredient(s) insufficient"
+                    lblStatus.ForeColor = Color.Red
+                    
+                    ' Show shortage report with option to print
+                    Dim result = MessageBox.Show($"⚠️ INSUFFICIENT STOCK FOR {shortages.Rows.Count} MATERIAL(S)" & vbCrLf & vbCrLf & 
+                                                "Would you like to view/print a detailed shortage report for Stockroom?", 
+                                                "Stock Warning", 
+                                                MessageBoxButtons.YesNo, 
+                                                MessageBoxIcon.Warning)
+                    
+                    If result = DialogResult.Yes Then
+                        ' Get product name and requester
+                        Dim productName As String = If(cboProduct.Text, "Unknown Product")
+                        Dim requesterName As String = If(cboRequester.Text, "Unknown")
+                        Dim branchName As String = AppSession.CurrentBranchName
+                        Dim productionQty As Decimal = Convert.ToDecimal(txtProductionQty.Value)
+                        
+                        ' Open shortage report form
+                        Using reportForm As New Manufacturing.ShortageReportForm(productName, productionQty, shortages, requesterName, branchName)
+                            reportForm.ShowDialog(Me)
+                        End Using
+                    End If
+                Else
+                    lblStatus.Text = lblStatus.Text & " - ✅ All ingredients available"
+                    lblStatus.ForeColor = Color.Green
+                End If
+
+            Catch ex As Exception
+                System.Diagnostics.Debug.WriteLine($"Error checking availability: {ex.Message}")
+                MessageBox.Show("Error checking ingredient availability: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
+        End Sub
     End Class
 End Namespace

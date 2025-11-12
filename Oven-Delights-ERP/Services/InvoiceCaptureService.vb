@@ -7,7 +7,7 @@ Public Class InvoiceCaptureService
 
     ''' <summary>
     ''' Captures supplier invoice and routes items to correct inventory tables
-    ''' External Products → Retail_Stock
+    ''' External Products → Demo_Retail_Stock
     ''' Raw Materials → RawMaterials
     ''' </summary>
     Public Function CaptureInvoice(
@@ -39,7 +39,7 @@ Public Class InvoiceCaptureService
                             ' Raw Material → Update RawMaterials table
                             UpdateRawMaterialInventory(con, tx, itemId, quantity, unitCost, branchId, invoiceNumber, createdBy)
                         ElseIf itemSource = "PR" Then
-                            ' External Product → Update Products and Retail_Stock
+                            ' External Product → Update Products and Demo_Retail_Stock
                             UpdateExternalProductInventory(con, tx, itemId, branchId, quantity, unitCost, invoiceNumber, createdBy)
                         End If
                     Next
@@ -146,19 +146,52 @@ Public Class InvoiceCaptureService
     
     Private Sub UpdateExternalProductInventory(con As SqlConnection, tx As SqlTransaction, productId As Integer, branchId As Integer, quantity As Decimal, unitCost As Decimal, reference As String, createdBy As Integer)
         ' CRITICAL: Update Products table LastPaidPrice for External products
-        Dim updateProductSql = "UPDATE Products " &
-                               "SET LastPaidPrice = @Cost, " &
-                               "    AverageCost = @Cost " &
-                               "WHERE ProductID = @ProductID AND ItemType = 'External'"
+        ' Get current stock to calculate weighted average
+        Dim currentQty As Decimal = 0D
+        Dim currentAvg As Decimal = 0D
         
-        Using cmd As New SqlCommand(updateProductSql, con, tx)
+        Dim getStockSql = "SELECT ISNULL(SUM(QtyOnHand), 0), ISNULL(AVG(AverageCost), 0) FROM Demo_Retail_Stock WHERE VariantID = @ProductID"
+        Using cmd As New SqlCommand(getStockSql, con, tx)
             cmd.Parameters.AddWithValue("@ProductID", productId)
-            cmd.Parameters.AddWithValue("@Cost", unitCost)
+            Using reader = cmd.ExecuteReader()
+                If reader.Read() Then
+                    currentQty = reader.GetDecimal(0)
+                    currentAvg = reader.GetDecimal(1)
+                End If
+            End Using
+        End Using
+        
+        ' Calculate weighted average cost
+        Dim newAvgCost As Decimal = unitCost
+        If currentQty > 0 Then
+            newAvgCost = ((currentAvg * currentQty) + (unitCost * quantity)) / (currentQty + quantity)
+        End If
+        
+        ' CRITICAL: Update Demo_Retail_Price for BRANCH-SPECIFIC pricing
+        ' unitCost from invoice is INCLUDING VAT (as entered by user)
+        ' Calculate CostPrice EXCLUDING VAT for storage
+        Dim costExclVAT As Decimal = Math.Round(unitCost / 1.15D, 2)
+        
+        Dim updatePriceSql = "UPDATE dbo.Demo_Retail_Price " &
+                             "SET CostPrice = @CostExclVAT, " &
+                             "    SellingPrice = @CostInclVAT, " &
+                             "    SellingPriceExVAT = @CostExclVAT, " &
+                             "    UpdatedAt = GETDATE() " &
+                             "WHERE ProductID = @ProductID AND BranchID = @BranchID; " &
+                             "IF @@ROWCOUNT = 0 " &
+                             "INSERT INTO dbo.Demo_Retail_Price (ProductID, BranchID, CostPrice, SellingPrice, SellingPriceExVAT, EffectiveFrom, CreatedAt) " &
+                             "VALUES (@ProductID, @BranchID, @CostExclVAT, @CostInclVAT, @CostExclVAT, GETDATE(), GETDATE())"
+        
+        Using cmd As New SqlCommand(updatePriceSql, con, tx)
+            cmd.Parameters.AddWithValue("@ProductID", productId)
+            cmd.Parameters.AddWithValue("@BranchID", branchId)
+            cmd.Parameters.AddWithValue("@CostExclVAT", costExclVAT)
+            cmd.Parameters.AddWithValue("@CostInclVAT", unitCost)
             cmd.ExecuteNonQuery()
         End Using
         
-        ' Update Retail_Stock (branch-specific inventory)
-        Dim checkSql = "SELECT COUNT(*) FROM Retail_Stock WHERE VariantID = @ProductID AND BranchID = @BranchID"
+        ' Update Demo_Retail_Stock (branch-specific inventory)
+        Dim checkSql = "SELECT COUNT(*) FROM Demo_Retail_Stock WHERE VariantID = @ProductID AND BranchID = @BranchID"
         Dim exists As Boolean = False
         
         Using cmd As New SqlCommand(checkSql, con, tx)
@@ -169,7 +202,7 @@ Public Class InvoiceCaptureService
         
         If exists Then
             ' Update existing stock
-            Dim updateSql = "UPDATE Retail_Stock " &
+            Dim updateSql = "UPDATE Demo_Retail_Stock " &
                            "SET QtyOnHand = ISNULL(QtyOnHand, 0) + @Qty, " &
                            "    AverageCost = CASE " &
                            "        WHEN ISNULL(QtyOnHand, 0) + @Qty = 0 THEN AverageCost " &
@@ -187,7 +220,7 @@ Public Class InvoiceCaptureService
             End Using
         Else
             ' Insert new stock record
-            Dim insertSql = "INSERT INTO Retail_Stock (VariantID, BranchID, QtyOnHand, AverageCost, UpdatedAt) " &
+            Dim insertSql = "INSERT INTO Demo_Retail_Stock (VariantID, BranchID, QtyOnHand, AverageCost, UpdatedAt) " &
                            "VALUES (@ProductID, @BranchID, @Qty, @Cost, GETDATE())"
             
             Using cmd As New SqlCommand(insertSql, con, tx)
@@ -200,7 +233,7 @@ Public Class InvoiceCaptureService
         End If
         
         ' Record stock movement
-        Dim moveSql = "INSERT INTO Retail_StockMovements (VariantID, BranchID, QtyDelta, Reason, Ref1, Ref2, CreatedAt, CreatedBy) " &
+        Dim moveSql = "INSERT INTO Demo_Retail_StockMovements (VariantID, BranchID, QtyDelta, Reason, Ref1, Ref2, CreatedAt, CreatedBy) " &
                       "VALUES (@ProductID, @BranchID, @Qty, 'Purchase', @Ref, 'Invoice Capture', GETDATE(), @CreatedBy)"
         
         Using cmd As New SqlCommand(moveSql, con, tx)

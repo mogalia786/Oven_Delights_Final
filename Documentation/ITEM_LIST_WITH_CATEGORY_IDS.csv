@@ -1,0 +1,1587 @@
+ITEM CCODE,BARCODE,ITEM DESCRIPTION,CATERGORY,item catergory,unit of measure
+BIS- CHC-EAC,,Biscuit Choc Chip,14,internal,ea
+BIS-ABB-EAC,16001.0,Biscuit Assorted Pure Butter,14,internal,ea
+BIS-BCV-EAC,,Biscuit Choc Vanilla 300g,14,internal,ea
+BIS-BUB-EAC,14071.0,Biscuit Butter Biscuit,15,internal,ea
+BIS-CCC-EAC,,Biscuit Choc Chip Cookie,14,internal,ea
+BIS-CHD-EAC,14079.0,Biscuit Choc Delights 300G,14,internal,ea
+BIS-CJN-EAC,14067.0,Biscuit Jam Nest 300G,15,internal,ea
+BIS-COC-EAC,,Biscuit Coconut,14,internal,ea
+BIS-CRU-EACH,14099.0,GLUTEN FREE RUSKS,15,internal,ea
+BIS-CUS-EAC,16201.0,Biscuit Custard,14,internal,ea
+BIS-DAT-EAC,,Biscuit Date Roll 300G,14,internal,ea
+BIS-DEB-EAC,14073.0,Designer Biscuits 300G,15,internal,ea
+BIS-FEB-EAC,16200.0,Biscuit Fego 300G,14,internal,ea
+BIS-FLF-EAC,14068.0,Biscuit choc Fingers 300G,14,internal,ea
+BIS-HSB-EAC,14076.0,Biscuit Horse Shoe 300G,14,internal,ea
+BIS-NAK-EAC,16077.0,Biscuit Naan Katai 300G,14,internal,ea
+BIS-PAO-EAC,16203.0,Biscuit Pcn & almnd 300G,14,internal,ea
+BIS-PNS-EAC,14069.0,Biscuit Pecan Nut Squares 300G,14,internal,ea
+BIS-RMC-EAC,16002.0,Biscuit Romany Creams,14,internal,ea
+BIS-ROC-EAC,14070.0,Biscuit Romany Creams,14,internal,ea
+BIS-SBB-EAC,16006.0,Biscuit Short Bread,15,internal,ea
+CAN-CMS-EAC,,Candles 10s- Silver,16,external,ea
+CAN-DOU-010,80351.0,Candle Numeral Double,16,external,ea
+CAN-DOU-080,8034.0,Candle Numeral Double,16,external,ea
+CAN-GOL-000,,Candle Numeral 0 Gold,16,external,ea
+CAN-GOL-001,,Candle Numeral 1 Gold,16,external,ea
+CAN-GOL-002,,Candle Numeral 2 Gold,16,external,ea
+CAN-GOL-003,,Candle Numeral 3 Gold,16,external,ea
+CAN-GOL-004,,Candle Numeral 4 Gold,16,external,ea
+CAN-GOL-005,,Candle Numeral 5 Gold,16,external,ea
+CAN-GOL-006,,Candle Numeral 6 Gold,16,external,ea
+CAN-GOL-007,,Candle Numeral 7 Gold,16,external,ea
+CAN-GOL-008,,Candle Numeral 8 Gold,16,external,ea
+CAN-GOL-009,,Candle Numeral 9 Gold,16,external,ea
+CAN-MAG-24S,8004.0,Candle Magic Assorted,16,external,ea
+CAN-MCA-EAC,30714.0,Magic Candles,16,external,ea
+CAN-MIX-24S,8005.0,Candle Mixed - 24x24,16,external,ea
+CAN-RAI-000,8006.0,Candle Numeral 0 Rainbow,16,external,ea
+CAN-RAI-001,8007.0,Candle Numeral 1 Rainbow,16,external,ea
+CAN-RAI-002,8008.0,Candle Numeral 2 Rainbow,16,external,ea
+CAN-RAI-003,8009.0,Candle Numeral 3 Rainbow,16,external,ea
+CAN-RAI-004,8010.0,Candle Numeral 4 Rainbow,16,external,ea
+CAN-RAI-005,8011.0,Candle Numeral 5 Rainbow,16,external,ea
+CAN-RAI-006,8012.0,Candle Numeral 6 Rainbow,16,external,ea
+CAN-RAI-007,8013.0,Candle Numeral 7 Rainbow,16,external,ea
+CAN-RAI-009,8015.0,Candle Numeral 9 Rainbow,16,external,ea
+CAN-SIL-000,,Candle Numeral 0 Silver,16,external,ea
+CAN-SIL-001,,Candle Numeral 1 Silver,16,external,ea
+CAN-SIL-002,,Candle Numeral 2 Silver,16,external,ea
+CAN-SIL-003,,Candle Numeral 3 Silver,16,external,ea
+CAN-SIL-004,,Candle Numeral 4 Silver,16,external,ea
+CAN-SIL-005,,Candle Numeral 5 Silver,16,external,ea
+CAN-SIL-006,,Candle Numeral 6 Silver,16,external,ea
+CAN-SIL-007,,Candle Numeral 7 Silver,16,external,ea
+CAN-SIL-008,,Candle Numeral 8 Silver,16,external,ea
+CAN-SIL-009,,Candle Numeral 9 Silver,16,external,ea
+CAN-WHI-000,8025.0,Candle Numeral 0 White,16,external,ea
+CAN-WHI-001,8016.0,Candle Numeral 1 White,16,external,ea
+CAN-WHI-002,8017.0,Candle Numeral 2 White,16,external,ea
+CAN-WHI-003,8018.0,Candle Numeral 3 White,16,external,ea
+CAN-WHI-004,8019.0,Candle Numeral 4 White,16,external,ea
+CAN-WHI-005,8020.0,Candle Numeral 5 White,16,external,ea
+CAN-WHI-006,8021.0,Candle Numeral 6 White,16,external,ea
+CAN-WHI-007,8022.0,Candle Numeral 7 White,16,external,ea
+CAN-WHI-008,8023.0,Candle Numeral 8 White,16,external,ea
+CAN-WHI-009,8024.0,Candle Numeral 9 White,16,external,ea
+CBA-BAC-014,,BD 14'' Buttercream Alphabet Cake,17,internal,ea
+CBA-BEA-016,,BD 16'' Eggless Buttercream Alphabet Cake,17,internal,ea
+CBC-BBG-EAC,11001.0,BC Birthday Gateaux,18,internal,ea
+CBC-BCC-EAC,30337.0,Icing Cup Cakes,18,internal,ea
+CBC-BCD-EAC,11004.0,BC Chocolate Delight,18,internal,ea
+CBC-BCE-EAC,,BC Eggless Vanilla Gateaux,18,internal,ea
+CBC-BCG-EAC,11003.0,BC Chocolate Gateaux,18,internal,ea
+CBC-BCN-EAC,30339.0,Icing Cup Cakes With Name,18,internal,ea
+CBC-BCS-EAC,11005.0,BC Chocolate Slice,18,internal,ea
+CBC-BDN-EAC,11016.0,BC Doughnut,18,internal,ea
+CBC-BEG-EAC,11040.0,BC Eggless Birthday Gateaux,18,internal,ea
+CBC-BET-EAC,11041.0,BC Triple Layer Eggless Drip Gateaux,18,internal,ea
+CBC-BRG-EAC,11042.0,BC Smash Choc Rose Pattern Gateaux,18,internal,ea
+CBC-BTD-EAC,11096.0,BC Triple Layer Drip Gateaux,18,internal,ea
+CBC-CBG-EAC,11097.0,Christmas Buttercream Gateaux,18,internal,ea
+CBC-CDB-EAC,15060.0,BC Choc Drip Gateaux,18,internal,ea
+CBC-CDN-EAC,11018.0,Chocolate Doughnut,18,internal,ea
+CBC-CNL-EAC,11032.0,Coconut Tartlet,19,internal,ea
+CBC-CNR-EAC,11030.0,Coconut Ring,18,internal,ea
+CBC-CNS-EAC,11008.0,Coconut Slice,18,internal,ea
+CBC-CNT-EAC,11031.0,Coconut Tart,18,internal,ea
+CBC-CRP-EAC,11034.0,Cream Puff,20,internal,ea
+CBC-CUS-EAC,11035.0,Currant Square,18,internal,ea
+CBC-EB1-1M,,BD 1MX500 BC Eggless,21,internal,ea
+CBC-FLA-EAC,11036.0,Flakey Bits,18,internal,ea
+CBC-JAP-EAC,11037.0,Jam Puff,18,internal,ea
+CBC-JAT-EAC,11038.0,Jam Tart,18,internal,ea
+CBC-JDN-EAC,11019.0,Jam Doughnut,18,internal,ea
+CBC-JTO-EAC,11039.0,Jam Turnover,18,internal,ea
+CBC-KOE-EAC,11020.0,Koeksuster 1s,18,internal,ea
+CBC-LPC-EAC,11009.0,Choc Lamington Plain,18,internal,ea
+CBC-LPR-EAC,11010.0,Raspberry Lamington Plain,18,internal,ea
+CBC-MBD-EAC,11043.0,Mini Buttercream D/N,22,internal,ea
+CBC-MBG-EAC,11098.0,Mothers Day Buttercream Gateaux,18,internal,ea
+CBC-MCD-EAC,11044.0,Mini Chocolate D/N,18,internal,ea
+CBC-MCL-EAC,,Mini Lamington Chocolate Plain,23,internal,ea
+CBC-MEL-40G,11021.0,Melting Moments 40g (Round),24,external,ea
+CBC-MEL-60G,11023.0,Melting Moments 60g (Long),18,internal,ea
+CBC-MFL-EAC,11045.0,Mini F/BITS,18,internal,ea
+CBC-MRL-EAC,,Mini Lamington Raspberry Plain,18,internal,ea
+CBC-MSB-EACH,11046.0,Mini S/B,18,internal,ea
+CBC-MUE-EAC,11007.0,Muesli Slice,18,internal,ea
+CBC-PCC-EAC,30338.0,BD Picture Cup Cakes,25,internal,ea
+CBC-QUC-EAC,11011.0,Queen Cakes 1s,18,internal,ea
+CBC-SNO-EAC,11013.0,Snowballs 1s,18,internal,ea
+CBF-BCF-018,10088.0,BD Buttercream Figure 18,26,internal,ea
+CBF-BCF-018,10088.0,BD Buttercream Figure 18,26,internal,ea
+CBF-BCF-020,10090.0,BD Buttercream Figure 20,20,internal,ea
+CBF-BCF-020,10090.0,BD Buttercream Figure 20,20,internal,ea
+CBF-BCK-020,10096.0,BD Buttercream Key,17,internal,ea
+CBF-BFE-020,10199.0,BD 20 Buttercream Figure on Base Eggless,20,internal,ea
+CBF-BFS-018,10092.0,BD Buttercream Fig on SL 18,26,internal,ea
+CBF-BFS-018,10092.0,BD Buttercream Fig on SL 18,26,internal,ea
+CBF-BFS-020,10094.0,BD Buttercream Fig on SL 20,26,internal,ea
+CBF-BLF-014,12001.0,BD Freshcream 14 Black Forest,27,internal,ea
+CBF-BLF-016,12020.0,BD Freshcream 16 Blackforest,28,internal,ea
+CBF-FCD-014,10039.0,BD Freshcream 14 DL,29,internal,ea
+CBF-FCF-018,10089.0,BD Freshcream Figure 18,30,internal,ea
+CBF-FCF-020,10091.0,BD Freshcream Figure 20,31,internal,ea
+CBF-FCK-020,10097.0,BD Freshcream Key,17,internal,ea
+CBF-FF0-020,,BD 20 Freshcream Figure Only Eggless,31,internal,ea
+CBF-FFE-020,10198.0,BD Freshcream Figure on Base Eggless 20,30,internal,ea
+CBF-FFS-018,10093.0,BD Freshcream Fig on SL 18,30,internal,ea
+CBF-FFS-020,10095.0,BD Freshcream Fig on SL 20,31,internal,ea
+CBF-FOE-020,,BD 20 Buttercream Figure Only Eggless,20,internal,ea
+CBN-B1M-EACH,,BD Buttercream 1MX1M,17,internal,ea
+CBN-F1M-EACH,,BD Freshcream 1M X1M,17,internal,ea
+CBR-BCR-012,10105.0,BD Buttercream 12 Round,32,internal,ea
+CBR-BCR-014,10107.0,BD Buttercream 14 Round,32,internal,ea
+CBR-BCR-016,10109.0,BD Buttercream 16 Round,33,internal,ea
+CBR-BCR-018,10104.0,BD Buttercream 18 Round,32,internal,ea
+CBR-BCR-020,10112.0,BD Buttercream 20 Round,33,internal,ea
+CBR-FCR-012,10106.0,BD Freshcream 12 Round,34,internal,ea
+CBR-FCR-014,10108.0,BD Freshcream 14 Round,34,internal,ea
+CBR-FCR-016,10110.0,BD Freshcream 16 Round,35,internal,ea
+CBR-FCR-018,10111.0,BD Freshcream 18 Round,36,internal,ea
+CBR-FCR-020,10113.0,BD Freshcream 20 Round,36,internal,ea
+CBS-BCD-012,10005.0,BD Buttercream 12 DL,37,internal,ea
+CBS-BCD-014,10007.0,BD Buttercream 14 DL,37,internal,ea
+CBS-BCD-016,10011.0,BD Buttercream 16 DL,37,internal,ea
+CBS-BCD-018,10015.0,BD Buttercream 18 DL,38,internal,ea
+CBS-BCD-020,10018.0,BD Buttercream 20 DL,37,internal,ea
+CBS-BCD-022,10031.0,BD Buttercream 22 DL,37,internal,ea
+CBS-BCE-016,10033.0,BD 16 BC DL Eggless,37,internal,ea
+CBS-BLF-012,10078.0,BD Freshcream 12 Black Forest,39,internal,ea
+CBS-FCD-012,10037.0,BD Freshcream 12 DL,29,internal,ea
+CBS-FCD-016,10041.0,BD Freshcream 16 DL,29,internal,ea
+CBS-FCD-018,10045.0,BD Freshcream 18 DL,29,internal,ea
+CBS-FCD-020,10050.0,BD Freshcream 20 DL,40,internal,ea
+CBS-FCD-022,10054.0,BD Freshcream 22 DL,29,internal,ea
+CBS-FCE-016,10103.0,BD 16 Freshcream Eggless,29,internal,ea
+CBS-SBE-EACH,30650.0,Eggless Small Buttercream Gateaux,18,internal,ea
+CBW-CAK-003,10102.0,BD Buttercream 3 Tier Stacked,41,internal,ea
+CBW-CKE-003,10098.0,BD Wedding Cake BC 10 12 14 Loose,41,internal,ea
+CBW-STA-EAC,10289.0,BD Buttercream 2Tier Stacked 12 16,41,internal,ea
+CEX- BDC-EAC,,Bar One 6 Layer Drip With Toppings,42,internal,ea
+CEX- BEG-EAC,14050.0,FC Bar One Eggless Drip,42,internal,ea
+CEX CCD-EAC,14030.0,Cheese Cake Dessert,42,internal,ea
+CEX- LFD-EACH,,20cmBC4LayerDrip Cake- Fresh Flowers Macaroon/topp,17,internal,ea
+CEX- MCP-EAC,14091.0,Moist Chocolate Pudding,42,internal,ea
+CEX- MDB-EAC,,Buttercream 6 Layer Drip Cake with toppings,42,internal,ea
+CEX- NBS-EAC,,New York Blueberry Cheese Cake Slice,43,internal,ea
+CEX -NYW-EAC,30665.0,New York Baked Cheese Cake Round,42,internal,ea
+CEX- RTR-12,,BC 12'' Round Triple Layer Rose Pattern,17,internal,ea
+CEX-AMB-EAC,14001.0,American Brownie,42,internal,ea
+CEX-APP-EAC,14025.0,Apple Tart,43,internal,ea
+CEX-ATS-EAC,,Apple Tartlet,43,internal,ea
+CEX-BAR-012,10001.0,BD Bar One Square 12,42,internal,ea
+CEX-BAR-014,10002.0,BD Bar One Square 14,42,internal,ea
+CEX-BAR-016,10003.0,BD Bar One Square 16,42,internal,ea
+CEX-BAR-018,,BD Bar One Square 18,42,internal,ea
+CEX-BAR-020,,BD Bar One Square 20,43,internal,ea
+CEX-BCC-EAC,14027.0,Baked Citrus Cheese Cake,43,internal,ea
+CEX-BOL-EAC,4005.0,Bar One Log,42,internal,ea
+CEX-BOM-EAC,14065.0,Mothers Day Bar One Round with rose and leaves,42,internal,ea
+CEX-BOR-EAC,14003.0,Bar One Round,42,internal,ea
+CEX-BOS-EAC,4008.0,Bar One Slice,42,internal,ea
+CEX-BRC-EAC,14028.0,Baked Red Velvet Cheese Cake,42,internal,ea
+CEX-BVC-EAC,,Baked Vanilla Cheese Cake,42,internal,ea
+CEX-CAC-012,,BD 12 Carrot Cake square wit cream cheese,43,internal,ea
+CEX-CAC-014,,BD 14' Carrot cake square with cream cheese,43,internal,ea
+CEX-CAC-016,,BD 16' Carrot Cake Square with cream cheese,42,internal,ea
+CEX-CAC-018,,BD 18 Carrot Cake Square with cream cheese,42,internal,ea
+CEX-CAC-020,,BD 20 Carrot Cake Square with cream cheese,43,internal,ea
+CEX-CAC-EAC,,Carrot Cake Cupcake,42,internal,ea
+CEX-CBD-EAC,,Chocolate Bar One 6 Layer Drip Cake,42,internal,ea
+CEX-CBO-EAC,14006.0,Christmas Bar One Round,42,internal,ea
+CEX-CCC-EAC,14033.0,Baked Choclate Cheese Cake,42,internal,ea
+CEX-CCP-6S,140295.0,Chocolate Cake Pops (6s),42,internal,ea
+CEX-CCS-EAC,14007.0,Cheese Cake Slice,42,internal,ea
+CEX-CCT-EAC,14008.0,Cheese Cake Tart,42,internal,ea
+CEX-CEG-EAC,14035.0,Caramel Exotic Gateaux,42,internal,ea
+CEX-CFD-EAC,,Chocolate Fererro 6 Layer Drip Cake,42,internal,ea
+CEX-CFE-EAC,14010.0,Christmas Ferrero Cake,42,internal,ea
+CEX-CHC-EAC,14036.0,Chocolate Cheese Cake Cup,43,internal,ea
+CEX-CIC-EAC,14037.0,Citrus Cheese Cake Cup,42,internal,ea
+CEX-CRM-EAC,14199.0,Moist Choc Cake With Cream Cheese,42,internal,ea
+CEX-CUS-EAC,14042.0,Custard & Jelly,42,internal,ea
+CEX-DCV-EAC,14044.0,Decorative Chocolate Vanilla Gateaux,42,internal,ea
+CEX-EBC-EACH,,Bar One Cupcake Eggless,42,internal,ea
+CEX-FEM-EAC,14045.0,Mothers Day Ferrero Round with rose and leaves,42,internal,ea
+CEX-FER-012,10075.0,BD Ferrero Cake 12,42,internal,ea
+CEX-FER-014,10076.0,BD Ferrero Cake 14,42,internal,ea
+CEX-FER-016,10077.0,BD Ferrero Cake 16,42,internal,ea
+CEX-FER-018,,BD Ferrero Cake 18,42,internal,ea
+CEX-FER-020,,BD Ferrero Cake 20,43,internal,ea
+CEX-FRC-EAC,14012.0,Ferrero Rocher Cake,42,internal,ea
+CEX-FRT-EAC,14013.0,Ferrero,24,external,ea
+CEX-GCA-EAC,,Giant Cappuchino Muffin,43,internal,ea
+CEX-GCC-EAC,,Giant Corn & Chives Muffin,43,internal,ea
+CEX-GCH-EAC,,Giant Choc Muffin,42,internal,ea
+CEX-GCM-EAC,,Giant Chicken & Mushroom Muffin,43,internal,ea
+CEX-GIM-EAC,14046.0,Giant Muffins,42,internal,ea
+CEX-GLP-EAC,,Giant Lemon Poppy& Nuts,42,internal,ea
+CEX-GPC-EAC,,Giant Pecan & Carrot Muffin,43,internal,ea
+CEX-GSF-EAC,,Giant Spinach & Feta Muffin,42,internal,ea
+CEX-GVA-EAC,,Giant Vanilla Muffins,42,internal,ea
+CEX-LMS-EAC,,Lemon Meringue Tart Small,43,internal,ea
+CEX-LMT-EAC,,Lemon Meringue Tart Large,42,internal,ea
+CEX-MAC-EAC,14047.0,Macaroons (4s),42,internal,ea
+CEX-MAL-EAC,14048.0,Malva Pudding,43,internal,ea
+CEX-MAO-EAC,,Macaroons (1s),43,internal,ea
+CEX-MBE-EAC,14049.0,Milky Bar Exotic,42,internal,ea
+CEX-MBS-EAC,,Bar One Swissroll Slice,42,internal,ea
+CEX-MCL-EACH,,Moist Chocolate Cake Large With Cream Cheese,43,internal,ea
+CEX-MDF-EAC,,Freshcream 6 Layer Drip Cake with Toppings,23,internal,ea
+CEX-MIL-12,,BD Milky Bar 12'',43,internal,ea
+CEX-MIL-14,,BD Milky Bar 14'',42,internal,ea
+CEX-MIL-EAC,,Milky Bar Swissroll Slice,42,internal,ea
+CEX-MPN-EAC,,Mini Pecan Nut Tart,42,internal,ea
+CEX-MPT-EAC,,Malva Pudding Tartlet,42,internal,ea
+CEX-MRC-EAC,,Cream Cheese Rainbow Cake,42,internal,ea
+CEX-MRS-EAC,,Cream Cheese Rainbow Slice,42,internal,ea
+CEX-MVC-EAC,14092.0,Moist Vanilla Cake with Caramel Drizzle,42,internal,ea
+CEX-NBC-EAC,,New York Baked Blueberry Cheesecake Round,42,internal,ea
+CEX-NRV-EAC,14057.0,New Red Velvet Cake,43,internal,ea
+CEX-NUT-12,,12'' Nibbed Nuts Only,44,internal,ea
+CEX-NUT-14,,14'' Nibbed Nuts Only,45,internal,ea
+CEX-NUT-16,,16'' Nibbed Nuts Only,44,internal,ea
+CEX-NUT-18,,18'' Nibbed Nuts Only,43,internal,ea
+CEX-NUT-20,,20'' Nibbed Nuts Only,44,internal,ea
+CEX-NUT-22,,22'' Nibbed Nuts Only,44,internal,ea
+CEX-NYC-EAC,,New York Baked Cheese Cake Slice,42,internal,ea
+CEX-PCT-4S,,Portuguese Custard Tart (4S),43,external,ea
+CEX-PCT-EAC,,Portuguese Custard Tart,43,external,ea
+CEX-PEA-12,,12'' Peaches Slices Only,44,internal,ea
+CEX-PEA-14,,14'' Peaches Slices Only,45,internal,ea
+CEX-PEA-16,,16'' Peaches Slices Only,45,internal,ea
+CEX-PEA-18,,18'' Peaches Slices Only,44,internal,ea
+CEX-PEA-20,,20'' Peaches Slices Only,44,internal,ea
+CEX-PEA-22,,22'' Peaches Slices Only,45,internal,ea
+CEX-PET-EACH,,Pecan Nut Tartlet,42,internal,ea
+CEX-PMC-EACH,14014.0,Peppermint Crisp Cake,43,internal,ea
+CEX-PNT-EAC,14016.0,Pecan Nut Tart,42,internal,ea
+CEX-RCC-EAC,14058.0,CARROT CAKE ROUND,42,internal,ea
+CEX-REC-EAC,14038.0,Redvelvet Cheese Cake Cup,42,internal,ea
+CEX-RED-016,30778.0,BD 16 Red Velvet Square,42,internal,ea
+CEX-RMC-EAC,14059.0,OREO CAKE,42,internal,ea
+CEX-RSW-EAC,14060.0,Red velvet Swissroll,42,internal,ea
+CEX-RTR-14,,BC 14'' Round Triple Layer Rose Pattern,17,internal,ea
+CEX-RTR-16,,BC 16'' Round Triple Layer Rose Pattern,17,internal,ea
+CEX-RTR-18,,BC 18'' Round Triple Layer Rose Pattern,17,internal,ea
+CEX-RTR-20,,BC 20'' Round Triple Layer Rose Pattern,17,internal,ea
+CEX-RVB-018,,BD 18 Red Velvet Square,42,internal,ea
+CEX-RVB-020,,BD 20 Red Velvet Square,42,internal,ea
+CEX-RVC-EAC,14017.0,Red Velvet Cupcakes,42,internal,ea
+CEX-RVG-EAC,30776.0,Red Velvet Gateaux,42,internal,ea
+CEX-RVL-EAC,14019.0,Red Velvet Log,42,internal,ea
+CEX-RVS-EAC,14020.0,Red Velvet Slice,42,internal,ea
+CEX-TID-EAC,,Tirumisu Dessert,42,internal,ea
+CEX-TIR-EAC,14021.0,Cake Tiramisu,42,internal,ea
+CEX-TIS-EAC,14022.0,tirumisu slice,42,internal,ea
+CEX-TRE-EAC,,Truffles Eggless 6s,42,internal,ea
+CEX-TRF-EAC,14062.0,Truffles (1)s,42,internal,ea
+CEX-TRO-EAC,14023.0,Tirumisu round,42,internal,ea
+CEX-TRU-EAC,14061.0,Truffles (6s),42,internal,ea
+CEX-VAC-EAC,14039.0,Vanilla Cheese Cake Cup,42,internal,ea
+CEX-VGB-EACH,,Vegan Chocolate Brownie,42,internal,ea
+CEZ-MIL-16,,BD Milky Bar 16'',42,internal,ea
+CFA-FAC-014,,BD 14'' Freshcream Alphabet Cake,17,internal,ea
+CFA-FAE-016,,BD 16'' Eggless Freshcream Alphabet Cake,17,internal,ea
+CFC-BET-EAC,12022.0,Belgica Tart,46,internal,ea
+CFC-BTL-EAC,12023.0,Belgica Tartlet,46,internal,ea
+CFC-CBS-EAC,12009.0,FC Black Forest Slice,46,internal,ea
+CFC-CCC-EAC,30866.0,Carrot Cake With Cream Cheese,46,internal,ea
+CFC-CCD-EAC,12035.0,Custard Doughnut,47,internal,ea
+CFC-CCT-15CM,,Gluten Free Carrot Cake Tub 15cm,43,internal,ea
+CFC-CFD-EAC,15049.0,FC Choc Drip Gateaux,46,internal,ea
+CFC-CFE-EACH,,Christmas Freshcream Eggless Gateaux,46,internal,ea
+CFC-CUD-EAC,12024.0,Custard Danish,46,internal,ea
+CFC-CUS-EAC,12025.0,Custard Slice,46,internal,ea
+CFC-EF1-1M,,BD 1M X500 FC Eggless,48,internal,ea
+CFC-EMT-EACH,,Eggless Milk Tartlet,46,internal,ea
+CFC-FBF-EAC,12004.0,FC Black Forest Gateaux,46,internal,ea
+CFC-FBG-EAC,12002.0,FC Birthday Gateaux,46,internal,ea
+CFC-FCD-EAC,12015.0,Fresh Cream Doughnut,46,internal,ea
+CFC-FCE-EAC,12027.0,FC Eclair Chocolate,47,internal,ea
+CFC-FCG-EAC,12006.0,FC Chocolate Gateaux,46,internal,ea
+CFC-FCJ-EAC,12037.0,Christmas Freshcream Choc Gateaux,46,internal,ea
+CFC-FCL-EAC,12010.0,FC Fresh Cream Slice,46,internal,ea
+CFC-FCM-EAC,12012.0,FC Lamington Chocolate,46,internal,ea
+CFC-FCP-EAC,12030.0,FC Caramel Sponge,42,internal,ea
+CFC-FCR-EAC,12026.0,FC Croissant 80g,46,internal,ea
+CFC-FCS-EAC,12014.0,FC Chocolate Swiss Roll,46,internal,ea
+CFC-FDD-EAC,8102.0,Cake Freshcream In Dome Eggless,46,internal,ea
+CFC-FDI-EAC,8101.0,Cake Buttercream In Dome Eggless,18,internal,ea
+CFC-FEB-EAC,30519.0,FC Eggless Birthday Gateaux,46,internal,ea
+CFC-FEG-EAC,12007.0,FC Eggless Vanilla Gateaux,46,internal,ea
+CFC-FES-EAC,30621.0,FC Eggless Slice,46,internal,ea
+CFC-FLM-EAC,,Choc Mini Lamington,18,internal,ea
+CFC-FMS-EAC,12011.0,FC Milky Bar Slice,42,internal,ea
+CFC-FOS-EAC,,Freshcream Oreo Slice,46,internal,ea
+CFC-FRL-EAC,12013.0,FC Lamington Raspberry,46,internal,ea
+CFC-FRM-EAC,,Mini Jam TurnOvers,18,internal,ea
+CFC-FRU-010,10079.0,BD Fruit Cake 10,49,internal,ea
+CFC-FRU-012,10080.0,BDFruit Cake 12,49,internal,ea
+CFC-FRU-014,10081.0,BD Fruit Cake 14,49,internal,ea
+CFC-FRU-016,10082.0,BD Fruit Cake 16,49,internal,ea
+CFC-FRU-EAU,,Fruit Cake Pieces Unwrapped,49,internal,ea
+CFC-FRU-EAW,,Fruit Cake Pieces Wrapped,49,internal,ea
+CFC-FSM-EAC,,Mini Freshcream Swissroll,47,internal,ea
+CFC-FSS-EAC,12031.0,FC Strawberry Sponge,46,internal,ea
+CFC-MEG-EAC,12034.0,Mothers Day Eggless Freshcream Gateaux,46,internal,ea
+CFC-MFD-EAC,,Mini FC D/N,46,internal,ea
+CFC-MFE-EAC,,Mini Freshcream Eclairs,47,internal,ea
+CFC-MFG-EAC,12033.0,Mothers Day FC Choc Gateaux with rose and leaves,47,internal,ea
+CFC-MFL-EAC,,Mini CreamPuffs,18,internal,ea
+CFC-MMT-EAC,,Mini Milk Tart,46,internal,ea
+CFC-MTA-EAC,12028.0,Milk Tart Large,46,internal,ea
+CFC-MTL-EAC,12029.0,Milk Tartlet,47,internal,ea
+CFC-NOB-EAC,12032.0,No Bake Cake,46,internal,ea
+CFC-SEF-EAC,30670.0,Eggless Small Freshcream Gateaux,46,internal,ea
+CFC-VVB-EAC,,Vegan Vanilla 4 Layer -Berry Garnish,43,internal,ea
+CFR-CFR-012,30340.0,BD Round Fruitcake 12,50,internal,ea
+CFR-CFR-012,30340.0,BD Round Fruitcake 12,51,internal,ea
+CFR-CFR-014,30363.0,BD Round Fruitcake 14,52,internal,ea
+CFR-CFR-016,30364.0,BD Round Fruitcake 16,49,internal,ea
+CFR-CFR-016,30364.0,BD Round Fruitcake 16,50,internal,ea
+CFW-CAF-002,10100.0,BD WC Fruit 2 Layer,41,internal,ea
+CFW-CAF-003,10101.0,BD WC Fruit 3 Layer,41,internal,ea
+CFW-CAF-003,10101.0,BD WC Fruit 3 Layer,41,internal,ea
+CFW-CKE-003,10099.0,BD Wedding Cake FC 10 12 14 Loose,41,internal,ea
+CLE-BGS-EAC,,Betasan Gel Sanitizer Refills,53,external,ea
+CLE-MPP-EAC,,Monthly Pest Control,54,external,ea
+CLE-TPR-EAC,,Tad Paper Refil,53,external,ea
+CLE-VIB-EAC,,Viper Boards,53,external,ea
+CNO-BC1-1X5,10083.0,BD Buttercream 1mx500,21,internal,ea
+CNO-BC1-1X5,10083.0,BD Buttercream 1mx500,55,internal,ea
+CNO-BCB-016,10060.0,BD Buttercream 16 Bible,17,internal,ea
+CNO-BCB-018,10065.0,BD Buttercream 18 Bible,17,internal,ea
+CNO-BCB-020,10068.0,BD Buttercream 20 Bible,17,internal,ea
+CNO-BCE-1X5,,BD Buttercream 1mx500 Eggless,56,internal,ea
+CNO-BCH-016,10063.0,BD Buttercream 16 Heart,17,internal,ea
+CNO-BCH-018,10067.0,BD Buttercream 18 Heart,17,internal,ea
+CNO-BCH-020,10036.0,BD Buttercream 20 Heart,17,internal,ea
+CNO-BCS-014,10059.0,BD Buttercream 14 Soccer,17,internal,ea
+CNO-BCS-014,10059.0,BD Buttercream 14 Soccer,17,internal,ea
+CNO-BCS-016,10064.0,BD Buttercream 16 Soccer,17,internal,ea
+CNO-BNY-018,10085.0,BD Mould On SL 18,17,internal,ea
+CNO-BNY-018,10085.0,BD Mould On SL 18,17,internal,ea
+CNO-BUT-014,10057.0,BD Buttercream 14 Butterfly,17,internal,ea
+CNO-BUT-016,10062.0,BD Buttercream 16 Butterfly,17,internal,ea
+CNO-CAS-018,10087.0,BD Castle,17,internal,ea
+CNO-DHB-020,10167.0,BD Buttercream 20 Double Heart With Base,17,internal,ea
+CNO-DOLL-014,10058.0,BD Buttercream 14 Doll,17,internal,ea
+CNO-DOLL-016,10061.0,BD Buttercream 16 Doll,17,internal,ea
+CNO-DOLL-016,10061.0,BD Buttercream 16 Doll,17,internal,ea
+CNO-FC1-1X5,10084.0,BD Freshcream 1mx500,48,internal,ea
+CNO-FCB-016,30469.0,BD 16 Freshcream BIBLE,17,internal,ea
+CNO-FCB-016,30469.0,BD 16 Freshcream BIBLE,17,internal,ea
+CNO-FCB-018,10071.0,BD Freshcream 18 Bible,17,internal,ea
+CNO-FCB-018,10071.0,BD Freshcream 18 Bible,17,internal,ea
+CNO-FCB-020,10073.0,BD Freshcream 20 Bible,17,internal,ea
+CNO-FCE-1X5,,BD Freshcream 1m x 500 Eggless,57,internal,ea
+CNO-FCH-016,10070.0,BD Freshcream 16 Heart,17,internal,ea
+CNO-FCH-016,10070.0,BD Freshcream 16 Heart,17,internal,ea
+CNO-FCH-018,10072.0,BD Freshcream 18 Heart,17,internal,ea
+CNO-FCH-020,10027.0,BD Freshcream 20 Heart,17,internal,ea
+CNO-FCS-014,10069.0,BD Freshcream 14 Soccer,17,internal,ea
+CNO-FCS-016,10074.0,BD Freshcream 16 Soccer,17,internal,ea
+CNO-FSF-014,,BD FC With Strawberries & Fence,17,internal,ea
+CNO-SPI-018,10086.0,BD Spiderman On SL 18,17,internal,ea
+DRI- CZE-440,,Coke Zero 440ml can,58,external,ea
+DRI-AMA-EAC,,Clover Amasi 2kg,59,external,kg
+DRI-AME-250ML,,Americano Short,58,internal,ea
+DRI-AME-350ML,,Americano Tall,58,internal,ea
+DRI-APT-275,6001048003323.0,Appletiser 275ml NRB,58,external,ea
+DRI-APT-330,6001048004481.0,Appletiser 330ml CAN,58,external,ea
+DRI-BAA-500,90492853.0,Bonaqua 500ml,58,external,ea
+DRI-BAN-500,5449000117816.0,Bonaqua 500ml Naartjie,58,external,ea
+DRI-BLI-EAC,,Clover Bliss Double cream yogurt,59,external,ea
+DRI-BON-500ML,,Water Bonaqua Still 500ml,58,external,ea
+DRI-CAF-EAC,,Caramel Freezo,58,internal,ea
+DRI-CBB-1500,,Cappy Breakfast Blend 1.5litre,58,external,ea
+DRI-CBB-EAC,5449000256010.0,Cappy Breakfast Blend 330ml,58,external,ea
+DRI-CFR=EAC,,Coffee Freezo,58,internal,ea
+DRI-CHA-350ML,,Chai Latte Short,58,internal,ea
+DRI-CHF-250ML,,Chocolate Freezo Short,58,internal,ea
+DRI-CHF-350ML,,Chocolate Freezo Tall,58,internal,ea
+DRI-CHF-EAC,,Chocolate Freezo,59,external,kg
+DRI-CHL-EACH,,Chai Latte Tall,58,internal,ea
+DRI-COC-125,5449000009746.0,Coca-Cola 1250ml,58,external,ea
+DRI-COC-1LT,5449000054227.0,Coca-Cola 1L,58,external,ea
+DRI-COC-2LT,5449000009067.0,Coca-Cola 2l,58,external,ea
+DRI-COC-300,2003.0,Coca-Cola 300ml Bottle,58,external,ea
+DRI-COC-330,5449000256805.0,Coca-Cola 300ml Can,58,external,ea
+DRI-COC-440,,Coca- Cola 500ml Can,58,external,ea
+DRI-COC-500,5449000664686.0,Coca-Cola 440ml Buddy,58,external,ea
+DRI-COL-1.5LT,5449000133335.0,Coca-Cola Zero 1.5ltr,58,external,ea
+DRI-COL-125,5449000140913.0,Coca-Cola Light 1250ml,58,external,ea
+DRI-COL-225,,Coke Light 2250ml,58,external,ea
+DRI-COL-2LT,5449000050229.0,Coca-Cola Light 2l,58,external,ea
+DRI-COL-2LT,5449000050229.0,Coca-Cola Light 2l,58,external,ea
+DRI-COL-300C,549000256805.0,Coke 300ml Can,58,external,ea
+DRI-COL-330,5449000050205.0,Coca-Cola Light 330ml Can,58,external,ea
+DRI-COL-500,5449000664709.0,Coca-Cola Light 500ml,58,external,ea
+DRI-COR-250ML,,Cortado Short,58,internal,ea
+DRI-COZ-2250,,Coke Zero 2250ml,58,external,ea
+DRI-COZ-2LT,5449000131843.0,Coca-Cola Zero 2l,58,external,ea
+DRI-COZ-2LT,5449000131843.0,Coca-Cola Zero 2l,58,external,ea
+DRI-COZ-330,5449000256898.0,Coca-Cola Zero 300ml Can,58,external,ea
+DRI-COZ-500,5449000131836.0,Coca-Cola Zero 500ml,59,external,ea
+DRI-CPP-EAC,5449000255792.0,Cappy Passion Peach,58,external,ea
+DRI-CRE-400ML,5449000265364.0,Cream Soda 400ml,58,external,ea
+DRI-CTP-330,5449000255693.0,Cappy Trop Punch 330ml,58,external,ea
+DRI-ESS-250ML,,Espresso Short,58,internal,ea
+DRI-ESS-350ML,,Espresso Tall,58,internal,ea
+DRI-FAG-1LT,54490000252346.0,Fanta Grape,58,external,ea
+DRI-FAG-2LT,5449000010070.0,Fanta Grape 2l,58,external,ea
+DRI-FAG-300,2004.0,Fanta Grape 300ml Bottle,58,external,ea
+DRI-FAG-330,5449000257093.0,Fanta Grape 300ml CAN,58,external,ea
+DRI-FAG-500,5449000664723.0,Fanta Grape 440ml Buddy,58,external,ea
+DRI-FAN-300C,,Fanta Orange 300ml Can,58,external,ea
+DRI-FAN-440,5449000257130.0,Fanta Orange 400ml can,58,external,ea
+DRI-FAO-2LT,5449000010049.0,Fanta Orange 2l,58,external,ea
+DRI-FAO-300,2008.0,Fanta Orange 300ml Bottle,58,external,ea
+DRI-FAO-330,5449000257000.0,Fanta Orange 300ml Can,58,external,ea
+DRI-FAO-500,5449000664754.0,Fanta Orange 440ml Buddy,58,external,ea
+DRI-FAP-2LT,5449000003768.0,Fanta Pineapple 2l,58,external,ea
+DRI-FAP-2LT,5449000003768.0,Fanta Pineapple 2l,58,external,ea
+DRI-FAP-300,2007.0,Fanta Pine 300ml Bottle,58,external,ea
+DRI-FAP-330,5449000003201.0,Fanta Pineapple 330ml Can,58,external,ea
+DRI-FAP-500,5449000664747.0,Fanta Pineapple 440ml Buddy,58,external,ea
+DRI-FAS-125,,Fanta 1 litre,58,external,ea
+DRI-FLW-250ML,,Flat White Short,58,internal,ea
+DRI-FLW-350ML,,Flat White Tall,58,internal,ea
+DRI-FOC-500ML,5449000050809.0,Fanta Orange Can 500ml,58,external,ea
+DRI-FRT-250ML,,Five Roses Tea Short,58,internal,ea
+DRI-FRT-350ML,,Five Roses Tea Tall,58,internal,ea
+DRI-FWT-400ML,5449000316332.0,Fanta What The Flavour 400ml Buddy,58,external,ea
+DRI-GRA-275,6001048003385.0,Grapetiser 275ml NRB,58,external,ea
+DRI-GRA-330,6001048004511.0,Grapetiser 330ml Can,58,external,ea
+DRI-GRW-330,6001048003897.0,Grapetiser Wht 330ml Can,58,external,ea
+DRI-HAF-EAC,,Hazelnut Freezo,58,internal,ea
+DRI-HOC-250ML,,Hot Chocolate Short,58,internal,ea
+DRI-HOC-350ML,,Hot Chocolate Tall,58,internal,ea
+DRI-HWT-EAC,,Tall White Hot Chocolate,58,internal,ea
+DRI-IAM-EAC,,Iced Americano,58,internal,ea
+DRI-IBR-125,,Iron Brew1.25ml,58,external,ea
+DRI-ICC-250ML,,Iced Cappuccino Short,58,internal,ea
+DRI-ICC-350ML,,Iced Cappuccino Tall,58,internal,ea
+DRI-ICF-250ML,,Iced Coffee Freezo Short,58,internal,ea
+DRI-ICF-350ML,,Iced Coffee Freezo Tall,58,internal,ea
+DRI-ICF-KGR,,Instabean Coffee Freezo,58,internal,ea
+DRI-ICL-250ML,,Iced Chai Latte Short,58,internal,ea
+DRI-ICL-350ML,,Iced Chai Latte Tall,58,internal,ea
+DRI-ILA-EAC,,Iced Latte,58,internal,ea
+DRI-IMO-EAC,,Iced Mocha,60,internal,ea
+DRI-IRO-2LT,6001134297308.0,Iron Brew 2l,58,external,ea
+DRI-IRO-2LT,6001134297308.0,Iron Brew 2l,58,external,ea
+DRI-IRO-300,2009.0,Iron Brew 300ml,58,external,ea
+DRI-IRO-330,5449000106261.0,Iron Brew 330ml Can,58,external,ea
+DRI-IWM-EAC,,Iced White Mocha,58,internal,ea
+DRI-KAPP-500ML,6001299049668.0,Clover Krush 100% Apple,61,external,ea
+DRI-KFF-500ML,6001299045813.0,Clover Krush 6 Fruit £ Fibre,61,external,ea
+DRI-KOR-500ML,6001299010101.0,Clover Krush 100% Orange,61,external,ea
+DRI-LAT-350ML,,Latte Tall,58,internal,ea
+DRI-LATT-250ML,,Latte Short,58,internal,ea
+DRI-MAC-250ML,,Macchiato Short,58,internal,ea
+DRI-MAC-350ML,,Macchiato Tall,58,internal,ea
+DRI-MBO-EAC,,OD Bombay Crush,58,internal,ea
+DRI-MBU-EAC,,OD Bubblegum Milkshake,58,internal,ea
+DRI-MCH-EAC,,OD Chocolate Milkshake,58,internal,ea
+DRI-MCO-EAC,,OD Coffee Milkshake,58,internal,ea
+DRI-MEN-500,5060166698874.0,Monster Engery 500ml,58,external,ea
+DRI-MLI-EAC,,OD Lime Milkshake,58,internal,ea
+DRI-MML-500,5060517888299.0,Monster Mucho Logo 500ml,58,external,ea
+DRI-MOC-250ML,,Mocha Short,58,internal,ea
+DRI-MOC-350ML,,Mocha Tall,58,internal,ea
+DRI-MOF-250ML,,Mocha Freezo Short,58,internal,ea
+DRI-MOF-350ML,,Mocha Freezo Tall,58,internal,ea
+DRI-MON-330,5060517888664.0,Monster Original,58,external,ea
+DRI-MON-EAC,5060337509411.0,Monster,58,external,ea
+DRI-MSC-EAC,,OD Salted Caramel Milkshake,58,internal,ea
+DRI-MSC-KGR,,Malora Spicey Chai Latte,58,internal,ea
+DRI-MST-EAC,,OD Strawberry Milkshake,58,internal,ea
+DRI-MVA-EAC,,OD Vanilla Milkshake,58,internal,ea
+DRI-OBS-EAC,,OD Berry Smoothie,58,internal,ea
+DRI-OMS-EAC,,OD Mango Smoothie,58,internal,ea
+DRI-OOM-EAC,,OD Oreo Milkshake,58,internal,ea
+DRI-OSP-EAC,,OD Peanut Butter Smoothie,58,internal,ea
+DRI-PBB-EAC,54490482.0,Powerade Blueberry 500ml,58,external,ea
+DRI-PGE-500,5060517888848.0,Predator Gold Energy Drink 500ml,58,external,ea
+DRI-PJI-EAC,90492488.0,Powerade Jagged Ice,58,external,ea
+DRI-PNA-500ML,90492501.0,Powerade Naartjie,58,external,ea
+DRI-PPL-EAC,,Powerplay,58,external,ea
+DRI-REB-EAC,9002490100070.0,Red Bull 250ml,58,external,ea
+DRI-REC-350ML,,Red Cappuccino,58,external,ea
+DRI-ROB-250ML,,Rooibos Tea Short,58,internal,ea
+DRI-RSF-EAC,9002490200220.0,Red Bull Sugar Free,58,external,ea
+DRI-SCS-125,2017.0,Spar C/Soda 1250ml,58,external,ea
+DRI-SCS-2LT,6001134087305.0,Spar C\Soda 2lt,58,external,ea
+DRI-SCS-300,5449000257536.0,Spar C/Soda 300ml,58,external,ea
+DRI-SCS-330,5449000106322.0,Spar C/Soda 330ml Can,58,external,ea
+DRI-SCS-500,5449000664846.0,Spar Cream Soda 440ml Buddy,58,external,ea
+DRI-SIB-125,2011.0,Spar Iron Brew 1250ml,58,external,ea
+DRI-SPN-125,2012.0,Spar Pine Nut 1250ml,58,external,ea
+DRI-SPN-2LT,5449000117977.0,Spar Sparbry Pine Nut 2ltr,58,external,ea
+DRI-SPR-125,5449000234612.0,Sprite 1 litre,58,external,ea
+DRI-SPR-2LT,5449000234636.0,Sprite 2l,58,external,ea
+DRI-SPR-300,5449000257222.0,Sprite 300ml Can,58,external,ea
+DRI-SPR-330,5449000014535.0,Sprite 330ml Can,58,external,ea
+DRI-SPR-440,5449000257239.0,Sprite 400ml can,58,external,ea
+DRI-SPR-500,5449000234643.0,Sprite 440ml Buddy,58,external,ea
+DRI-SPZ-2LT,5449000104885.0,Sprite Zero 2l,58,external,ea
+DRI-SPZ-330,5449000106704.0,Sprite Zero 330ml Can,62,external,ea
+DRI-SPZ-500,5449000109613.0,Sprite Zero 500ml,58,external,ea
+DRI-SRB-500,5449000664853.0,Sparletta Raspberry 440ml Buddy,58,external,ea
+DRI-SSB-125,6001134005507.0,Sparletta 1250ml,58,external,ea
+DRI-SSB-2LT,6001134687307.0,Spar Sparberry 2LTR,58,external,ea
+DRI-SSB-330,5449000257628.0,Spar Sparbry 300ml Can,58,external,ea
+DRI-SST-300,5449000257420.0,Spar Stoney 300ml,58,external,ea
+DRI-SST-330,5449000106421.0,Spar Stoney 330ml Can,58,external,ea
+DRI-STO-125,5449000064950.0,Stoney 1 litre,58,external,ea
+DRI-STO-2LT,6001134707302.0,Stoney Ginger Beer 2lt,58,external,ea
+DRI-STO-440,5449000257413.0,Stoney 400ml can,58,external,ea
+DRI-STO-500,5449000664808.0,Stoney -gingerbeer 440ml Buddy,58,external,ea
+DRI-STW-500,6009633490022.0,Water 500ml Still,58,external,ea
+DRI-STW-EAC,30607.0,Still Water,58,external,ea
+DRI-SWM-250ML,,Short White Mocha,58,internal,ea
+DRI-TGR-1.5L,5449000180889.0,Twist Grandilla 1.5ltr,58,external,ea
+DRI-TWG-125,6001133001104.0,Twist Gran 1250ml,58,external,ea
+DRI-TWG-2LT,5449000098580.0,Twist Gran 2l,58,external,ea
+DRI-TWG-2LT,5449000098580.0,Twist Gran 2l,58,external,ea
+DRI-TWG-300,2016.0,Twist Gran 300ml,58,external,ea
+DRI-TWG-330,5449000257567.0,Twist Gran 300ml Can,58,external,ea
+DRI-TWG-500,5449000664839.0,Twist Gran 440ml Buddy,58,external,ea
+DRI-TWL-1.5L,,Twist Lemon 1.5 Litre,58,external,ea
+DRI-TWL-125,6001134395509.0,Twist Lemon 1250ml,58,external,ea
+DRI-TWL-2LT,5449000060082.0,Twist Lemon 2l,58,external,ea
+DRI-TWL-330,5449000257505.0,Twist Lemon 300ml Can,58,external,ea
+DRI-TWL-500,40822747.0,Twist Lemon 500ml,58,external,ea
+DRI-TWM-350ML,,Tall White Mocha,58,internal,ea
+DRI-VAF-EAC,,Vanilla Freezo,58,internal,ea
+DRI-VAL-150,5449000107787.0,Water valpre still 1500ml,58,external,ea
+DRI-VAL-500,5449000107664.0,Water Valpre Still 500ml,58,external,ea
+DRI-WCF-EAC,,White Chocolate Freezo,58,internal,ea
+DRI-WHS-EAC,,Short White Hot Chocolate,58,internal,ea
+DRI-WTF-2LTR,5449000308146.0,Fanta What The Flavour 2litre,58,external,ea
+ICE-SMO-EAC,6001087357821.0,GLUTEN FREE LEMON FRIDGE CHEESECAKE TUB,43,internal,ea
+ICE-SRP-EAC,6001087357814.0,GLUTEN FREE CHOCOLATE GANACHE TUB,42,internal,ea
+JUI- FNB-500ML,6001299024634.0,Juice Krush Fruit Nectar 500ml,61,external,ea
+JUI-DBY-EAC,,Dairy Bel Double Cream Yogurt 1kg,59,external,kg
+JUI-EBL-500,6001324254371.0,Energade 500ml Blueberry,58,external,ea
+JUI-EGR-500,6001324238098.0,Energade 500ml Grape,58,external,ea
+JUI-ELL-500,6001324217338.0,Energade 500ml Lemon & Lime,58,external,ea
+JUI-EMB-500,6001324299556.0,Energade 500ml Mixed Berry,58,external,ea
+JUI-ENA-500,6001324217253.0,Energade 500ml Naartjie,58,external,ea
+JUI-ENO-500,6001324217178.0,Energade 500ml Orange,58,external,ea
+JUI-ETR-500,6001324238173.0,Energade 500ml Tropical,58,external,ea
+JUI-KRM-500ML,6001299010118.0,Clover Krush 100% Mango,61,external,ea
+JUI-MAA-EAC,6009616048974.0,Maas 500g Low Fat,59,external,ea
+JUI-ORA-2LT,6001299043079.0,Juice 2l Orange Nectar,61,external,ea
+JUI-ORA-500,6001299007521.0,Juice 500ml Orange Nectar,61,external,ea
+JUI-PIN-1LT,6001299015793.0,Juice Tropika 1Litre,61,external,ea
+JUI-TRO-1.5L,6001299015724.0,Tropika 1.5lt pineapple,61,external,ea
+JUI-TRO-1.5Lt,6001299015687.0,Tropika 1.5lt Orange,61,external,ea
+JUI-TRO-1LT,6001299008054.0,Tropika 1l Orange,61,external,ea
+JUI-TRO-500,6001299007965.0,Tropika 500ml Orange,61,external,ea
+JUI-TRP-1LT,6001299008115.0,Tropika 1l Pineapple,61,external,ea
+JUI-TRP-250,6001299008092.0,Tropika 250ml Pineapple,61,external,ea
+JUI-TRP-500,6001299007972.0,Tropika 500ml Pineapple,61,external,ea
+MIL-ALM-EAC,,Almond Milk,59,external,lt
+MIL-CON-EAC,,Clover Condensed Milk 385g,59,external,kg
+MIL-MFC-1LT,6001299025402.0,Milk 1l Full Cream,59,external,ea
+MIL-MFC-250,6001299025419.0,Milk 250ml Full Cream,63,external,ea
+MIL-MFC-2LT,,Milk 2ltr Full Cream,59,external,lt
+MIL-MFC-500,6001299025440.0,Milk 500ml Full Cream,45,external,ea
+MIL-OAT-EAC,,Oat Milk,59,external,lt
+MIL-SMB-EAC,6001299044540.0,Super M 300ml Banana,58,external,ea
+MIL-SMC-EAC,6001299044601.0,Super M 300ml Chocolate,58,external,ea
+MIL-SMO-EAC,6001299044663.0,Super M 300ml Cream Soda,58,external,ea
+MIL-SMS-EAC,6001299044519.0,Super M 300ml Strawberry,58,external,ea
+MIL-SOY-EAC,,Soy Milk,59,external,ea
+MIS - CCB-12,,Colour Cream - 12'',45,internal,ea
+MIS - SCB-KGR,,Solid Colour Buttercream,45,internal,ea
+MIS- CCB-14,,Colour Cream - 14'',44,internal,ea
+MIS- FIT-EAC,,Happy Anniversary Cake Topper,45,external,ea
+MIS- FON-EAC,,Fondant Writing,44,internal,ea
+MIS-ACC-EAC,,Plastic Icing Baby Accessory Set,45,external,ea
+MIS-AES-EACH,,Additional Espresso Shot,44,internal,ea
+MIS-API-EAC,30421.0,Picture,59,external,ea
+MIS-BAB-EAC,,Plastic icing Baby with blanket,45,internal,ea
+MIS-BGM-EAC,30540.0,Bride & Groom Meduim,45,external,ea
+MIS-BGS-EAC,30541.0,Bride & Groom Small,44,external,ea
+MIS-BLI-EAC,,Braai Lighter,53,external,ea
+MIS-BMV-EAC,8100.0,Mvutu Bar One,44,internal,ea
+MIS-BOO-EAC,,Plastic icing Booties,44,internal,ea
+MIS-BRP-EAC,,Big Roses With Polysterene,45,internal,ea
+MIS-CAN-EAC,30516.0,Cancellation,45,internal,ea
+MIS-CAT-EAC,,Cake Toppers Acyrlic,44,external,ea
+MIS-CBC-BDC,,Chocolate Buttercream -Birthday Cake,45,internal,ea
+MIS-CCB-16,,Colour Cream - 16'',44,internal,ea
+MIS-CCB-18,,Colour Cream - 18'',44,internal,ea
+MIS-CCB-20,,Colour Cream - 20'',44,internal,ea
+MIS-CCB-22,,Colour Cream - 22'',45,internal,ea
+MIS-CGR-EAC,,Custom Google Review Sign,53,external,ea
+MIS-CHA-EAC,,Service Charge for Changes,45,internal,ea
+MIS-CHT-EAC,,Figure Cake Topper,44,external,ea
+MIS-CHW-EAC,30523.0,Choc Writing,45,internal,ea
+MIS-CRS-EAC,,C20 Red Stamp,53,external,ea
+MIS-CSA-(6S),,Candle Assorted Sparkle (6s),16,external,ea
+MIS-CSG-(6s),,Candle Sparkle Gold (6s),16,external,ea
+MIS-CUP-EAC,8016.0,Foam Cups 250ml,45,external,ea
+MIS-CWR-EAC,,Customised Writing,45,internal,ea
+MIS-DAO-EAC,,Day Old Cakes,44,internal,ea
+MIS-DBC-012,23002.0,Dbl Choc 12,45,internal,ea
+MIS-DBC-014,24002.0,Dbl Choc 14,45,internal,ea
+MIS-DBC-016,25002.0,Dbl Choc 16,45,internal,ea
+MIS-DBC-018,26002.0,Dbl Choc 18,45,internal,ea
+MIS-DBC-020,27002.0,Dbl Choc 20,45,internal,ea
+MIS-DBC-022,28002.0,Dbl Choc 22,45,internal,ea
+MIS-DBV-012,23001.0,Dbl Vanilla 12,45,internal,ea
+MIS-DBV-014,24001.0,Dbl Vanilla 14,45,internal,ea
+MIS-DBV-016,25001.0,Dbl Vanilla 16,45,internal,ea
+MIS-DBV-018,26001.0,Dbl Vanilla 18,45,internal,ea
+MIS-DBV-020,27001.0,Dbl Vanilla 20,44,internal,ea
+MIS-DBV-022,28001.0,Dbl Vanilla 22,45,internal,ea
+MIS-DEL-EAC,,Delivery,45,internal,ea
+MIS-DMV-EACH,8099.0,Mvutu Donut 4s,45,internal,ea
+MIS-DOR-EAC,30856.0,Oven Delights Flags,53,internal,ea
+MIS-DOS-EAC,8202.0,Day Old Scones,45,internal,ea
+MIS-EPO-EAC,30422.0,Edible Picture Only,45,external,ea
+MIS-FAK-EAC,,First Aid Kit,53,external,ea
+MIS-FCB-EAC,,Balloons -Foil Character,44,external,ea
+MIS-FFL-EAC,,Fresh Flowers Each,44,external,ea
+MIS-FGB-EAC,,Balloons-Foil General,45,external,ea
+MIS-FMG-EAC,,Balloons- Foil Number Gold,44,external,ea
+MIS-FNG-EAC,,Balloons- Foil Number Rose Gold,44,external,ea
+MIS-FNR-EAC,,Balloons-Foil Number Rainbow Splash,44,external,ea
+MIS-FNS-EAC,,Balloons- Foil Number Silver,45,external,ea
+MIS-FNW-EAC,,Balloons-Foil Number White Gold,9,external,ea
+MIS-FWO-EACH,,Fondant Wording,44,external,ea
+MIS-GBE-EAC,8017.0,Gold Beads,45,external,ea
+MIS-GWR-EAC,30521.0,Gold Writing,45,external,ea
+MIS-HBT-EAC,,Happy Birthday Cake Topper,45,external,ea
+MIS-HEL-5LTR,,Heluim Small Cylinder,53,external,ea
+MIS-HEL-LAR,,Heluim Large,45,external,ea
+MIS-HEL-SML,,Heluim Small,44,external,ea
+MIS-LEA-EAC,8018.0,Leaves,45,external,ea
+MIS-MAT-EAC,60069795.0,Matches,53,external,ea
+MIS-MGR-EAC,8035.0,Rib Metallic Gold,45,external,ea
+MIS-MSR-EAC,8036.0,Rib Metallic Silver,45,external,ea
+MIS-MVU-EAC,8032.0,Mvutu,45,external,ea
+MIS-NOV-EAC,30524.0,Novelities Sets,45,external,ea
+MIS-OOH-EACH,,Overheads,53,external,ea
+MIS-PAN-EAC,60094391.0,Panado,53,external,ea
+MIS-PLA-EAC,8019.0,Plasters,53,external,ea
+MIS-PLD-EAC,,Platter Dip 70ml,44,external,ea
+MIS-RAS-EACH,,Rakhi String,44,external,ea
+MIS-RIP-EAC,10299.0,Ribbon Picture,59,external,ea
+MIS-RMV-EAC,8033.0,Mvutu Rainbow,45,external,ea
+MIS-ROS-EAC,8020.0,Roses,45,external,ea
+MIS-RSS-EAC,,Roses Small New Assorted Colours,44,external,ea
+MIS-SBE-EAC,8030.0,Silver Beads,45,external,ea
+MIS-SCB-EAC,,Balloons- Stick Character,44,external,ea
+MIS-SDC-EAC,30515.0,Same Day Charge,45,external,ea
+MIS-SFB-EAC,,Sign Happy Birthday Gold Foil,45,external,ea
+MIS-SGA-EAC,8026.0,Sign H.A. Gold,45,external,ea
+MIS-SGB-EAC,8028.0,Sign H.B. Gold,45,external,ea
+MIS-STG-EAC,,Balloons-Stick General,45,external,ea
+MIS-STR-EAC,,Strawberry,45,external,ea
+MIS-SWR-EAC,30522.0,Silver Writing,45,external,ea
+MIS-TOO-EAC,,Toothpicks 1000s,45,external,ea
+MIS-WHC-EAC,,Additional Whipped Cream,45,external,ea
+MIS-XSR-EAC,,Xmas Sticker Scroll English,45,external,ea
+M-KOK-KGR,30106.0,Kokomix Pettina,59,external,kg
+PAC- BTL-EACH,,Bag Brown Thrifty Paper Bag Large,9,external,ea
+PAC- CUC-350ML,,Cup Clear 350ML,9,external,ea
+PAC -F3D-EAC,,F3 Double Wall Pie box,9,external,ea
+PAC- HAB-EAC,,Hamburger Base Black F60,9,external,ea
+PAC- LIC- 350ML,,Lids Clear 350ML,9,external,ea
+PAC- MIN-EAC,,Cup Cake Boxes With Inserts,9,external,ea
+PAC- NAB-EAC,,Name Badges,53,external,ea
+PAC- SDL-EAC,,Square Desert Lid,9,external,ea
+PAC-083-EAC,,83X54X300 30mic,9,external,ea
+PAC-12X-EAC,30254.0,12x12x6,9,external,ea
+PAC-14X-EAC,30255.0,14X14X6,9,external,ea
+PAC-16X-EAC,30256.0,16x16x6,9,external,ea
+PAC-18H-EAC,30257.0,18X18X5 High,9,external,ea
+PAC-18X-EAC,30258.0,18X18X6,9,external,ea
+PAC-196-EAC,30267.0,196T swissroll folder,9,external,ea
+PAC-200-EAC,30291.0,Foil Container 100 (200IL),9,external,ea
+PAC-20H-EAC,30266.0,20X20X5 High,9,external,ea
+PAC-20X-EAC,30259.0,20X20X6,9,external,ea
+PAC-214-EAC,,214 Gateaux Dome,9,external,ea
+PAC-215-EAC,30706.0,215 Gateaux Base,9,external,ea
+PAC-225-EAC,30804.0,225X270X30MIC Scone bag medium,9,external,ea
+PAC-260-EAC,30806.0,260*450*25mic,9,external,ea
+PAC-300-EAC,30292.0,Foil Container 100 (3001P),9,external,ea
+PAC-310-EAC,30808.0,310*450*30mic,9,external,ea
+PAC-315-EAC,30268.0,315 bar one dome,9,external,ea
+PAC-317-EAC,30269.0,317 bar one base,9,external,ea
+PAC-400-EAC,30807.0,250*400*40mic Rolls large,9,external,ea
+PAC-405-EAC,30287.0,4051 foil container,9,external,ea
+PAC-419-EAC,30692.0,4191 Foil Container,9,external,ea
+PAC-450-EAC,30805.0,250*450*30mic Naan exlarge,9,external,ea
+PAC-552-EAC,30801.0,5*5*2.5,9,external,ea
+PAC-572-EAC,30737.0,5*5*2.5,9,external,ea
+PAC-573-EAC,30827.0,5*7*3,9,external,ea
+PAC-73D-EAC,30725.0,No 73D Foam Tray,9,external,ea
+PAC-773-EAC,30800.0,7*7*3 Diwali Boxes,9,external,ea
+PAC-835-EAC,30303.0,Bag 1000 83*54*300mm,9,external,ea
+PAC-882-EAC,,8X8X2,9,external,ea
+PAC-884-EAC,30486.0,8X8X4,9,external,ea
+PAC-A34-EAC,30587.0,A34 Round Cake Dome,9,external,ea
+PAC-A35-EAC,30588.0,A35 Round Cake Base,9,external,ea
+PAC-B75-EAC,,K75 Base,9,external,ea
+PAC-BAG-EAC,6009681740704.0,Bags 1000 White Midi,9,external,ea
+PAC-BAG-JUM,6009681740705.0,Bags 1000 White Jumbo,9,external,ea
+PAC-BBC-EAC,,Bon Bon Biscuit Container,9,external,ea
+PAC-BBL-EAC,,Bon Bon Biscuit Lid,9,external,ea
+PAC-BEB-EAC,,Empty Bandini Box,9,external,ea
+PAC-BOR-EAC,30308.0,Bag on Roll (30x45),9,external,ea
+PAC-BPB-EAC,,Bag Brown Thrifty Paper Bag meduim,9,external,ea
+PAC-BRE-EAC,30533.0,Packaging New 76x91 Black Refuse,9,external,ea
+PAC-BUB-EAC,30311.0,bubble wrap,9,external,ea
+PAC-CHO-EAC,30249.0,Oven Delight Cake Box Choc,9,external,ea
+PAC-CLE-EAC,30313.0,CLEAR BIN BAGS,9,external,ea
+PAC-CON-EAC,,7119P Foil container,9,external,ea
+PAC-CUC-500ML,,Cup Clear 500ML,9,external,ea
+PAC-D75-EAC,,K75 Dome,9,external,ea
+PAC-DCW-EAC,,High Window Box For Drip cake,9,external,ea
+PAC-EPI-EAC,,Faze 3 Boxes Empty for Pies,9,external,ea
+PAC-F5B-EAC,,F50 High Cake Base,9,external,ea
+PAC-F5D-EAC,,F50 High Cake Dome,9,external,ea
+PAC-FLP-EAC,,Foil - Loaf Pan 4161P,9,external,ea
+PAC-FOI-EAC,30290.0,Foil Buns 4051D,9,external,ea
+PAC-GP2-EAC,30300.0,Bag GP 2,9,external,ea
+PAC-HAM-EAC,,Hamburger Dome F60,9,external,ea
+PAC-JBU-EAC,,Jumbo bag unprinted,9,external,ea
+PAC-JUM-EAC,30567.0,Jumbo Econo White,9,external,ea
+PAC-K96-EAC,30280.0,K 96 milk tart domes,9,external,ea
+PAC-LCB-EAC,,Laser Cut Box Only,9,external,ea
+PAC-LEV-EACH,,EPR LEVY,9,external,ea
+PAC-LIC-500ML,,Lid Clear 500ML,9,external,ea
+PAC-LID-EAC,,7119P Clear lids,9,external,ea
+PAC-LLB-EAC,,Large Log Base,9,external,ea
+PAC-LLD-EAC,,Large Log Dome,9,external,ea
+PAC-MAD-EAC,,Madeira Packaging Small B,9,external,ea
+PAC-MCC-350ML,,Milkshake Cup 350ml,9,external,ea
+PAC-MCL-350ML,,Milkshake Cup Lids 350ml,9,external,ea
+PAC-MFO-EAC,30282.0,Mince pie foil,9,external,ea
+PAC-MIN-EAC,30293.0,Foil Container Mince Pie Tray,9,external,ea
+PAC-MLA-EAC,,Mini Lamington trays,9,external,ea
+PAC-NDI-EAC,,New Diwali Cake Boxes,64,external,ea
+PAC-P45-EAC,,P45 Round platter,9,external,ea
+PAC-PBH-EAC,,Platter base - half,9,external,ea
+PAC-PFB-EAC,,Platter foil base,9,external,ea
+PAC-PLD-EAC,,Platter Dome,9,external,ea
+PAC-PLH-EAC,,Platter Lid -Half,9,external,ea
+PAC-PRD-EAC,,P45 platter dome,9,external,ea
+PAC-PTC-EAC,,Paper Tulip Cups giant cup cakes,9,external,ea
+PAC-REC-EAC,,Rectangle Pie Foil,9,external,ea
+PAC-REF-EAC,30492.0,Packaging Black Refuse,9,external,ea
+PAC-SDT-EAC,,Square Desert Tub,9,external,ea
+PAC-SLI-70ML,,Sauce Lids 70ml,9,external,ea
+PAC-SO6-EAC,30299.0,Bag Brown BB3,9,external,ea
+PAC-STL-EAC,,GLUTEN FREE COFFEE CAKE TUB,42,internal,
+PAC-STR-EAC,30250.0,Oven Delight Cake Box Strbery,9,external,ea
+PAC-STU-70ML,,Sauce Tub 70ml,9,external,ea
+PAC-SWI-EAC,30826.0,Swissroll Box,9,external,ea
+PAC-TAL-EAC,,GLUTEN FREE CHOC MOUSSE CAKE TUB,42,internal,
+PAC-VPC-EAC,,Vinyl Print Coffee Boards,53,external,ea
+PAC-VUT-EAC,30309.0,Bread Bags (Vutu) PPG,9,external,ea
+PAC-WIN-EAC,,Windsor X-Small B,9,external,ea
+PAC-WRG-EAC,,Wrist Guard,53,external,ea
+PAC-ZIP-EACH,,Ziplock Bags,9,external,ea
+PIE -CSR-EAC,15002.0,OD Premium Chicken Tikka Sausage Roll,65,external,ea
+PIE- FSK-EAC,,Pie Steak & Kidney Foil,65,external,ea
+PIE-APP-KG,,Pie Apple,59,external,ea
+PIE-BBP-EAC,,Pie - Burger Beef,65,external,ea
+PIE-BRC-EAC,,Pie - Burger Chicken Cheese / Sweet Chilli,65,external,ea
+PIE-CCG-EAC,15016.0,Pie Chicken Cheese Griller,65,external,ea
+PIE-CMS-EAC,,Pie Chicken and Mayo Slice,65,external,ea
+PIE-COD-EAC,15103.0,Pie OD Chicken & Mushroom,65,internal,ea
+PIE-CPP-EAC,15007.0,Pie Chicken Peri Peri,65,external,ea
+PIE-CRP-EAC,,Pie - Cornish Pastry,65,external,ea
+PIE-FCP-EAC,,Pie Chicken Peri Peri Foil,65,external,ea
+PIE-FVE-EAC,,Pie Vegetable Curry Foil,65,external,ea
+PIE-MCB-EAC,15011.0,Pie Mutton Curry Burger,65,external,ea
+PIE-MSR-EAC,15001.0,OD Premium Mutton Oriental Sausage Roll,65,external,ea
+PIE-ODM-EAC,15101.0,Pie OD Mutton Curry,65,internal,ea
+PIE-PPS-EAC,15009.0,Pie Pepper Steak,65,internal,ea
+PIE-PRS-EAC,15017.0,Pie Prime Steak,65,external,ea
+PIE-SAF-EAC,15005.0,Pie Spinach & Feta,65,external,ea
+PIE-SAK-EAC,15010.0,Pie Steak & Kidney,65,external,ea
+PIE-SRB-EACH,15105.0,Pie Sausage Roll( Beef),65,external,ea
+PIE-VEG-EAC,15004.0,Pie OD Vegetable,65,internal,ea
+PLA- MIX-EAC,,Platter Mixy Delight,60,internal,ea
+PLA- PEM-EAC,,Platter Mini Pecan Nut Tarts 24s,60,internal,ea
+PLA -SCO-EAC,,Platter Scone Delight 18s,60,internal,ea
+PLA-CHE-EAC,,Platter Cheeky Delight,60,internal,ea
+PLA-CRM-EAC,,Platter Mini Cream Puffs 24s,60,internal,ea
+PLA-CRO-EAC,,Platter Croissant Delight 20s,60,internal,ea
+PLA-ECM-EAC,,Platter Mini Freshcream Eclairs,60,internal,ea
+PLA-FLM-EAC,,Platter Mini Flakey Bits 24s,60,internal,ea
+PLA-FRM-EAC,,Platter Mini Freshcream Donuts,60,internal,ea
+PLA-JAM-EAC,,Platter Mini Jam Turnovers 24s,60,internal,ea
+PLA-MBD-EAC,,Platter Mini Buttercream Donuts 24s,60,internal,ea
+PLA-MCD-EAC,,Platter Mini Chocolate Donut 24s,60,internal,ea
+PLA-MEA-EAC,,Platter Meaty Delight,60,internal,ea
+PLA-MIM-EAC,,Platter Mini Milk Tarts 24S,60,internal,ea
+PLA-MLP-EAC,,Platter Mini Lamingtons 24s,60,internal,ea
+PLA-MUFF- EAC,,Platter Muffin Delight 30s,60,internal,ea
+PLA-SMA-EAC,,Platter Snacky Delight,60,internal,ea
+PLA-SNM-EAC,,Platter Mini Snowballs 24s,60,internal,ea
+PLA-VEG-EAC,,Platter Veggy Delights,60,internal,ea
+REP-BRE-EAC,,Bread Slicer Blades,66,external,ea
+SAV-CCS-EAC,,Crumbed Chicken Samoosa,67,internal,ea
+SAV-CJF-EAC,,Frozen Cheese And Jalapeno,67,internal,ea
+SAV-CJR-EAC,,Chicken & Jalapeno Rissoles,67,internal,ea
+SAV-CSA-EAC,,Chicken Samoosa,67,internal,ea
+SAV-FCM-EAC,,Frozen Chicken And Mushroom Pie,65,internal,ea
+SAV-FCR-EAC,,Frozen Chicken Sausage Rolls,67,internal,ea
+SAV-FFI-EAC,,Frozen Fish Cake,67,internal,ea
+SAV-FIS-EAC,,Fish Cake,67,internal,ea
+SAV-FJC-EAC,,Frozen Chicken And Jalapeno,67,internal,ea
+SAV-FKE-EAC,,Frozen Kebabs,67,internal,ea
+SAV-FMV-EAC,,Frozen Mix Veg Pie,67,internal,ea
+SAV-FPA-EACH,,Frozen Patha Wheel,67,internal,ea
+SAV-LMS-EAC,,Lamb Mince Samoosa,67,internal,ea
+SAV-PAP-EAC,,Puri & Patha (3s),67,internal,ea
+SAV-PAS-EAC,,Patha Samoosa,67,internal,ea
+SAV-PUP-EAC,,Puri Plain,67,internal,ea
+SAV-RCJ-EAC,,Cheese & Jalapeno Rissoles,67,internal,ea
+SAV-RRC-EAC,,Roti Roll Chicken,67,internal,ea
+SAV-RRP-EAC,,Roti Roll Potatoe,67,internal,ea
+SAV-SAM-EAC,,Samoosa 3s,67,internal,ea
+SAV-SCC-EAC,,Cheese And Corn Samoosa,67,internal,ea
+SAV-VED-EAC,,Veda,67,internal,ea
+SHP - JAL-EACH,9009.0,Jalebi 250g,23,external,ea
+SHP- BAN-EAC,16055.0,Banana Loaf,23,internal,ea
+SHP- CRW-EAC,,Roti Chicken Wrap,67,internal,ea
+SHP- GUL-1KG,,Gulab Jamun 1kg,23,external,ea
+SHP- GUL-4S,60001.0,Gulab Jamun 4s Pure Butter,23,external,ea
+SHP- IDH-32S,,Idhli Platter 32s,60,internal,ea
+SHP- MOL-6S,,DC Sweetmeats Mini Oval Laser Cut Wooden (6s),23,external,ea
+SHP- PRW-EAC,,Roti Potatoe Wrap,67,internal,ea
+SHP- RAE-EAC,16058.0,Eggless Rainbow Sponge Log,23,internal,ea
+SHP- SWEE-250G,,DC Sweet Meats Assorted 250g,23,external,ea
+SHP-AUA-EAC,9008.0,DC Authentic Assorted Sweetmeats 11 pieces,23,external,ea
+SHP-AUT-EAC,,Authentic Ladoo,23,external,ea
+SHP-BAN-6S,8080.0,Banana Puri (6s),23,external,ea
+SHP-BBS-EAC,,Sweetmeats Boujee Singles,23,external,ea
+SHP-BCC-EAC,16041.0,Buttercream Christmas cakes,23,internal,ea
+SHP-BCG-EAC,16042.0,ButterCream Christmas Gateaux,23,internal,ea
+SHP-BRB-400,30370.0,Bread Brown 400g,23,internal,ea
+SHP-BRB-400G,,Bread Bunny Loaf 400g,23,internal,ea
+SHP-BRB-800,13005.0,Sun Bread Brown 800g,23,internal,ea
+SHP-BRG-EAC,16003.0,Bread Garlic 300g,23,internal,ea
+SHP-BRO-EAC,,Butter Roti (6s),23,internal,ea
+SHP-BRR-500,16004.0,Bread Tea Ring,23,internal,ea
+SHP-BRT-500,16005.0,Bread Tea Loaf 500g,23,internal,ea
+SHP-BRW-400,30372.0,Bread White 400g,23,internal,ea
+SHP-BRW-800,13003.0,Sun Bread White 800,23,internal,ea
+SHP-BSC-EAC,16044.0,Butter Scones (4s),23,internal,ea
+SHP-BSP-24S,,Butter Scone Platter 24s,60,internal,ea
+SHP-BTW-500,16007.0,Bread 500g Twist,23,internal,ea
+SHP-BUN-EAC,16008.0,Buns 100g Soft 6s,23,internal,ea
+SHP-BUR-1KG,,Burfee 1kg,23,internal,ea
+SHP-BUR-KGR,,Burfee 9pc,23,internal,ea
+SHP-BVS-EAC,16009.0,BC Vanilla Swiss Roll,18,internal,ea
+SHP-CFI-EAC,16015.0,Christmas fruit Cake Round Iced,23,internal,ea
+SHP-CFP-EAC,16016.0,Christmas Fruit Cake Round Plain,23,internal,ea
+SHP-CHA-1KG,,Chana Magaj 1kg,23,internal,ea
+SHP-CHB-04S,30755.0,Chelsea Buns (6s),23,internal,ea
+SHP-CHO-PLN,16013.0,Chocolate Gateaux Plain,23,internal,ea
+SHP-COC-KGR,,Coconut Ice,24,internal,ea
+SHP-CPN-EAC,16014.0,Carrot and Pecan Nut Slab,23,internal,ea
+SHP-CRB-06S,16017.0,Cream Buns 6s,23,internal,ea
+SHP-CRM-EAC,,Christmas Round Mini Cake,23,internal,ea
+SHP-CRO-06S,16018.0,Rolls 70g Soft Hotdog Cheese 6,23,internal,ea
+SHP-CSC-EAC,6001651011913.0,Chocolate Sponge Cake,23,internal,ea
+SHP-CTP-EAC,,Christmas Steamed Pudding,23,internal,ea
+SHP-CTR-EAC,16020.0,Cocktail Rolls,23,internal,ea
+SHP-CWP-EAC,16038.0,Christmas Windsor Plain,23,internal,ea
+SHP-CWS-EAC,16049.0,Christmas Windsor Slice,23,internal,ea
+SHP-DBB-EAC,,DC Diwali Bandhani Box,23,external,ea
+SHP-DDB-EAC,,DC Diwali Designer Biscuit,23,external,ea
+SHP-DDD-EAC,,DC Diwali Designer Burfee,23,external,ea
+SHP-DEG-EAC,,DC Diwali Eggless Cake,23,internal,ea
+SHP-DIB-EACH,,DC Authentic Diya Boxes,23,external,ea
+SHP-DJA-EAC,,DC Diwali Jalebi,23,external,ea
+SHP-DLB-EAC,,DC Diwali Large Bag,23,external,ea
+SHP-DLD-EAC,,DC Diwali Large Designer Box,23,external,ea
+SHP-DMA-EAC,,DC Diwali Macaroons,23,external,ea
+SHP-DOP-10S,110103.0,Doughnut Pops 10s,23,external,ea
+SHP-DPB-EAC,,DC Diwali Peacock Box,23,external,ea
+SHP-DRO-EAC,16045.0,Dhall Roti (6s),23,external,ea
+SHP-DSB-EAC,,DC Diwali Small Bag,23,external,ea
+SHP-FCE-EAC,,Christmas Fruit Cake Eggless Round,23,internal,ea
+SHP-FRT-LRG,,Five Roses Tea Tall,58,external,ea
+SHP-FRT-SML,,Five Roses Tea Small,58,external,ea
+SHP-GAT-EAC,16021.0,DC Diwali Gateaux,23,internal,ea
+SHP-GLC-EAC,,DC Diwali Gold Laser Cut,23,external,ea
+SHP-HBU-EAC,16022.0,Hot x Buns 6s,23,internal,ea
+SHP-ICL-LRG,,Iced Coffee Large,58,internal,ea
+SHP-IDH-EACH,60071.0,Idhli Pure Butter (4s),60,internal,ea
+SHP-JSW-EAC,,Vanilla Jam Swissroll,23,internal,ea
+SHP-LAC-EACH,110102.0,Chocolate Lamington 5 pack,23,internal,ea
+SHP-LAD-EAC,,Ladoo 9 piece,23,internal,ea
+SHP-LAR-EACH,110101.0,Raspberry Lamington 5 pack,23,internal,ea
+SHP-LEM-EAC,,Lemon Loaf,23,internal,ea
+SHP-LHS-375,9003.0,DC Large Hexagonal Deluxe Sweetmeats 375g,23,external,ea
+SHP-LJS-350,9004.0,DC Large Jewels Deluxe Sweetmeats 350g,23,external,ea
+SHP-LWC-360G,,DC Sweetmeats Lamp Wooden Cut 360g,23,external,ea
+SHP-MAD-EAC,16023.0,Madeira,23,internal,ea
+SHP-MHS-165,9001.0,DC Mini Hexagonal Deluxe Sweetmeats 165g,23,external,ea
+SHP-MIN-EAC,16024.0,Mince Pies,23,internal,ea
+SHP-MJS-250,9002.0,DC Mini Jewels Deluxe Sweetmeats 250g,23,external,ea
+SHP-MRO-EACH,16048.0,Brown Roti (6s),23,internal,ea
+SHP-NAA-02S,16025.0,Naan 300g 2s,23,internal,ea
+SHP-NAA-EAC,16026.0,Naan 300g,23,internal,ea
+SHP-PFC-4S,60074.0,Poli With Fresh Coconut 4s,23,external,ea
+SHP-POL-EAC,60072.0,Poli (4s),23,external,ea
+SHP-PPP-30S,,Puri Patha Platter 30s,23,internal,ea
+SHP-RAI-EAC,16027.0,Rainbow Sponge Log,23,internal,ea
+SHP-RAL-EAC,16028.0,Raisin Loaf,23,internal,ea
+SHP-RBS-SML,,Rooibos Tea Small,58,internal,ea
+SHP-RBT-LRG,,Rooibos Tea Tall,58,internal,ea
+SHP-RJS-595,9006.0,DC Rajasthani Jewel Sweetmeats 595g,23,external,ea
+SHP-RLC-EAC,,DC Diwali Round Clear Assorted,23,external,ea
+SHP-ROLL-06S,16029.0,Rolls 60g Soft Hotdog 6s,23,internal,ea
+SHP-ROLL-12S,16030.0,Rolls 60g Soft Hotdog 12s,23,internal,ea
+SHP-ROT-EAC,16046.0,Rotis 12s,68,internal,ea
+SHP-RWC-265G,,DC Sweetmeats Round Wooden Cut 265G,23,external,ea
+SHP-RWC-380G,,DC Sweetmeats Rectangle Wooden Cut 380g,23,external,ea
+SHP-SBB-EACH,,DC Sweetmeats Boujee Burfee,23,external,ea
+SHP-SBC-EAC,8050.0,Burfee Soji Cake,23,internal,ea
+SHP-SCF-EAC,16032.0,Scones Fruit 4s,23,internal,ea
+SHP-SCG-EAC,16034.0,Dome Buttercream Christmas Cake,23,internal,ea
+SHP-SCO-EAC,16033.0,Scones 4s,23,internal,ea
+SHP-SDB-EAC,,DC Diwali Small Designer Box,23,external,ea
+SHP-SGL-EAC,,Sweet Meats Gold Foil Large,23,external,ea
+SHP-SGS-EAC,,Sweet Meats Gold Foil Small,23,external,ea
+SHP-SPF-EAC,,Sweet Meats Paisley Gold Foil,23,external,ea
+SHP-SPO-EACH,60073.0,Soji Poli (5s),23,external,ea
+SHP-SSC-EAC,6001651009125.0,Strawberry Sponge Cake,23,internal,ea
+SHP-STE-EAC,,Eggless Trifle Sponge,23,internal,ea
+SHP-TLB-EAC,,DC Traingle Lotus Box,23,external,ea
+SHP-TRI-EAC,16035.0,Trifle Sponge,23,internal,ea
+SHP-VSA-EACH,,DC Vegan Sweetmeats Assorted Authentic,23,external,ea
+SHP-WIC-EAC,16037.0,Christmas Windsor iced,23,internal,ea
+SHP-WIS-EAC,16039.0,Windsor Slab,23,internal,ea
+SHP-WMV-EAC,16040.0,Windsor Slice,23,internal,ea
+SNA-CHE-340,6007597000028.0,DIWALI CHEVDA 250G,69,external,ea
+SNA-CHE-EAC,16047.0,Maya Spices Chevda 250g,69,external,ea
+SNA-KMU-EAC,6009659190678.0,Kashmiri Murkoo,69,external,ea
+SNA-KNP-EAC,,Kara Nichhas Peanuts,69,external,ea
+SNA-LMP-EAC,13007.0,Murkoo Extra Large Plain,69,external,ea
+SNA-LMS-EAC,,Murkoo Extra Large,69,external,ea
+SNA-MOC-EAC,6001651026986.0,Murkoo Original Crunch,69,external,ea
+SNA-MSF-EAC,30781.0,Murkoo sticks flavoured,69,external,ea
+SNA-MUS-EAC,5010.0,Murkoo Sticks,69,external,ea
+SNA-NUT-60G,6002849000177.0,ralphies nutties 60g,69,external,ea
+SNA-NUT-EAC,5013.0,Nuts,59,external,ea
+SNA-OATS-EAC,,Fine Oats,59,external,kg
+SNA-PGA-EAC,4001.0,Papdi Ganthiya,69,external,ea
+SNA-PNM-EAC,30491.0,PNS Murkoo,69,external,ea
+SNA-PNM-EAC,30491.0,PNS Murkoo,69,external,ea
+snA-PNM-EAC,6009634280431.0,Serve and Nuts 400g,69,external,ea
+SNA-PNT-EAC,6002415000501.0,PNS Traditional Murkoo,69,external,ea
+SNA-SAN-EAC,,Serv & Nuts,69,external,ea
+SNA-SGA-EAC,,Soft Gantia,69,external,ea
+SNA-SUS-EAC,6009708771438.0,Sugar Sticks,69,external,ea
+SNA-TMU-EAC,5011.0,Tub Murkoo,69,external,ea
+SPI-BPE-KGR,,Spice- Whole Black Pepper,59,external,kg
+SPI-CIB-EAC,,Spice Cook In Bag,59,external,kg
+SPI-CIS-EAC,,Spice - Cinnamon Sticks,59,external,kg
+SPI-DHA-KGR,,Spice- Dhania Powder,59,external,kg
+SPI-GAR-KGR,,Spice-Garum Masala,59,external,kg
+SPI-GIN-KGR,,Ginger & Garlic,59,external,kg
+SPI-JEE-KGR,,Spice - Mayas Jeera Powder,59,external,kg
+SPI-JEP-KGR,,Spice Jeera Powder,59,external,kg
+SPI-KNO-EAC,,Spice- Knorrx Mutton Flavour 12s,59,external,kg
+SPI-MAS-KGR,,Spice- Chilli Powder,59,external,kg
+SPI-MIN-EAC,,Spice - Mint,59,external,kg
+SPI-MIX-KGR,,Spice- Mayas Mixed Masala,59,external,kg
+SPI-MSM-KGR,,Manilal Special Mix Masala,59,external,kg
+SPI-NAN-KGR,,Nandos Sauce,59,external,lt
+SPI-NOL-KGR,,Nola Mayonaise,59,external,kg
+SPI-PAR-EAC,,Parsley,59,external,kg
+SPI-SVS-100G,,SVS Spices 100g,59,external,kg
+SPI-SVS-50G,,SVS Spices 50g,59,external,kg
+SPI-THY-EACH,,Spice - Fresh Thyme,59,external,kg
+SPI-TUM-KGR,,Spice Tumeric,59,external,kg
+SRC-CHO-CRE,,Choc Cream -20 Fig On Base,45,internal,kg
+SRN-AER-022,,Aeroplane Cake 22 in Plastic Icing and B/C,17,internal,ea
+SRN-ANI-016,,16 Buttercream Animal Farm,17,internal,ea
+SRN-BCE-020,,BD20 Buttercream Eggless Cake,37,internal,ea
+SRN-BCR-022,,BC 22 Cut out Figure,20,internal,ea
+SRN-BIB-016,,16 Buttercream Eggless Bible Cake,17,internal,ea
+SRN-BIB-020,,20 Fresh Cream Egless Bible Cake,17,internal,ea
+SRN-BMW-014,,14 Sponge in plastic icing with BMW sign,17,internal,ea
+SRN-BRE-016,,Buttercream Round Eggless with Baby,17,internal,ea
+SRN-BSC-016,,BD 16Buttercream with baby grower in PI,17,internal,ea
+SRN-BYK-022,,22 Motorbike on Base with Plastic icing,17,internal,ea
+SRN-CML-016,,Caramel Spread only - on 16,45,internal,ea
+SRN-CRM-016,,Cream colour cream only - 16,45,internal,ea
+SRN-DAI-020,,20 Buttercream with Piped Daisies,17,internal,ea
+SRN-DBF-020,,20 BC Double Base With Double Figure,17,internal,ea
+SRN-DIA-020,,20 Round PI Diamond pattern & Daisies,17,internal,ea
+SRN-DOL-016,,16 Doll Cake in Plastic Icing no base,17,internal,ea
+SRN-FCE-020,,BD 20 Fresh Cream Eggless cake,70,internal,ea
+SRN-FIG-020,,Buttercream Eggless Figure on base 20,20,internal,ea
+SRN-FOB-020,,20 FC Fig on Base with Choc Flakes,17,internal,ea
+SRN-HBS-020,,Hugo Boss Suitcase Belt 20 in Plastic Icing,17,internal,ea
+SRN-JAM-012,,Strawberry Jam only - 12,45,internal,ea
+SRN-JAM-012,,Strawberry Jam only - 12,45,internal,ea
+SRN-JAM-014,,Strawberry Jam only - 14,45,internal,ea
+SRN-JAM-014,,Strawberry Jam only - 14,45,internal,ea
+SRN-JAM-016,,Strawberry Jam only - 16,45,internal,ea
+SRN-JAM-18,,Strawberry Jam Only-18,45,internal,ea
+SRN-JAM-20,,Strawberry Jam Only-20,44,internal,ea
+SRN-LIV-022,,22 PI Liverpool with Scarf and Boots,17,internal,ea
+SRN-LVB-016,,Louis Vittone Bag 16 in Plastic Icing,17,internal,ea
+SRN-PAD-016,,40*50 B/C cake with Ipad in PI + pic,17,internal,ea
+SRN-PAI-EAC,,Painting on Roses,45,internal,ea
+SRN-PEA-014,,Peach Slices Only 14,45,internal,ea
+SRN-PID-014,,BD14' Round covered in plastic icing and daisies,17,internal,ea
+SRN-PLI-012,,Plastic Icing Covering Only 12,45,internal,ea
+SRN-PLI-016,,Plastic Icing Covering Only 16,44,internal,ea
+SRN-PLI-016,,Plastic Icing Covering Only 16,44,internal,ea
+SRN-PLR-016,,Plastic Icing 16 round with musical notes,17,internal,ea
+SRN-ROA-014,,14 Buttercream with Plastic icing Road,17,internal,ea
+SRN-SSC-016,,16 BC S/Berry Short/C Figurine-PI,17,internal,ea
+SRN-STA-2TI,,BD2 Tier Stack Sponge- Plastic Icing-12&14,17,internal,ea
+SRN-STA-2TI,,BD2 Tier Stack Sponge- Plastic Icing-12&14,17,internal,ea
+SWE-ALC-EACH,,Almond Cones,24,external,ea
+SWE-BOR-EAC,6009625510592.0,Masala Bor,24,external,ea
+SWE-CAC-EACK,,Cashew Cones,24,external,ea
+SWE-CCC-EAC,1017.0,Chocolate Coconut Cluster,24,external,ea
+SWE-CCD-EAC,6009614200985.0,Caruchi Candy Dates,24,external,ea
+SWE-CFW-EAC,10030.0,China fruit sweet,24,external,ea
+SWE-CHF-EAC,6009625510615.0,China Fruit,24,external,ea
+SWE-CHI-EAC,6001200000016.0,Chicks Violet,24,external,ea
+SWE-CMM-EAC,30482.0,Choc Marshmallow,24,external,ea
+SWE-CNI-EAC,30608.0,Coconut Ice,24,external,ea
+SWE-CNW-EAC,6009614200046.0,Coconut Wheel,71,external,ea
+SWE-COI-EAC,,Coconut ice small,24,external,ea
+SWE-CPC-EAC,6009614200008.0,Chocolate Peanut Cluster,24,external,ea
+SWE-CRO-EAC,6009614200558.0,Chocolate Rocher,24,external,ea
+SWE-CRO-EAC,6009614200558.0,Chocolate Rocher,24,external,ea
+SWE-CSP-EAC,8850632605164.0,Sour Punk Cola,24,external,ea
+SWE-FIG-EAC,6009625510608.0,Masala Figs,24,external,ea
+SWE-KIT-EAC,,Kitkat 135g,24,external,ea
+SWE-MES-EAC,1024.0,Mebos Sweets,24,external,ea
+SWE-PAA-EAC,,Paan Cones,24,external,ea
+SWE-PBS-EAC,,Peanut Brittle Slabs Singles,24,external,ea
+SWE-PEC-EAC,,Peanut Cones,24,external,ea
+SWE-PNB-EAC,6004796000941.0,peanut brittle,24,external,ea
+SWE-PNB-EACH,6009633420525.0,Peanut Brittle Slab 10s,24,external,ea
+SWE-PNP-EACH,6009663420594.0,Peanut Brittle Pieces,24,external,ea
+SWE-SAB-EACH,,Almond Bar 40g single,24,external,ea
+SWE-SCB-EAC,,Cashew Bar 40g single,24,external,ea
+SWE-SPA-EAC,8850632605140.0,Sour Punk Apple,24,external,ea
+SWE-SPB-EAC,6009663420938.0,Sesame Brittle Pieces,24,external,ea
+SWE-SPS-EAC,8850632603566.0,Sour Punk,24,external,ea
+SWE-SSB-EAC,6009625510714.0,Sweet & Sour Bor,24,external,ea
+SWE-SSF-EAC,6009625510721.0,Sweet & Sour Figs,24,external,ea
+SWE-TOA-EAC,1033.0,Toasted Jabs,24,external,ea
+SWE-WHI-EAC,,Whispers 200g,59,external,kg
+VEG -ONI-KGR,,Onions,59,external,kg
+VEG- POT-KGR,,Potatoes,59,external,kg
+VEG-CHI-KGR,,Green Chillies,59,external,kg
+VEG-MUS-KGR,,Mushrooms,59,external,kg
+Water,,Water,59,external,lt
+XBF-BAN-EAC,30094.0,Fruit Banana,59,external,kg
+XBF-BAN-KGR,,Banana Essence,59,external,lt
+XBF-CAR-KGR,30335.0,Carrots,63,external,kg
+XBF-CHL-KGR,30084.0,Chellies Red Alpine,59,external,kg
+XBF-COC-KGR,30634.0,Coconut,63,external,kg
+XBF-CUT-KGR,30086.0,Fruit Cut Peel,59,external,kg
+XBF-FMX-KGR,30089.0,Fruit Mix (Chipkins),59,external,kg
+XBF-PDA-KGR,,Pitted Dates,59,external,kg
+XBF-PIE-KGR,30092.0,Fruit Pie Apples,59,external,kg
+XBF-RWC-KGR,30669.0,Red Whole Cherries,59,external,kg
+XBR-BEB-1KGR,,Berries Blend,59,external,kg
+XBR-MDF-1KGR,,Mango Diced Fruit,59,external,kg
+XBR-PEA-KGR,,Peach Slices,59,external,kg
+XBR-TOM-KGR,,Tomatoe Paste 3.06kg,59,external,kg
+XCH-BAR-EAC,,Chocolate Bar One,42,internal,
+XCH-CCB-KGR,30158.0,Chocolate Choco Blocks,59,external,kg
+XCH-CCM-KGR,30157.0,Chocolate Chockex Chips Milk,59,external,kg
+XCH-CCW-KGR,30159.0,Chocolate Chockex Chips White,59,external,kg
+XCH-CHO-KGR,30156.0,Choc milk block,59,external,kg
+XCH-POW-KGR,30238.0,Powder Cocoa,59,external,kg
+XCH-TIN-KG,,Tin Glide 5kg,59,external,kg
+XCH-VER-KGR,30163.0,Vermicelli Chocolate,63,external,kg
+XCH-WCH-KGR,,Choc Milk Block White,59,external,kg
+XCO-AES-LTR,,Aniseed Essence,63,external,lt
+XCO-BCR-KGR,,Bread Crumbs,59,external,kg
+XCO-BLA-KGR,30225.0,Black Jack,59,external,kg
+XCO-LEM-KGR,30164.0,Coloured Powder Lemon Yellow,59,external,kg
+XCO-PBL-KGR,30176.0,powder food colouring blue,59,external,kg
+XCO-PGN-KGR,30175.0,Powder colouring green,59,external,kg
+XCO-PIL-KGR,30173.0,Pillar Box Red,59,external,kg
+XCO-REG-EAC,30177.0,Red piping gel,59,external,kg
+XCO-VES-LTR,30708.0,Vanilla Essence,59,external,lt
+XDA-BERG-KGR,,Berg Cheese,59,external,kg
+XDA-BME-KGR,,Boneless Mutton,59,external,kg
+XDA-BUT-EAC,30756.0,Buttermilk,59,external,lt
+XDA-CBF-KGR,,Chicken Breast Fillet,59,external,kg
+XDA-CCS-KGR,30179.0,Cheese Cottage Smooth,59,external,kg
+XDA-CHE-KGR,30562.0,Cheddar Cheese,59,external,kg
+XDA-CHI-EAC,,Chicken Wings Drumettes,59,external,kg
+XDA-CRA-1KG,,Crab Sticks,59,external,kg
+XDA-CRE-250,30848.0,Cream Cheese,59,external,kg
+XDA-CRF-250,,Cream Fresh 250ml,59,external,lt
+XDA-CRF-500,30180.0,Cream Fresh 500ml,59,external,lt
+XDA-CSS-KGR,,Chicken Salsa Snack Wings 6kg,59,external,kg
+XDA-CTS-KGR,,Chicken Tikka Sausage,59,external,ea
+XDA-DHA-KGR,,Pea Dhall 5kg,59,external,kg
+XDA-FCR-250ML,,Cream Fresh 250ml,59,external,lt
+XDA-FLO-KGR,,Flora light,53,external,kg
+XDA-HAK-1KG,,Hake Fillet -fish,59,external,kg
+XDA-JAL-KGR,,Jalapenos,59,external,kg
+XDA-LAM- KGR,,Lamb Mince,59,external,kg
+XDA-MBP-EAC,,Mini Butter Portions 8grams,59,external,kg
+XDA-MCP-KGR,,Mutton Cheese Patties,59,external,kg
+XDA-MJP-EAC,,Mini Jam Portions 15Grams,59,external,kg
+XDA-MVE-KGR,,Mix Veggies Mcain,59,external,kg
+XDA-NON-KGR,30183.0,Non Dairy Cream,59,external,kg
+XDA-NUT-LTR,30597.0,Nutriday Yogurt Plain,59,external,kg
+XDA-OGC-LTR,,Cream Fresh Orange Grove 1litre,59,external,lt
+XDA-OMU-KGR,,Oriental Mutton Sausage,59,external,kg
+XDA-PAR-EAC,,Unbaked Patha Rolls,59,external,kg
+XDA-PEA-KGR,,Peas Frozen 10kg,59,external,kg
+XDA-PUP-KGR,,Fathimas Puff Pastry 1kg,59,external,kg
+XDA-SAC-1LT,,Milk 1lt Sachet,59,external,lt
+XDA-SMF-EAC,,Saldanha Middlecut Tin Fish 400g,59,external,kg
+XDA-SOY-KGR,,Tommy Marinated Mince,59,external,kg
+XDA-SWC-KGR,,Mcain Sweetcorn 1kg,59,external,kg
+XDA-TUC-KGR,,Tuna Chunks In Brine 1.7kg,59,external,kg
+XDA-TUS-KGR,,Tuna Shredded In Brine 1.7kg,59,external,kg
+XDA-TWP-KGR,,Tomato Whole Peeled,59,external,kg
+XDA-YDR-KGR,,Yeast Dry,59,external,kg
+XDE-AST-EAC,30836.0,Astd roses,45,external,ea
+XDE-DIW-EAC,,Diwali Sticker,53,external,ea
+XDE-GBD-KGR,30187.0,Gold Beads per Kg,59,external,kg
+XDE-GLI-EAC,30186.0,Glitter,59,external,kg
+XDE-NOP-KGR,30195.0,Non Pareil,59,external,kg
+XDE-PMG-KGR,30196.0,Powder Metallic Gold,59,external,kg
+XDE-PMS-KGR,30197.0,Powder Metallic Silver,59,external,kg
+XDE-RIB-EAC,30198.0,Ribbon,53,external,meter
+XDE-SIL-KGR,30202.0,Silver Beads Per Kg,45,external,kg
+XDE-TEA-EAC,30201.0,Ribbon tear 1 Roll,45,external,meter
+XDO-BTE-200G,,Bakers Tennis Biscuit 200g,59,external,kg
+XFA-COO-LTR,,Cooking Oil 5ltrs,59,external,lt
+XFA-CRI-LTR,30615.0,Crispa Oil,59,external,lt
+XFA-EGG-KGR,,Eggs,59,external,kg
+XFA-FPS-KGR,30206.0,Fat Pastrex Super,59,external,kg
+XFA-GHE-KGR,,Clover Ghee,59,external,kg
+XFA-MAR-KGR,30208.0,Margarine Marvello Yellow,59,external,kg
+XFA-MAS-KGR,30209.0,Margarine Mastercraft White,59,external,kg
+XFA-MOO-KGR,30780.0,Mooi river butter,59,external,kg
+XFA-MRG-KGR,30210.0,Margarine Mr G,59,external,kg
+XFA-OIL-LTR,30211.0,Oil Crispa Gold,63,external,lt
+XFA-OVA-KGR,30212.0,Ovalette,59,external,kg
+XFA-PTX-KGR,30672.0,Pastrex Super,59,external,kg
+XFA-RAM-KGR,30810.0,Rama,59,external,kg
+XFA-REL-LTR,30213.0,Release,59,external,kg
+XFA-SOI-LTR,,Sunflower Sunfoil 5 Ltr,59,external,lt
+XFA-SOR-LRT,30242.0,Sorbitol 30LTR,59,external,lt
+XFA-YWT-KGR,30244.0,Yeast Wet,59,external,kg
+XFL-BRF-125,30215.0,Flour Brown,9,external,kg
+XFL-CAF-125,30217.0,FlourCake,63,external,kg
+XFL-CMB-125,,Complete Mix - Brown Bread Flour,63,external,kg
+XFL-CMW-125,,Complete Mix - White Bread Flour,59,external,kg
+XFL-GSE-KGR,,Semolina Golden Cloud 1kg,59,external,kg
+XFL-NYA-KGR,,Nyala Maize Meal 10kg,59,external,kg
+XMO-BS6-KGR,,Premix Bread S6002 5%,59,external,kg
+XMP -BFM-KGR,,Premix Butter Flavoured Madeira 12.5kg,59,external,kg
+XMP-S60-KGR,,Premix S6002 Bread,59,external,kg
+XMP-SCC-KGR,,Sponge Chocolate Coastal,59,external,kg
+XMP-SRA-KGR,,Soft Roll Alpaga Improver,59,external,kg
+XMP-SRE-EAC,,Sponge Redvelvet Premix,59,external,kg
+XPM-5PB-KGR,,Premix bread 5%,59,external,kg
+XPM-AFG-KGR,,Apricot Flan Gel,59,external,kg
+XPM-CCM-KGR,30110.0,Mix Chocomousse,59,external,kg
+XPM-EMC-KGR,,Sponge Ebony Moist Choc Mix,59,external,kg
+XPM-FAI-KGR,30118.0,Premix 15% Sweet Fairglen,59,external,kg
+XPM-FON-5KG,30233.0,Fond Suisse,59,external,kg
+XPM-FRU-KGR,30088.0,Fruit Mince,59,external,kg
+XPM-HXB-KGR,30104.0,Hot x bun full premix,59,external,kg
+XPM-MUE-KGR,30113.0,Mix Muesli Slice,59,external,kg
+XPM-NOB-KGR,,No-bake premix,59,external,kg
+XPM-PAS-KGR,30116.0,Paste 4.5% Standard Bread,59,external,kg
+XPM-SCH-KGR,30099.0,Sponge Chocolate,59,external,kg
+XPM-SPC-KGR,30243.0,Stabiliser Pettina Cream,59,external,kg
+XPM-SPE-KGR,30128.0,Sponge Eggless,59,external,kg
+XPM-SPI-KGR,30100.0,Sponge Pettina Instant,59,external,kg
+XPM-SVC-KGR,,Sponge Instant Coastal,59,external,kg
+XPM-SWE-KGR,30119.0,Premix 20% Sweet Red,59,external,kg
+XPO-BCS-KGR,,Specialty-Chai,59,external,kg
+XPO-BMS-LTR,,Bubblegum Milkshake Syrup,59,external,lt
+XPO-CMS-LTR,,Chocolate Milkshake Syrup,59,external,lt
+XPO-LMS-LTR,,Lime Milkshake Syrup,59,external,lt
+XPO-MHS-LTR,,Monin Hazelnut Syrup,59,external,lt
+XPO-MVS-LTR,,Monin Vanilla Syrup,59,external,lt
+XPO-SCF-KGR,,Specialty - Coffee Freezo,59,external,kg
+XPO-SCM-LTR,,Salted Caramel Milkshake Syrup,59,external,kg
+XPO-SIC-KGR,,Specialty -Indonesian Coffee,59,external,kg
+XPO-SMC-EAC,,Monin Caramel Sauce,59,external,lt
+XPO-SMC-LTR,,Monin Caramel Syrup,59,external,lt
+XPO-SMS-LTR,,Strawberry Milkshake Syrup,59,external,lt
+XSN-ANI-KGR,30479.0,Aniseed,59,external,kg
+XSN-FLA-KGR,,Flaked Almonds 1Kg,59,external,kg
+XSN-NUT-KGR,30131.0,Nuts Nibb,59,external,kg
+XSN-PEH-KGR,,Pecan Nut Halves,59,external,kg
+XSN-SDP-KGR,30135.0,seed poppy,59,external,kg
+XSN-SES-KGR,30499.0,Sesame Seed,59,external,kg
+XSN-SJEE-KGR,,Spice Jeera Whole,59,external,kg
+XSN-SMI-KGR,,Spice Mixed Herbs,59,external,kg
+XSN-SOR-KGR,,Spice Origanum,59,external,kg
+XSN-WHS-KGR,,Whole Somph,59,external,kg
+XSP- DHA-EAC,,Spice- Dhania,59,external,kg
+XSP-ALG-KGR,,Ground Almonds,59,external,kg
+XSP-BAK-KGR,30239.0,Baking Powder (Hercules),59,external,kg
+XSP-BIC-KGR,30224.0,Bicarbonate Soda,59,external,kg
+XSP-CIN-KGR,30506.0,Cinnamon Ground,59,external,kg
+XSP-COR-KGR,30633.0,CornFlour,59,external,kg
+XSP-SAL-EAC,30240.0,Salt Bale,59,external,kg
+XSP-SBN-KGR,30142.0,Spice Bunspice,59,external,kg
+XSP-SNU-800G,,Spice Nutmeg Ground 800g,59,external,kg
+XSP-WNM-KGR,1034.0,Whole Nutmeg,59,external,kg
+XSU-ESS-KGR,,Equisweet Sucralose Sachets,59,external,kg
+XSU-HIS-KGR,30671.0,Huletts Icing Sugar,59,external,kg
+XSU-IBS-KGR,,Hullets Brown Sugar Tubes,59,external,kg
+XSU-IWS-KGR,,Huletts White Sugar Tubes,59,external,kg
+XSU-SBN-KGR,30148.0,Sugar Brown,59,external,kg
+XSU-SCH-KGR,30149.0,Sugar Castor Huletts,63,external,kg
+XSU-SIC-KGR,30150.0,Sugar Icing Huletts,59,external,kg
+XSU-SWH-KGR,30151.0,Sugar White Huletts,59,external,kg
+XTO - PIR-KGR,,Pineapple Rings 440g,59,external,kg
+XTO- ESG-KGR,,Espresso Grind Slojo Spiced Chai,59,external,kg
+XTO- GRT-EAC,,Green Tea,58,external,kg
+XTO- VIC-LTR,,Gatti Vanilla Ice Cream,59,external,kg
+XTO-AJM-KGR,30219.0,Jam Apricot (All Gold),59,external,kg
+XTO-ALE-KGR,,Almond Essence,59,external,kg
+XTO-ALM-KGR,30188.0,Almond Icing,59,external,kg
+XTO-ASA-KGR,,Ayesha Samoosa Strips,59,external,kg
+XTO-BAR-KGR,30651.0,Bar One Spread,59,external,kg
+XTO-BOO-EAC,,Biscuit Original Oreo,14,internal,
+XTO-CCL-KGR,,Officemate Creamy Chai Latte,59,external,kg
+XTO-CFU-KGR,,Cereal Choc Future Life 1.25kg,59,external,kg
+XTO-CHE-KGR,30222.0,Pie Filling Black Forest Pie Filling,59,external,kg
+XTO-CHI-LTR,,Sauce Chilli 2lt,59,external,lt
+XTO-COB-KGR,,Coffee Beans,59,external,kg
+XTO-CTS-EAC,,Carte D Toffee Sauce,59,external,kg
+XTO-DHC-KGR,,Officemate Dark Hot Choc,59,external,kg
+XTO-GAR-KGR,,Spread Garlic & Herb,59,external,kg
+XTO-GRA-KGR,30221.0,Pie Filling Granadilla,59,external,kg
+XTO-GSP-KGR,30561.0,Golden Syrup,59,external,kg
+XTO-HAS-KGR,,Spread Hazelnut 5kg,59,external,kg
+XTO-HCC-KGR,,Hot Chocolate Coffee Merchant,59,external,kg
+XTO-HPM-EAC,,Carte D Hot Pudding Mix,59,external,kg
+XTO-HZL-KGR,30152.0,Hazelnut Praline,59,external,kg
+XTO-ICE-KGR,,Ice,59,external,kg
+XTO-ICK-5KG,30105.0,Instant Custard Kramess,59,external,kg
+XTO-JEL-KG,,Assorted Jelly,59,external,kg
+XTO-KBO-EAC,,Knorr Brown Onion Soup,59,external,kg
+XTO-KCM-EAC,,Knorr Creamy Mushroom Sauce,59,external,kg
+XTO-KCS-EAC,,Knorr Cream of Chicken Soup,59,external,kg
+XTO-KLI-KGR,,Klim 500g,59,external,kg
+XTO-LEC-5KG,30230.0,Dip Leamington Chocolate,59,external,kg
+XTO-LER-5KG,30231.0,Dip Leamington Raspberry,59,external,kg
+XTO-MAY-KGR,,Mayonnaise Cross & Blackwell 3kg,59,external,kg
+XTO-MBD-500ML,,Milky Bar Dessert Topping,59,external,kg
+XTO-MHC-KGR,,Officemate Milky Hot Choc,59,external,kg
+XTO-MUS-LTR,,Mustard Sauce,59,external,kg
+XTO-NUT-KGR,,Nutella 3kg,59,external,kg
+XTO-OAT-KGR,,Fine Oats 25 kg,59,external,kg
+XTO-PCH-KGR,30162.0,Paste Chocolate,59,external,kg
+XTO-PDA-KG,,Pitted Dates,59,external,kg
+XTO-PEP-KGR,,Nestle Peppermint Topping,59,external,kg
+XTO-PIN-EAC,,Pineapple crushed,59,external,kg
+XTO-PLI-KGR,30189.0,Icing plastic,59,external,kg
+XTO-RIC-KGR,,Aunt Caroline Rice,59,external,kg
+XTO-SAJ-900G,,Jam Strawberry All Gold 900g,59,external,kg
+XTO-SBJ-KGR,30220.0,Jam Strawberry (All Gold),59,external,kg
+XTO-SBO-KGR,30154.0,Spread Bar One Nestle,59,external,kg
+XTO-SCA-KGR,30155.0,Spread caramel,59,external,kg
+XTO-SCF-KGR,,Coffee Freezo Slojo,59,external,kg
+XTO-SHC-KGR,,Specialty Hot Chocolate,59,external,kg
+XTO-SHW-KGR,,Specialty White Hot Chocolate,59,external,kg
+XTO-SPE-KGR,,Spread Peanut Butter 3kg,59,external,kg
+XTO-STR-KGR,30710.0,Pie Filling Strawberry,59,external,kg
+XTO-TMR-KGR,,Taj Mahal Rice 10KG,59,external,kg
+XTO-TOM-LTR,,Tomatoe Sauce,59,external,kg
+XTO-VIN-LT,,Vinegar,59,external,kg
+YBA-BOO-MX1,30446.0,Sub Batter - Bar One Sponge Round,72,internal,kg
+YBA-BSC-MXI,,Sub Batter- Butter Scones,72,internal,kg
+YBA-CAC-MX1,30432.0,Sub Batter Carrot Cake,72,internal,kg
+YBA-CCC-MX1,30859.0,Sub Batter-Carrot Cake with Cream Cheese Slab,72,internal,kg
+YBA-CGS-MX1,30442.0,Sub Batter- Chocolate Gateaux Sponge,72,internal,kg
+YBA-CHC-MX1,30434.0,Sub Batter-Chocolate Brownie,72,internal,kg
+YBA-CHO-MX1,30352.0,Sub Sponge Batter -Chocolate,72,internal,kg
+YBA-CHS-MX1,30441.0,Sub Batter-Chocolate Sponge Sheet,72,internal,kg
+YBA-CSP-MX1,30447.0,Sub Batter- Choc Swissroll Sponge,72,internal,kg
+YBA-CSS-MX1,30864.0,Sub Batter - choc sheet scratch mix,72,internal,kg
+YBA-DEG-MX1,,Sub Batter Eggless Diwali Cake,72,internal,kg
+YBA-DIS-MX1,30622.0,Sub Batter Diwali Sponge,72,internal,kg
+YBA-DIV-MX1,30537.0,Sub Sponge Batter Diwali,72,internal,kg
+YBA-EFS-MX1,30443.0,Sub Batter -Eggfree Sponge sheet,72,internal,kg
+YBA-EGS-MX1,30623.0,Sub Batter Eggless Gateaux Sponge,72,internal,kg
+YBA-ESN-MX1,30768.0,Sub Batter Snowball Eggles,72,internal,kg
+YBA-FRS-MX1,30438.0,Sub Batter- Fruit Scones,72,internal,kg
+YBA-HCB-MX1,30351.0,Sub Dough- Hot Cross Buns,72,internal,kg
+YBA-HCC-MX1,30659.0,Sub Batter Cross for Hot Cross Buns,72,internal,kg
+YBA-MAD-MX1,30435.0,Sub Batter - Madeira Slab,72,internal,kg
+YBA-MCC-MX1,,Sub Sponge Batter- Moist Choc Sponge C/C,72,internal,kg
+YBA-QUC-MX1,30436.0,Sub Batter -Queen Cake,72,internal,kg
+YBA-RBS-MX1,30618.0,Sub Batter Rainbow Sponge,72,internal,kg
+YBA-RCS-MX1,30656.0,Sub Batter Rich Choc Sponge,72,internal,kg
+YBA-ROT-MX1,,Sub Dough Roti 12s,72,internal,kg
+YBA-SCO-MX1,30437.0,Sub Batter - Scones,72,internal,kg
+YBA-SMC-MX1,,Sub Sponge Batter - Moist Choc Sponge Fererro,72,internal,kg
+YBA-SNB-MX1,30439.0,Sub Batter -Snowball,72,internal,kg
+YBA-SPO-MX1,30444.0,Sub Batter - Strawberry Sponge,72,internal,kg
+YBA-VAN-MX1,30353.0,Sub Sponge Batter - Vanilla Gateaux,72,internal,kg
+YBA-VNS-MX1,30445.0,Sub Batter Vanilla Sheets Coastal,72,internal,kg
+YBA-VSR-MX1,30448.0,Sub Batter- Vanilla Swissroll Sponge,72,internal,kg
+YBA-WNS-MX1,30440.0,Sub Batter- Windsor Slab,72,internal,kg
+YBU -CTR-EAC,,Cake ring tins 170X70mm,66,external,ea
+YBU-CRE-MX6,30347.0,Sub Buns-Cream 6s,72,internal,kg
+YBU-JUG-2LT,,Jug Plastic 2 litre,53,external,ea
+YBU-JUG-5LT,,Jug Plastic 5 litre,53,external,ea
+YBU-OVM-EAC,30005.0,Oven Mittens,53,external,ea
+YBU-PAL-EAC,30653.0,Palette Knife,53,external,ea
+YBU-PBR-EACH,,Pastry Brush Nylon 60mm,53,external,ea
+YBU-SBP-EAC,30012.0,Sponge for bread pan,53,external,ea
+YBU-SPR-EAC,30013.0,Springform Cake Pan,66,external,ea
+YBU-SSC-EAC,,Scraper Steel 115x80mm,53,external,ea
+YCC-14C-EAC,30288.0,Case No 14 Cake,9,external,ea
+YCC-24E-EAC,30485.0,Madeira case 24e,9,external,ea
+YCC-APR-EAC,,White Plastic Aprons,53,external,ea
+YCC-BLA-EAC,,Gel super black,59,external,ea
+YCC-BRA-KGR,30530.0,Brandy,59,external,lt
+YCC-BUN-EAC,30044.0,Paper 10kg Bunny,53,external,kg
+YCC-BUR-EAC,30169.0,Gel Burgundy,59,external,kg
+YCC-CHA-EAC,30630.0,Champagne Bottle,45,external,ea
+YCC-CRC-MX1,,Sub Cream Cheese,72,external,kg
+YCC-CRG-EAC,,Cream Gun 500g,53,external,ea
+YCC-CSC-EAC,,Coffee Scale,73,external,ea
+YCC-CUP-EAC,30803.0,Red Cupcakes Cup,9,external,ea
+YCC-DEP-EAC,,Gel Food Deep Pink,59,external,kg
+YCC-EDI-005,,Canon Edible Ink set 5s 480/1,59,external,ea
+YCC-ELE-EAC,30165.0,Electric Green Gel,59,external,kg
+YCC-EOR-EAC,30660.0,Gel Col. Elec Orange,59,external,kg
+YCC-ESL-EAC,30677.0,Electronic Scale,73,,kg
+YCC-GEL-EAC,30185.0,Gel liquid gold /silver/ pearl,59,external,kg
+YCC-GEP-EAC,30625.0,Gel Food Col.Elec Purple,59,external,kg
+YCC-GLG-EAC,30626.0,Gel Food Col.Leaf Green,53,external,kg
+YCC-GLY-EAC,30628.0,Gel Food Col. Lemon Yellow,59,external,kg
+YCC-GLY-KGR,30207.0,Glycerine,59,external,kg
+YCC-GOM-EAC,30002.0,GlovesOven Mittens,53,external,ea
+YCC-GPP-EAC,30766.0,Grease Proof Paper,53,external,kg
+YCC-GPR-EAC,30740.0,GP REAM,53,external,kg
+YCC-GSB-EAC,30627.0,Gel Food ColSky Blue,59,external,kg
+YCC-ICS-EAC,,Icing Sheet A4 New,63,external,ea
+YCC-ISH-EAC,30235.0,Icing Sheet A4 Borderless,59,external,ea
+YCC-LEA-EAC,30624.0,Leaves No.Large,45,external,ea
+YCC-LES-LTR,30690.0,Lemon Essense,59,external,ea
+YCC-MET-EAC,30003.0,metallic nozzil 15mm star,53,external,ea
+YCC-MGS-EAC,30641.0,Ed Cart Canon Mg Series,53,external,ea
+YCC-MIS-EAC,30817.0,Mistletoe Garland ribbon,45,external,ea
+YCC-MMC-EAC,30831.0,RICH MOIST XMAS CAKE,42,internal,ea
+YCC-MOH-EAC,,Mop Hats,53,external,ea
+YCC-MXR-EAC,30816.0,Merry xmas ribbon,53,external,ea
+YCC-NME-EAC,30014.0,Nozzels metallic,53,external,ea
+YCC-NST-EAC,30004.0,Nozzles star tubes 5s ( 42),53,external,ea
+YCC-OCC-KGR,,Old Cakes Currant Square,45,external,ea
+YCC-PAS-EAC,30006.0,Pastry Bag 13040 4 46cm,53,external,ea
+YCC-PIL-EAC,30046.0,Pillars White,45,external,ea
+YCC-PIN-EAC,30166.0,Pink Gel,59,external,ea
+YCC-PIP-EAC,30674.0,Piping Bags No 4,53,external,ea
+YCC-PLG-EAC,,Plastic Gloves,53,external,kg
+YCC-POT-KGR,30237.0,Potassium Sorbate Granular,59,external,kg
+YCC-PSR-EAC,30045.0,Paper Silicone Ream,53,external,ea
+YCC-PSS-EAC,30008.0,Piping Tip Star Set,53,external,kg
+YCC-PST-EAC,30007.0,Pastry Bag 13040 5 50cm Export,53,external,ea
+YCC-PUR-EAC,30543.0,Gel Food Colouring Purple,59,external,kg
+YCC-ROB-EAC,,Gel Food Royal Blue,59,external,kg
+YCC-SHB-EAC,,Smartchef Heavy Duty Blender,73,external,ea
+YCC-SIL-EAC,30655.0,Silicon Paper 500,53,external,ea
+YCC-SOS-EAC,30701.0,Soccer Set,45,external,ea
+YCC-SRD-EAC,30657.0,Gel Col.Super Red,59,external,kg
+YCC-SUP-EAC,30170.0,Gel Super Red,59,external,kg
+YCC-TEA-EAC,30172.0,Gel Teal,59,external,kg
+YCC-THF-KGR,,Thickflo 25kg,59,external,kg
+YCC-VIT-KGR,,Vitap Starch 25kg,59,external,kg
+YCC-XPS-EAC,30815.0,Xmas Poinsettia Star Ribbon,45,external,ea
+YCC-XSS-EAC,30834.0,Xmas stickers scroll,53,external,meter
+YCK-BAN-MX1,30748.0,Sub-Banana Cake,72,internal,kg
+YCK-FRC-MX1,30529.0,Sub Batter Christmas Windsor Plain,72,internal,kg
+YCL-BAG-EAC,30048.0,Bag Black Refuse HD,9,external,ea
+YCL-BLD-LTR,,Black Dip,53,external,lt
+YCL-BLE-EAC,30049.0,Bleach 5L,53,external,lt
+YCL-BRE-250G,,Detergent Brewtool 250G,53,external,kg
+YCL-CEM-KGR,,Clenzo Espresso Cleaning Detergent,53,external,kg
+YCL-DIS-EAC,30051.0,Dish Washing Liquid 25L,53,external,lt
+YCL-DOO-EAC,,Doom,53,external,ea
+YCL-EMP-EAC,30052.0,Empty Boxes,9,external,ea
+YCL-FAS-LTR,,Fat Solves,53,external,lt
+YCL-FLO-EAC,30053.0,Floor Cleaner Lav,53,external,lt
+YCL-HHG-EAC,30814.0,Household Gloves,53,external,ea
+YCL-HHH-EAC,30054.0,Handy Household 5l,53,external,lt
+YCL-MRM-EAC,30819.0,Mr min,53,external,ea
+YCL-OVC-EAC,30055.0,Oven Cleaner,53,external,lt
+YCL-POT-EAC,30056.0,Pot Scourers,53,external,ea
+YCL-SAN-500,,Hand Sanitiser 500ml,53,external,lt
+YCL-SCC-KGR,,Speciality Cleaning Chemicals -Machine Cleaner 900,53,external,lt
+YCL-SLW-EAC,30640.0,Steel Wool,53,external,ea
+YCL-SPO-EAC,30057.0,Sponges,59,external,ea
+YCL-UCD-900G,,Urnex Cafiza2 Detergent,53,external,kg
+YDO-BIS-MX1,30463.0,Sub Dough-Biscuit,72,internal,kg
+YDO-BRB-MX1,30413.0,Sub Dough Brown Bread,72,internal,kg
+YDO-BUN-MX1,,Sub Dough - Buns,72,internal,kg
+YDO-CRO-MX1,,Sub dough Croissants,72,internal,kg
+YDO-CUC-MX1,30794.0,Sub Dough - Butter Biscuits,72,internal,kg
+YDO-DAN-MX1,30451.0,Sub Dough -Danish,72,internal,kg
+YDO-DOU-MX1,30453.0,Sub Dough-Doughnut,72,internal,kg
+YDO-M3M-MX1,30464.0,Sub Dough Melting Moment Round 60g,72,internal,kg
+YDO-MML-MX1,,Sub Dough Melting Moments Long 95g,72,internal,kg
+YDO-NAA-MX1,30449.0,Sub Dough - Naan,72,internal,kg
+YDO-ROL-MX1,30450.0,Sub Dough - Rolls,72,internal,kg
+YDP-CHD-MX1,30401.0,Sub Lamington -Dip Chocolate,72,internal,kg
+YDP-LAM-MX3,30402.0,Sub Raspberry Lamington - Dip,72,internal,kg
+YDP-SNO-MX1,30403.0,Sub Snowball Dip,72,internal,kg
+YEG-SNO-MX1,30767.0,Sub Snowball Eggless,72,internal,kg
+YFC-FRC-MX1,30366.0,Sub Fresh Cream,72,internal,kg
+YFI-BOG-MX1,30391.0,Sub Chocolate Ganache,72,internal,kg
+YFI-BOM-MX1,30409.0,Sub Choc Mousse Bar One,72,internal,kg
+YFI-CCC-KGR,,Sub Choc Cream Cheese,72,internal,kg
+YFI-CUS-MX1,30406.0,Sub Custard Filing,72,internal,kg
+YFI-FEM-MX1,,sub choc mousse ferrero,72,internal,kg
+YFI-MIL-MX1,30408.0,Sub Milk Tart Filling,72,internal,kg
+YFI-MOU-MX1,,Sub Mousse Mix,72,internal,kg
+YFI-SQF-MX1,30405.0,Sub Currant Square Filling,72,internal,kg
+YFI-STJ-MX1,30410.0,Sub Strawberry Jam Filling,72,internal,kg
+YFI-TIR-MX1,30411.0,Sub Tiramisu,72,internal,kg
+YGA-19K-EAC,30061.0,Gas 19kg,53,external,kg
+YGA-AFS-EAC,,Air Filled Stand 1550x500,44,external,ea
+YGA-FIR-EAC,30799.0,Fire Extinguisher,66,external,ea
+YPA-ECL-MX1,30457.0,Sub Batter Eclairs,72,internal,kg
+YPA-PUF-MX1,30459.0,Sub Pastry-Puff,72,internal,kg
+YPA-SWE-MX1,30461.0,Sub Sweet Paste,72,internal,kg
+YPI-PIC-MX1,30646.0,Sub Picture,72,internal,kg
+YRO-COR-M12,30649.0,Sub Cocktail Rolls 12s,72,internal,kg
+YSP-BSC-MX1,,Sub- Pie Bottom Short Crust Pastry,72,internal,kg
+YSP-SCM-MX1,,Sub- Chicken & Mushroom Pie Filling,72,internal,kg
+YSP-SHE-MX1,30389.0,Sub Bar One Sponge - Sheets,72,internal,kg
+YSP-SMC-MX1,,Sub- Mutton Curry Pie Filling,72,internal,kg
+YSP-SVP-MX1,,Sub- Veg Curry Pie Filling,72,internal,kg
+YSP-TRI-MX1,30355.0,Sub -Sponge Trifle,72,internal,kg
+YST-A4P-EAC,30066.0,A4 PAPER,53,external,ea
+YST-ABR-EAC,30745.0,Absa Rolls,53,external,ea
+YST-BAT-EAC,30837.0,Battery,53,external,ea
+YST-BCI-EAC,,New Birthday Cake Invoices,53,external,ea
+YST-BCO-EAC,30069.0,book cover,53,external,ea
+YST-BRO-EAC,30632.0,Brother Toner Cart.7225N,53,external,ea
+YST-BTI-EAC,30070.0,Books Tax Invoice,53,external,ea
+YST-BTP-EAC,30840.0,Black Tape,53,external,ea
+YST-DIW-EAC,30782.0,Diwali Invoice Books,53,external,ea
+YST-DPL-EAC,,Diwali Cake Box Plates,9,external,ea
+YST-ERC-EAC,,Epson Ribbon Cartridge,53,external,ea
+YST-EXE-EAC,30065.0,A4 exercise book,53,external,ea
+YST-HCB-EAC,30732.0,Hard cover book,53,external,ea
+YST-HLS-EAC,30843.0,High lighters,53,external,ea
+YST-LMP-EAC,30797.0,Laminating Plastic,53,external,ea
+YST-LPS-EAC,30074.0,Laser Payslips,53,external,ea
+YST-PFL-EAC,30075.0,paper file,53,external,ea
+YST-PRI-EAC,30750.0,Pritt,53,external,ea
+YST-SQA-PAC,30078.0,square white paper,53,external,ea
+YST-STA-BOX,30079.0,Staples rexel no .56,53,external,ea
+YST-TAP-EAC,30728.0,tape,53,external,ea
+YST-TIL-EAC,30687.0,Till Rolls,53,external,ea
+YST-TIP-EAC,30860.0,Tipex,53,external,ea
+YST-TRL-EAC,30059.0,toilet roll,53,external,ea
+YST-WGE-EAC,30733.0,Wage Envelope,9,external,ea
+YTB-MIL-MX1,30510.0,Sub Milk Tart Base Large,72,internal,kg
+YTB-MIS-MX1,30512.0,Sub Milk Tart Base Small,72,internal,kg
+YTB-NOB-EAC,,Sub No Bake Cake,72,internal,kg
+YTO-BEL-MX1,30418.0,Sub Belgica Tart Topping,72,internal,kg
+YTO-BLC-MX1,30508.0,Sub Belgica Crumbs,74,internal,kg
+YTO-BOF-KGR,,Sub Bar One Filling,72,internal,kg
+YTO-BOG-KGR,,Sub- Bar One Ganache,72,internal,kg
+YTO-BUC-MX1,30398.0,Sub Buttercream Chocolate,72,internal,kg
+YTO-BUW-MX1,30357.0,Sub Buttercream- White,72,internal,kg
+YTO-BUY-MX1,30400.0,Sub Buttercream Yellow,72,internal,kg
+YTO-FOC-MX1,30412.0,Sub Fondant Chocolate,72,internal,kg
+YTO-NAA-MX1,30375.0,Sub Naan topping,72,internal,kg
+YTO-SNO-MX1,30419.0,Sub Snowball Coconut Topping,72,internal,kg
+YTO-SUS-MX1,30417.0,Sub Sugar Syrup,72,internal,kg
+YTO-SUW-MX1,30416.0,Sub Glaze Sugar Water,72,internal,kg
+YTO-WFI-MX1,30539.0,Sub - White Fondant Icing,72,internal,kg
+YUT-CDW-EAC,,Cutter Dough Wheel Divider,66,external,ea
+YUT-GRU-EAC,30654.0,Grunter Knife,53,external,ea
+YUT-PIP-EAC,30594.0,Piping Bag No 5,53,external,ea
+YUT-SCA-EAC,30652.0,Scale Electronic,66,external,ea
+YUT-WHI-EAC,,Whisks 350mm,66,external,ea
+ZBX-16B-EAC,30246.0,16 box,9,external,ea
+ZBX-883-EAC,30739.0,8*8*3,9,external,ea
+ZBX-884-EAC,30738.0,8*8*4,9,external,ea
+ZBX-MUFF-EACH,,Muffin Box Rose Design,9,external,ea
+ZDB- FIC-EAC,,Genus Eco 30 Flying Insect Catcher,54,external,ea
+ZDB-351-EAC,,L 351 Domes,9,external,ea
+ZDB-38B-EAC,,38F Black Tray,9,external,ea
+ZDB-38C-EAC,,38F Lid,9,external,ea
+ZDB-38F-EAC,,38F Black Tray,9,external,ea
+ZDB-S31-EAC,30281.0,Lids 300 Biscuit S312,9,external,ea
+ZDB-SDL-EAC,,Square Desert Lid,9,external,ea
+ZDB-SDT-EAC,,GLUTEN FREE COFFEE CAKE TUB,43,internal,ea
+ZDO-DOY-EAC,30320.0,Doyley Round 240mm,9,external,ea
+ZFO-10-EAC,30501.0,KR 10,9,external,ea
+ZFO-14-EAC,30321.0,KR14,9,external,ea
+ZFO-16-EAC,30322.0,KR16,9,external,ea
+ZFO-18-EAC,30323.0,KR18,9,external,ea
+ZFO-1M5-EAC,,KS 1MX500,9,external,ea
+ZFO-20-EAC,30324.0,KR20,9,external,ea
+ZFO-20R-EAC,30742.0,20 Round Board,9,external,ea
+ZFO-500-EAC,30251.0,BOX 1M*500MM*6,9,external,ea
+ZFO-NR1-EAC,30584.0,NR 10,9,external,ea
+ZFO-NR2-EAC,30585.0,NR 12,9,external,ea
+ZFO-NS1-EAC,30329.0,NS 10,9,external,ea
+ZFO-NS2-EAC,30330.0,NS12,9,external,ea
+ZFO-S16-EAC,30325.0,KS16,9,external,ea
+ZFO-S18-EAC,30326.0,KS18,9,external,ea
+ZFO-S20-EAC,30328.0,KS20,9,external,ea
+ZFO-T14-EAC,30331.0,NS14,9,external,ea
+ZFO-TN6-EAC,30617.0,NR 6,9,external,ea
+ZFO-TN8-EAC,30332.0,NS8,9,external,ea
+ZLA- REA-EAC,,Label Real Butter,9,external,ea
+ZLA-ALA-50MM,,Oven Delights logo labels 50mmx40mm,9,external,ea
+ZLA-LAB-EAC,30333.0,Label 40x46 B/white Label,9,external,ea
+ZLA-LKI-EACH,,Label White Keep In Fridge,9,external,ea
+ZLA-LPL-EAC,,Label For Platter Domes,9,external,ea
+ZLA-OLA-EAC,,Label Oven Delights Logo 50x50mm,9,external,ea
+ZLA-PLA-EAC,,Label Plates logo 50x50mm,9,external,ea
+ZLA-PLL-EAC,,Label for Platters Assorted Flavours,9,external,ea
+ZLA-WLB-EACH,,Label 40x29 White Label,9,external,ea
+ZPA- SSW-EAC,,Stirrer Sticks Wooden,53,external,ea
+ZPA-CDA-EAC,,4 Cup Drinkaway Carrier P2106,9,external,ea
+ZPA-CDC-EAC,,2 Cup Drinkaway Carrier P2105,9,external,ea
+ZPA-DWK-250ML,,250ml Double Wall Kraft Cup,9,external,ea
+ZPA-DWK-350ML,,350ml Double Wall Kraft Cup,9,external,ea
+ZPA-GRE-EAC,30302.0,Grease Proof 2(200*170),9,external,ea
+ZPA-RSL-250ML,,250ml Ripple Sip Lid,9,external,ea
+ZPA-RSL-350ML,,350ml Ripple Sip Lid,9,external,ea
+ZPA-SER-BOX,30315.0,Servittes 200x300,53,external,ea
+ZPA-SSW-EAC,,Stirrer Sticks Wooden,53,external,ea
+ZPA-WHP-100ML,,100ml White Hot Paper Cup,9,external,ea
+ZPL-70M-EAC,30284.0,Plastic Lids Clear 70mm,9,external,ea
+ZPL-DES-EAC,30274.0,Desert Spoons,53,external,ea
+ZPL-F70-EAC,30279.0,F70 BISCUIT CONTAINER,9,external,ea
+ZPL-STR-BOX,30317.0,Wrapped Straws,53,external,ea
+ZPL-TRO-EAC,30316.0,Trolley Cover,53,external,ea
+ZPL-WSS--BOX,,Wrapped Smoothie Straw,53,external,ea

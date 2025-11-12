@@ -27,6 +27,7 @@ Partial Class MainDashboard
         AdministratorToolStripMenuItem = New ToolStripMenuItem()
         DashboardToolStripMenuItem = New ToolStripMenuItem()
         UserManagementToolStripMenuItem = New ToolStripMenuItem()
+        RoleAccessManagementToolStripMenuItem = New ToolStripMenuItem()
         BranchManagementToolStripMenuItem = New ToolStripMenuItem()
         AuditLogToolStripMenuItem = New ToolStripMenuItem()
         SystemSettingsToolStripMenuItem = New ToolStripMenuItem()
@@ -41,6 +42,13 @@ Partial Class MainDashboard
         ManufacturingToolStripMenuItem = New ToolStripMenuItem()
         RetailToolStripMenuItem = New ToolStripMenuItem()
         AccountingToolStripMenuItem = New ToolStripMenuItem()
+        MasterDataToolStripMenuItem = New ToolStripMenuItem()
+        ChartOfAccountsToolStripMenuItem = New ToolStripMenuItem()
+        LedgersToolStripMenuItem = New ToolStripMenuItem()
+        GeneralLedgerToolStripMenuItem = New ToolStripMenuItem()
+        GeneralJournalToolStripMenuItem = New ToolStripMenuItem()
+        JournalEntriesToolStripMenuItem = New ToolStripMenuItem()
+        TrialBalanceToolStripMenuItem = New ToolStripMenuItem()
         ReportingToolStripMenuItem = New ToolStripMenuItem()
         ExitToolStripMenuItem = New ToolStripMenuItem()
         pnlSidebar = New Panel()
@@ -66,7 +74,7 @@ Partial Class MainDashboard
         ' 
         ' AdministratorToolStripMenuItem
         ' 
-        AdministratorToolStripMenuItem.DropDownItems.AddRange(New ToolStripItem() {DashboardToolStripMenuItem, UserManagementToolStripMenuItem, BranchManagementToolStripMenuItem, AuditLogToolStripMenuItem, SystemSettingsToolStripMenuItem})
+        AdministratorToolStripMenuItem.DropDownItems.AddRange(New ToolStripItem() {DashboardToolStripMenuItem, UserManagementToolStripMenuItem, RoleAccessManagementToolStripMenuItem, BranchManagementToolStripMenuItem, AuditLogToolStripMenuItem, SystemSettingsToolStripMenuItem})
         AdministratorToolStripMenuItem.Name = "AdministratorToolStripMenuItem"
         AdministratorToolStripMenuItem.Size = New Size(92, 20)
         AdministratorToolStripMenuItem.Text = "Administration"
@@ -83,10 +91,16 @@ Partial Class MainDashboard
         UserManagementToolStripMenuItem.Size = New Size(185, 22)
         UserManagementToolStripMenuItem.Text = "User Management"
         ' 
+        ' RoleAccessManagementToolStripMenuItem
+        ' 
+        RoleAccessManagementToolStripMenuItem.Name = "RoleAccessManagementToolStripMenuItem"
+        RoleAccessManagementToolStripMenuItem.Size = New Size(215, 22)
+        RoleAccessManagementToolStripMenuItem.Text = "Role Access Management"
+        ' 
         ' BranchManagementToolStripMenuItem
         ' 
         BranchManagementToolStripMenuItem.Name = "BranchManagementToolStripMenuItem"
-        BranchManagementToolStripMenuItem.Size = New Size(185, 22)
+        BranchManagementToolStripMenuItem.Size = New Size(215, 22)
         BranchManagementToolStripMenuItem.Text = "Branch Management"
         ' 
         ' AuditLogToolStripMenuItem
@@ -164,9 +178,54 @@ Partial Class MainDashboard
         ' 
         ' AccountingToolStripMenuItem
         ' 
+        AccountingToolStripMenuItem.DropDownItems.AddRange(New ToolStripItem() {MasterDataToolStripMenuItem, GeneralLedgerToolStripMenuItem})
         AccountingToolStripMenuItem.Name = "AccountingToolStripMenuItem"
         AccountingToolStripMenuItem.Size = New Size(81, 20)
         AccountingToolStripMenuItem.Text = "Accounting"
+        ' 
+        ' MasterDataToolStripMenuItem
+        ' 
+        MasterDataToolStripMenuItem.DropDownItems.AddRange(New ToolStripItem() {ChartOfAccountsToolStripMenuItem, LedgersToolStripMenuItem})
+        MasterDataToolStripMenuItem.Name = "MasterDataToolStripMenuItem"
+        MasterDataToolStripMenuItem.Size = New Size(180, 22)
+        MasterDataToolStripMenuItem.Text = "Master Data"
+        ' 
+        ' ChartOfAccountsToolStripMenuItem
+        ' 
+        ChartOfAccountsToolStripMenuItem.Name = "ChartOfAccountsToolStripMenuItem"
+        ChartOfAccountsToolStripMenuItem.Size = New Size(180, 22)
+        ChartOfAccountsToolStripMenuItem.Text = "Chart of Accounts"
+        ' 
+        ' LedgersToolStripMenuItem
+        ' 
+        LedgersToolStripMenuItem.Name = "LedgersToolStripMenuItem"
+        LedgersToolStripMenuItem.Size = New Size(180, 22)
+        LedgersToolStripMenuItem.Text = "Ledgers"
+        ' 
+        ' GeneralLedgerToolStripMenuItem
+        ' 
+        GeneralLedgerToolStripMenuItem.DropDownItems.AddRange(New ToolStripItem() {GeneralJournalToolStripMenuItem, JournalEntriesToolStripMenuItem, TrialBalanceToolStripMenuItem})
+        GeneralLedgerToolStripMenuItem.Name = "GeneralLedgerToolStripMenuItem"
+        GeneralLedgerToolStripMenuItem.Size = New Size(180, 22)
+        GeneralLedgerToolStripMenuItem.Text = "General Ledger"
+        ' 
+        ' GeneralJournalToolStripMenuItem
+        ' 
+        GeneralJournalToolStripMenuItem.Name = "GeneralJournalToolStripMenuItem"
+        GeneralJournalToolStripMenuItem.Size = New Size(180, 22)
+        GeneralJournalToolStripMenuItem.Text = "General Journal"
+        ' 
+        ' JournalEntriesToolStripMenuItem
+        ' 
+        JournalEntriesToolStripMenuItem.Name = "JournalEntriesToolStripMenuItem"
+        JournalEntriesToolStripMenuItem.Size = New Size(180, 22)
+        JournalEntriesToolStripMenuItem.Text = "Journal Entries"
+        ' 
+        ' TrialBalanceToolStripMenuItem
+        ' 
+        TrialBalanceToolStripMenuItem.Name = "TrialBalanceToolStripMenuItem"
+        TrialBalanceToolStripMenuItem.Size = New Size(180, 22)
+        TrialBalanceToolStripMenuItem.Text = "Trial Balance"
         ' 
         ' ReportingToolStripMenuItem
         ' 
@@ -253,7 +312,7 @@ Partial Class MainDashboard
         MainMenuStrip = MenuStrip1
         Margin = New Padding(4, 3, 4, 3)
         Name = "MainDashboard"
-        Text = "Oven Delights ERP - Main Dashboard"
+        Text = "✅ ROOT MAINDASHBOARD - Oven Delights ERP"
         WindowState = FormWindowState.Maximized
         MenuStrip1.ResumeLayout(False)
         MenuStrip1.PerformLayout()
@@ -275,9 +334,19 @@ Partial Class MainDashboard
     Friend WithEvents ReportingToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents ExitToolStripMenuItem As ToolStripMenuItem
 
+    ' Accounting Submenus
+    Friend WithEvents MasterDataToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents ChartOfAccountsToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents LedgersToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents GeneralLedgerToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents GeneralJournalToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents JournalEntriesToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents TrialBalanceToolStripMenuItem As ToolStripMenuItem
+
     ' Administrator Submenus
     Friend WithEvents DashboardToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents UserManagementToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents RoleAccessManagementToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents BranchManagementToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents AuditLogToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents SystemSettingsToolStripMenuItem As ToolStripMenuItem

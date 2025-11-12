@@ -32,6 +32,7 @@ Namespace Forms
 
         Private _generatedPONumber As String = ""
         Private _transferId As Integer = 0
+        Private _isLoading As Boolean = True
 
         Public Sub New()
             Me.Text = "Inter-Branch Transfer - Oven Delights"
@@ -44,6 +45,7 @@ Namespace Forms
             InitializeUI()
             LoadBranches()
             LoadProducts()
+            _isLoading = False
         End Sub
 
         Private Sub InitializeUI()
@@ -316,7 +318,7 @@ Namespace Forms
             Try
                 Using con As New SqlConnection(_connectionString)
                     con.Open()
-                    Dim sql As String = "SELECT BranchID, BranchName, BranchPrefix FROM Branches WHERE IsActive = 1 ORDER BY BranchName"
+                    Dim sql As String = "SELECT BranchID, BranchName, BranchCode FROM Branches WHERE IsActive = 1 ORDER BY BranchName"
                     Using cmd As New SqlCommand(sql, con)
                         Dim dt As New DataTable()
                         Using reader = cmd.ExecuteReader()
@@ -341,14 +343,14 @@ Namespace Forms
             Try
                 Using con As New SqlConnection(_connectionString)
                     con.Open()
-                    Dim sql As String = "SELECT ProductID, ProductName, ProductCode, ItemType FROM Products WHERE IsActive = 1 ORDER BY ProductName"
+                    Dim sql As String = "SELECT ProductID, SKU, Name FROM demo_Retail_product WHERE IsActive = 1 ORDER BY Name"
                     Using cmd As New SqlCommand(sql, con)
                         Dim dt As New DataTable()
                         Using reader = cmd.ExecuteReader()
                             dt.Load(reader)
                         End Using
 
-                        dt.Columns.Add("DisplayText", GetType(String), "ProductCode + ' - ' + ProductName")
+                        dt.Columns.Add("DisplayText", GetType(String), "SKU + ' - ' + Name")
 
                         cmbProduct.DisplayMember = "DisplayText"
                         cmbProduct.ValueMember = "ProductID"
@@ -361,33 +363,64 @@ Namespace Forms
         End Sub
 
         Private Sub OnFromBranchChanged(sender As Object, e As EventArgs)
+            If _isLoading Then Return
+            
             If cmbFromBranch.SelectedValue IsNot Nothing AndAlso cmbToBranch.SelectedValue IsNot Nothing Then
                 If cmbFromBranch.SelectedValue.Equals(cmbToBranch.SelectedValue) Then
                     MessageBox.Show("From and To branches must be different!", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                     cmbToBranch.SelectedIndex = -1
                 End If
             End If
+            
+            ' Refresh product price when branch changes
+            If cmbProduct.SelectedValue IsNot Nothing Then
+                OnProductChanged(Nothing, Nothing)
+            End If
         End Sub
 
         Private Sub OnProductChanged(sender As Object, e As EventArgs)
-            If cmbProduct.SelectedValue Is Nothing Then Return
+            If _isLoading Then Return
+            
+            If cmbProduct.SelectedValue Is Nothing Then 
+                txtUnitCost.Text = "0.00"
+                Return
+            End If
+            
+            If cmbFromBranch.SelectedValue Is Nothing Then
+                txtUnitCost.Text = "0.00"
+                Return
+            End If
 
             Try
                 Dim productId As Integer = Convert.ToInt32(cmbProduct.SelectedValue)
+                Dim branchId As Integer = Convert.ToInt32(cmbFromBranch.SelectedValue)
+                
                 Using con As New SqlConnection(_connectionString)
                     con.Open()
-                    Dim sql As String = "SELECT TOP 1 ISNULL(AverageCost, 0) AS Cost FROM Products WHERE ProductID = @id"
+                    
+                    ' Debug: Show what we're searching for
+                    'MessageBox.Show($"Looking for ProductID: {productId}, BranchID: {branchId}", "Debug")
+                    
+                    Dim sql As String = "SELECT TOP 1 CostPrice FROM demo_Retail_price WHERE ProductID = @pid AND BranchID = @bid AND CostPrice > 0 ORDER BY EffectiveFrom DESC"
                     Using cmd As New SqlCommand(sql, con)
-                        cmd.Parameters.AddWithValue("@id", productId)
+                        cmd.Parameters.AddWithValue("@pid", productId)
+                        cmd.Parameters.AddWithValue("@bid", branchId)
                         Dim result = cmd.ExecuteScalar()
-                        If result IsNot Nothing Then
-                            txtUnitCost.Text = Convert.ToDecimal(result).ToString("F2")
+                        
+                        If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                            Dim cost As Decimal = Convert.ToDecimal(result)
+                            txtUnitCost.Text = cost.ToString("F2")
+                        Else
+                            ' No price found in demo_Retail_price
+                            MessageBox.Show($"No cost price found for ProductID {productId} in BranchID {branchId}", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                            txtUnitCost.Text = "0.00"
                         End If
                     End Using
                 End Using
                 CalculateTotalValue(Nothing, Nothing)
             Catch ex As Exception
-                ' Ignore errors
+                MessageBox.Show($"Error loading cost price: {ex.Message}{vbCrLf}ProductID: {cmbProduct.SelectedValue}{vbCrLf}BranchID: {cmbFromBranch.SelectedValue}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                txtUnitCost.Text = "0.00"
             End Try
         End Sub
 
@@ -430,6 +463,12 @@ Namespace Forms
                 MessageBox.Show("Please enter a valid quantity.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
             End If
+            
+            Dim unitCost As Decimal = 0
+            If Not Decimal.TryParse(txtUnitCost.Text, unitCost) OrElse unitCost <= 0 Then
+                MessageBox.Show("Unit cost must be greater than zero.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
 
             Try
                 Using con As New SqlConnection(_connectionString)
@@ -439,17 +478,19 @@ Namespace Forms
                             Dim fromBranchId As Integer = Convert.ToInt32(cmbFromBranch.SelectedValue)
                             Dim toBranchId As Integer = Convert.ToInt32(cmbToBranch.SelectedValue)
                             Dim productId As Integer = Convert.ToInt32(cmbProduct.SelectedValue)
-                            Dim unitCost As Decimal = Convert.ToDecimal(txtUnitCost.Text)
                             Dim totalValue As Decimal = Convert.ToDecimal(txtTotalValue.Text)
 
+                            ' Create transfer order with status 'Pending'
+                            _transferId = CreateTransferOrder(fromBranchId, toBranchId, productId, qty, unitCost, totalValue, con, tx)
+                            
                             ' Generate PO if checked
                             If chkGeneratePO.Checked Then
-                                _generatedPONumber = CreateInterBranchPO(fromBranchId, toBranchId, productId, qty, unitCost, totalValue, con, tx)
+                                _generatedPONumber = CreateInterBranchPO(fromBranchId, toBranchId, productId, qty, unitCost, totalValue, _transferId, con, tx)
                             End If
 
                             tx.Commit()
 
-                            MessageBox.Show($"Transfer created successfully!{If(chkGeneratePO.Checked, vbCrLf & "PO Number: " & _generatedPONumber, "")}", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                            MessageBox.Show($"Transfer created successfully with status 'Pending'!{vbCrLf}Transfer ID: {_transferId}{If(chkGeneratePO.Checked, vbCrLf & "PO Number: " & _generatedPONumber, "")}{vbCrLf}{vbCrLf}Use 'Dispatch' to set status to 'In Transit' and reduce inventory.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
                             
                             ' Enable print/email buttons
                             If chkGeneratePO.Checked Then
@@ -471,7 +512,44 @@ Namespace Forms
             End Try
         End Sub
 
-        Private Function CreateInterBranchPO(fromBranchId As Integer, toBranchId As Integer, productId As Integer, quantity As Decimal, unitCost As Decimal, totalValue As Decimal, con As SqlConnection, tx As SqlTransaction) As String
+        Private Function CreateTransferOrder(fromBranchId As Integer, toBranchId As Integer, productId As Integer, quantity As Decimal, unitCost As Decimal, totalValue As Decimal, con As SqlConnection, tx As SqlTransaction) As Integer
+            ' Generate transfer number: BranchCode-IBT-#####
+            Dim branchCode As String = GetBranchPrefix(fromBranchId, con, tx)
+            
+            Dim nextNumber As Integer = 1
+            Using cmdNext As New SqlCommand("SELECT ISNULL(MAX(CAST(RIGHT(TransferNumber, 5) AS INT)), 0) + 1 FROM InterBranchTransfers WHERE FromBranchID = @BranchID AND TransferNumber LIKE @Pattern", con, tx)
+                cmdNext.Parameters.AddWithValue("@BranchID", fromBranchId)
+                cmdNext.Parameters.AddWithValue("@Pattern", branchCode + "-IBT-%")
+                Dim result = cmdNext.ExecuteScalar()
+                If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                    nextNumber = Convert.ToInt32(result)
+                End If
+            End Using
+            
+            Dim transferNumber As String = $"{branchCode}-IBT-{nextNumber.ToString("00000")}"
+            
+            ' Create transfer record with status 'Pending'
+            Dim sql As String = "INSERT INTO InterBranchTransfers (TransferNumber, FromBranchID, ToBranchID, ProductID, Quantity, UnitCost, TotalValue, Status, Notes, CreatedBy, CreatedDate) " &
+                               "VALUES (@number, @from, @to, @product, @qty, @cost, @total, 'Pending', @notes, @user, GETDATE()); SELECT SCOPE_IDENTITY()"
+            
+            Dim transferId As Integer
+            Using cmd As New SqlCommand(sql, con, tx)
+                cmd.Parameters.AddWithValue("@number", transferNumber)
+                cmd.Parameters.AddWithValue("@from", fromBranchId)
+                cmd.Parameters.AddWithValue("@to", toBranchId)
+                cmd.Parameters.AddWithValue("@product", productId)
+                cmd.Parameters.AddWithValue("@qty", quantity)
+                cmd.Parameters.AddWithValue("@cost", unitCost)
+                cmd.Parameters.AddWithValue("@total", totalValue)
+                cmd.Parameters.AddWithValue("@notes", If(String.IsNullOrEmpty(txtNotes.Text), DBNull.Value, CObj(txtNotes.Text)))
+                cmd.Parameters.AddWithValue("@user", AppSession.CurrentUserID)
+                transferId = Convert.ToInt32(cmd.ExecuteScalar())
+            End Using
+            
+            Return transferId
+        End Function
+        
+        Private Function CreateInterBranchPO(fromBranchId As Integer, toBranchId As Integer, productId As Integer, quantity As Decimal, unitCost As Decimal, totalValue As Decimal, transferId As Integer, con As SqlConnection, tx As SqlTransaction) As String
             ' Generate INT-PO number: BranchPrefix-INT-PO-#####
             Dim branchPrefix As String = GetBranchPrefix(fromBranchId, con, tx)
             
@@ -487,35 +565,24 @@ Namespace Forms
             
             Dim intPONumber As String = $"{branchPrefix}-INT-PO-{nextNumber.ToString("00000")}"
             
-            ' Create PO record
-            Dim sqlPO As String = "INSERT INTO PurchaseOrders (PONumber, BranchID, OrderDate, Status, TotalAmount, Notes, CreatedBy, CreatedDate, POType) " &
-                                 "VALUES (@po, @branch, GETDATE(), 'Pending', @total, @notes, @user, GETDATE(), 'Inter-Branch'); SELECT SCOPE_IDENTITY()"
+            ' Create PO record linked to transfer
+            ' Use ToBranchID as SupplierID (4 for Umhlanga, 6 for Ayesha Court)
+            Dim sqlPO As String = "INSERT INTO PurchaseOrders (PONumber, SupplierID, BranchID, OrderDate, Status, CreatedBy, CreatedDate, POType, TransferID) " &
+                                 "VALUES (@po, @supplier, @branch, GETDATE(), 'Pending', @user, GETDATE(), 'Inter-Branch', @transferId); SELECT SCOPE_IDENTITY()"
             
             Dim poId As Integer
             Using cmd As New SqlCommand(sqlPO, con, tx)
                 cmd.Parameters.AddWithValue("@po", intPONumber)
+                cmd.Parameters.AddWithValue("@supplier", toBranchId)
                 cmd.Parameters.AddWithValue("@branch", fromBranchId)
-                cmd.Parameters.AddWithValue("@total", totalValue)
-                cmd.Parameters.AddWithValue("@notes", $"Inter-branch transfer from {GetBranchName(fromBranchId, con, tx)} to {GetBranchName(toBranchId, con, tx)}")
                 cmd.Parameters.AddWithValue("@user", AppSession.CurrentUserID)
+                cmd.Parameters.AddWithValue("@transferId", transferId)
                 poId = Convert.ToInt32(cmd.ExecuteScalar())
             End Using
             
-            ' Create PO line item
-            Dim sqlLine As String = "INSERT INTO PurchaseOrderItems (POID, ProductID, Quantity, UnitPrice, TotalPrice) " &
-                                   "VALUES (@poid, @product, @qty, @price, @total)"
-            
-            Using cmd As New SqlCommand(sqlLine, con, tx)
-                cmd.Parameters.AddWithValue("@poid", poId)
-                cmd.Parameters.AddWithValue("@product", productId)
-                cmd.Parameters.AddWithValue("@qty", quantity)
-                cmd.Parameters.AddWithValue("@price", unitCost)
-                cmd.Parameters.AddWithValue("@total", totalValue)
-                cmd.ExecuteNonQuery()
-            End Using
-            
-            ' Post to journals and ledgers
-            PostInterBranchTransferToLedger(fromBranchId, toBranchId, productId, totalValue, intPONumber, con, tx)
+            ' NOTE: PO line items will be added when the PO is processed
+            ' For now, the transfer record contains all the details needed
+            ' Accounting entries will be posted when transfer is DISPATCHED, not on creation
             
             Return intPONumber
         End Function
@@ -547,13 +614,14 @@ Namespace Forms
         End Sub
 
         Private Function GetProductLedgerCode(productId As Integer, con As SqlConnection, tx As SqlTransaction) As String
-            ' Get product type and return ledger code with prefix
+            ' Get product category and return ledger code with prefix
             ' i = internal (manufactured), x = external (purchased)
-            Using cmd As New SqlCommand("SELECT ItemType FROM Products WHERE ProductID = @id", con, tx)
+            Using cmd As New SqlCommand("SELECT Category FROM demo_Retail_product WHERE ProductID = @id", con, tx)
                 cmd.Parameters.AddWithValue("@id", productId)
-                Dim itemType = cmd.ExecuteScalar()?.ToString()
+                Dim category = cmd.ExecuteScalar()?.ToString()
                 
-                If itemType = "Manufactured" Then
+                ' Assume biscuit category is manufactured (internal), others are external
+                If category IsNot Nothing AndAlso category.ToLower().Contains("biscuit") Then
                     Return $"i-PROD-{productId}"
                 Else
                     Return $"x-PROD-{productId}"
@@ -581,7 +649,7 @@ Namespace Forms
         End Sub
 
         Private Function GetBranchPrefix(branchId As Integer, con As SqlConnection, tx As SqlTransaction) As String
-            Using cmd As New SqlCommand("SELECT BranchPrefix FROM Branches WHERE BranchID = @id", con, tx)
+            Using cmd As New SqlCommand("SELECT BranchCode FROM Branches WHERE BranchID = @id", con, tx)
                 cmd.Parameters.AddWithValue("@id", branchId)
                 Dim result = cmd.ExecuteScalar()
                 Return If(result IsNot Nothing, result.ToString(), "UNK")

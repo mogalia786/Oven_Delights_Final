@@ -29,11 +29,9 @@ Public Partial Class POSForm
         LoadBranches()
         SetupEventHandlers()
         
-        ' Hide branch selector for non-super admin
-        If Not _isSuperAdmin Then
-            lblBranch.Visible = False
-            cboBranch.Visible = False
-        End If
+        ' Lock branch dropdown for non-super admins
+        BranchHelper.LockBranchDropdown(cboBranch, _isSuperAdmin, _currentBranchId)
+        lblBranch.Visible = cboBranch.Visible
         
         ' Focus on scan textbox
         txtScanSKU.Focus()

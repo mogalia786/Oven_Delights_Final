@@ -1,0 +1,13 @@
+-- Check actual column names in tables
+PRINT 'Checking StockMovements columns...';
+SELECT COLUMN_NAME 
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_NAME = 'StockMovements'
+ORDER BY ORDINAL_POSITION;
+
+PRINT '';
+PRINT 'Checking ReOrderBookLines columns...';
+SELECT COLUMN_NAME 
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_NAME = 'ReOrderBookLines'
+ORDER BY ORDINAL_POSITION;

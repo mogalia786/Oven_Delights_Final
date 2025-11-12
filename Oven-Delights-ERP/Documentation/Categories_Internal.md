@@ -1,0 +1,41 @@
+# Categories — Internal
+
+- biscuits
+- buttercream
+- buttercream 1mx500
+- buttercream cake
+- buttercream cake 1mx500
+- buttercream cake round
+- buttercream cakes
+- buttercream figure
+- buttercream figure cake
+- buttercream round
+- buttercream square
+- buttercream square cake
+- consumables
+- drink
+- exotic
+- exotic cakes
+- freshcream 1mx500
+- freshcream black forest
+- freshcream cake
+- freshcream cake round
+- freshcream cakes
+- freshcream cakes 1mx500 eggless
+- freshcream figure
+- freshcream figure cake
+- freshcream round
+- freshcream square
+- freshcream square black forest
+- freshcream square eggless
+- fruit cake
+- fruit cake round
+- ingredients
+- miscellaneous
+- novelty
+- pie
+- platter
+- savoury
+- shop front
+- sub recipe
+- wedding cake

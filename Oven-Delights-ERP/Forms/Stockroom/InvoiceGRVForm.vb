@@ -39,7 +39,7 @@ Public Class InvoiceGRVForm
         Try
             Dim suppliers = stockroomService.GetSuppliersLookup()
             cboSupplier.DataSource = suppliers
-            cboSupplier.DisplayMember = "SupplierName"
+            cboSupplier.DisplayMember = "CompanyName"
             cboSupplier.ValueMember = "SupplierID"
             cboSupplier.SelectedIndex = -1
         Catch ex As Exception
@@ -71,14 +71,30 @@ Public Class InvoiceGRVForm
     End Sub
 
     Private Sub cboSupplier_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cboSupplier.SelectedIndexChanged
-        If cboSupplier.SelectedIndex >= 0 Then
-            selectedSupplierId = CInt(cboSupplier.SelectedValue)
-            LoadPurchaseOrders()
-        Else
+        Try
+            If cboSupplier.SelectedIndex >= 0 AndAlso cboSupplier.SelectedValue IsNot Nothing Then
+                ' Handle both Integer and DataRowView cases
+                If TypeOf cboSupplier.SelectedValue Is DataRowView Then
+                    Dim drv As DataRowView = CType(cboSupplier.SelectedValue, DataRowView)
+                    selectedSupplierId = CInt(drv("SupplierID"))
+                ElseIf IsNumeric(cboSupplier.SelectedValue) Then
+                    selectedSupplierId = CInt(cboSupplier.SelectedValue)
+                Else
+                    selectedSupplierId = 0
+                End If
+
+                If selectedSupplierId > 0 Then
+                    LoadPurchaseOrders()
+                End If
+            Else
+                selectedSupplierId = 0
+                cboPO.DataSource = Nothing
+                dgvLines.Rows.Clear()
+            End If
+        Catch ex As Exception
+            MessageBox.Show($"Error selecting supplier: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             selectedSupplierId = 0
-            cboPO.DataSource = Nothing
-            dgvLines.Rows.Clear()
-        End If
+        End Try
     End Sub
 
     Private Sub LoadPurchaseOrders()
@@ -94,13 +110,29 @@ Public Class InvoiceGRVForm
     End Sub
 
     Private Sub cboPO_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cboPO.SelectedIndexChanged
-        If cboPO.SelectedIndex >= 0 Then
-            selectedPOId = CInt(cboPO.SelectedValue)
-            LoadPOLines()
-        Else
+        Try
+            If cboPO.SelectedIndex >= 0 AndAlso cboPO.SelectedValue IsNot Nothing Then
+                ' Handle both Integer and DataRowView cases
+                If TypeOf cboPO.SelectedValue Is DataRowView Then
+                    Dim drv As DataRowView = CType(cboPO.SelectedValue, DataRowView)
+                    selectedPOId = CInt(drv("POID"))
+                ElseIf IsNumeric(cboPO.SelectedValue) Then
+                    selectedPOId = CInt(cboPO.SelectedValue)
+                Else
+                    selectedPOId = 0
+                End If
+
+                If selectedPOId > 0 Then
+                    LoadPOLines()
+                End If
+            Else
+                selectedPOId = 0
+                dgvLines.Rows.Clear()
+            End If
+        Catch ex As Exception
+            MessageBox.Show($"Error selecting purchase order: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             selectedPOId = 0
-            dgvLines.Rows.Clear()
-        End If
+        End Try
     End Sub
 
     Private Sub LoadPOLines()
@@ -228,7 +260,7 @@ Public Class InvoiceGRVForm
     Private Sub btnSave_Click(sender As Object, e As EventArgs) Handles btnSave.Click
         Try
             If selectedSupplierId <= 0 OrElse selectedPOId <= 0 Then
-                MessageBox.Show("Please select a supplier and purchase order.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                MessageBox.Show("Please select a supplier and purchase orderssss.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
             End If
             
@@ -276,42 +308,42 @@ Public Class InvoiceGRVForm
     End Sub
 
     Private Function CreateGRV(conn As SqlConnection, trans As SqlTransaction) As Integer
-        Dim cmd As New SqlCommand("INSERT INTO GoodsReceivedNotes (SupplierID, POID, ReceivedDate, DeliveryNote, SubTotal, VAT, Total, CreatedBy, CreatedDate) OUTPUT INSERTED.GRNID VALUES (@SupplierID, @POID, @ReceivedDate, @DeliveryNote, @SubTotal, @VAT, @Total, @CreatedBy, @CreatedDate)", conn, trans)
-        
+        Dim cmd As New SqlCommand("INSERT INTO GoodsReceivedNotes (SupplierID, PurchaseOrderID, ReceivedDate, DeliveryNote, SubTotal, VAT, Total, CreatedBy, CreatedDate) OUTPUT INSERTED.GRNID VALUES (@SupplierID, @PurchaseOrderID, @ReceivedDate, @DeliveryNote, @SubTotal, @VAT, @Total, @CreatedBy, @CreatedDate)", conn, trans)
+
         cmd.Parameters.AddWithValue("@SupplierID", selectedSupplierId)
-        cmd.Parameters.AddWithValue("@POID", selectedPOId)
+        cmd.Parameters.AddWithValue("@PurchaseOrderID", selectedPOId)
         cmd.Parameters.AddWithValue("@ReceivedDate", dtpReceived.Value)
         cmd.Parameters.AddWithValue("@DeliveryNote", txtDeliveryNote.Text)
         cmd.Parameters.AddWithValue("@SubTotal", Convert.ToDecimal(txtSubTotal.Text))
         cmd.Parameters.AddWithValue("@VAT", Convert.ToDecimal(txtVAT.Text))
         cmd.Parameters.AddWithValue("@Total", Convert.ToDecimal(txtTotal.Text))
-        cmd.Parameters.AddWithValue("@CreatedBy", 1) ' Current user ID
+        cmd.Parameters.AddWithValue("@CreatedBy", AppSession.CurrentUserID)
         cmd.Parameters.AddWithValue("@CreatedDate", DateTime.Now)
-        
+
         Dim grvId = Convert.ToInt32(cmd.ExecuteScalar())
-        
+
         ' Add GRV Lines
         For Each row As DataGridViewRow In dgvLines.Rows
             If Convert.ToDecimal(row.Cells("ReceivedQty").Value) > 0 Then
-                Dim lineCmd As New SqlCommand("INSERT INTO GRNLines (GRNID, ProductID, OrderedQty, ReceivedQty, UnitCost, LineTotal) VALUES (@GRVID, @ProductID, @OrderedQty, @ReceivedQty, @UnitCost, @LineTotal)", conn, trans)
-                
+                Dim lineCmd As New SqlCommand("INSERT INTO GRNLines (GRNID, ProductID, OrderedQuantity, ReceivedQuantity, UnitCost, LineTotal) VALUES (@GRVID, @ProductID, @OrderedQuantity, @ReceivedQuantity, @UnitCost, @LineTotal)", conn, trans)
+
                 lineCmd.Parameters.AddWithValue("@GRVID", grvId)
                 lineCmd.Parameters.AddWithValue("@ProductID", row.Cells("ProductID").Value)
-                lineCmd.Parameters.AddWithValue("@OrderedQty", row.Cells("OrderedQty").Value)
-                lineCmd.Parameters.AddWithValue("@ReceivedQty", row.Cells("ReceivedQty").Value)
+                lineCmd.Parameters.AddWithValue("@OrderedQuantity", row.Cells("OrderedQty").Value)
+                lineCmd.Parameters.AddWithValue("@ReceivedQuantity", row.Cells("ReceivedQty").Value)
                 lineCmd.Parameters.AddWithValue("@UnitCost", row.Cells("UnitCost").Value)
                 lineCmd.Parameters.AddWithValue("@LineTotal", row.Cells("LineTotal").Value)
-                
+
                 lineCmd.ExecuteNonQuery()
             End If
         Next
-        
+
         Return grvId
     End Function
 
     Private Function CreateInvoice(conn As SqlConnection, trans As SqlTransaction) As Integer
         Dim cmd As New SqlCommand("INSERT INTO SupplierInvoices (SupplierID, BranchID, PurchaseOrderID, InvoiceNumber, InvoiceDate, DueDate, SubTotal, VATAmount, TotalAmount, Status, CreatedBy) OUTPUT INSERTED.InvoiceID VALUES (@SupplierID, @BranchID, @PurchaseOrderID, @InvoiceNumber, @InvoiceDate, @DueDate, @SubTotal, @VATAmount, @TotalAmount, @Status, @CreatedBy)", conn, trans)
-        
+
         cmd.Parameters.AddWithValue("@SupplierID", selectedSupplierId)
         cmd.Parameters.AddWithValue("@BranchID", currentBranchId)
         cmd.Parameters.AddWithValue("@PurchaseOrderID", selectedPOId)
@@ -323,7 +355,7 @@ Public Class InvoiceGRVForm
         cmd.Parameters.AddWithValue("@TotalAmount", Convert.ToDecimal(txtTotal.Text))
         cmd.Parameters.AddWithValue("@Status", "Unpaid")
         cmd.Parameters.AddWithValue("@CreatedBy", 1)
-        
+
         Return Convert.ToInt32(cmd.ExecuteScalar())
     End Function
 
@@ -333,7 +365,7 @@ Public Class InvoiceGRVForm
             If receivedQty > 0 Then
                 Dim productId = Convert.ToInt32(row.Cells("ProductID").Value)
                 Dim productType = row.Cells("ProductType").Value.ToString()
-                
+
                 If productType = "External" Then
                     ' Update Retail_Stock via Retail_Variant
                     Dim cmd As New SqlCommand("UPDATE rs SET rs.QtyOnHand = ISNULL(rs.QtyOnHand, 0) + @Qty FROM Retail_Stock rs INNER JOIN Retail_Variant rv ON rs.VariantID = rv.VariantID WHERE rv.ProductID = @ProductID; IF @@ROWCOUNT = 0 BEGIN DECLARE @vid INT; SELECT @vid = VariantID FROM Retail_Variant WHERE ProductID = @ProductID; IF @vid IS NOT NULL INSERT INTO Retail_Stock(VariantID, QtyOnHand, ReorderPoint, LocationKey, BranchKey) VALUES(@vid, @Qty, 0, 'MAIN', 1); END", conn, trans)
@@ -347,17 +379,21 @@ Public Class InvoiceGRVForm
                     cmd.Parameters.AddWithValue("@MaterialID", productId)
                     cmd.ExecuteNonQuery()
                 End If
-                
+
                 ' Create stock movement record
-                Dim movCmd As New SqlCommand("INSERT INTO Stockroom_StockMovements (MaterialID, MovementType, Quantity, UnitCost, TotalValue, MovementDate, Reference, BranchID) VALUES (@MaterialID, @MovementType, @Quantity, @UnitCost, @TotalValue, @MovementDate, @Reference, @BranchID)", conn, trans)
+                Dim movCmd As New SqlCommand("INSERT INTO StockMovements (MaterialID, MovementType, QuantityIn, UnitCost, TotalValue, MovementDate, ReferenceType, ReferenceNumber, BranchID, InventoryArea, CreatedBy, CreatedDate) VALUES (@MaterialID, @MovementType, @QuantityIn, @UnitCost, @TotalValue, @MovementDate, @ReferenceType, @ReferenceNumber, @BranchID, @InventoryArea, @CreatedBy, @CreatedDate)", conn, trans)
                 movCmd.Parameters.AddWithValue("@MaterialID", productId)
                 movCmd.Parameters.AddWithValue("@MovementType", "Receipt")
-                movCmd.Parameters.AddWithValue("@Quantity", receivedQty)
+                movCmd.Parameters.AddWithValue("@QuantityIn", receivedQty)
                 movCmd.Parameters.AddWithValue("@UnitCost", row.Cells("UnitCost").Value)
                 movCmd.Parameters.AddWithValue("@TotalValue", row.Cells("LineTotal").Value)
                 movCmd.Parameters.AddWithValue("@MovementDate", dtpReceived.Value)
-                movCmd.Parameters.AddWithValue("@Reference", $"GRV-{txtDeliveryNote.Text}")
-                movCmd.Parameters.AddWithValue("@BranchID", 1)
+                movCmd.Parameters.AddWithValue("@ReferenceType", "GRV")
+                movCmd.Parameters.AddWithValue("@ReferenceNumber", txtDeliveryNote.Text)
+                movCmd.Parameters.AddWithValue("@BranchID", currentBranchId)
+                movCmd.Parameters.AddWithValue("@InventoryArea", If(productType = "External", "Retail", "Stockroom"))
+                movCmd.Parameters.AddWithValue("@CreatedBy", AppSession.CurrentUserID)
+                movCmd.Parameters.AddWithValue("@CreatedDate", DateTime.Now)
                 movCmd.ExecuteNonQuery()
             End If
         Next
@@ -366,16 +402,19 @@ Public Class InvoiceGRVForm
     Private Sub UpdateSupplierLedger(conn As SqlConnection, trans As SqlTransaction, invoiceId As Integer)
         Try
             ' Create supplier ledger entry
-            Dim cmd As New SqlCommand("INSERT INTO Stockroom_SupplierLedger (SupplierID, InvoiceID, TransactionType, Amount, TransactionDate, Description, Balance) VALUES (@SupplierID, @InvoiceID, @TransactionType, @Amount, @TransactionDate, @Description, @Balance)", conn, trans)
-            
+            Dim cmd As New SqlCommand("INSERT INTO SupplierLedger (SupplierID, InvoiceID, TransactionType, Credit, TransactionDate, Description, Balance, Reference, CreatedBy, CreatedDate) VALUES (@SupplierID, @InvoiceID, @TransactionType, @Credit, @TransactionDate, @Description, @Balance, @Reference, @CreatedBy, @CreatedDate)", conn, trans)
+
             cmd.Parameters.AddWithValue("@SupplierID", selectedSupplierId)
             cmd.Parameters.AddWithValue("@InvoiceID", invoiceId)
             cmd.Parameters.AddWithValue("@TransactionType", "Invoice")
-            cmd.Parameters.AddWithValue("@Amount", Convert.ToDecimal(txtTotal.Text))
+            cmd.Parameters.AddWithValue("@Credit", Convert.ToDecimal(txtTotal.Text))
             cmd.Parameters.AddWithValue("@TransactionDate", dtpReceived.Value)
             cmd.Parameters.AddWithValue("@Description", $"GRV Invoice - {txtDeliveryNote.Text}")
             cmd.Parameters.AddWithValue("@Balance", Convert.ToDecimal(txtTotal.Text))
-            
+            cmd.Parameters.AddWithValue("@Reference", txtDeliveryNote.Text)
+            cmd.Parameters.AddWithValue("@CreatedBy", AppSession.CurrentUserID)
+            cmd.Parameters.AddWithValue("@CreatedDate", DateTime.Now)
+
             cmd.ExecuteNonQuery()
             
             ' Update supplier balance

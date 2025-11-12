@@ -1,0 +1,12 @@
+-- Query Products table schema to find cost columns
+SELECT 
+    COLUMN_NAME,
+    DATA_TYPE,
+    CHARACTER_MAXIMUM_LENGTH,
+    IS_NULLABLE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Products'
+ORDER BY ORDINAL_POSITION;
+
+-- Sample data
+SELECT TOP 3 * FROM Products;

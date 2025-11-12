@@ -60,7 +60,8 @@ Public Class PurchaseOrderForm
 
     Public Sub New()
         Me.WindowState = FormWindowState.Maximized
-        Me.Text = "Purchase Order"
+        Me.Text = "✓ Purchase Order - UPDATED"
+        Me.BackColor = Color.White
 
         ' Initialize branch and role info
         currentBranchId = service.GetCurrentUserBranchId()
@@ -139,51 +140,83 @@ Public Class PurchaseOrderForm
     End Function
 
     Private Sub InitializeComponent()
-        ' Header panel
-        Dim header As New Panel With {.Dock = DockStyle.Top, .Height = 140, .Padding = New Padding(12)}
+        ' Professional header panel with better spacing
+        Dim header As New Panel With {.Dock = DockStyle.Top, .Height = 140, .Padding = New Padding(20), .BackColor = Color.FromArgb(250, 250, 250)}
 
-        lblSupplier = New Label With {.Text = "Supplier", .AutoSize = True, .Top = 12, .Left = 12}
-        txtSupplier = New TextBox With {.Width = 320, .Top = lblSupplier.Top + 18, .Left = 12}
+        ' Row 1: Supplier, Dates, PO Number
+        lblSupplier = New Label With {.Text = "Supplier", .AutoSize = True, .Top = 15, .Left = 20, .Font = New Font("Segoe UI", 9.0F, FontStyle.Bold)}
+        txtSupplier = New TextBox With {.Width = 280, .Top = 35, .Left = 20, .Font = New Font("Segoe UI", 9.75F)}
 
-        lblBranch = New Label With {.Text = "Branch", .AutoSize = True, .Top = 12, .Left = 360, .Visible = False}
-        cboBranch = New ComboBox With {.Width = 220, .Top = lblBranch.Top + 18, .Left = 360, .DropDownStyle = ComboBoxStyle.DropDownList, .Visible = False}
+        lblOrderDate = New Label With {.Text = "Order Date", .AutoSize = True, .Top = 15, .Left = 520, .Font = New Font("Segoe UI", 9.0F, FontStyle.Bold)}
+        dtpOrderDate = New DateTimePicker With {.Top = 35, .Left = 520, .Width = 140, .Format = DateTimePickerFormat.Short, .Font = New Font("Segoe UI", 9.75F)}
 
-        lblOrderDate = New Label With {.Text = "Order Date", .AutoSize = True, .Top = 12, .Left = 600}
-        dtpOrderDate = New DateTimePicker With {.Top = lblOrderDate.Top + 18, .Left = 600, .Width = 140, .Format = DateTimePickerFormat.Short}
+        lblRequiredDate = New Label With {.Text = "Required Date", .AutoSize = True, .Top = 15, .Left = 680, .Font = New Font("Segoe UI", 9.0F, FontStyle.Bold)}
+        dtpRequiredDate = New DateTimePicker With {.Top = 35, .Left = 680, .Width = 140, .Format = DateTimePickerFormat.Short, .Font = New Font("Segoe UI", 9.75F)}
 
-        lblRequiredDate = New Label With {.Text = "Required Date", .AutoSize = True, .Top = 12, .Left = 760}
-        dtpRequiredDate = New DateTimePicker With {.Top = lblRequiredDate.Top + 18, .Left = 760, .Width = 140, .Format = DateTimePickerFormat.Short}
+        lblPONumber = New Label With {.Text = "PO: (unsaved)", .AutoSize = True, .Top = 35, .Left = 850, .Font = New Font("Segoe UI", 11.0F, FontStyle.Bold), .ForeColor = Color.FromArgb(192, 57, 43)}
 
-        lblReference = New Label With {.Text = "Reference", .AutoSize = True, .Top = 64, .Left = 12}
-        txtReference = New TextBox With {.Width = 260, .Top = lblReference.Top + 18, .Left = 12}
+        ' Row 2: Reference, Notes, Purchase Type
+        lblReference = New Label With {.Text = "Reference", .AutoSize = True, .Top = 75, .Left = 20, .Font = New Font("Segoe UI", 9.0F, FontStyle.Bold)}
+        txtReference = New TextBox With {.Width = 220, .Top = 95, .Left = 20, .Font = New Font("Segoe UI", 9.75F)}
 
-        lblNotes = New Label With {.Text = "Notes", .AutoSize = True, .Top = 64, .Left = 290}
-        txtNotes = New TextBox With {.Width = 400, .Top = lblNotes.Top + 18, .Left = 290}
+        lblNotes = New Label With {.Text = "Notes", .AutoSize = True, .Top = 75, .Left = 260, .Font = New Font("Segoe UI", 9.0F, FontStyle.Bold)}
+        txtNotes = New TextBox With {.Width = 340, .Top = 95, .Left = 260, .Font = New Font("Segoe UI", 9.75F)}
 
-        ' Product type indicator
-        lblProductType = New Label With {.Text = "Purchase Type", .AutoSize = True, .Top = 64, .Left = 710}
-        cboProductType = New ComboBox With {.Width = 150, .Top = lblProductType.Top + 18, .Left = 710, .DropDownStyle = ComboBoxStyle.DropDownList}
+        lblProductType = New Label With {.Text = "Purchase Type", .AutoSize = True, .Top = 75, .Left = 620, .Font = New Font("Segoe UI", 9.0F, FontStyle.Bold)}
+        cboProductType = New ComboBox With {.Width = 150, .Top = 95, .Left = 620, .DropDownStyle = ComboBoxStyle.DropDownList, .Font = New Font("Segoe UI", 9.75F), .BackColor = Color.White, .ForeColor = Color.Black}
         cboProductType.Items.AddRange({"External Product", "Raw Material"})
-        cboProductType.SelectedIndex = 1 ' Default to Raw Material
+        cboProductType.SelectedIndex = 1
         AddHandler cboProductType.SelectedIndexChanged, AddressOf cboProductType_SelectedIndexChanged
 
-        ' PO Number display (blank until save)
-        lblPONumber = New Label With {.Text = "PO: (unsaved)", .AutoSize = True, .Top = 12, .Left = 920, .Font = New Font("Segoe UI", 10.0F, FontStyle.Bold)}
+        ' Branch (hidden by default)
+        lblBranch = New Label With {.Text = "Branch", .AutoSize = True, .Top = 15, .Left = 320, .Visible = False, .Font = New Font("Segoe UI", 9.0F, FontStyle.Bold)}
+        cboBranch = New ComboBox With {.Width = 180, .Top = 35, .Left = 320, .DropDownStyle = ComboBoxStyle.DropDownList, .Visible = False, .Font = New Font("Segoe UI", 9.75F), .BackColor = Color.White, .ForeColor = Color.Black}
 
         header.Controls.AddRange(New Control() {lblSupplier, txtSupplier, lblBranch, cboBranch, lblOrderDate, dtpOrderDate, lblRequiredDate, dtpRequiredDate, lblReference, txtReference, lblNotes, txtNotes, lblProductType, cboProductType, lblPONumber})
 
-        ' Lines grid
-        dgvLines = New DataGridView With {.Dock = DockStyle.Fill, .AllowUserToAddRows = True, .AllowUserToDeleteRows = True, .AutoGenerateColumns = False}
+        ' Professional grid styling
+        dgvLines = New DataGridView With {
+            .Dock = DockStyle.Fill,
+            .AllowUserToAddRows = True,
+            .AllowUserToDeleteRows = True,
+            .AutoGenerateColumns = False,
+            .BackgroundColor = Color.White,
+            .BorderStyle = BorderStyle.None,
+            .CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
+            .ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None,
+            .EnableHeadersVisualStyles = False,
+            .RowHeadersVisible = False,
+            .SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+            .AllowUserToResizeRows = False
+        }
+        
+        ' Header styling
+        dgvLines.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(192, 57, 43)
+        dgvLines.ColumnHeadersDefaultCellStyle.ForeColor = Color.White
+        dgvLines.ColumnHeadersDefaultCellStyle.Font = New Font("Segoe UI", 10.0F, FontStyle.Bold)
+        dgvLines.ColumnHeadersDefaultCellStyle.Padding = New Padding(5)
+        dgvLines.ColumnHeadersHeight = 40
+        
+        ' Row styling
+        dgvLines.DefaultCellStyle.SelectionBackColor = Color.FromArgb(52, 152, 219)
+        dgvLines.DefaultCellStyle.SelectionForeColor = Color.White
+        dgvLines.DefaultCellStyle.Font = New Font("Segoe UI", 9.75F)
+        dgvLines.DefaultCellStyle.Padding = New Padding(5, 3, 5, 3)
+        dgvLines.RowTemplate.Height = 35
+        dgvLines.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(248, 248, 248)
+        
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "MaterialID", .HeaderText = "MaterialID", .DataPropertyName = "MaterialID", .Visible = False})
-        Dim materialColumn As New DataGridViewComboBoxColumn With {.Name = "Material", .HeaderText = "Material", .Width = 300}
+        
+        Dim materialColumn As New DataGridViewComboBoxColumn With {.Name = "Material", .HeaderText = "Product", .Width = 300}
         materialColumn.DisplayMember = "MaterialName"
         materialColumn.ValueMember = "MaterialID"
         materialColumn.DefaultCellStyle.NullValue = Nothing
         materialColumn.DefaultCellStyle.DataSourceNullValue = DBNull.Value
+        materialColumn.FlatStyle = FlatStyle.Flat
         dgvLines.Columns.Add(materialColumn)
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "OrderedQuantity", .HeaderText = "Qty", .DataPropertyName = "OrderedQuantity", .Width = 80, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}})
         ' Optional unit cost (can be blank/null). We keep DataPropertyName = UnitCost to avoid backend changes
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "UnitCost", .HeaderText = "Est. Unit Price", .DataPropertyName = "UnitCost", .Width = 110, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}})
+        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "UnitCost", .HeaderText = "Unit Price (Incl VAT)", .DataPropertyName = "UnitCost", .Width = 130, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}})
         ' Guidance prices
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LastPaidPrice", .HeaderText = "Last Paid", .ReadOnly = True, .Width = 100, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .ForeColor = Color.FromArgb(90, 90, 90), .Format = "N2"}})
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LastCost", .HeaderText = "Last Cost", .ReadOnly = True, .Width = 100, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .ForeColor = Color.FromArgb(120, 120, 120), .Format = "N2"}})
@@ -198,14 +231,17 @@ Public Class PurchaseOrderForm
         ' Style grid with theme
         Theme.StyleGrid(dgvLines)
 
-        ' Footer totals and actions
-        Dim footer As New Panel With {.Dock = DockStyle.Bottom, .Height = 60, .Padding = New Padding(12)}
-        lblSubTotal = New Label With {.Text = "SubTotal", .AutoSize = True, .Top = 10, .Left = 12}
-        txtSubTotal = New TextBox With {.ReadOnly = True, .TextAlign = HorizontalAlignment.Right, .Width = 120, .Top = 28, .Left = 12}
-        lblVAT = New Label With {.Text = "VAT (15%)", .AutoSize = True, .Top = 10, .Left = 150}
-        txtVAT = New TextBox With {.ReadOnly = True, .TextAlign = HorizontalAlignment.Right, .Width = 100, .Top = 28, .Left = 150}
-        lblTotal = New Label With {.Text = "Total", .AutoSize = True, .Top = 10, .Left = 270}
-        txtTotal = New TextBox With {.ReadOnly = True, .TextAlign = HorizontalAlignment.Right, .Width = 120, .Top = 28, .Left = 270}
+        ' Professional footer with better styling
+        Dim footer As New Panel With {.Dock = DockStyle.Bottom, .Height = 70, .Padding = New Padding(20), .BackColor = Color.FromArgb(250, 250, 250)}
+        
+        lblSubTotal = New Label With {.Text = "SubTotal (Excl VAT)", .AutoSize = True, .Top = 12, .Left = 20, .Font = New Font("Segoe UI", 9.0F, FontStyle.Bold)}
+        txtSubTotal = New TextBox With {.ReadOnly = True, .TextAlign = HorizontalAlignment.Right, .Width = 130, .Top = 32, .Left = 20, .Font = New Font("Segoe UI", 10.0F), .BackColor = Color.White}
+        
+        lblVAT = New Label With {.Text = "VAT (15%)", .AutoSize = True, .Top = 12, .Left = 170, .Font = New Font("Segoe UI", 9.0F, FontStyle.Bold)}
+        txtVAT = New TextBox With {.ReadOnly = True, .TextAlign = HorizontalAlignment.Right, .Width = 110, .Top = 32, .Left = 170, .Font = New Font("Segoe UI", 10.0F), .BackColor = Color.White}
+        
+        lblTotal = New Label With {.Text = "Total (Incl VAT)", .AutoSize = True, .Top = 12, .Left = 300, .Font = New Font("Segoe UI", 10.0F, FontStyle.Bold), .ForeColor = Color.FromArgb(192, 57, 43)}
+        txtTotal = New TextBox With {.ReadOnly = True, .TextAlign = HorizontalAlignment.Right, .Width = 140, .Top = 32, .Left = 300, .Font = New Font("Segoe UI", 11.0F, FontStyle.Bold), .BackColor = Color.White, .ForeColor = Color.FromArgb(192, 57, 43)}
 
         btnSave = New Button With {.Text = "Save", .Width = 120, .Height = 30, .Top = 16, .Left = 420}
         AddHandler btnSave.Click, AddressOf btnSave_Click
@@ -231,14 +267,10 @@ Public Class PurchaseOrderForm
             cboBranch.DataSource = branches
             cboBranch.DisplayMember = "BranchName"
             cboBranch.ValueMember = "BranchID"
-
-            ' Set default to current user's branch
             cboBranch.SelectedValue = currentBranchId
-
-            ' Disable branch selection for non-Super Admin users
-            If Not isSuperAdmin Then
-                cboBranch.Enabled = False
-            End If
+            
+            ' Lock branch dropdown for non-super admins
+            BranchHelper.LockBranchDropdown(cboBranch, isSuperAdmin, currentBranchId)
         End If
 
         ' React to supplier changes to refresh guidance prices
@@ -299,13 +331,13 @@ Public Class PurchaseOrderForm
             combo.DataSource = filteredTable
             combo.DisplayMember = "MaterialName"
             combo.ValueMember = "MaterialID"
-
-            ' Fix black background issue - set on FlatStyle
             combo.FlatStyle = FlatStyle.Standard
+            
+            ' Fix black background issue
             combo.DefaultCellStyle.BackColor = Color.White
             combo.DefaultCellStyle.ForeColor = Color.Black
-            combo.DefaultCellStyle.SelectionBackColor = Color.LightBlue
-            combo.DefaultCellStyle.SelectionForeColor = Color.Black
+            combo.DefaultCellStyle.SelectionBackColor = SystemColors.Highlight
+            combo.DefaultCellStyle.SelectionForeColor = Color.White
         Catch ex As Exception
             System.Diagnostics.Debug.WriteLine($"FilterMaterialsByType error: {ex.Message}")
         End Try
@@ -363,14 +395,26 @@ Public Class PurchaseOrderForm
                 cb.AutoCompleteMode = AutoCompleteMode.SuggestAppend
                 cb.AutoCompleteSource = AutoCompleteSource.ListItems
 
-                ' Fix black background on the actual ComboBox control
+                ' CRITICAL FIX: Force white background - use DrawMode.Normal for proper rendering
+                cb.DrawMode = DrawMode.Normal
                 cb.BackColor = Color.White
                 cb.ForeColor = Color.Black
                 cb.FlatStyle = FlatStyle.Standard
+                cb.Font = New Font("Segoe UI", 9.75F)
+                
+                ' Remove any custom drawing handlers
+                RemoveHandler cb.DrawItem, AddressOf ComboBox_DrawItem
+                
+                ' Force immediate repaint
+                cb.Refresh()
             End If
         End If
         ' Enforce numeric-only for numeric columns using shared helper
         UI.InputValidation.AttachNumericOnlyForGrid(dgvLines, e, True, "OrderedQuantity", "UnitCost")
+    End Sub
+    
+    Private Sub ComboBox_DrawItem(sender As Object, e As DrawItemEventArgs)
+        ' This handler is intentionally empty - just to allow RemoveHandler
     End Sub
 
     Private Sub dgvLines_DataError(sender As Object, e As DataGridViewDataErrorEventArgs)
@@ -397,20 +441,26 @@ Public Class PurchaseOrderForm
     End Sub
 
     Private Sub RecalculateTotals()
-        Dim subTotal As Decimal = 0D
+        ' Line totals are VAT-INCLUSIVE, so we need to calculate backwards
+        Dim totalInclVAT As Decimal = 0D
         For Each r As DataGridViewRow In dgvLines.Rows
             If r.IsNewRow Then Continue For
             Dim lt As Decimal = 0D
             If r.Cells("LineTotal").Value IsNot Nothing Then
                 Decimal.TryParse(Convert.ToString(r.Cells("LineTotal").Value), lt)
             End If
-            subTotal += lt
+            totalInclVAT += lt
         Next
-        Dim vat As Decimal = Math.Round(subTotal * 0.15D, 2)
-        Dim total As Decimal = subTotal + vat
+        
+        ' Calculate backwards: Total (incl VAT) = SubTotal + (SubTotal × 0.15)
+        ' Therefore: Total = SubTotal × 1.15
+        ' So: SubTotal = Total / 1.15
+        Dim subTotal As Decimal = Math.Round(totalInclVAT / 1.15D, 2)
+        Dim vat As Decimal = Math.Round(totalInclVAT - subTotal, 2)
+        
         txtSubTotal.Text = subTotal.ToString("N2")
         txtVAT.Text = vat.ToString("N2")
-        txtTotal.Text = total.ToString("N2")
+        txtTotal.Text = totalInclVAT.ToString("N2")
     End Sub
 
     Private Sub RefreshGuidancePricesForAllRows()
@@ -426,28 +476,73 @@ Public Class PurchaseOrderForm
         Try
             If row Is Nothing Then Return
             If row.Cells("Material").Value Is Nothing Then Return
-            Dim supplierId = ResolveSupplierId()
-            Dim materialId = Convert.ToInt32(row.Cells("Material").Value)
-            ' Fetch supplier-specific last paid price (nullable) and material last cost
-            Dim lastPaidNullable As Decimal? = service.GetLastPaidPrice(supplierId, materialId)
-            Dim lastCost As Decimal = service.GetMaterialLastCost(materialId)
+            
+            ' FIXED: Extract MaterialID from ComboBox value properly
+            Dim materialId As Integer = 0
+            Dim cellValue = row.Cells("Material").Value
+            
+            ' Handle both direct integer and DataRowView scenarios
+            If TypeOf cellValue Is DataRowView Then
+                Dim drv As DataRowView = DirectCast(cellValue, DataRowView)
+                materialId = Convert.ToInt32(drv("MaterialID"))
+            ElseIf TypeOf cellValue Is Integer Then
+                materialId = Convert.ToInt32(cellValue)
+            Else
+                ' Try to parse as integer
+                If Not Integer.TryParse(Convert.ToString(cellValue), materialId) Then
+                    Return ' Cannot determine material ID
+                End If
+            End If
+            
+            If materialId <= 0 Then Return
+            
+            Dim lastPaidNullable As Decimal? = Nothing
+            Dim lastCost As Decimal = 0D
+            
+            ' Check if this is a Product or RawMaterial
+            If cboProductType.SelectedIndex = 0 Then
+                ' External Product - get price from Products table
+                Using conn As New SqlConnection(connectionString)
+                    conn.Open()
+                    Dim sql = "SELECT ISNULL(LastPaidPrice, 0), ISNULL(AverageCost, 0) FROM Products WHERE ProductID = @id"
+                    Using cmd As New SqlCommand(sql, conn)
+                        cmd.Parameters.AddWithValue("@id", materialId)
+                        Using reader = cmd.ExecuteReader()
+                            If reader.Read() Then
+                                Dim lpp = reader.GetDecimal(0)
+                                If lpp > 0 Then lastPaidNullable = lpp
+                                lastCost = reader.GetDecimal(1)
+                            End If
+                        End Using
+                    End Using
+                End Using
+            Else
+                ' Raw Material - use existing service methods
+                Dim supplierId = ResolveSupplierId()
+                lastPaidNullable = service.GetLastPaidPrice(supplierId, materialId)
+                lastCost = service.GetMaterialLastCost(materialId)
+            End If
+            
             row.Cells("LastPaidPrice").Value = If(lastPaidNullable.HasValue, lastPaidNullable.Value, 0D)
             row.Cells("LastCost").Value = lastCost
+            
             ' Recompute expected total for this row
             Dim qty As Decimal = 0D
             Dim unit As Decimal = 0D
             Decimal.TryParse(Convert.ToString(row.Cells("OrderedQuantity").Value), qty)
             Decimal.TryParse(Convert.ToString(row.Cells("UnitCost").Value), unit)
-            ' Default UnitCost to last paid price (or last cost) if currently zero/blank; user may edit afterward
+            
+            ' Default UnitCost to last paid price (or last cost) if currently zero/blank
             If unit <= 0D Then
                 Dim defaultUnit = If(lastPaidNullable.HasValue AndAlso lastPaidNullable.Value > 0D, lastPaidNullable.Value, lastCost)
                 row.Cells("UnitCost").Value = defaultUnit
                 unit = defaultUnit
             End If
-            Dim effectiveUnit As Decimal = unit
-            row.Cells("LineTotal").Value = qty * effectiveUnit
-        Catch
-            ' Swallow guidance errors; avoid blocking PO capture
+            
+            row.Cells("LineTotal").Value = qty * unit
+        Catch ex As Exception
+            ' Silently log - don't block PO
+            System.Diagnostics.Debug.WriteLine($"PopulateGuidancePrices error: {ex.Message}")
         End Try
     End Sub
 
@@ -521,19 +616,8 @@ Public Class PurchaseOrderForm
                 MessageBox.Show("Please add at least one line.")
                 Return
             End If
-            ' Use branch from dropdown if Super Admin, otherwise current user's branch
-            Dim selectedBranchId As Integer
-            If isSuperAdmin AndAlso cboBranch.SelectedItem IsNot Nothing Then
-                Dim row As DataRowView = TryCast(cboBranch.SelectedItem, DataRowView)
-                If row IsNot Nothing Then
-                    Dim branchIdCol As Integer = row.DataView.Table.Columns("BranchID").Ordinal
-                    selectedBranchId = Convert.ToInt32(row(branchIdCol))
-                Else
-                    selectedBranchId = currentBranchId
-                End If
-            Else
-                selectedBranchId = currentBranchId
-            End If
+            ' Get effective branch ID (respects lock for non-super admins)
+            Dim selectedBranchId As Integer = BranchHelper.GetEffectiveBranchId(cboBranch, isSuperAdmin, currentBranchId)
 
             Dim poId = service.CreatePurchaseOrder(selectedBranchId, supplierId, dtpOrderDate.Value.Date, dtpRequiredDate.Value.Date, txtReference.Text.Trim(), txtNotes.Text.Trim(), AppSession.CurrentUserID, lines)
             ' Fetch PONumber for display

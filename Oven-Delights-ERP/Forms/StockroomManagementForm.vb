@@ -259,7 +259,14 @@ Public Class StockroomManagementForm
     End Sub
 
     Private Sub btnCreatePO_Click(sender As Object, e As EventArgs)
-        MessageBox.Show("Create Purchase Order functionality will be implemented.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Try
+            Dim poForm As New PurchaseOrderFormNew()
+            poForm.ShowDialog(Me)
+            ' Refresh PO grid after closing
+            LoadDataFromDatabase()
+        Catch ex As Exception
+            MessageBox.Show($"Error opening Purchase Order form: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub btnRefresh_Click(sender As Object, e As EventArgs)

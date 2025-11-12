@@ -5,8 +5,8 @@
 -- WARNING: Only run this when ready to go live!
 -- =============================================
 
-USE [OvenDelightsERP];
-GO
+
+
 
 PRINT '========================================';
 PRINT 'POS GO-LIVE CHECKLIST';

@@ -391,18 +391,24 @@ Public Class InternalOrdersForm
     End Function
 
     Private Sub OnFulfill(sender As Object, e As EventArgs)
-        Dim id = GetSelectedInternalOrderID()
-        If id <= 0 Then
-            MessageBox.Show("Select an internal order to fulfill.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            Return
-        End If
-        ' Require manufacturer selection
-        Dim manId As Integer = _manufacturerUserId
-        If manId <= 0 Then
-            MessageBox.Show("Select a manufacturer before fulfilling.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            Return
-        End If
         Try
+            Dim id = GetSelectedInternalOrderID()
+            If id <= 0 Then
+                MessageBox.Show("Select an internal order to fulfill.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+            ' Require manufacturer selection
+            Dim manId As Integer = _manufacturerUserId
+            If manId <= 0 Then
+                MessageBox.Show("Select a manufacturer from the dropdown before fulfilling.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+            
+            ' Confirm fulfillment
+            Dim result = MessageBox.Show($"Fulfill Internal Order {id}?{vbCrLf}{vbCrLf}This will:{vbCrLf}- Reduce Stockroom inventory{vbCrLf}- Increase Manufacturing inventory{vbCrLf}- Create journal entries{vbCrLf}- Mark order as Issued", "Confirm Fulfillment", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+            If result <> DialogResult.Yes Then
+                Return
+            End If
             ' Ensure the chosen manufacturer is persisted on IO header notes
             SaveManufacturerOnHeader(id, manId)
 
@@ -648,11 +654,14 @@ Public Class InternalOrdersForm
             Catch
             End Try
 
+            ' Success message
+            MessageBox.Show($"Internal Order {id} fulfilled successfully!{vbCrLf}{vbCrLf}Materials have been issued to Manufacturing.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            
             ' Close this form so dashboard can gray out the row
             Me.DialogResult = DialogResult.OK
             Me.Close()
         Catch ex As Exception
-            MessageBox.Show("Fulfillment failed: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show("Fulfillment failed: " & ex.Message & vbCrLf & vbCrLf & "Stack Trace: " & ex.StackTrace, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 

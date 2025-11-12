@@ -97,6 +97,46 @@ Partial Class MainDashboard
         Dim miHist As ToolStripMenuItem = GetOrCreateSubMenu(reports, "Price History")
         RemoveHandler miHist.Click, AddressOf OpenPriceHistoryReport
         AddHandler miHist.Click, AddressOf OpenPriceHistoryReport
+        
+        ' Manufacturing > Orders > New Orders, Ready Orders, All Orders
+        Dim manufacturing As ToolStripMenuItem = GetOrCreateTopMenu("Manufacturing")
+        Dim orders As ToolStripMenuItem = GetOrCreateSubMenu(manufacturing, "Orders")
+        Dim miNewOrders As ToolStripMenuItem = GetOrCreateSubMenu(orders, "New Orders")
+        RemoveHandler miNewOrders.Click, AddressOf OpenNewOrders
+        AddHandler miNewOrders.Click, AddressOf OpenNewOrders
+        Dim miReadyOrders As ToolStripMenuItem = GetOrCreateSubMenu(orders, "Ready Orders")
+        RemoveHandler miReadyOrders.Click, AddressOf OpenReadyOrders
+        AddHandler miReadyOrders.Click, AddressOf OpenReadyOrders
+        Dim miAllOrders As ToolStripMenuItem = GetOrCreateSubMenu(orders, "All Orders")
+        RemoveHandler miAllOrders.Click, AddressOf OpenAllOrders
+        AddHandler miAllOrders.Click, AddressOf OpenAllOrders
+    End Sub
+    
+    Private Sub OpenNewOrders(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New ManufacturerOrdersForm("New")
+            frm.ShowDialog()
+        Catch ex As Exception
+            MessageBox.Show("Error opening New Orders: " & ex.Message, "Manufacturing", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    
+    Private Sub OpenReadyOrders(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New ManufacturerOrdersForm("Ready")
+            frm.ShowDialog()
+        Catch ex As Exception
+            MessageBox.Show("Error opening Ready Orders: " & ex.Message, "Manufacturing", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    
+    Private Sub OpenAllOrders(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New ManufacturerOrdersForm("All")
+            frm.ShowDialog()
+        Catch ex As Exception
+            MessageBox.Show("Error opening All Orders: " & ex.Message, "Manufacturing", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Function GetOrCreateTopMenu(text As String) As ToolStripMenuItem

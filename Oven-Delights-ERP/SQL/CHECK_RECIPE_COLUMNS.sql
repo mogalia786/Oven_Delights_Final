@@ -1,0 +1,10 @@
+-- Check Recipe table columns
+SELECT COLUMN_NAME, DATA_TYPE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Recipe'
+ORDER BY ORDINAL_POSITION;
+
+-- Check sample recipe data
+SELECT TOP 5 *
+FROM dbo.Recipe
+ORDER BY RecipeID DESC;
