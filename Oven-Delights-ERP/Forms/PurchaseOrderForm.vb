@@ -501,17 +501,24 @@ Public Class PurchaseOrderForm
             
             ' Check if this is a Product or RawMaterial
             If cboProductType.SelectedIndex = 0 Then
-                ' External Product - get price from Products table
+                ' External Product - get price from Demo_Retail_Price table
+                Dim branchId = If(AppSession.CurrentUser?.BranchID, 0)
+                System.Diagnostics.Debug.WriteLine($"PopulateGuidancePrices: ProductID={materialId}, BranchID={branchId}")
                 Using conn As New SqlConnection(connectionString)
                     conn.Open()
-                    Dim sql = "SELECT ISNULL(LastPaidPrice, 0), ISNULL(AverageCost, 0) FROM Products WHERE ProductID = @id"
+                    ' CostPrice = Last price paid to supplier (Excl VAT), convert to Incl VAT for display
+                    Dim sql = "SELECT ISNULL(CostPrice, 0) * 1.15, ISNULL(CostPrice, 0) FROM Demo_Retail_Price WHERE ProductID = @id AND BranchID = @branchId"
                     Using cmd As New SqlCommand(sql, conn)
                         cmd.Parameters.AddWithValue("@id", materialId)
+                        cmd.Parameters.AddWithValue("@branchId", branchId)
                         Using reader = cmd.ExecuteReader()
                             If reader.Read() Then
-                                Dim lpp = reader.GetDecimal(0)
+                                Dim lpp = reader.GetDecimal(0)  ' CostPrice * 1.15 (Incl VAT)
                                 If lpp > 0 Then lastPaidNullable = lpp
-                                lastCost = reader.GetDecimal(1)
+                                lastCost = reader.GetDecimal(1)  ' CostPrice (Excl VAT)
+                                System.Diagnostics.Debug.WriteLine($"FOUND: LastPaid={lpp}, AvgCost={lastCost}")
+                            Else
+                                System.Diagnostics.Debug.WriteLine($"NO RECORD FOUND for ProductID={materialId}, BranchID={branchId}")
                             End If
                         End Using
                     End Using

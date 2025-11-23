@@ -1490,8 +1490,18 @@ Partial Class MainDashboard
                                                   OpenMdiSingleton(Of Manufacturing.RecipeCreatorForm)()
                                               End Sub
 
-            Dim miBuildMyProduct As New ToolStripMenuItem("Build My Product")
+            Dim miBuildMyProduct As New ToolStripMenuItem("Build My Product (BOM Creator)")
             AddHandler miBuildMyProduct.Click, Sub(sender, e)
+                                                   Try
+                                                       Dim frm As New Manufacturing.BuildProductBOMForm()
+                                                       frm.ShowDialog()
+                                                   Catch ex As Exception
+                                                       MessageBox.Show("Error opening Build My Product: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                                                   End Try
+                                               End Sub
+            
+            Dim miBuildMyProductOld As New ToolStripMenuItem("Build My Product (Legacy)")
+            AddHandler miBuildMyProductOld.Click, Sub(sender, e)
                                                    Try
                                                        Dim frm As New Manufacturing.RecipeBuilderForm()
                                                        frm.ShowDialog()
@@ -1572,7 +1582,7 @@ Partial Class MainDashboard
             miOrders.DropDownItems.AddRange(New ToolStripItem() {miCakeOrders, miGeneralOrders})
 
             ManufacturingToolStripMenuItem.DropDownItems.AddRange(New ToolStripItem() {
-                miCategories, miSubcategories, miProducts, miAddProduct, miRecipeCreator, miBuildMyProduct, miRecipeViewer, miBOM, miCompleteBuild, miMOActions, miOrders
+                miCategories, miSubcategories, miProducts, miAddProduct, miRecipeCreator, miBuildMyProduct, miBuildMyProductOld, miRecipeViewer, miBOM, miCompleteBuild, miMOActions, miOrders
             })
         End If
     End Sub
@@ -2725,6 +2735,11 @@ Partial Class MainDashboard
             Dim supply As ToolStripMenuItem = EnsureSubMenu(stock, "Supply to Manufacturing (Fulfill Bundles)")
             RemoveHandler supply.Click, AddressOf OpenInternalOrdersBundles
             AddHandler supply.Click, AddressOf OpenInternalOrdersBundles
+            
+            ' Fulfill Re-order from Baker
+            Dim fulfillBaker As ToolStripMenuItem = EnsureSubMenu(stock, "Fulfill Re-order from Baker")
+            RemoveHandler fulfillBaker.Click, AddressOf OpenBOMFulfillment
+            AddHandler fulfillBaker.Click, AddressOf OpenBOMFulfillment
         End If
     End Sub
 
@@ -2744,6 +2759,24 @@ Partial Class MainDashboard
             frm.WindowState = FormWindowState.Maximized
         Catch ex As Exception
             MessageBox.Show("Error opening MO Actions (Bundles): " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenBOMFulfillment(sender As Object, e As EventArgs)
+        Try
+            For Each child As Form In Me.MdiChildren
+                If TypeOf child Is Stockroom.StockroomBOMFulfillmentForm Then
+                    child.Activate()
+                    child.WindowState = FormWindowState.Maximized
+                    Return
+                End If
+            Next
+            Dim frm As New Stockroom.StockroomBOMFulfillmentForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening BOM Fulfillment: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 

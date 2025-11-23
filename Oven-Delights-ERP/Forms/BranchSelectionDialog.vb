@@ -193,7 +193,9 @@ Public Class BranchSelectionDialog
                         Prefix
                     FROM Branches
                     WHERE IsActive = 1
-                    ORDER BY BranchName"
+                    ORDER BY 
+                        CASE WHEN BranchID = 12 THEN 0 ELSE 1 END,
+                        BranchName"
                 
                 Using cmd As New SqlCommand(sql, conn)
                     Using adapter As New SqlDataAdapter(cmd)
@@ -231,8 +233,19 @@ Public Class BranchSelectionDialog
                 })
             Next
             
-            ' Auto-select first branch
-            If cmbBranch.Items.Count > 0 Then
+            ' Auto-select HEAD OFFICE (BranchID = 12) by default
+            Dim headOfficeIndex = -1
+            For i = 0 To cmbBranch.Items.Count - 1
+                Dim item = CType(cmbBranch.Items(i), BranchItem)
+                If item.BranchID = 12 Then
+                    headOfficeIndex = i
+                    Exit For
+                End If
+            Next
+            
+            If headOfficeIndex >= 0 Then
+                cmbBranch.SelectedIndex = headOfficeIndex
+            ElseIf cmbBranch.Items.Count > 0 Then
                 cmbBranch.SelectedIndex = 0
             End If
             

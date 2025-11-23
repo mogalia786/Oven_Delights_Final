@@ -51,15 +51,17 @@ Namespace Manufacturing
                             u.Email,
                             COUNT(DISTINCT rob.ReOrderBookID) AS TodayOrders,
                             SUM(CASE WHEN rob.Status = 'Posted' THEN 1 ELSE 0 END) AS PendingOrders,
-                            SUM(CASE WHEN rob.Status = 'InProgress' THEN 1 ELSE 0 END) AS InProgressOrders,
+                            SUM(CASE WHEN rob.Status = 'BOM Fulfilled' THEN 1 ELSE 0 END) AS ReadyOrders,
+                            SUM(CASE WHEN rob.Status = 'In Production' THEN 1 ELSE 0 END) AS InProgressOrders,
                             SUM(CASE WHEN rob.Status = 'Completed' THEN 1 ELSE 0 END) AS CompletedOrders,
-                            SUM(rob.TotalProducts) AS TotalProducts,
-                            SUM(rob.TotalQuantity) AS TotalQuantity
+                            ISNULL(SUM(rbl.QuantityOrdered), 0) AS TotalProducts,
+                            COUNT(DISTINCT rbl.ProductID) AS TotalQuantity
                         FROM Users u
                         INNER JOIN Roles r ON u.RoleID = r.RoleID
                         LEFT JOIN ReOrderBooks rob ON u.UserID = rob.ManufacturerUserID 
                             AND rob.OrderDate = CAST(GETDATE() AS DATE)
                             AND rob.BranchID = @BranchID
+                        LEFT JOIN ReOrderBookLines rbl ON rob.ReOrderBookID = rbl.ReOrderBookID
                         WHERE r.RoleName = 'Manufacturer' 
                             AND u.IsActive = 1 
                             AND u.BranchID = @BranchID
@@ -78,10 +80,11 @@ Namespace Manufacturing
                             If(IsDBNull(reader("Email")), "", reader("Email").ToString()),
                             If(IsDBNull(reader("TodayOrders")), 0, CInt(reader("TodayOrders"))),
                             If(IsDBNull(reader("PendingOrders")), 0, CInt(reader("PendingOrders"))),
+                            If(IsDBNull(reader("ReadyOrders")), 0, CInt(reader("ReadyOrders"))),
                             If(IsDBNull(reader("InProgressOrders")), 0, CInt(reader("InProgressOrders"))),
                             If(IsDBNull(reader("CompletedOrders")), 0, CInt(reader("CompletedOrders"))),
                             If(IsDBNull(reader("TotalProducts")), 0, CInt(reader("TotalProducts"))),
-                            If(IsDBNull(reader("TotalQuantity")), 0, CDec(reader("TotalQuantity")))
+                            If(IsDBNull(reader("TotalQuantity")), 0, CInt(reader("TotalQuantity")))
                         )
                     
                         flpBakers.Controls.Add(card)
@@ -106,8 +109,8 @@ Namespace Manufacturing
         End Sub
 
         Private Function CreateBakerCard(bakerID As Integer, bakerName As String, email As String,
-                                        todayOrders As Integer, pending As Integer, inProgress As Integer,
-                                        completed As Integer, totalProducts As Integer, totalQty As Decimal) As Panel
+                                        todayOrders As Integer, pending As Integer, ready As Integer, inProgress As Integer,
+                                        completed As Integer, totalProducts As Integer, totalQty As Integer) As Panel
         
             ' Main card panel
             Dim card As New Panel With {
@@ -121,10 +124,12 @@ Namespace Manufacturing
         
             ' Determine card color based on status
             Dim cardColor As Color
-            If pending > 0 Then
-                cardColor = Color.FromArgb(255, 243, 205) ' Yellow - has pending
+            If ready > 0 Then
+                cardColor = Color.FromArgb(144, 238, 144) ' Bright green - ready to start!
+            ElseIf pending > 0 Then
+                cardColor = Color.FromArgb(255, 243, 205) ' Yellow - waiting for stockroom
             ElseIf inProgress > 0 Then
-                cardColor = Color.FromArgb(209, 231, 221) ' Green - in progress
+                cardColor = Color.FromArgb(209, 231, 221) ' Light blue - in progress
             ElseIf completed > 0 Then
                 cardColor = Color.FromArgb(212, 237, 218) ' Light green - completed
             Else
@@ -178,9 +183,21 @@ Namespace Manufacturing
         
             ' Status breakdown
             Dim yPos As Integer = 125
+            If ready > 0 Then
+                Dim lblReady As New Label With {
+                    .Text = $"🚀 Ready to Start: {ready}",
+                    .Font = New Font("Segoe UI", 9, FontStyle.Bold),
+                    .Location = New Point(20, yPos),
+                    .AutoSize = True,
+                    .ForeColor = Color.FromArgb(0, 128, 0)
+                }
+                card.Controls.Add(lblReady)
+                yPos += 20
+            End If
+            
             If pending > 0 Then
                 Dim lblPending As New Label With {
-                    .Text = $"⏳ Pending: {pending}",
+                    .Text = $"⏳ Waiting Stockroom: {pending}",
                     .Font = New Font("Segoe UI", 9),
                     .Location = New Point(20, yPos),
                     .AutoSize = True,

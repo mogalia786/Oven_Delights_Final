@@ -63,7 +63,9 @@ Namespace Manufacturing
                     Dim status As String = row.Cells("Status").Value?.ToString()
                     Select Case status
                         Case "Posted"
-                            row.DefaultCellStyle.BackColor = Color.FromArgb(255, 243, 205) ' Yellow
+                            row.DefaultCellStyle.BackColor = Color.FromArgb(255, 243, 205) ' Yellow - waiting for stockroom
+                        Case "Ready for Production"
+                            row.DefaultCellStyle.BackColor = Color.FromArgb(144, 238, 144) ' Light green - ready to start
                         Case "InProgress"
                             row.DefaultCellStyle.BackColor = Color.FromArgb(209, 231, 221) ' Light blue
                         Case "Completed"
@@ -100,12 +102,11 @@ Namespace Manufacturing
                     lblTotalProducts.Text = $"Products: {reader("TotalProducts")}"
                     lblTotalQuantity.Text = $"Total Qty: {reader("TotalQuantity")}"
                     
-                    Dim status As String = reader("Status").ToString()
-                    ' Start Production only enabled when BOM is fulfilled (status = Posted)
-                    btnStartProduction.Enabled = (status = "Posted")
-                    btnCompleteProduct.Enabled = (status = "InProgress")
+                    ' ALWAYS ENABLE ALL BUTTONS
+                    btnStartProduction.Enabled = True
+                    btnCompleteProduct.Enabled = True
                     btnPrint.Enabled = True
-                    btnRequestBOM.Enabled = (status = "Posted" Or status = "Draft")
+                    btnRequestBOM.Enabled = True
                 End If
                 
                 ' Product Lines
@@ -158,60 +159,268 @@ Namespace Manufacturing
     End Sub
 
     Private Sub btnCompleteProduct_Click(sender As Object, e As EventArgs) Handles btnCompleteProduct.Click
-        If dgvProductLines.SelectedRows.Count = 0 Then
-            MessageBox.Show("Please select a product to complete", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            Return
-        End If
-        
-        Dim selectedRow As DataGridViewRow = dgvProductLines.SelectedRows(0)
-        Dim lineID As Integer = CInt(selectedRow.Cells("ReOrderLineID").Value)
-        Dim productName As String = selectedRow.Cells("ProductName").Value.ToString()
-        Dim qtyOrdered As Decimal = CDec(selectedRow.Cells("QuantityOrdered").Value)
-        Dim lineStatus As String = selectedRow.Cells("LineStatus").Value?.ToString()
-        
-        If lineStatus = "Completed" Then
-            MessageBox.Show("This product is already completed", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information)
-            Return
-        End If
-        
-        ' Show completion dialog
-        Dim qtyCompleted As String = InputBox($"Enter quantity completed for:{vbCrLf}{productName}{vbCrLf}Ordered: {qtyOrdered}", "Complete Product", qtyOrdered.ToString())
-        
-        If String.IsNullOrEmpty(qtyCompleted) Then Return
-        
-        Dim qty As Decimal
-        If Not Decimal.TryParse(qtyCompleted, qty) OrElse qty <= 0 Then
-            MessageBox.Show("Invalid quantity", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        If currentReOrderBookID = 0 Then
+            MessageBox.Show("Please select a re-order book first", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
         
         Try
+            ' Get all products from re-order book
             Using conn As New SqlConnection(connectionString)
-                Dim cmd As New SqlCommand("sp_CompleteReOrderProduct", conn)
-                cmd.CommandType = CommandType.StoredProcedure
-                cmd.Parameters.AddWithValue("@ReOrderLineID", lineID)
-                cmd.Parameters.AddWithValue("@QuantityCompleted", qty)
-                cmd.Parameters.AddWithValue("@CompletedBy", bakerID)
-                
                 conn.Open()
-                Dim reader As SqlDataReader = cmd.ExecuteReader()
                 
-                Dim allCompleted As Boolean = False
-                If reader.Read() Then
-                    allCompleted = CBool(reader("AllCompleted"))
+                ' Get expected quantities
+                Dim cmdExpected As New SqlCommand(
+                    "SELECT rbl.ProductID, p.Name AS ProductName, rbl.QuantityOrdered " &
+                    "FROM ReOrderBookLines rbl " &
+                    "INNER JOIN Demo_Retail_Product p ON rbl.ProductID = p.ProductID " &
+                    "WHERE rbl.ReOrderBookID = @ReOrderBookID", conn)
+                cmdExpected.Parameters.AddWithValue("@ReOrderBookID", currentReOrderBookID)
+                Dim reader = cmdExpected.ExecuteReader()
+                
+                Dim products As New List(Of (ProductID As Integer, ProductName As String, Expected As Decimal))
+                While reader.Read()
+                    products.Add((reader.GetInt32(0), reader.GetString(1), reader.GetDecimal(2)))
+                End While
+                reader.Close()
+                
+                ' Show yield input dialog
+                Dim yieldForm As New Form()
+                yieldForm.Text = "End Production - Enter Actual Yield"
+                yieldForm.Size = New Size(600, 400)
+                yieldForm.StartPosition = FormStartPosition.CenterParent
+                
+                Dim lblTitle As New Label()
+                lblTitle.Text = "Enter actual quantities produced:"
+                lblTitle.Font = New Font("Arial", 12, FontStyle.Bold)
+                lblTitle.Location = New Point(20, 20)
+                lblTitle.AutoSize = True
+                yieldForm.Controls.Add(lblTitle)
+                
+                Dim yPos = 60
+                Dim yieldInputs As New List(Of (ProductID As Integer, ProductName As String, Expected As Decimal, Input As NumericUpDown))
+                
+                For Each prod In products
+                    Dim lblProd As New Label()
+                    lblProd.Text = $"{prod.ProductName} (Expected: {prod.Expected})"
+                    lblProd.Location = New Point(20, yPos)
+                    lblProd.Width = 350
+                    yieldForm.Controls.Add(lblProd)
+                    
+                    Dim nudActual As New NumericUpDown()
+                    nudActual.Location = New Point(380, yPos)
+                    nudActual.Width = 150
+                    nudActual.Maximum = 10000
+                    nudActual.Value = prod.Expected
+                    yieldForm.Controls.Add(nudActual)
+                    
+                    yieldInputs.Add((prod.ProductID, prod.ProductName, prod.Expected, nudActual))
+                    yPos += 35
+                Next
+                
+                Dim btnConfirm As New Button()
+                btnConfirm.Text = "Confirm & Complete"
+                btnConfirm.Location = New Point(380, yPos + 20)
+                btnConfirm.Size = New Size(150, 35)
+                btnConfirm.DialogResult = DialogResult.OK
+                yieldForm.Controls.Add(btnConfirm)
+                
+                If yieldForm.ShowDialog() = DialogResult.OK Then
+                    Dim transaction = conn.BeginTransaction()
+                    Try
+                        ' Check for shortages
+                        Dim hasShortage = False
+                        Dim shortageReason As String = ""
+                        For Each item In yieldInputs
+                            If item.Input.Value < item.Expected Then
+                                hasShortage = True
+                                Exit For
+                            End If
+                        Next
+                        
+                        ' If shortage, require manager approval
+                        If hasShortage Then
+                            Dim approvalForm As New Form()
+                            approvalForm.Text = "Manager Approval Required"
+                            approvalForm.Size = New Size(500, 300)
+                            approvalForm.StartPosition = FormStartPosition.CenterParent
+                            
+                            Dim lblWarning As New Label()
+                            lblWarning.Text = "⚠ Yield is less than expected!" & vbCrLf & "Manager approval required."
+                            lblWarning.Font = New Font("Arial", 11, FontStyle.Bold)
+                            lblWarning.ForeColor = Color.Red
+                            lblWarning.Location = New Point(20, 20)
+                            lblWarning.AutoSize = True
+                            approvalForm.Controls.Add(lblWarning)
+                            
+                            Dim lblUsername As New Label()
+                            lblUsername.Text = "Manager Username:"
+                            lblUsername.Location = New Point(20, 80)
+                            lblUsername.AutoSize = True
+                            approvalForm.Controls.Add(lblUsername)
+                            
+                            Dim txtUsername As New TextBox()
+                            txtUsername.Location = New Point(150, 77)
+                            txtUsername.Width = 300
+                            approvalForm.Controls.Add(txtUsername)
+                            
+                            Dim lblPassword As New Label()
+                            lblPassword.Text = "Password:"
+                            lblPassword.Location = New Point(20, 115)
+                            lblPassword.AutoSize = True
+                            approvalForm.Controls.Add(lblPassword)
+                            
+                            Dim txtPassword As New TextBox()
+                            txtPassword.Location = New Point(150, 112)
+                            txtPassword.Width = 300
+                            txtPassword.UseSystemPasswordChar = True
+                            approvalForm.Controls.Add(txtPassword)
+                            
+                            Dim lblReason As New Label()
+                            lblReason.Text = "Reason for shortage:"
+                            lblReason.Location = New Point(20, 150)
+                            lblReason.AutoSize = True
+                            approvalForm.Controls.Add(lblReason)
+                            
+                            Dim txtReason As New TextBox()
+                            txtReason.Location = New Point(150, 147)
+                            txtReason.Width = 300
+                            txtReason.Height = 60
+                            txtReason.Multiline = True
+                            approvalForm.Controls.Add(txtReason)
+                            
+                            Dim btnApprove As New Button()
+                            btnApprove.Text = "Approve"
+                            btnApprove.Location = New Point(300, 220)
+                            btnApprove.DialogResult = DialogResult.OK
+                            approvalForm.Controls.Add(btnApprove)
+                            
+                            If approvalForm.ShowDialog() <> DialogResult.OK Then
+                                transaction.Rollback()
+                                Return
+                            End If
+                            
+                            ' Verify manager credentials
+                            Dim cmdVerify As New SqlCommand(
+                                "SELECT COUNT(*) FROM Users u INNER JOIN Roles r ON u.RoleID = r.RoleID " &
+                                "WHERE u.Username = @Username AND u.Password = @Password AND r.RoleName = 'Manufacturing Manager'", conn, transaction)
+                            cmdVerify.Parameters.AddWithValue("@Username", txtUsername.Text)
+                            cmdVerify.Parameters.AddWithValue("@Password", txtPassword.Text)
+                            
+                            If Convert.ToInt32(cmdVerify.ExecuteScalar()) = 0 Then
+                                MessageBox.Show("Invalid manager credentials!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                                transaction.Rollback()
+                                Return
+                            End If
+                            
+                            ' Store reason for later use
+                            shortageReason = txtReason.Text
+                            
+                            ' Log shortage reason
+                            Dim cmdLog As New SqlCommand(
+                                "INSERT INTO ProductionShortageLog (ReOrderBookID, Reason, ApprovedBy, LogDate) " &
+                                "VALUES (@ReOrderBookID, @Reason, @ApprovedBy, GETDATE())", conn, transaction)
+                            cmdLog.Parameters.AddWithValue("@ReOrderBookID", currentReOrderBookID)
+                            cmdLog.Parameters.AddWithValue("@Reason", shortageReason)
+                            cmdLog.Parameters.AddWithValue("@ApprovedBy", txtUsername.Text)
+                            cmdLog.ExecuteNonQuery()
+                        End If
+                        
+                        ' Process each product
+                        Dim branchId = If(AppSession.CurrentUser?.BranchID, 0)
+                        
+                        For Each item In yieldInputs
+                            Dim actualQty = item.Input.Value
+                            Dim shortage = item.Expected - actualQty
+                            
+                            ' Calculate cost of sales from BOM
+                            Dim totalCost As Decimal = 0
+                            
+                            ' Get BOM and calculate costs
+                            Dim cmdGetBOM As New SqlCommand(
+                                "SELECT bl.ItemID, bl.Quantity, bh.BatchSize " &
+                                "FROM BOM_Lines bl " &
+                                "INNER JOIN BOM_Header bh ON bl.BOMID = bh.BOMID " &
+                                "WHERE bh.ProductID = @ProductID AND bh.IsActive = 1", conn, transaction)
+                            cmdGetBOM.Parameters.AddWithValue("@ProductID", item.ProductID)
+                            
+                            Dim bomData As New DataTable()
+                            Using bomAdapter As New SqlDataAdapter(cmdGetBOM)
+                                bomAdapter.Fill(bomData)
+                            End Using
+                            
+                            ' Calculate total cost
+                            For Each bomRow As DataRow In bomData.Rows
+                                Dim itemID = Convert.ToInt32(bomRow("ItemID"))
+                                Dim bomQty = Convert.ToDecimal(bomRow("Quantity"))
+                                Dim batchSize = Convert.ToDecimal(bomRow("BatchSize"))
+                                Dim qtyUsed = (bomQty / batchSize) * actualQty
+                                
+                                ' Get ingredient cost
+                                Dim cmdCost As New SqlCommand(
+                                    "SELECT TOP 1 ISNULL(CostPrice, 0) FROM Demo_Retail_Price " &
+                                    "WHERE ProductID = @ProductID AND BranchID = @BranchID " &
+                                    "ORDER BY CreatedAt DESC", conn, transaction)
+                                cmdCost.Parameters.AddWithValue("@ProductID", itemID)
+                                cmdCost.Parameters.AddWithValue("@BranchID", branchId)
+                                Dim ingredientCost = Convert.ToDecimal(cmdCost.ExecuteScalar())
+                                
+                                totalCost += (ingredientCost * qtyUsed)
+                            Next
+                            
+                            ' Calculate cost per unit
+                            Dim costPerUnit = If(actualQty > 0, totalCost / actualQty, 0)
+                            
+                            ' Log production with all details
+                            Dim cmdLog As New SqlCommand(
+                                "INSERT INTO ProductionLog (ReOrderBookID, ProductID, ProductName, Baker, " &
+                                "ExpectedYield, ActualYield, ShortBy, Reason, CostOfSales, ProductionDate, BranchID) " &
+                                "VALUES (@ReOrderBookID, @ProductID, @ProductName, @Baker, @ExpectedYield, " &
+                                "@ActualYield, @ShortBy, @Reason, @CostOfSales, GETDATE(), @BranchID)", conn, transaction)
+                            cmdLog.Parameters.AddWithValue("@ReOrderBookID", currentReOrderBookID)
+                            cmdLog.Parameters.AddWithValue("@ProductID", item.ProductID)
+                            cmdLog.Parameters.AddWithValue("@ProductName", item.ProductName)
+                            cmdLog.Parameters.AddWithValue("@Baker", bakerName)
+                            cmdLog.Parameters.AddWithValue("@ExpectedYield", item.Expected)
+                            cmdLog.Parameters.AddWithValue("@ActualYield", actualQty)
+                            cmdLog.Parameters.AddWithValue("@ShortBy", shortage)
+                            cmdLog.Parameters.AddWithValue("@Reason", If(hasShortage, shortageReason, DBNull.Value))
+                            cmdLog.Parameters.AddWithValue("@CostOfSales", totalCost)
+                            cmdLog.Parameters.AddWithValue("@BranchID", branchId)
+                            cmdLog.ExecuteNonQuery()
+                            
+                            ' Update finished product stock
+                            Dim cmdAddProduct As New SqlCommand(
+                                "UPDATE Demo_Retail_Product " &
+                                "SET CurrentStock = ISNULL(CurrentStock, 0) + @Qty " &
+                                "WHERE ProductID = @ProductID AND BranchID = @BranchID", conn, transaction)
+                            cmdAddProduct.Parameters.AddWithValue("@ProductID", item.ProductID)
+                            cmdAddProduct.Parameters.AddWithValue("@Qty", actualQty)
+                            cmdAddProduct.Parameters.AddWithValue("@BranchID", branchId)
+                            cmdAddProduct.ExecuteNonQuery()
+                        Next
+                        
+                        ' Mark re-order book as completed
+                        Dim cmdComplete As New SqlCommand(
+                            "UPDATE ReOrderBooks SET Status = 'Completed', CompletedDate = GETDATE(), CompletedBy = @CompletedBy " &
+                            "WHERE ReOrderBookID = @ReOrderBookID", conn, transaction)
+                        cmdComplete.Parameters.AddWithValue("@ReOrderBookID", currentReOrderBookID)
+                        cmdComplete.Parameters.AddWithValue("@CompletedBy", bakerName)
+                        cmdComplete.ExecuteNonQuery()
+                        
+                        transaction.Commit()
+                        
+                        MessageBox.Show("Production completed! Products added to retail stock.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                        LoadReOrderBooks()
+                        
+                    Catch ex As Exception
+                        transaction.Rollback()
+                        Throw
+                    End Try
                 End If
-                
-                If allCompleted Then
-                    MessageBox.Show($"Product completed and added to retail stock!{vbCrLf}{vbCrLf}All products completed - Re-Order Book finished! 🎉", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                Else
-                    MessageBox.Show("Product completed and added to retail stock!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                End If
-                
-                LoadReOrderBooks()
-                LoadProductLines(currentReOrderBookID)
             End Using
         Catch ex As Exception
-            MessageBox.Show("Error completing product: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show("Error completing production: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -344,47 +553,11 @@ Namespace Manufacturing
         End If
 
         Try
-            ' Get product names and quantities from grid
-            Dim productData As New Dictionary(Of String, Decimal)
-            Dim productIDs As New List(Of Integer)
-            Dim totalQty As Decimal = 0
+            ' Open BOM Requisition Form
+            Dim requisitionForm As New BOMRequisitionForm(currentReOrderBookID)
+            requisitionForm.ShowDialog()
 
-            Using conn As New SqlConnection(connectionString)
-                conn.Open()
-                For Each row As DataGridViewRow In dgvProductLines.Rows
-                    If Not row.IsNewRow AndAlso row.Cells("ProductName").Value IsNot Nothing Then
-                        Dim prodName As String = row.Cells("ProductName").Value.ToString()
-                        Dim qty As Decimal = Convert.ToDecimal(row.Cells("QuantityOrdered").Value)
-
-                        ' Get ProductID from database
-                        Dim cmd As New SqlCommand("SELECT ProductID FROM Demo_Retail_Product WHERE Name = @Name", conn)
-                        cmd.Parameters.AddWithValue("@Name", prodName)
-                        Dim prodID As Object = cmd.ExecuteScalar()
-
-                        If prodID IsNot Nothing Then
-                            Dim id As Integer = Convert.ToInt32(prodID)
-                            If Not productIDs.Contains(id) Then
-                                productIDs.Add(id)
-                                productData(prodName) = qty
-                                totalQty += qty
-                            End If
-                        End If
-                    End If
-                Next
-            End Using
-
-            ' Open BOM Editor with preloaded products and baker info
-            Dim bomEditor As New Manufacturing.BOMEditorForm()
-            bomEditor.SetMode("Create")
-            ' Set requester BEFORE showing dialog so it auto-selects
-            bomEditor.SetRequester(bakerID, bakerName)
-            bomEditor.PreloadProducts(productIDs)
-            bomEditor.SetProductionQuantity(totalQty)
-            bomEditor.LockFields(True)
-            ' Show dialog - baker should be auto-selected
-            bomEditor.ShowDialog()
-
-            ' Refresh after BOM created
+            ' Refresh after requisition created
             LoadReOrderBooks()
             If currentReOrderBookID > 0 Then
                 LoadProductLines(currentReOrderBookID)

@@ -365,20 +365,33 @@ Public Class InvoiceGRVForm
             If receivedQty > 0 Then
                 Dim productId = Convert.ToInt32(row.Cells("ProductID").Value)
                 Dim productType = row.Cells("ProductType").Value.ToString()
+                
+                ' DEBUG: Show what we're about to update
+                MessageBox.Show($"BEFORE UPDATE: ProductID={productId}, BranchID={currentBranchId}, Qty={receivedQty}, ProductName={row.Cells("ProductName").Value}", "DEBUG BEFORE", MessageBoxButtons.OK, MessageBoxIcon.Information)
 
-                If productType = "External" Then
-                    ' Update Retail_Stock via Retail_Variant
-                    Dim cmd As New SqlCommand("UPDATE rs SET rs.QtyOnHand = ISNULL(rs.QtyOnHand, 0) + @Qty FROM Retail_Stock rs INNER JOIN Retail_Variant rv ON rs.VariantID = rv.VariantID WHERE rv.ProductID = @ProductID; IF @@ROWCOUNT = 0 BEGIN DECLARE @vid INT; SELECT @vid = VariantID FROM Retail_Variant WHERE ProductID = @ProductID; IF @vid IS NOT NULL INSERT INTO Retail_Stock(VariantID, QtyOnHand, ReorderPoint, LocationKey, BranchKey) VALUES(@vid, @Qty, 0, 'MAIN', 1); END", conn, trans)
-                    cmd.Parameters.AddWithValue("@Qty", receivedQty)
-                    cmd.Parameters.AddWithValue("@ProductID", productId)
-                    cmd.ExecuteNonQuery()
-                ElseIf productType = "Internal" Then
-                    ' Update RawMaterials stock - use CurrentStock not StockLevel
-                    Dim cmd As New SqlCommand("UPDATE RawMaterials SET CurrentStock = ISNULL(CurrentStock, 0) + @Qty WHERE MaterialID = @MaterialID", conn, trans)
-                    cmd.Parameters.AddWithValue("@Qty", receivedQty)
-                    cmd.Parameters.AddWithValue("@MaterialID", productId)
-                    cmd.ExecuteNonQuery()
-                End If
+                ' Update CurrentStock in Demo_Retail_Product for this branch
+                Dim cmd As New SqlCommand(
+                    "UPDATE Demo_Retail_Product SET CurrentStock = ISNULL(CurrentStock, 0) + @Qty " &
+                    "WHERE ProductID = @ProductID AND BranchID = @BranchID", conn, trans)
+                cmd.Parameters.AddWithValue("@Qty", receivedQty)
+                cmd.Parameters.AddWithValue("@ProductID", productId)
+                cmd.Parameters.AddWithValue("@BranchID", currentBranchId)
+                Dim rowsAffected = cmd.ExecuteNonQuery()
+                
+                ' DEBUG: Show what happened
+                MessageBox.Show($"Stock Update: ProductID={productId}, BranchID={currentBranchId}, Qty={receivedQty}, RowsAffected={rowsAffected}", "DEBUG", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                
+                ' Update Demo_Retail_Prices with last paid price for this branch
+                Dim unitCost = Convert.ToDecimal(row.Cells("UnitCost").Value)
+                Dim cmdPrice As New SqlCommand(
+                    "IF EXISTS (SELECT 1 FROM Demo_Retail_Prices WHERE ProductID = @ProductID AND BranchID = @BranchID) " &
+                    "  UPDATE Demo_Retail_Prices SET CostPrice = @UnitCost, UpdatedDate = GETDATE() WHERE ProductID = @ProductID AND BranchID = @BranchID " &
+                    "ELSE " &
+                    "  INSERT INTO Demo_Retail_Prices (ProductID, BranchID, CostPrice, UpdatedDate) VALUES (@ProductID, @BranchID, @UnitCost, GETDATE())", conn, trans)
+                cmdPrice.Parameters.AddWithValue("@ProductID", productId)
+                cmdPrice.Parameters.AddWithValue("@BranchID", currentBranchId)
+                cmdPrice.Parameters.AddWithValue("@UnitCost", unitCost)
+                cmdPrice.ExecuteNonQuery()
 
                 ' Create stock movement record
                 Dim movCmd As New SqlCommand("INSERT INTO StockMovements (MaterialID, MovementType, QuantityIn, UnitCost, TotalValue, MovementDate, ReferenceType, ReferenceNumber, BranchID, InventoryArea, CreatedBy, CreatedDate) VALUES (@MaterialID, @MovementType, @QuantityIn, @UnitCost, @TotalValue, @MovementDate, @ReferenceType, @ReferenceNumber, @BranchID, @InventoryArea, @CreatedBy, @CreatedDate)", conn, trans)

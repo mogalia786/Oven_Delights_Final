@@ -1,0 +1,14 @@
+-- Check Products table structure
+SELECT 
+    COLUMN_NAME,
+    DATA_TYPE,
+    CHARACTER_MAXIMUM_LENGTH,
+    IS_NULLABLE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Products'
+ORDER BY ORDINAL_POSITION
+
+-- Check sample data
+SELECT TOP 10 *
+FROM Products
+WHERE ItemType = 'RawMaterial'

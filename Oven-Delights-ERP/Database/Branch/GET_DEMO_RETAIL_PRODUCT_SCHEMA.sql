@@ -1,0 +1,12 @@
+-- Get ACTUAL Demo_Retail_Product schema
+SELECT 
+    COLUMN_NAME,
+    DATA_TYPE,
+    CHARACTER_MAXIMUM_LENGTH,
+    IS_NULLABLE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Demo_Retail_Product'
+ORDER BY ORDINAL_POSITION;
+
+-- Show sample data
+SELECT TOP 5 * FROM Demo_Retail_Product;

@@ -1,0 +1,97 @@
+Changed database context to 'Oven_Delights_Main'.
+========================================
+INVESTIGATING MISSING SUBCATEGORIES
+========================================
+Total SubCategories in table:
+TotalSubCategories
+------------------
+                53
+
+(1 rows affected)
+ 
+SubCategories with products assigned:
+SubCategoryID SubCategoryName                                                                                      CategoryName                                                                                         ProductCount
+------------- ---------------------------------------------------------------------------------------------------- ---------------------------------------------------------------------------------------------------- ------------
+           15 drink                                                                                                Beverages                                                                                                      61
+           13 Soft Drinks                                                                                          Beverages                                                                                                       0
+           45 biscuits                                                                                             biscuits                                                                                                       15
+            1 Bread Rolls                                                                                          Bread                                                                                                           0
+           14 Loaves                                                                                               Bread & Resell                                                                                                  0
+           16 buttercream cake                                                                                     buttercream                                                                                                    40
+           17 buttercream cakes                                                                                    buttercream                                                                                                     1
+           18 buttercream 1mx500                                                                                   Buttercream Birthday Cake                                                                                       3
+           19 buttercream cake round                                                                               Buttercream Birthday Cake                                                                                       3
+           20 buttercream figure                                                                                   Buttercream Birthday Cake                                                                                       3
+           21 buttercream figure cake                                                                              Buttercream Birthday Cake                                                                                       3
+           22 buttercream round                                                                                    Buttercream Birthday Cake                                                                                       2
+           23 buttercream square                                                                                   Buttercream Birthday Cake                                                                                       7
+           24 buttercream square cake                                                                              Buttercream Birthday Cake                                                                                       1
+            2 @0 Cm Square Lemon Cake                                                                              Cake                                                                                                            0
+            3 Chocolate Cake                                                                                       Cake                                                                                                            0
+           46 candle                                                                                               candle                                                                                                         86
+           25 consumables                                                                                          consumables                                                                                                   157
+           11 Edible                                                                                               Decorations                                                                                                     0
+           26 Drink                                                                                                Drinks                                                                                                        195
+           27 juice                                                                                                Drinks                                                                                                         19
+           28 equipment                                                                                            equipment                                                                                                      13
+           29 equpment                                                                                             equipment                                                                                                       5
+           47 exotic cakes                                                                                         exotic cakes                                                                                                   86
+           30 freshcream cakes                                                                                     Fresh Cream                                                                                                    36
+           31 freashcream round                                                                                    Fresh Cream Birthday Cakes                                                                                      1
+           32 freshcream 1mx 500                                                                                   Fresh Cream Birthday Cakes                                                                                      2
+           33 freshcream black forest                                                                              Fresh Cream Birthday Cakes                                                                                      1
+           34 freshcream blackforest                                                                               Fresh Cream Birthday Cakes                                                                                      1
+           35 freshcream cake round                                                                                Fresh Cream Birthday Cakes                                                                                      2
+           36 freshcream cakes 1mx500 eggless                                                                      Fresh Cream Birthday Cakes                                                                                      1
+           37 freshcream figure                                                                                    Fresh Cream Birthday Cakes                                                                                      3
+           38 freshcream figure cake                                                                               Fresh Cream Birthday Cakes                                                                                      3
+           39 freshcream round                                                                                     Fresh Cream Birthday Cakes                                                                                      2
+           40 freshcream square                                                                                    Fresh Cream Birthday Cakes                                                                                      7
+           41 freshcream square black forest                                                                       Fresh Cream Birthday Cakes                                                                                      1
+           42 freshcream square eggless                                                                            Fresh Cream Birthday Cakes                                                                                      1
+           43 fruit cake                                                                                           Fruitcake                                                                                                       9
+           48 Ingredients                                                                                          ingredients                                                                                                   495
+           49 miscellaneous                                                                                        miscellaneous                                                                                                 135
+           50 novelty                                                                                              novelty                                                                                                        38
+           10 Boxes                                                                                                Packaging                                                                                                       0
+           51 packaging                                                                                            Packaging                                                                                                     268
+           52 pest control                                                                                         pest control                                                                                                    4
+           53 pies                                                                                                 pies                                                                                                           16
+           54 platter                                                                                              platter                                                                                                        22
+           55 savoury                                                                                              savoury                                                                                                        21
+           56 shop front                                                                                           shop front                                                                                                    112
+           57 snacks                                                                                               snacks                                                                                                         27
+           12 Colored                                                                                              Sprinkles                                                                                                       0
+           58 sub recipe                                                                                           sub recipe                                                                                                     90
+           59 Sweet                                                                                                sweets                                                                                                         30
+           44 Wedding Cakes                                                                                        Wedding Cakes                                                                                                   4
+
+(53 rows affected)
+ 
+SubCategories WITHOUT any products (will not appear in POS):
+SubCategoryID SubCategoryName                                                                                      CategoryName                                                                                        
+------------- ---------------------------------------------------------------------------------------------------- ----------------------------------------------------------------------------------------------------
+           13 Soft Drinks                                                                                          Beverages                                                                                           
+            1 Bread Rolls                                                                                          Bread                                                                                               
+           14 Loaves                                                                                               Bread & Resell                                                                                      
+            2 @0 Cm Square Lemon Cake                                                                              Cake                                                                                                
+            3 Chocolate Cake                                                                                       Cake                                                                                                
+           11 Edible                                                                                               Decorations                                                                                         
+           10 Boxes                                                                                                Packaging                                                                                           
+           12 Colored                                                                                              Sprinkles                                                                                           
+
+(8 rows affected)
+ 
+Products with CategoryID but NULL SubCategoryID:
+CategoryName                                                                                         ProductsWithoutSubCategory
+---------------------------------------------------------------------------------------------------- --------------------------
+
+(0 rows affected)
+ 
+SubCategories visible in POS (from v_POS_SubCategories):
+Msg 208, Level 16, State 1, Server mogalia, Line 5
+Invalid object name 'v_POS_SubCategories'.
+ 
+========================================
+ANALYSIS COMPLETE
+========================================

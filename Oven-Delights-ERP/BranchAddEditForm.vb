@@ -484,6 +484,22 @@ Partial Class BranchAddEditForm
             ' Log the result
             If result Then
                 _logger.LogInformation($"Branch {(If(_isEditMode, "updated", "created"))} successfully")
+                
+                ' If this is a new branch, initialize products, prices, and stock
+                If Not _isEditMode Then
+                    Try
+                        ' Get the newly created branch ID
+                        Dim newBranchId = GetLastCreatedBranchId()
+                        If newBranchId > 0 Then
+                            InitializeBranchProducts(newBranchId)
+                        End If
+                    Catch ex As Exception
+                        _logger.LogError($"Error initializing branch products: {ex.Message}")
+                        MessageBox.Show($"Branch created but failed to initialize products: {ex.Message}" & vbCrLf & vbCrLf & 
+                                      "Please run the product initialization manually from Branch Management.", 
+                                      "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    End Try
+                End If
             Else
                 _logger.LogWarning($"Failed to save branch: {_branch.BranchName}")
             End If
@@ -581,6 +597,62 @@ Partial Class BranchAddEditForm
         Catch ex As Exception
             ' Log error but don't throw - audit logging failure shouldn't prevent main operation
             _logger.LogError($"Error logging audit action: {ex.Message}")
+        End Try
+    End Sub
+
+    Private Function GetLastCreatedBranchId() As Integer
+        Try
+            Using conn As New SqlConnection(_connectionString)
+                conn.Open()
+                Dim query = "SELECT TOP 1 ID FROM Branches WHERE BranchCode = @BranchCode ORDER BY CreatedDate DESC"
+                Using cmd As New SqlCommand(query, conn)
+                    cmd.Parameters.AddWithValue("@BranchCode", _branch.BranchCode)
+                    Dim result = cmd.ExecuteScalar()
+                    If result IsNot Nothing Then
+                        Return Convert.ToInt32(result)
+                    End If
+                End Using
+            End Using
+        Catch ex As Exception
+            _logger.LogError($"Error getting last created branch ID: {ex.Message}")
+        End Try
+        Return 0
+    End Function
+
+    Private Sub InitializeBranchProducts(branchId As Integer)
+        Try
+            Using conn As New SqlConnection(_connectionString)
+                conn.Open()
+                Using cmd As New SqlCommand("sp_InitializeBranchProducts", conn)
+                    cmd.CommandType = CommandType.StoredProcedure
+                    cmd.Parameters.AddWithValue("@BranchID", branchId)
+                    cmd.CommandTimeout = 120 ' 2 minutes for large product catalogs
+                    
+                    Using reader = cmd.ExecuteReader()
+                        If reader.Read() Then
+                            Dim status = reader("Status").ToString()
+                            Dim message = reader("Message").ToString()
+                            Dim pricesCreated = Convert.ToInt32(reader("ProductPricesCreated"))
+                            Dim stockCreated = Convert.ToInt32(reader("StockRecordsCreated"))
+                            
+                            If status = "SUCCESS" Then
+                                _logger.LogInformation($"Branch products initialized: {pricesCreated} prices, {stockCreated} stock records")
+                                MessageBox.Show($"Branch created successfully!" & vbCrLf & vbCrLf & _
+                                              $"✓ {pricesCreated} product prices inherited from master" & vbCrLf & _
+                                              $"✓ {stockCreated} stock records created (quantity: 0)" & vbCrLf & vbCrLf & _
+                                              "The branch is now ready for use!" & vbCrLf & _
+                                              "Till points will be created on first POS login.", _
+                                              "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                            Else
+                                Throw New Exception(message)
+                            End If
+                        End If
+                    End Using
+                End Using
+            End Using
+        Catch ex As Exception
+            _logger.LogError($"Error initializing branch products: {ex.Message}")
+            Throw
         End Try
     End Sub
 

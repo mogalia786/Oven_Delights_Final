@@ -1,5 +1,6 @@
 Imports System.Data.SqlClient
 Imports System.Configuration
+Imports System.Drawing.Printing
 
 Namespace Manufacturing
     Public Class ReOrderBookManagerForm
@@ -32,6 +33,14 @@ Namespace Manufacturing
         Catch ex As Exception
             MessageBox.Show("Error loading form: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+    End Sub
+
+    Private isLoadingProducts As Boolean = False
+    
+    Private Sub OnProductSearchChanged(sender As Object, e As EventArgs)
+        If Not isLoadingProducts Then
+            LoadProducts(cmbProduct.Text)
+        End If
     End Sub
 
     Private Sub SetupUI()
@@ -76,20 +85,46 @@ Namespace Manufacturing
         End Try
     End Sub
 
-    Private Sub LoadProducts()
+    Private Sub LoadProducts(Optional searchText As String = "")
         Try
             Using conn As New SqlConnection(connectionString)
-                ' Load internal products that have an active recipe in the new Recipe table
-                Dim branchId As Integer = If(AppSession.CurrentBranchID > 0, AppSession.CurrentBranchID, 0)
-                Dim sql As String = "SELECT DISTINCT p.ProductID, p.Name AS ProductName, p.SKU " & _
-                                    "FROM Demo_Retail_Product p " & _
-                                    "WHERE p.IsActive = 1 " & _
-                                    "  AND p.ProductType = 'Internal' " & _
-                                    "  AND (p.BranchID = @branchId OR p.BranchID IS NULL) " & _
-                                    "  AND EXISTS (SELECT 1 FROM dbo.Recipe r WHERE r.ProductID = p.ProductID AND r.IsActive = 1) " & _
-                                    "ORDER BY p.Name"
+                ' Only load products that have recipes created (Recipe_Created = 1)
+                ' Branch filtering: HEAD OFFICE shows all, specific branch filters by BranchID
+                Dim currentBranchID = If(AppSession.CurrentUser?.BranchID, 0)
+                Dim sql As String
+                
+                If currentBranchID = 0 OrElse currentBranchID = 12 Then
+                    ' HEAD OFFICE - show all branches with DISTINCT names
+                    sql = "SELECT MIN(ProductID) AS ProductID, Name AS ProductName, MIN(ISNULL(Code, SKU)) AS SKU " & _
+                          "FROM Demo_Retail_Product " & _
+                          "WHERE IsActive = 1 " & _
+                          "  AND Recipe_Created = 1 " & _
+                          "  AND ProductType = 'Internal' "
+                    If Not String.IsNullOrEmpty(searchText) Then
+                        sql &= " AND Name LIKE @search "
+                    End If
+                    sql &= "GROUP BY Name ORDER BY Name"
+                Else
+                    ' Specific branch - filter by BranchID
+                    sql = "SELECT ProductID, Name AS ProductName, ISNULL(Code, SKU) AS SKU " & _
+                          "FROM Demo_Retail_Product " & _
+                          "WHERE IsActive = 1 " & _
+                          "  AND BranchID = @BranchID " & _
+                          "  AND Recipe_Created = 1 " & _
+                          "  AND ProductType = 'Internal' "
+                    If Not String.IsNullOrEmpty(searchText) Then
+                        sql &= " AND Name LIKE @search "
+                    End If
+                    sql &= "ORDER BY Name"
+                End If
+                
                 Dim cmd As New SqlCommand(sql, conn)
-                cmd.Parameters.AddWithValue("@branchId", branchId)
+                If Not String.IsNullOrEmpty(searchText) Then
+                    cmd.Parameters.AddWithValue("@search", $"%{searchText}%")
+                End If
+                If currentBranchID > 0 AndAlso currentBranchID <> 12 Then
+                    cmd.Parameters.AddWithValue("@BranchID", currentBranchID)
+                End If
                 conn.Open()
                 
                 Dim dt As New DataTable()
@@ -177,24 +212,37 @@ Namespace Manufacturing
         
         Try
             Using conn As New SqlConnection(connectionString)
-                Dim cmd As New SqlCommand("sp_AddProductToReOrderBook", conn)
-                cmd.CommandType = CommandType.StoredProcedure
-                
-                cmd.Parameters.AddWithValue("@ReOrderBookID", currentReOrderBookID)
-                cmd.Parameters.AddWithValue("@ProductID", cmbProduct.SelectedValue)
-                cmd.Parameters.AddWithValue("@QuantityOrdered", nudQuantity.Value)
-                cmd.Parameters.AddWithValue("@UnitOfMeasure", "Each")
-                cmd.Parameters.AddWithValue("@Notes", DBNull.Value)
-                
-                Dim pReOrderLineID As New SqlParameter("@ReOrderLineID", SqlDbType.Int) With {.Direction = ParameterDirection.Output}
-                cmd.Parameters.Add(pReOrderLineID)
-                
                 conn.Open()
-                cmd.ExecuteNonQuery()
+                
+                ' Get next line number
+                Dim cmdLineNum As New SqlCommand("SELECT ISNULL(MAX(LineNumber), 0) + 1 FROM ReOrderBookLines WHERE ReOrderBookID = @ReOrderBookID", conn)
+                cmdLineNum.Parameters.AddWithValue("@ReOrderBookID", currentReOrderBookID)
+                Dim lineNumber = Convert.ToInt32(cmdLineNum.ExecuteScalar())
+                
+                ' Get product details
+                Dim selectedRow = CType(cmbProduct.SelectedItem, DataRowView)
+                Dim productID As Integer = Convert.ToInt32(cmbProduct.SelectedValue)
+                Dim productName As String = selectedRow("ProductName").ToString()
+                Dim barcode As String = If(selectedRow("SKU"), "").ToString()
+                
+                ' Insert new line
+                Dim cmdInsert As New SqlCommand(
+                    "INSERT INTO ReOrderBookLines (ReOrderBookID, ProductID, ProductName, Barcode, LineNumber, QuantityOrdered, UnitOfMeasure, Notes) " &
+                    "VALUES (@ReOrderBookID, @ProductID, @ProductName, @Barcode, @LineNumber, @QuantityOrdered, @UnitOfMeasure, @Notes)", conn)
+                cmdInsert.Parameters.AddWithValue("@ReOrderBookID", currentReOrderBookID)
+                cmdInsert.Parameters.AddWithValue("@ProductID", productID)
+                cmdInsert.Parameters.AddWithValue("@ProductName", productName)
+                cmdInsert.Parameters.AddWithValue("@Barcode", barcode)
+                cmdInsert.Parameters.AddWithValue("@LineNumber", lineNumber)
+                cmdInsert.Parameters.AddWithValue("@QuantityOrdered", nudQuantity.Value)
+                cmdInsert.Parameters.AddWithValue("@UnitOfMeasure", "Each")
+                cmdInsert.Parameters.AddWithValue("@Notes", DBNull.Value)
+                cmdInsert.ExecuteNonQuery()
                 
                 LoadReOrderBookDetails(currentReOrderBookID)
                 LoadDraftReOrderBooks()
                 
+                ' Reset controls
                 cmbProduct.SelectedIndex = -1
                 nudQuantity.Value = 1
                 
@@ -207,23 +255,39 @@ Namespace Manufacturing
     Private Sub LoadReOrderBookDetails(reOrderBookID As Integer)
         Try
             Using conn As New SqlConnection(connectionString)
-                Dim cmd As New SqlCommand("sp_GetReOrderBookDetails", conn)
-                cmd.CommandType = CommandType.StoredProcedure
-                cmd.Parameters.AddWithValue("@ReOrderBookID", reOrderBookID)
-                
                 conn.Open()
-                Dim reader As SqlDataReader = cmd.ExecuteReader()
                 
+                ' Get header details
+                Dim cmdHeader As New SqlCommand(
+                    "SELECT rb.ReOrderNumber, u.FirstName + ' ' + u.LastName AS ManufacturerName, " &
+                    "COUNT(rbl.ReOrderLineID) AS TotalProducts, SUM(rbl.QuantityOrdered) AS TotalQuantity " &
+                    "FROM ReOrderBooks rb " &
+                    "LEFT JOIN Users u ON rb.ManufacturerUserID = u.UserID " &
+                    "LEFT JOIN ReOrderBookLines rbl ON rb.ReOrderBookID = rbl.ReOrderBookID " &
+                    "WHERE rb.ReOrderBookID = @ReOrderBookID " &
+                    "GROUP BY rb.ReOrderNumber, u.FirstName, u.LastName", conn)
+                cmdHeader.Parameters.AddWithValue("@ReOrderBookID", reOrderBookID)
+                
+                Dim reader = cmdHeader.ExecuteReader()
                 If reader.Read() Then
-                    txtReOrderNumber.Text = reader("ReOrderNumber").ToString()
-                    lblBakerName.Text = "Baker: " & reader("ManufacturerName").ToString()
-                    lblTotalProducts.Text = "Products: " & reader("TotalProducts").ToString()
-                    lblTotalQuantity.Text = "Total Qty: " & reader("TotalQuantity").ToString()
+                    txtReOrderNumber.Text = If(reader("ReOrderNumber"), "").ToString()
+                    lblBakerName.Text = "Baker: " & If(reader("ManufacturerName"), "").ToString()
+                    lblTotalProducts.Text = "Products: " & If(reader("TotalProducts"), 0).ToString()
+                    lblTotalQuantity.Text = "Total Qty: " & If(reader("TotalQuantity"), 0).ToString()
                 End If
+                reader.Close()
                 
-                reader.NextResult()
+                ' Get line items
+                Dim cmdLines As New SqlCommand(
+                    "SELECT rbl.ReOrderLineID, rbl.LineNumber, rbl.ProductID, p.Name AS ProductName, ISNULL(p.Code, p.SKU) AS SKU, rbl.QuantityOrdered " &
+                    "FROM ReOrderBookLines rbl " &
+                    "INNER JOIN Demo_Retail_Product p ON rbl.ProductID = p.ProductID " &
+                    "WHERE rbl.ReOrderBookID = @ReOrderBookID " &
+                    "ORDER BY rbl.LineNumber", conn)
+                cmdLines.Parameters.AddWithValue("@ReOrderBookID", reOrderBookID)
+                
                 Dim dtLines As New DataTable()
-                dtLines.Load(reader)
+                dtLines.Load(cmdLines.ExecuteReader())
                 dgvProductLines.DataSource = dtLines
                 
                 btnPost.Enabled = dtLines.Rows.Count > 0
@@ -234,35 +298,39 @@ Namespace Manufacturing
     End Sub
 
     Private Sub btnPost_Click(sender As Object, e As EventArgs) Handles btnPost.Click
-        If currentReOrderBookID = 0 Then Return
-        
-        Dim result As DialogResult = MessageBox.Show(
-            "Post this re-order book to the baker?" & vbCrLf & vbCrLf &
-            "The baker will receive production instructions.",
-            "Confirm Post",
-            MessageBoxButtons.YesNo,
-            MessageBoxIcon.Question)
-        
-        If result = DialogResult.Yes Then
-            Try
-                Using conn As New SqlConnection(connectionString)
-                    Dim cmd As New SqlCommand("sp_PostReOrderBook", conn)
-                    cmd.CommandType = CommandType.StoredProcedure
-                    cmd.Parameters.AddWithValue("@ReOrderBookID", currentReOrderBookID)
-                    cmd.Parameters.AddWithValue("@PostedBy", currentUserName)
-                    
-                    conn.Open()
-                    cmd.ExecuteNonQuery()
-                    
-                    MessageBox.Show("Re-order book posted successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                    
-                    ResetForm()
-                    LoadDraftReOrderBooks()
-                End Using
-            Catch ex As Exception
-                MessageBox.Show("Error posting: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            End Try
+        If currentReOrderBookID = 0 Then
+            MessageBox.Show("Please select a re-order book first", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
         End If
+        
+        ' Confirm before posting
+        Dim result = MessageBox.Show("Post this Re-Order Book to Baker?" & vbCrLf & vbCrLf & 
+                                     "This will make it visible on the Baker Dashboard.", 
+                                     "Confirm Post", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+        If result <> DialogResult.Yes Then Return
+        
+        Try
+            ' Mark as Posted and show on baker dashboard
+            Using conn As New SqlConnection(connectionString)
+                conn.Open()
+                Dim cmd As New SqlCommand(
+                    "UPDATE ReOrderBooks SET Status = 'Posted', PostedDate = GETDATE() WHERE ReOrderBookID = @ReOrderBookID", conn)
+                cmd.Parameters.AddWithValue("@ReOrderBookID", currentReOrderBookID)
+                Dim rowsAffected = cmd.ExecuteNonQuery()
+                
+                If rowsAffected = 0 Then
+                    MessageBox.Show("Failed to update re-order book. It may have been deleted.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                    Return
+                End If
+            End Using
+            
+            MessageBox.Show("Re-Order Book posted successfully!" & vbCrLf & "Now visible on Baker Dashboard.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            LoadDraftReOrderBooks()
+            ResetForm()
+            
+        Catch ex As Exception
+            MessageBox.Show("Error posting re-order book: " & ex.Message & vbCrLf & vbCrLf & ex.StackTrace, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub dgvDraftBooks_CellClick(sender As Object, e As DataGridViewCellEventArgs) Handles dgvDraftBooks.CellClick

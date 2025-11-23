@@ -306,12 +306,14 @@ Public Class PurchaseOrderFormNew
                 
                 Using conn As New SqlConnection(connectionString)
                     conn.Open()
-                    Using cmd As New SqlCommand("SELECT ISNULL(SellingPrice, 0), ISNULL(CostPrice, 0) FROM dbo.Demo_Retail_Price WHERE ProductID = @id AND BranchID = @branchId", conn)
+                    ' CostPrice = Last price paid to supplier (Excl VAT)
+                    ' Convert to Incl VAT for display (multiply by 1.15)
+                    Using cmd As New SqlCommand("SELECT ISNULL(CostPrice, 0) * 1.15, ISNULL(CostPrice, 0) FROM dbo.Demo_Retail_Price WHERE ProductID = @id AND BranchID = @branchId", conn)
                         cmd.Parameters.AddWithValue("@id", productId)
                         cmd.Parameters.AddWithValue("@branchId", branchId)
                         Using reader = cmd.ExecuteReader()
                             If reader.Read() Then
-                                lastPaid = reader.GetDecimal(0)  ' SellingPrice (Incl VAT)
+                                lastPaid = reader.GetDecimal(0)  ' CostPrice * 1.15 (Incl VAT)
                                 avgCost = reader.GetDecimal(1)   ' CostPrice (Excl VAT)
                                 System.Diagnostics.Debug.WriteLine($"FOUND: LastPaid={lastPaid}, AvgCost={avgCost}")
                             Else

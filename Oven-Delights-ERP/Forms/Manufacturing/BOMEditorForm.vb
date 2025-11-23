@@ -3,6 +3,7 @@ Imports System.Drawing
 Imports Microsoft.Data.SqlClient
 Imports System.Configuration
 Imports System.Data
+Imports System.Drawing.Printing
 
 Namespace Manufacturing
     Public Class BOMEditorForm
@@ -478,31 +479,28 @@ Namespace Manufacturing
                     If preloadedIDs IsNot Nothing AndAlso preloadedIDs.Count > 0 Then
                         ' Filter to only show products from Re-Order Book
                         Dim idList As String = String.Join(",", preloadedIDs)
-                        sql = "SELECT DISTINCT p.ProductID, p.SKU AS ProductCode, p.Name AS ProductName, (p.SKU + ' - ' + p.Name) AS DisplayText " & _
-                              "FROM dbo.Demo_Retail_Product p " & _
-                              "WHERE ISNULL(p.IsActive,1)=1 " & _
-                              "  AND p.ProductType = 'Internal' " & _
-                              "  AND (p.BranchID = @branchId OR p.BranchID IS NULL) " & _
+                        sql = "SELECT DISTINCT p.ProductID, p.ProductCode, p.ProductName, (p.ProductCode + ' - ' + p.ProductName) AS DisplayText " & _
+                              "FROM Products p " & _
+                              "INNER JOIN BOM_Header bh ON bh.ProductID = p.ProductID AND bh.IsActive = 1 " & _
+                              "WHERE p.IsActive = 1 " & _
                               "  AND p.ProductID IN (" & idList & ") " & _
-                              "ORDER BY p.Name;"
+                              "ORDER BY p.ProductName;"
                     Else
-                        ' Show all internal products for current branch
-                        sql = "SELECT DISTINCT p.ProductID, p.SKU AS ProductCode, p.Name AS ProductName, (p.SKU + ' - ' + p.Name) AS DisplayText " & _
-                              "FROM dbo.Demo_Retail_Product p " & _
-                              "WHERE ISNULL(p.IsActive,1)=1 " & _
-                              "  AND p.ProductType = 'Internal' " & _
-                              "  AND (p.BranchID = @branchId OR p.BranchID IS NULL) " & _
-                              "ORDER BY p.Name;"
+                        ' Show all products with BOMs
+                        sql = "SELECT DISTINCT p.ProductID, p.ProductCode, p.ProductName, (p.ProductCode + ' - ' + p.ProductName) AS DisplayText " & _
+                              "FROM Products p " & _
+                              "INNER JOIN BOM_Header bh ON bh.ProductID = p.ProductID AND bh.IsActive = 1 " & _
+                              "WHERE p.IsActive = 1 " & _
+                              "ORDER BY p.ProductName;"
                     End If
                     
                     Using cmd As New SqlCommand(sql, cn)
-                        cmd.Parameters.AddWithValue("@branchId", branchId)
                         Using da As New SqlDataAdapter(cmd)
                             Dim dt As New DataTable()
                             da.Fill(dt)
                             
                             ' Debug: Check if we got products
-                            System.Diagnostics.Debug.WriteLine($"LoadProducts: Found {dt.Rows.Count} products for BranchID={branchId}")
+                            System.Diagnostics.Debug.WriteLine($"LoadProducts: Found {dt.Rows.Count} products with BOMs")
                             If dt.Rows.Count = 0 Then
                                 System.Diagnostics.Debug.WriteLine($"SQL: {sql}")
                             End If
@@ -552,7 +550,59 @@ Namespace Manufacturing
                 Using cn As New SqlConnection(cs)
                     cn.Open()
                     
-                    ' PRIORITY 1: Check new Recipe system first
+                    ' PRIORITY 1: Check new BOM_Header table first
+                    Dim hasBOM As Boolean = False
+                    Dim sqlCheckBOM As String = "SELECT COUNT(*) FROM BOM_Header WHERE ProductID = @pid AND IsActive = 1"
+                    Using cmdCheck As New SqlCommand(sqlCheckBOM, cn)
+                        cmdCheck.Parameters.AddWithValue("@pid", pid)
+                        hasBOM = Convert.ToInt32(cmdCheck.ExecuteScalar()) > 0
+                    End Using
+                    
+                    If hasBOM Then
+                        ' Load from BOM_Header and BOM_Lines
+                        Dim sqlFromBOM As String = _
+                            "SELECT bl.LineNumber, " & _
+                            "       bl.ProductName AS ComponentName, " & _
+                            "       bl.Quantity AS QuantityPerBatch, " & _
+                            "       bl.UnitOfMeasure AS UoM, " & _
+                            "       NULL AS RawMaterialID, " & _
+                            "       NULL AS SubAssemblyProductID " & _
+                            "FROM BOM_Lines bl " & _
+                            "INNER JOIN BOM_Header bh ON bl.BOMID = bh.BOMID " & _
+                            "WHERE bh.ProductID = @pid AND bh.IsActive = 1 " & _
+                            "ORDER BY bl.LineNumber"
+                        Using cmdBOM As New SqlCommand(sqlFromBOM, cn)
+                            cmdBOM.Parameters.AddWithValue("@pid", pid)
+                            Using daBOM As New SqlDataAdapter(cmdBOM)
+                                Dim dtBOM As New DataTable()
+                                daBOM.Fill(dtBOM)
+                                System.Diagnostics.Debug.WriteLine($"LoadBOM: Found {dtBOM.Rows.Count} components from BOM_Lines for ProductID={pid}")
+                                If dtBOM.Rows.Count = 0 Then
+                                    lblStatus.Text = "No BOM lines found."
+                                    MessageBox.Show("BOM exists but has no lines. Please edit the BOM in 'Build My Product'.", "Empty BOM", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                                    Return
+                                End If
+                                
+                                ' Get batch size from BOM_Header
+                                Dim sqlBatchSize As String = "SELECT BatchSize FROM BOM_Header WHERE ProductID = @pid AND IsActive = 1"
+                                Using cmdBatch As New SqlCommand(sqlBatchSize, cn)
+                                    cmdBatch.Parameters.AddWithValue("@pid", pid)
+                                    Dim batchSize = cmdBatch.ExecuteScalar()
+                                    If batchSize IsNot Nothing Then
+                                        currentBatchYield = Convert.ToDecimal(batchSize)
+                                    End If
+                                End Using
+                                
+                                ' Calculate quantities based on production quantity
+                                CalculateQuantitiesForProduction(dtBOM, pid, cn)
+                                PopulateList(dtBOM)
+                                CheckIngredientAvailability(dtBOM)
+                                Return
+                            End Using
+                        End Using
+                    End If
+                    
+                    ' PRIORITY 2: Check Recipe system
                     Dim hasRecipe As Boolean = False
                     Dim sqlCheckRecipe As String = "SELECT COUNT(*) FROM dbo.Recipe WHERE ProductID = @pid AND IsActive = 1"
                     Using cmdCheck As New SqlCommand(sqlCheckRecipe, cn)
@@ -791,8 +841,127 @@ Namespace Manufacturing
             lblStatus.Text = If(currentBOMID > 0, $"BOM {currentBOMID} ready @ {dtpRequest.Value:yyyy-MM-dd HH:mm}. Scale = {If(currentBatchYield>0, prodQty/currentBatchYield, 0):0.####}", "")
         End Sub
 
+        Private printDoc As PrintDocument
+        Private printProductName As String = ""
+        Private printBatchSize As Decimal = 0
+        Private printIngredients As New List(Of String)
+        Private printMethod As String = ""
+        
         Private Sub BtnPrint_Click(sender As Object, e As EventArgs)
-            MessageBox.Show("Print of BOM list will be implemented next (PDF/Printer)", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            If cboProduct.SelectedValue Is Nothing Then
+                MessageBox.Show("Please select a product first", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+            
+            Dim pid As Integer
+            If Not Integer.TryParse(cboProduct.SelectedValue.ToString(), pid) Then
+                Return
+            End If
+            
+            ' Load recipe details for printing
+            Try
+                Dim cs = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
+                Using cn As New SqlConnection(cs)
+                    cn.Open()
+                    
+                    ' Get product name
+                    Dim cmdProd As New SqlCommand("SELECT ProductName FROM Products WHERE ProductID = @pid", cn)
+                    cmdProd.Parameters.AddWithValue("@pid", pid)
+                    Dim prodResult = cmdProd.ExecuteScalar()
+                    printProductName = If(prodResult IsNot Nothing, prodResult.ToString(), "Unknown Product")
+                    
+                    ' Get BOM details
+                    Dim cmdBOM As New SqlCommand("SELECT BatchSize, Method FROM BOM_Header WHERE ProductID = @pid AND IsActive = 1", cn)
+                    cmdBOM.Parameters.AddWithValue("@pid", pid)
+                    Dim reader = cmdBOM.ExecuteReader()
+                    If reader.Read() Then
+                        printBatchSize = If(reader.IsDBNull(0), 0, reader.GetDecimal(0))
+                        printMethod = If(reader.IsDBNull(1), "", reader.GetString(1))
+                    End If
+                    reader.Close()
+                    
+                    ' Get ingredients
+                    printIngredients.Clear()
+                    Dim cmdLines As New SqlCommand(
+                        "SELECT bl.ProductName, bl.Quantity, bl.UnitOfMeasure, bl.SubRecipeName " &
+                        "FROM BOM_Lines bl " &
+                        "INNER JOIN BOM_Header bh ON bl.BOMID = bh.BOMID " &
+                        "WHERE bh.ProductID = @pid AND bh.IsActive = 1 " &
+                        "ORDER BY bl.LineNumber", cn)
+                    cmdLines.Parameters.AddWithValue("@pid", pid)
+                    Dim readerLines = cmdLines.ExecuteReader()
+                    While readerLines.Read()
+                        Dim itemName = readerLines.GetString(0)
+                        Dim qty = readerLines.GetDecimal(1)
+                        Dim unit = readerLines.GetString(2)
+                        Dim subRecipe = If(readerLines.IsDBNull(3), "", readerLines.GetString(3))
+                        
+                        Dim line = $"• {itemName} - {qty} {unit}"
+                        If Not String.IsNullOrEmpty(subRecipe) Then
+                            line &= $" (from {subRecipe})"
+                        End If
+                        printIngredients.Add(line)
+                    End While
+                    readerLines.Close()
+                End Using
+                
+                ' Print
+                printDoc = New PrintDocument()
+                AddHandler printDoc.PrintPage, AddressOf PrintRecipePage
+                printDoc.Print()
+                
+            Catch ex As Exception
+                MessageBox.Show("Error printing recipe: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
+        End Sub
+        
+        Private Sub PrintRecipePage(sender As Object, e As PrintPageEventArgs)
+            Dim font As New Font("Arial", 10)
+            Dim fontBold As New Font("Arial", 12, FontStyle.Bold)
+            Dim fontTitle As New Font("Arial", 16, FontStyle.Bold)
+            Dim leftMargin As Integer = 50
+            Dim y As Integer = 50
+            
+            ' Title
+            e.Graphics.DrawString("RECIPE CARD", fontTitle, Brushes.Black, leftMargin, y)
+            y += 40
+            
+            ' Product name
+            e.Graphics.DrawString(printProductName, fontBold, Brushes.DarkBlue, leftMargin, y)
+            y += 25
+            
+            ' Batch size
+            e.Graphics.DrawString($"Batch Size: {printBatchSize}", font, Brushes.Black, leftMargin, y)
+            y += 30
+            
+            ' Ingredients header
+            e.Graphics.DrawString("INGREDIENTS:", fontBold, Brushes.Black, leftMargin, y)
+            y += 20
+            
+            ' Ingredients list
+            For Each ingredient In printIngredients
+                e.Graphics.DrawString(ingredient, font, Brushes.Black, leftMargin + 20, y)
+                y += 18
+            Next
+            
+            y += 20
+            
+            ' Method header
+            e.Graphics.DrawString("METHOD:", fontBold, Brushes.Black, leftMargin, y)
+            y += 20
+            
+            ' Method text (word wrap)
+            If Not String.IsNullOrEmpty(printMethod) Then
+                Dim methodLines = printMethod.Split(New String() {vbCrLf, vbLf}, StringSplitOptions.None)
+                For Each line In methodLines
+                    e.Graphics.DrawString(line, font, Brushes.Black, New RectangleF(leftMargin + 20, y, 700, 1000))
+                    y += 18
+                Next
+            Else
+                e.Graphics.DrawString("(No method specified)", font, Brushes.Gray, leftMargin + 20, y)
+            End If
+            
+            e.HasMorePages = False
         End Sub
 
         Private Sub OnEmail(sender As Object, e As EventArgs)

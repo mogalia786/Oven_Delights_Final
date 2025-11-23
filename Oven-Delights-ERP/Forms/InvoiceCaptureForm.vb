@@ -424,8 +424,13 @@ Public Class InvoiceCaptureForm
                                 productId = Convert.ToInt32(row.Cells("ProductID").Value)
                             End If
 
+                            MessageBox.Show($"DEBUG: ProductType={productType}, ProductID={productId}, BranchID={branchId}, Qty={receiveNow}, UnitCost={unitCost}", "DEBUG", MessageBoxButtons.OK, MessageBoxIcon.Information)
+
                             If productId > 0 Then
                                 UpdateExternalProductInventory(productId, branchId, receiveNow, unitCost)
+                                MessageBox.Show($"Stock updated for ProductID {productId}", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                            Else
+                                MessageBox.Show("ProductID is 0 or NULL!", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error)
                             End If
                         Else
                             ' Default to raw material if type is unclear - try MaterialID first, then ProductID
@@ -695,74 +700,33 @@ Public Class InvoiceCaptureForm
             con.Open()
             Using tx = con.BeginTransaction()
                 Try
-                    ' Update Demo_Retail_Price (unitCost is INCL VAT as entered)
+                    ' Update CurrentStock in Demo_Retail_Product
+                    Dim updateStockSql = "UPDATE Demo_Retail_Product " &
+                                        "SET CurrentStock = ISNULL(CurrentStock, 0) + @Qty " &
+                                        "WHERE ProductID = @ProductID AND BranchID = @BranchID"
+                    
+                    Using cmd As New SqlCommand(updateStockSql, con, tx)
+                        cmd.Parameters.AddWithValue("@ProductID", productId)
+                        cmd.Parameters.AddWithValue("@BranchID", branchId)
+                        cmd.Parameters.AddWithValue("@Qty", quantity)
+                        cmd.ExecuteNonQuery()
+                    End Using
+                    
+                    ' Update Demo_Retail_Price with cost price
                     Dim costExclVAT As Decimal = Math.Round(unitCost / 1.15D, 2)
-
-                    Dim updatePriceSql = "UPDATE dbo.Demo_Retail_Price " &
-                                         "SET CostPrice = @CostExclVAT, " &
-                                         "    SellingPrice = @CostInclVAT, " &
-                                         "    SellingPriceExVAT = @CostExclVAT " &
-                                         "WHERE ProductID = @ProductID AND BranchID = @BranchID; " &
-                                         "IF @@ROWCOUNT = 0 " &
-                                         "INSERT INTO dbo.Demo_Retail_Price (ProductID, BranchID, CostPrice, SellingPrice, SellingPriceExVAT, EffectiveFrom, CreatedAt) " &
-                                         "VALUES (@ProductID, @BranchID, @CostExclVAT, @CostInclVAT, @CostExclVAT, GETDATE(), GETDATE())"
-
+                    
+                    Dim updatePriceSql = "IF EXISTS (SELECT 1 FROM Demo_Retail_Price WHERE ProductID = @ProductID AND BranchID = @BranchID) " &
+                                        "  UPDATE Demo_Retail_Price SET CostPrice = @CostExclVAT, CreatedAt = GETDATE() WHERE ProductID = @ProductID AND BranchID = @BranchID " &
+                                        "ELSE " &
+                                        "  INSERT INTO Demo_Retail_Price (ProductID, BranchID, CostPrice, EffectiveFrom, CreatedAt) VALUES (@ProductID, @BranchID, @CostExclVAT, GETDATE(), GETDATE())"
+                    
                     Using cmd As New SqlCommand(updatePriceSql, con, tx)
                         cmd.Parameters.AddWithValue("@ProductID", productId)
                         cmd.Parameters.AddWithValue("@BranchID", branchId)
                         cmd.Parameters.AddWithValue("@CostExclVAT", costExclVAT)
-                        cmd.Parameters.AddWithValue("@CostInclVAT", unitCost)
                         cmd.ExecuteNonQuery()
                     End Using
-
-                    ' Get VariantID for this product
-                    Dim variantId As Integer = 0
-                    Dim getVariantSql = "SELECT TOP 1 VariantID FROM Demo_Retail_Variant WHERE ProductID = @ProductID"
-                    Using cmd As New SqlCommand(getVariantSql, con, tx)
-                        cmd.Parameters.AddWithValue("@ProductID", productId)
-                        Dim result = cmd.ExecuteScalar()
-                        If result IsNot Nothing AndAlso Not IsDBNull(result) Then
-                            variantId = Convert.ToInt32(result)
-                        End If
-                    End Using
-
-                    ' Only update stock if variant exists
-                    If variantId > 0 Then
-                        ' Check if stock record exists
-                        Dim checkSql = "SELECT COUNT(*) FROM Demo_Retail_Stock WHERE VariantID = @VariantID AND BranchID = @BranchID"
-                        Dim exists As Boolean = False
-
-                        Using cmd As New SqlCommand(checkSql, con, tx)
-                            cmd.Parameters.AddWithValue("@VariantID", variantId)
-                            cmd.Parameters.AddWithValue("@BranchID", branchId)
-                            exists = Convert.ToInt32(cmd.ExecuteScalar()) > 0
-                        End Using
-
-                        If exists Then
-                            Dim updateSql = "UPDATE Demo_Retail_Stock " &
-                                           "SET QtyOnHand = ISNULL(QtyOnHand, 0) + @Qty, " &
-                                           "    UpdatedAt = GETDATE() " &
-                                           "WHERE VariantID = @VariantID AND BranchID = @BranchID"
-
-                            Using cmd As New SqlCommand(updateSql, con, tx)
-                                cmd.Parameters.AddWithValue("@VariantID", variantId)
-                                cmd.Parameters.AddWithValue("@BranchID", branchId)
-                                cmd.Parameters.AddWithValue("@Qty", quantity)
-                                cmd.ExecuteNonQuery()
-                            End Using
-                        Else
-                            Dim insertSql = "INSERT INTO Demo_Retail_Stock (VariantID, BranchID, QtyOnHand, ReorderPoint, UpdatedAt) " &
-                                           "VALUES (@VariantID, @BranchID, @Qty, 0, GETDATE())"
-
-                            Using cmd As New SqlCommand(insertSql, con, tx)
-                                cmd.Parameters.AddWithValue("@VariantID", variantId)
-                                cmd.Parameters.AddWithValue("@BranchID", branchId)
-                                cmd.Parameters.AddWithValue("@Qty", quantity)
-                                cmd.ExecuteNonQuery()
-                            End Using
-                        End If
-                    End If
-
+                    
                     tx.Commit()
                 Catch
                     tx.Rollback()
