@@ -40,12 +40,32 @@ Public Class TopSellingProductsReportForm
             Dim dt As New DataTable()
             Using conn As New SqlConnection(connectionString)
                 conn.Open()
-                Using cmd As New SqlCommand("sp_Report_TopSellingProducts", conn)
-                    cmd.CommandType = CommandType.StoredProcedure
+                
+                Dim sql = "SELECT TOP (@TopN)
+                            i.ProductName,
+                            p.Category,
+                            SUM(i.Quantity) AS QuantitySold,
+                            SUM(i.LineTotal) AS TotalRevenue,
+                            COUNT(DISTINCT i.InvoiceNumber) AS TimesOrdered,
+                            AVG(i.UnitPrice) AS AveragePrice
+                          FROM Invoices i
+                          LEFT JOIN Demo_Retail_Product p ON p.ProductID = i.ProductID
+                          WHERE i.SaleDate BETWEEN @StartDate AND @EndDate"
+                
+                Dim branchID = GetSelectedBranchID()
+                If branchID > 0 Then
+                    sql &= " AND i.BranchID = @BranchID"
+                End If
+                
+                sql &= " GROUP BY i.ProductName, p.Category ORDER BY QuantitySold DESC"
+                
+                Using cmd As New SqlCommand(sql, conn)
                     cmd.Parameters.AddWithValue("@StartDate", dtpStartDate.Value.Date)
                     cmd.Parameters.AddWithValue("@EndDate", dtpEndDate.Value.Date)
-                    cmd.Parameters.AddWithValue("@BranchID", GetSelectedBranchID())
                     cmd.Parameters.AddWithValue("@TopN", CInt(nudTopN.Value))
+                    If branchID > 0 Then
+                        cmd.Parameters.AddWithValue("@BranchID", branchID)
+                    End If
 
                     Using adapter As New SqlDataAdapter(cmd)
                         adapter.Fill(dt)

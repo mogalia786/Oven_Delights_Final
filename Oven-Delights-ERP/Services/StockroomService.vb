@@ -1846,51 +1846,28 @@ Public Class StockroomService
                 Dim sql As String
                 
                 If branchId = 0 OrElse branchId = 12 Then
-                    ' HEAD OFFICE - show all branches with DISTINCT names
+                    ' HEAD OFFICE - show all branches with DISTINCT names (ALL active products)
                     sql = _
                         "SELECT MIN(ProductID) AS MaterialID, MIN(ISNULL(Code, SKU)) AS MaterialCode, " & _
                         "       Name AS MaterialName, 0 AS AverageCost, " & _
-                        "       'RM' AS ItemSource, Category AS CategoryName " & _
+                        "       CASE WHEN ProductType = 'External' THEN 'EXT' ELSE 'RM' END AS ItemSource, " & _
+                        "       ISNULL(MIN(Category), 'Uncategorized') AS CategoryName " & _
                         "FROM Demo_Retail_Product " & _
                         "WHERE IsActive = 1 " & _
-                        "  AND (Category LIKE '%ingredient%' " & _
-                        "       OR Category LIKE '%consumable%' " & _
-                        "       OR Category LIKE '%pack%' " & _
-                        "       OR Category LIKE '%misce%') " & _
-                        "GROUP BY Name, Category " & _
-                        "UNION ALL " & _
-                        "SELECT MIN(ProductID) AS MaterialID, MIN(ISNULL(Code, SKU)) AS MaterialCode, " & _
-                        "       Name AS MaterialName, 0 AS AverageCost, " & _
-                        "       'EXT' AS ItemSource, 'External Product' AS CategoryName " & _
-                        "FROM Demo_Retail_Product " & _
-                        "WHERE IsActive = 1 " & _
-                        "  AND ProductType = 'External' " & _
-                        "GROUP BY Name " & _
-                        "ORDER BY ItemSource, MaterialName"
+                        "GROUP BY Name, ProductType " & _
+                        "ORDER BY Name"
                 Else
-                    ' Specific branch - filter by BranchID (exclude NULL BranchID)
+                    ' Specific branch - show ALL active products (no category filtering)
                     sql = _
                         "SELECT ProductID AS MaterialID, ISNULL(Code, SKU) AS MaterialCode, " & _
                         "       Name AS MaterialName, 0 AS AverageCost, " & _
-                        "       'RM' AS ItemSource, Category AS CategoryName " & _
+                        "       CASE WHEN ProductType = 'External' THEN 'EXT' ELSE 'RM' END AS ItemSource, " & _
+                        "       ISNULL(Category, 'Uncategorized') AS CategoryName " & _
                         "FROM Demo_Retail_Product " & _
                         "WHERE IsActive = 1 " & _
                         "  AND BranchID = @BranchID " & _
                         "  AND BranchID IS NOT NULL " & _
-                        "  AND (Category LIKE '%ingredient%' " & _
-                        "       OR Category LIKE '%consumable%' " & _
-                        "       OR Category LIKE '%pack%' " & _
-                        "       OR Category LIKE '%misce%') " & _
-                        "UNION ALL " & _
-                        "SELECT ProductID AS MaterialID, ISNULL(Code, SKU) AS MaterialCode, " & _
-                        "       Name AS MaterialName, 0 AS AverageCost, " & _
-                        "       'EXT' AS ItemSource, 'External Product' AS CategoryName " & _
-                        "FROM Demo_Retail_Product " & _
-                        "WHERE IsActive = 1 " & _
-                        "  AND BranchID = @BranchID " & _
-                        "  AND BranchID IS NOT NULL " & _
-                        "  AND ProductType = 'External' " & _
-                        "ORDER BY ItemSource, MaterialName"
+                        "ORDER BY Name"
                 End If
 
                 Using ad As New SqlDataAdapter(sql, con)
@@ -1933,21 +1910,16 @@ Public Class StockroomService
     Public Function GetLastPaidPrice(supplierId As Integer, materialId As Integer) As Nullable(Of Decimal)
         If materialId <= 0 Then Return Nothing
         
-        ' Get current branch
-        Dim branchId As Integer = If(AppSession.CurrentUser?.BranchID, 0)
-        
         Using con As New SqlConnection(connectionString)
             con.Open()
-            ' Get last paid price from Demo_Retail_Price (updated by invoice capture)
-            Dim sql = "SELECT TOP 1 CostPrice * 1.15 FROM Demo_Retail_Price " &
-                      "WHERE ProductID = @mid AND BranchID = @branchId AND CostPrice > 0 " &
-                      "ORDER BY CreatedAt DESC"
+            ' Get last paid price from RawMaterials table (stored as Incl VAT, return as-is)
+            Dim sql = "SELECT LastPaidPrice FROM RawMaterials WHERE MaterialID = @mid"
             Using cmd As New SqlCommand(sql, con)
                 cmd.Parameters.AddWithValue("@mid", materialId)
-                cmd.Parameters.AddWithValue("@branchId", branchId)
                 Dim obj = cmd.ExecuteScalar()
                 If obj IsNot Nothing AndAlso obj IsNot DBNull.Value Then
-                    Return Convert.ToDecimal(obj)
+                    Dim price = Convert.ToDecimal(obj)
+                    If price > 0 Then Return price
                 End If
             End Using
         End Using
@@ -3364,7 +3336,7 @@ Public Class StockroomService
                      "  WHEN p.ProductID IS NOT NULL THEN p.Name " &
                      "  ELSE 'Unknown Item' " &
                      "END AS ProductName, " &
-                     "pol.OrderedQuantity AS OrderQuantity, " &
+                     "pol.OrderedQuantity AS OrderedQty, " &
                      "ISNULL(pol.ReceivedQuantity, 0) AS ReceivedQuantity, " &
                      "pol.UnitCost, " &
                      "pol.LineTotal, " &
@@ -3382,7 +3354,8 @@ Public Class StockroomService
                      "rm.MaterialType, " &
                      "p.SKU AS ProductCodeDirect, " &
                      "p.Name AS ProductNameDirect, " &
-                     "pol.ItemSource " &
+                     "pol.ItemSource, " &
+                     "ISNULL(pol.IsVatable, 1) AS IsVatable " &
                      "FROM PurchaseOrderLines pol " &
                      "INNER JOIN PurchaseOrders po ON pol.PurchaseOrderID = po.PurchaseOrderID " &
                      "LEFT JOIN RawMaterials rm ON pol.MaterialID = rm.MaterialID " &

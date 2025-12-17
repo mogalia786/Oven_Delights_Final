@@ -227,18 +227,34 @@ Public Class RoleAccessManagementForm
             Using conn As New SqlConnection(_connectionString)
                 conn.Open()
                 
-                ' Get all menus ordered by DisplayOrder
+                ' Get all menus from MenuRegistry
                 Dim sql = "
-                    SELECT MenuName, SubMenuName, DisplayOrder
+                    SELECT MenuPath, DisplayName, MenuLevel, ParentPath, ModuleName
                     FROM MenuRegistry
                     WHERE IsActive = 1
-                    ORDER BY MenuName, DisplayOrder"
+                    ORDER BY MenuPath"
                 
                 Using cmd As New SqlCommand(sql, conn)
                     Using reader = cmd.ExecuteReader()
                         While reader.Read()
-                            Dim menuName = reader("MenuName").ToString()
-                            Dim subMenuName = If(IsDBNull(reader("SubMenuName")), Nothing, reader("SubMenuName").ToString())
+                            Dim menuPath = reader("MenuPath").ToString()
+                            Dim displayName = reader("DisplayName").ToString()
+                            Dim menuLevel = CInt(reader("MenuLevel"))
+                            Dim parentPath = If(IsDBNull(reader("ParentPath")), Nothing, reader("ParentPath").ToString())
+                            Dim moduleName = reader("ModuleName").ToString()
+                            
+                            ' Extract menu name and submenu name from path
+                            Dim menuName As String
+                            Dim subMenuName As String = Nothing
+                            
+                            If menuLevel = 1 Then
+                                ' Top level menu
+                                menuName = displayName
+                            Else
+                                ' Submenu - use ModuleName as main menu
+                                menuName = moduleName
+                                subMenuName = displayName
+                            End If
                             
                             ' Build dictionary structure
                             If String.IsNullOrEmpty(subMenuName) Then
@@ -387,16 +403,26 @@ Public Class RoleAccessManagementForm
                             cmd.ExecuteNonQuery()
                         End Using
                         
-                        ' Insert new permissions
-                        Dim sqlInsert = "INSERT INTO RoleMenuPermissions (RoleID, MenuName, SubMenuName, HasAccess) VALUES (@roleID, @menuName, @subMenuName, @hasAccess)"
+                        ' Insert new permissions using MERGE to handle duplicates
+                        Dim sqlMerge = "
+                            MERGE INTO RoleMenuPermissions AS target
+                            USING (SELECT @roleID AS RoleID, @menuName AS MenuName, @subMenuName AS SubMenuName, @hasAccess AS HasAccess) AS source
+                            ON target.RoleID = source.RoleID 
+                               AND target.MenuName = source.MenuName 
+                               AND (target.SubMenuName = source.SubMenuName OR (target.SubMenuName IS NULL AND source.SubMenuName IS NULL))
+                            WHEN MATCHED THEN
+                                UPDATE SET HasAccess = source.HasAccess, ModifiedDate = GETDATE()
+                            WHEN NOT MATCHED THEN
+                                INSERT (RoleID, MenuName, SubMenuName, HasAccess)
+                                VALUES (source.RoleID, source.MenuName, source.SubMenuName, source.HasAccess);"
                         
                         For Each mainNode As TreeNode In tvMenus.Nodes
                             Dim menuTag = CType(mainNode.Tag, MenuTag)
                             
                             ' Save main menu permission
-                            Using cmd As New SqlCommand(sqlInsert, conn, transaction)
+                            Using cmd As New SqlCommand(sqlMerge, conn, transaction)
                                 cmd.Parameters.AddWithValue("@roleID", _currentRoleID)
-                                cmd.Parameters.AddWithValue("@menuName", menuTag.MenuName)
+                                cmd.Parameters.AddWithValue("@menuName", If(menuTag.MenuName, ""))
                                 cmd.Parameters.AddWithValue("@subMenuName", DBNull.Value)
                                 cmd.Parameters.AddWithValue("@hasAccess", mainNode.Checked)
                                 cmd.ExecuteNonQuery()
@@ -406,10 +432,10 @@ Public Class RoleAccessManagementForm
                             For Each subNode As TreeNode In mainNode.Nodes
                                 Dim subTag = CType(subNode.Tag, MenuTag)
                                 
-                                Using cmd As New SqlCommand(sqlInsert, conn, transaction)
+                                Using cmd As New SqlCommand(sqlMerge, conn, transaction)
                                     cmd.Parameters.AddWithValue("@roleID", _currentRoleID)
-                                    cmd.Parameters.AddWithValue("@menuName", subTag.MenuName)
-                                    cmd.Parameters.AddWithValue("@subMenuName", subTag.SubMenuName)
+                                    cmd.Parameters.AddWithValue("@menuName", If(subTag.MenuName, ""))
+                                    cmd.Parameters.AddWithValue("@subMenuName", If(subTag.SubMenuName, DBNull.Value))
                                     cmd.Parameters.AddWithValue("@hasAccess", subNode.Checked)
                                     cmd.ExecuteNonQuery()
                                 End Using

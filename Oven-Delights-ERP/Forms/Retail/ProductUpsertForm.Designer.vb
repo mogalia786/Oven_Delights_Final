@@ -18,6 +18,8 @@ Partial Class ProductUpsertForm
     <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
         Me.lblTitle = New System.Windows.Forms.Label()
+        Me.lblBarcode = New System.Windows.Forms.Label()
+        Me.txtBarcode = New System.Windows.Forms.TextBox()
         Me.lblSKU = New System.Windows.Forms.Label()
         Me.txtSKU = New System.Windows.Forms.TextBox()
         Me.lblName = New System.Windows.Forms.Label()
@@ -46,58 +48,76 @@ Partial Class ProductUpsertForm
         Me.lblTitle.TabIndex = 0
         Me.lblTitle.Text = "Product (Add / Update)"
         '
+        ' lblBarcode
+        '
+        Me.lblBarcode.AutoSize = True
+        Me.lblBarcode.Location = New System.Drawing.Point(24, 68)
+        Me.lblBarcode.Name = "lblBarcode"
+        Me.lblBarcode.Size = New System.Drawing.Size(53, 15)
+        Me.lblBarcode.TabIndex = 1
+        Me.lblBarcode.Text = "Barcode"
+        '
+        ' txtBarcode
+        '
+        Me.txtBarcode.Location = New System.Drawing.Point(140, 65)
+        Me.txtBarcode.Name = "txtBarcode"
+        Me.txtBarcode.Size = New System.Drawing.Size(240, 23)
+        Me.txtBarcode.TabIndex = 2
+        '
         ' lblSKU
         '
         Me.lblSKU.AutoSize = True
-        Me.lblSKU.Location = New System.Drawing.Point(24, 68)
+        Me.lblSKU.Location = New System.Drawing.Point(24, 100)
         Me.lblSKU.Name = "lblSKU"
         Me.lblSKU.Size = New System.Drawing.Size(29, 15)
-        Me.lblSKU.TabIndex = 1
-        Me.lblSKU.Text = "SKU"
+        Me.lblSKU.TabIndex = 3
+        Me.lblSKU.Text = "SKU (Auto-filled)"
         '
         ' txtSKU
         '
-        Me.txtSKU.Location = New System.Drawing.Point(140, 65)
+        Me.txtSKU.Location = New System.Drawing.Point(140, 97)
         Me.txtSKU.Name = "txtSKU"
         Me.txtSKU.Size = New System.Drawing.Size(240, 23)
-        Me.txtSKU.TabIndex = 2
+        Me.txtSKU.TabIndex = 4
+        Me.txtSKU.ReadOnly = True
+        Me.txtSKU.BackColor = System.Drawing.SystemColors.Control
         '
         ' lblName
         '
         Me.lblName.AutoSize = True
-        Me.lblName.Location = New System.Drawing.Point(24, 100)
+        Me.lblName.Location = New System.Drawing.Point(24, 132)
         Me.lblName.Name = "lblName"
         Me.lblName.Size = New System.Drawing.Size(42, 15)
-        Me.lblName.TabIndex = 3
+        Me.lblName.TabIndex = 5
         Me.lblName.Text = "Name"
         '
         ' txtName
         '
-        Me.txtName.Location = New System.Drawing.Point(140, 97)
+        Me.txtName.Location = New System.Drawing.Point(140, 129)
         Me.txtName.Name = "txtName"
         Me.txtName.Size = New System.Drawing.Size(360, 23)
-        Me.txtName.TabIndex = 4
+        Me.txtName.TabIndex = 6
         '
         ' lblCategory
         '
         Me.lblCategory.AutoSize = True
-        Me.lblCategory.Location = New System.Drawing.Point(24, 132)
+        Me.lblCategory.Location = New System.Drawing.Point(24, 164)
         Me.lblCategory.Name = "lblCategory"
         Me.lblCategory.Size = New System.Drawing.Size(58, 15)
-        Me.lblCategory.TabIndex = 5
+        Me.lblCategory.TabIndex = 7
         Me.lblCategory.Text = "Category"
         '
         ' txtCategory
         '
-        Me.txtCategory.Location = New System.Drawing.Point(140, 129)
+        Me.txtCategory.Location = New System.Drawing.Point(140, 161)
         Me.txtCategory.Name = "txtCategory"
         Me.txtCategory.Size = New System.Drawing.Size(240, 23)
-        Me.txtCategory.TabIndex = 6
+        Me.txtCategory.TabIndex = 8
         '
         ' lblDescription
         '
         Me.lblDescription.AutoSize = True
-        Me.lblDescription.Location = New System.Drawing.Point(24, 164)
+        Me.lblDescription.Location = New System.Drawing.Point(24, 196)
         Me.lblDescription.Name = "lblDescription"
         Me.lblDescription.Size = New System.Drawing.Size(69, 15)
         Me.lblDescription.TabIndex = 7
@@ -194,6 +214,8 @@ Partial Class ProductUpsertForm
         Me.Controls.Add(Me.lblName)
         Me.Controls.Add(Me.txtSKU)
         Me.Controls.Add(Me.lblSKU)
+        Me.Controls.Add(Me.txtBarcode)
+        Me.Controls.Add(Me.lblBarcode)
         Me.Controls.Add(Me.lblTitle)
         Me.Name = "ProductUpsertForm"
         Me.Text = "Product Upsert"
@@ -204,6 +226,8 @@ Partial Class ProductUpsertForm
     End Sub
 
     Friend WithEvents lblTitle As Label
+    Friend WithEvents lblBarcode As Label
+    Friend WithEvents txtBarcode As TextBox
     Friend WithEvents lblSKU As Label
     Friend WithEvents txtSKU As TextBox
     Friend WithEvents lblName As Label

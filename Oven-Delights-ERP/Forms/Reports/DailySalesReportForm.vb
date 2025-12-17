@@ -16,11 +16,31 @@ Public Class DailySalesReportForm
             Dim dt As New DataTable()
             Using conn As New SqlConnection(connectionString)
                 conn.Open()
-                Using cmd As New SqlCommand("sp_Report_DailySales", conn)
-                    cmd.CommandType = CommandType.StoredProcedure
+                
+                Dim sql = "SELECT 
+                            SaleDate,
+                            b.BranchName,
+                            COUNT(*) AS TransactionCount,
+                            SUM(TotalAmount) AS TotalSales,
+                            SUM(ItemCount) AS TotalItems,
+                            COUNT(DISTINCT PaymentMethod) AS PaymentMethodCount
+                          FROM DailySales ds
+                          INNER JOIN Branches b ON b.BranchID = ds.BranchID
+                          WHERE SaleDate BETWEEN @StartDate AND @EndDate"
+                
+                Dim branchID = GetSelectedBranchID()
+                If branchID > 0 Then
+                    sql &= " AND ds.BranchID = @BranchID"
+                End If
+                
+                sql &= " GROUP BY SaleDate, b.BranchName ORDER BY SaleDate DESC, b.BranchName"
+                
+                Using cmd As New SqlCommand(sql, conn)
                     cmd.Parameters.AddWithValue("@StartDate", dtpStartDate.Value.Date)
                     cmd.Parameters.AddWithValue("@EndDate", dtpEndDate.Value.Date)
-                    cmd.Parameters.AddWithValue("@BranchID", GetSelectedBranchID())
+                    If branchID > 0 Then
+                        cmd.Parameters.AddWithValue("@BranchID", branchID)
+                    End If
 
                     Using adapter As New SqlDataAdapter(cmd)
                         adapter.Fill(dt)
@@ -31,19 +51,17 @@ Public Class DailySalesReportForm
             dgvReport.DataSource = dt
             
             ' Format columns
-            FormatCurrencyColumn("TotalSales")
-            FormatCurrencyColumn("TotalCost")
-            FormatCurrencyColumn("GrossProfit")
-            FormatNumberColumn("TransactionCount")
+            If dgvReport.Columns.Contains("TotalSales") Then
+                dgvReport.Columns("TotalSales").DefaultCellStyle.Format = "C2"
+            End If
             
-            ' Add totals row
+            ' Show summary
             If dt.Rows.Count > 0 Then
                 Dim totalSales = dt.AsEnumerable().Sum(Function(r) r.Field(Of Decimal)("TotalSales"))
-                Dim totalCost = dt.AsEnumerable().Sum(Function(r) r.Field(Of Decimal)("TotalCost"))
-                Dim totalProfit = dt.AsEnumerable().Sum(Function(r) r.Field(Of Decimal)("GrossProfit"))
                 Dim totalTrans = dt.AsEnumerable().Sum(Function(r) r.Field(Of Integer)("TransactionCount"))
+                Dim totalItems = dt.AsEnumerable().Sum(Function(r) r.Field(Of Integer)("TotalItems"))
                 
-                MessageBox.Show($"Summary:{vbCrLf}Total Sales: {totalSales:C2}{vbCrLf}Total Cost: {totalCost:C2}{vbCrLf}Gross Profit: {totalProfit:C2}{vbCrLf}Transactions: {totalTrans:N0}", 
+                MessageBox.Show($"Summary:{vbCrLf}Total Sales: {totalSales:C2}{vbCrLf}Transactions: {totalTrans:N0}{vbCrLf}Items Sold: {totalItems:N0}", 
                     "Report Summary", MessageBoxButtons.OK, MessageBoxIcon.Information)
             End If
         Catch ex As Exception

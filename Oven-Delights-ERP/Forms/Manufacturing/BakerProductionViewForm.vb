@@ -398,6 +398,56 @@ Namespace Manufacturing
                             cmdAddProduct.Parameters.AddWithValue("@Qty", actualQty)
                             cmdAddProduct.Parameters.AddWithValue("@BranchID", branchId)
                             cmdAddProduct.ExecuteNonQuery()
+                            
+                            ' Update or Insert cost price in Demo_Retail_Price
+                            Dim cmdUpdateCost As New SqlCommand(
+                                "IF EXISTS (SELECT 1 FROM Demo_Retail_Price WHERE ProductID = @ProductID AND BranchID = @BranchID) " &
+                                "BEGIN " &
+                                "  UPDATE Demo_Retail_Price SET CostPrice = @CostPerUnit " &
+                                "  WHERE ProductID = @ProductID AND BranchID = @BranchID " &
+                                "END " &
+                                "ELSE " &
+                                "BEGIN " &
+                                "  INSERT INTO Demo_Retail_Price (ProductID, BranchID, CostPrice, SellingPrice, CreatedAt) " &
+                                "  SELECT @ProductID, @BranchID, @CostPerUnit, " &
+                                "    ISNULL((SELECT TOP 1 SellingPrice FROM Demo_Retail_Price WHERE ProductID = @ProductID), 0), " &
+                                "    GETDATE() " &
+                                "END", conn, transaction)
+                            cmdUpdateCost.Parameters.AddWithValue("@ProductID", item.ProductID)
+                            cmdUpdateCost.Parameters.AddWithValue("@BranchID", branchId)
+                            cmdUpdateCost.Parameters.AddWithValue("@CostPerUnit", costPerUnit)
+                            cmdUpdateCost.ExecuteNonQuery()
+                            
+                            ' Post accounting entries: DR Finished Goods Inventory, CR Manufacturing/WIP
+                            Dim reOrderNumber = $"RO-{currentReOrderBookID}"
+                            
+                            ' Debit: Finished Goods Inventory (Asset increases)
+                            Dim cmdDebit As New SqlCommand(
+                                "INSERT INTO AccountingEntries (EntryDate, EntryType, ReferenceID, ReferenceNumber, " &
+                                "AccountCode, AccountName, DebitAmount, CreditAmount, Description, BranchID, CreatedBy) " &
+                                "VALUES (GETDATE(), 'Production', @RefID, @RefNum, '1300', 'Finished Goods Inventory', " &
+                                "@Amount, 0, @Desc, @BranchID, @CreatedBy)", conn, transaction)
+                            cmdDebit.Parameters.AddWithValue("@RefID", currentReOrderBookID)
+                            cmdDebit.Parameters.AddWithValue("@RefNum", reOrderNumber)
+                            cmdDebit.Parameters.AddWithValue("@Amount", totalCost)
+                            cmdDebit.Parameters.AddWithValue("@Desc", $"Production completed: {item.ProductName} x {actualQty}")
+                            cmdDebit.Parameters.AddWithValue("@BranchID", branchId)
+                            cmdDebit.Parameters.AddWithValue("@CreatedBy", bakerName)
+                            cmdDebit.ExecuteNonQuery()
+                            
+                            ' Credit: Work in Progress / Manufacturing Inventory (Asset decreases)
+                            Dim cmdCredit As New SqlCommand(
+                                "INSERT INTO AccountingEntries (EntryDate, EntryType, ReferenceID, ReferenceNumber, " &
+                                "AccountCode, AccountName, DebitAmount, CreditAmount, Description, BranchID, CreatedBy) " &
+                                "VALUES (GETDATE(), 'Production', @RefID, @RefNum, '1310', 'Work in Progress', " &
+                                "0, @Amount, @Desc, @BranchID, @CreatedBy)", conn, transaction)
+                            cmdCredit.Parameters.AddWithValue("@RefID", currentReOrderBookID)
+                            cmdCredit.Parameters.AddWithValue("@RefNum", reOrderNumber)
+                            cmdCredit.Parameters.AddWithValue("@Amount", totalCost)
+                            cmdCredit.Parameters.AddWithValue("@Desc", $"Production completed: {item.ProductName} x {actualQty}")
+                            cmdCredit.Parameters.AddWithValue("@BranchID", branchId)
+                            cmdCredit.Parameters.AddWithValue("@CreatedBy", bakerName)
+                            cmdCredit.ExecuteNonQuery()
                         Next
                         
                         ' Mark re-order book as completed

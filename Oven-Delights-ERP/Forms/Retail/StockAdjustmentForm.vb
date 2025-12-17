@@ -193,7 +193,43 @@ Namespace Retail
                     
                     cmd.ExecuteNonQuery()
                     
-                    MessageBox.Show("Stock adjustment recorded successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    ' Post accounting entries for stock adjustment
+                    Dim adjustmentValue As Decimal = adjustmentQty * unitCost
+                    Dim refNumber As String = $"ADJ-{DateTime.Now:yyyyMMddHHmmss}"
+                    
+                    ' Debit: Cost of Sales (Expense increases)
+                    Dim cmdDebit As New SqlCommand(
+                        "INSERT INTO AccountingEntries (EntryDate, EntryType, ReferenceID, ReferenceNumber, " &
+                        "AccountCode, AccountName, DebitAmount, CreditAmount, Description, BranchID, CreatedBy) " &
+                        "VALUES (GETDATE(), 'StockAdjustment', @RefID, @RefNum, '5000', 'Cost of Sales', " &
+                        "@Amount, 0, @Desc, @BranchID, @CreatedBy)", conn)
+                    cmdDebit.Parameters.AddWithValue("@RefID", productID)
+                    cmdDebit.Parameters.AddWithValue("@RefNum", refNumber)
+                    cmdDebit.Parameters.AddWithValue("@Amount", adjustmentValue)
+                    cmdDebit.Parameters.AddWithValue("@Desc", $"Stock adjustment: {productName} - {notes}")
+                    cmdDebit.Parameters.AddWithValue("@BranchID", currentBranchID)
+                    cmdDebit.Parameters.AddWithValue("@CreatedBy", currentUserName)
+                    cmdDebit.ExecuteNonQuery()
+                    
+                    ' Credit: Inventory (Asset decreases)
+                    Dim cmdCredit As New SqlCommand(
+                        "INSERT INTO AccountingEntries (EntryDate, EntryType, ReferenceID, ReferenceNumber, " &
+                        "AccountCode, AccountName, DebitAmount, CreditAmount, Description, BranchID, CreatedBy) " &
+                        "VALUES (GETDATE(), 'StockAdjustment', @RefID, @RefNum, '1300', 'Finished Goods Inventory', " &
+                        "0, @Amount, @Desc, @BranchID, @CreatedBy)", conn)
+                    cmdCredit.Parameters.AddWithValue("@RefID", productID)
+                    cmdCredit.Parameters.AddWithValue("@RefNum", refNumber)
+                    cmdCredit.Parameters.AddWithValue("@Amount", adjustmentValue)
+                    cmdCredit.Parameters.AddWithValue("@Desc", $"Stock adjustment: {productName} - {notes}")
+                    cmdCredit.Parameters.AddWithValue("@BranchID", currentBranchID)
+                    cmdCredit.Parameters.AddWithValue("@CreatedBy", currentUserName)
+                    cmdCredit.ExecuteNonQuery()
+                    
+                    MessageBox.Show("Stock adjustment recorded successfully!" & vbCrLf & vbCrLf &
+                                  $"Accounting Entry Posted:{vbCrLf}" &
+                                  $"DR Cost of Sales: R{adjustmentValue:N2}{vbCrLf}" &
+                                  $"CR Inventory: R{adjustmentValue:N2}", 
+                                  "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
                     
                     ' Refresh and reset
                     LoadInternalProducts()

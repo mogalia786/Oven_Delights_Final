@@ -54,9 +54,28 @@ Public Class RoleAccessControlForm
     End Sub
 
     Private Sub btnReload_Click(sender As Object, e As EventArgs) Handles btnReload.Click
-        MessageBox.Show("Scanning MainDashboard for all menus...", "Refreshing", MessageBoxButtons.OK, MessageBoxIcon.Information)
-        ReloadGrid()
-        MessageBox.Show($"Found {_dt.Rows.Count} menu items!", "Complete", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Try
+            Dim roleId As Integer = GetSelectedRoleId()
+            If roleId <= 0 Then
+                MessageBox.Show("Please select a role first.", "No Role Selected", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+            
+            ' Clear all existing permissions for this role
+            Using conn As New SqlConnection(_connStr)
+                conn.Open()
+                Using cmd As New SqlCommand("DELETE FROM RolePermissions WHERE RoleID = @roleId", conn)
+                    cmd.Parameters.AddWithValue("@roleId", roleId)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+            
+            MessageBox.Show("Scanning MainDashboard for all menus...", "Refreshing", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            ReloadGrid()
+            MessageBox.Show($"Found {_dt.Rows.Count} menu items! Please review and save permissions.", "Complete", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Catch ex As Exception
+            MessageBox.Show("Error reloading: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub ReloadGrid()
@@ -64,102 +83,47 @@ Public Class RoleAccessControlForm
             Dim roleId As Integer = GetSelectedRoleId()
             BuildGrid()
             
-            ' Get all menu items from MainDashboard dynamically
-            Dim modules As New List(Of String)()
-            
-            ' Find the MainDashboard form
-            Dim mainDashboard As Form = Nothing
-            Dim formCount As Integer = 0
-            For Each frm As Form In Application.OpenForms
-                formCount += 1
-                System.Diagnostics.Debug.WriteLine($"Found form: {frm.GetType().Name}")
-                If frm.GetType().Name = "MainDashboard" Then
-                    mainDashboard = frm
-                    Exit For
-                End If
-            Next
-            
-            System.Diagnostics.Debug.WriteLine($"Total forms open: {formCount}, MainDashboard found: {mainDashboard IsNot Nothing}")
-            
-            If mainDashboard IsNot Nothing Then
-                ' Get MenuStrip from MainDashboard
-                Dim menuStrip As MenuStrip = Nothing
-                For Each ctrl As Control In mainDashboard.Controls
-                    If TypeOf ctrl Is MenuStrip Then
-                        menuStrip = CType(ctrl, MenuStrip)
-                        System.Diagnostics.Debug.WriteLine($"Found MenuStrip with {menuStrip.Items.Count} top-level items")
-                        Exit For
-                    End If
-                Next
-                
-                If menuStrip IsNot Nothing Then
-                    ' Scan all menu items recursively
-                    For Each topItem As ToolStripMenuItem In menuStrip.Items.OfType(Of ToolStripMenuItem)()
-                        ' Add top-level menu
-                        Dim topMenuText = topItem.Text.Replace("&", "")
-                        modules.Add(topMenuText)
-                        System.Diagnostics.Debug.WriteLine($"Top menu: {topMenuText} ({topItem.DropDownItems.Count} subitems)")
-                        
-                        ' Add all submenus recursively
-                        ScanSubMenus(topItem, topMenuText, modules)
-                    Next
-                    System.Diagnostics.Debug.WriteLine($"Total menus scanned: {modules.Count}")
-                Else
-                    System.Diagnostics.Debug.WriteLine("MenuStrip not found in MainDashboard!")
-                End If
-            Else
-                System.Diagnostics.Debug.WriteLine("MainDashboard form not found!")
-            End If
-            
-            ' If no menus found from MainDashboard, use fallback list
-            If modules.Count = 0 Then
-                modules.AddRange({
-                    "Administration", "Stockroom", "Manufacturing", "Retail", "Accounting", "Reporting", "Utilities"
-                })
-            End If
-            
-            ' Load permissions for each module
-            For Each moduleName As String In modules
-                Dim canRead As Boolean = False
-                Dim canWrite As Boolean = False
-                
-                If roleId > 0 Then
-                    ' Load existing permissions for this role and module
-                    Using conn As New SqlConnection(_connStr)
-                        conn.Open()
-                        Dim sql = "SELECT CanRead, CanWrite FROM RolePermissions WHERE RoleID = @roleId AND ModuleName = @module"
-                        Using cmd As New SqlCommand(sql, conn)
-                            cmd.Parameters.AddWithValue("@roleId", roleId)
-                            cmd.Parameters.AddWithValue("@module", moduleName)
-                            Using reader = cmd.ExecuteReader()
-                                If reader.Read() Then
-                                    canRead = Convert.ToBoolean(reader("CanRead"))
-                                    canWrite = Convert.ToBoolean(reader("CanWrite"))
-                                End If
-                            End Using
-                        End Using
+            ' Load all menus from MenuRegistry table
+            Using conn As New SqlConnection(_connStr)
+                conn.Open()
+                Dim sql = "SELECT MenuPath, DisplayName FROM MenuRegistry WHERE IsActive = 1 ORDER BY MenuPath"
+                Using cmd As New SqlCommand(sql, conn)
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            Dim menuPath As String = reader("MenuPath").ToString()
+                            Dim displayName As String = reader("DisplayName").ToString()
+                            Dim canRead As Boolean = False
+                            Dim canWrite As Boolean = False
+                            
+                            ' Check if we need to load existing permissions
+                            If roleId > 0 Then
+                                Using conn2 As New SqlConnection(_connStr)
+                                    conn2.Open()
+                                    Dim sqlPerm = "SELECT CanRead, CanWrite FROM RolePermissions WHERE RoleID = @roleId AND ModuleName = @module"
+                                    Using cmdPerm As New SqlCommand(sqlPerm, conn2)
+                                        cmdPerm.Parameters.AddWithValue("@roleId", roleId)
+                                        cmdPerm.Parameters.AddWithValue("@module", menuPath)
+                                        Using readerPerm = cmdPerm.ExecuteReader()
+                                            If readerPerm.Read() Then
+                                                canRead = Convert.ToBoolean(readerPerm("CanRead"))
+                                                canWrite = Convert.ToBoolean(readerPerm("CanWrite"))
+                                            End If
+                                        End Using
+                                    End Using
+                                End Using
+                            End If
+                            
+                            _dt.Rows.Add(menuPath, menuPath, "Menu", canRead, canWrite)
+                        End While
                     End Using
-                End If
-                
-                _dt.Rows.Add(moduleName, moduleName, "Module", canRead, canWrite)
-            Next
+                End Using
+            End Using
             
         Catch ex As Exception
             MessageBox.Show("Failed to load permissions: " & ex.Message)
         End Try
     End Sub
     
-    Private Sub ScanSubMenus(parentItem As ToolStripMenuItem, parentPath As String, ByRef modules As List(Of String))
-        For Each subItem As ToolStripMenuItem In parentItem.DropDownItems.OfType(Of ToolStripMenuItem)()
-            Dim menuPath = parentPath & " > " & subItem.Text.Replace("&", "").Replace("…", "")
-            modules.Add(menuPath)
-            
-            ' Recursively scan deeper levels
-            If subItem.DropDownItems.Count > 0 Then
-                ScanSubMenus(subItem, menuPath, modules)
-            End If
-        Next
-    End Sub
 
     Private Sub LoadRoles()
         cboRole.Items.Clear()

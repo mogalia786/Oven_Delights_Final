@@ -268,10 +268,13 @@ Public Class PriceManagementForm
         Try
             Using conn As New SqlConnection(_connString)
                 conn.Open()
-                Dim sql = "SELECT ProductID, ProductCode, ProductName, " &
-                         "ProductName + ' [' + COALESCE(ProductCode, 'No Code') + ']' AS DisplayText " &
-                         "FROM Products WHERE IsActive = 1 ORDER BY ProductName"
+                Dim sql = "SELECT DISTINCT p.ProductID, p.ProductCode, p.Name AS ProductName, " &
+                         "p.Name + ' [' + COALESCE(p.SKU, p.ProductCode, 'No Code') + ']' AS DisplayText " &
+                         "FROM Demo_Retail_Product p " &
+                         "WHERE p.IsActive = 1 AND p.BranchID = @bid " &
+                         "ORDER BY p.Name"
                 Using da As New SqlDataAdapter(sql, conn)
+                    da.SelectCommand.Parameters.AddWithValue("@bid", _sessionBranchId)
                     Dim dt As New DataTable()
                     da.Fill(dt)
                     cboProduct.DataSource = dt
@@ -310,9 +313,9 @@ Public Class PriceManagementForm
             Using conn As New SqlConnection(_connString)
                 conn.Open()
 
-                ' Get current active price from PriceHistory
-                Dim sql = "SELECT Price, Currency FROM dbo.PriceHistory " &
-                         "WHERE ProductID = @pid AND BranchID = @bid AND IsActive = 1 AND EffectiveTo IS NULL"
+                ' Get current selling price from Demo_Retail_Price
+                Dim sql = "SELECT SellingPrice FROM Demo_Retail_Price " &
+                         "WHERE ProductID = @pid AND BranchID = @bid"
 
                 Using cmd As New SqlCommand(sql, conn)
                     cmd.Parameters.AddWithValue("@pid", _selectedProductId)
@@ -320,8 +323,8 @@ Public Class PriceManagementForm
 
                     Using reader = cmd.ExecuteReader()
                         If reader.Read() Then
-                            numPrice.Value = Convert.ToDecimal(reader("Price"))
-                            txtCurrency.Text = reader("Currency").ToString()
+                            numPrice.Value = If(IsDBNull(reader("SellingPrice")), 0, Convert.ToDecimal(reader("SellingPrice")))
+                            txtCurrency.Text = "ZAR"
                         Else
                             ' No price set yet
                             numPrice.Value = 0
@@ -330,13 +333,12 @@ Public Class PriceManagementForm
                     End Using
                 End Using
 
-                ' Get average cost (recommended price)
+                ' Get average cost (recommended price) from Demo_Retail_Price
                 Dim avgCost As Decimal = 0
-                Dim sqlAvg = "SELECT ISNULL(rs.AverageCost, 0) AS AvgCost " &
-                            "FROM Products p " &
-                            "LEFT JOIN Retail_Variant rv ON rv.ProductID = p.ProductID " &
-                            "LEFT JOIN Retail_Stock rs ON rs.VariantID = rv.VariantID AND rs.BranchID = @bid " &
-                            "WHERE p.ProductID = @pid"
+                Dim sqlAvg = "SELECT TOP 1 ISNULL(CostPrice, 0) AS AvgCost " &
+                            "FROM Demo_Retail_Price " &
+                            "WHERE ProductID = @pid AND BranchID = @bid " &
+                            "ORDER BY CreatedAt DESC"
 
                 Using cmdAvg As New SqlCommand(sqlAvg, conn)
                     cmdAvg.Parameters.AddWithValue("@pid", _selectedProductId)
@@ -366,34 +368,27 @@ Public Class PriceManagementForm
     Private Sub LoadPriceHistory()
         Try
             Using conn As New SqlConnection(_connString)
-                ' Load complete price history for this product
+                ' Load pricing info from Demo_Retail_Price
                 Dim sql = "SELECT " &
-                         "ph.PriceHistoryID, " &
-                         "p.ProductName, " &
+                         "p.Name AS ProductName, " &
                          "p.ProductCode, " &
                          "b.BranchName, " &
-                         "ph.Price, " &
-                         "ph.Currency, " &
-                         "ph.EffectiveFrom, " &
-                         "ph.EffectiveTo, " &
-                         "CASE WHEN ph.IsActive = 1 AND ph.EffectiveTo IS NULL THEN 'Current' ELSE 'Historical' END AS Status, " &
-                         "ph.CreatedDate " &
-                         "FROM dbo.PriceHistory ph " &
-                         "INNER JOIN dbo.Products p ON p.ProductID = ph.ProductID " &
-                         "INNER JOIN dbo.Branches b ON b.BranchID = ph.BranchID " &
-                         "WHERE ph.ProductID = @pid " &
-                         "ORDER BY ph.EffectiveFrom DESC"
+                         "pr.CostPrice, " &
+                         "pr.SellingPrice, " &
+                         "'ZAR' AS Currency, " &
+                         "pr.CreatedAt, " &
+                         "'Current' AS Status " &
+                         "FROM Demo_Retail_Price pr " &
+                         "INNER JOIN Demo_Retail_Product p ON p.ProductID = pr.ProductID " &
+                         "INNER JOIN Branches b ON b.BranchID = pr.BranchID " &
+                         "WHERE pr.ProductID = @pid " &
+                         "ORDER BY pr.CreatedAt DESC"
 
                 Using da As New SqlDataAdapter(sql, conn)
                     da.SelectCommand.Parameters.AddWithValue("@pid", _selectedProductId)
                     Dim dt As New DataTable()
                     da.Fill(dt)
                     dgvPrices.DataSource = dt
-
-                    ' Hide ID column
-                    If dgvPrices.Columns.Contains("PriceHistoryID") Then
-                        dgvPrices.Columns("PriceHistoryID").Visible = False
-                    End If
                 End Using
             End Using
         Catch ex As Exception
@@ -417,66 +412,43 @@ Public Class PriceManagementForm
                 conn.Open()
                 Using tx = conn.BeginTransaction()
                     Try
-                        ' Step 1: Close any existing active price (set EffectiveTo = NOW)
-                        Using cmdClose As New SqlCommand("UPDATE dbo.PriceHistory SET EffectiveTo = GETDATE(), IsActive = 0 WHERE ProductID = @pid AND BranchID = @bid AND IsActive = 1 AND EffectiveTo IS NULL", conn, tx)
-                            cmdClose.Parameters.AddWithValue("@pid", _selectedProductId)
-                            cmdClose.Parameters.AddWithValue("@bid", _sessionBranchId)
-                            cmdClose.ExecuteNonQuery()
-                        End Using
-
-                        ' Step 2: Insert new price as active
-                        Using cmdInsert As New SqlCommand("INSERT INTO dbo.PriceHistory (ProductID, BranchID, Price, Currency, EffectiveFrom, EffectiveTo, IsActive, CreatedBy) VALUES (@pid, @bid, @price, @curr, GETDATE(), NULL, 1, @uid)", conn, tx)
-                            cmdInsert.Parameters.AddWithValue("@pid", _selectedProductId)
-                            cmdInsert.Parameters.AddWithValue("@bid", _sessionBranchId)
-                            cmdInsert.Parameters.AddWithValue("@price", numPrice.Value)
-                            cmdInsert.Parameters.AddWithValue("@curr", txtCurrency.Text.Trim())
-                            cmdInsert.Parameters.AddWithValue("@uid", If(AppSession.CurrentUserID > 0, CType(AppSession.CurrentUserID, Object), DBNull.Value))
-                            cmdInsert.ExecuteNonQuery()
-                        End Using
-
-                        ' Step 3: Also update Retail_Stock for backward compatibility
-                        Dim variantId As Integer = 0
-                        Using cmdVariant As New SqlCommand("SELECT VariantID FROM Retail_Variant WHERE ProductID = @pid", conn, tx)
-                            cmdVariant.Parameters.AddWithValue("@pid", _selectedProductId)
-                            Dim result = cmdVariant.ExecuteScalar()
-                            If result IsNot Nothing AndAlso Not IsDBNull(result) Then
-                                variantId = Convert.ToInt32(result)
-                            End If
-                        End Using
-
-                        If variantId = 0 Then
-                            Using cmdInsertVar As New SqlCommand("INSERT INTO Retail_Variant (ProductID) VALUES (@pid); SELECT SCOPE_IDENTITY();", conn, tx)
-                                cmdInsertVar.Parameters.AddWithValue("@pid", _selectedProductId)
-                                variantId = Convert.ToInt32(cmdInsertVar.ExecuteScalar())
-                            End Using
-                        End If
-
-                        ' Update or insert Retail_Stock
-                        Dim stockExists As Boolean = False
-                        Using cmdCheck As New SqlCommand("SELECT COUNT(*) FROM Retail_Stock WHERE VariantID = @vid AND BranchID = @bid", conn, tx)
-                            cmdCheck.Parameters.AddWithValue("@vid", variantId)
+                        ' Check if product exists in Demo_Retail_Product for this branch
+                        Dim productExists As Boolean = False
+                        Using cmdCheck As New SqlCommand("SELECT COUNT(*) FROM Demo_Retail_Product WHERE ProductID = @pid AND BranchID = @bid", conn, tx)
+                            cmdCheck.Parameters.AddWithValue("@pid", _selectedProductId)
                             cmdCheck.Parameters.AddWithValue("@bid", _sessionBranchId)
-                            stockExists = Convert.ToInt32(cmdCheck.ExecuteScalar()) > 0
+                            productExists = Convert.ToInt32(cmdCheck.ExecuteScalar()) > 0
                         End Using
-
-                        If stockExists Then
-                            Using cmdUpdate As New SqlCommand("UPDATE Retail_Stock SET AverageCost = @price WHERE VariantID = @vid AND BranchID = @bid", conn, tx)
-                                cmdUpdate.Parameters.AddWithValue("@price", numPrice.Value)
-                                cmdUpdate.Parameters.AddWithValue("@vid", variantId)
-                                cmdUpdate.Parameters.AddWithValue("@bid", _sessionBranchId)
-                                cmdUpdate.ExecuteNonQuery()
-                            End Using
-                        Else
-                            Using cmdInsertStock As New SqlCommand("INSERT INTO Retail_Stock (VariantID, BranchID, QtyOnHand, AverageCost, ReorderPoint) VALUES (@vid, @bid, 0, @price, 10)", conn, tx)
-                                cmdInsertStock.Parameters.AddWithValue("@vid", variantId)
-                                cmdInsertStock.Parameters.AddWithValue("@bid", _sessionBranchId)
-                                cmdInsertStock.Parameters.AddWithValue("@price", numPrice.Value)
-                                cmdInsertStock.ExecuteNonQuery()
-                            End Using
+                        
+                        If Not productExists Then
+                            MessageBox.Show("This product does not exist for the selected branch. Please ensure the product is created for this branch first.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                            tx.Rollback()
+                            Return
                         End If
+                        
+                        ' Update or Insert selling price in Demo_Retail_Price
+                        Dim cmdUpsert As New SqlCommand(
+                            "IF EXISTS (SELECT 1 FROM Demo_Retail_Price WHERE ProductID = @pid AND BranchID = @bid) " &
+                            "BEGIN " &
+                            "  UPDATE Demo_Retail_Price SET SellingPrice = @price, EffectiveFrom = GETDATE() " &
+                            "  WHERE ProductID = @pid AND BranchID = @bid " &
+                            "END " &
+                            "ELSE " &
+                            "BEGIN " &
+                            "  INSERT INTO Demo_Retail_Price (ProductID, BranchID, SellingPrice, CostPrice, EffectiveFrom, CreatedAt) " &
+                            "  VALUES (@pid, @bid, @price, 0, GETDATE(), GETDATE()) " &
+                            "END", conn, tx)
+                        cmdUpsert.Parameters.AddWithValue("@pid", _selectedProductId)
+                        cmdUpsert.Parameters.AddWithValue("@bid", _sessionBranchId)
+                        cmdUpsert.Parameters.AddWithValue("@price", numPrice.Value)
+                        
+                        ' DEBUG: Show what we're saving
+                        MessageBox.Show($"Saving Price:{vbCrLf}ProductID: {_selectedProductId}{vbCrLf}BranchID: {_sessionBranchId}{vbCrLf}Price: R {numPrice.Value:N2}", "DEBUG", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                        
+                        cmdUpsert.ExecuteNonQuery()
 
                         tx.Commit()
-                        MessageBox.Show("Price saved successfully! Previous price moved to history.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                        MessageBox.Show("Price saved successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
                         LoadProductPrice()
                     Catch
                         tx.Rollback()

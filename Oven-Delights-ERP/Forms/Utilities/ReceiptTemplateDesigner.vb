@@ -31,7 +31,7 @@ Public Class ReceiptTemplateDesigner
     Public Sub New()
         InitializeComponent()
         _connectionString = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString")?.ConnectionString
-        _currentBranchID = 1 ' Default
+        _currentBranchID = AppSession.CurrentBranchID ' Use logged-in user's branch
         Me.Text = "Receipt Template Designer"
         Me.Size = New Size(1400, 900)
         Me.StartPosition = FormStartPosition.CenterScreen

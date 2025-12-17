@@ -55,12 +55,13 @@ Public Class InvoiceGRVForm
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "ProductName", .HeaderText = "Product Name", .Width = 200, .ReadOnly = True})
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "OrderedQty", .HeaderText = "Ordered", .Width = 80, .ReadOnly = True})
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "ReceivedQty", .HeaderText = "Received", .Width = 80})
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "UnitCost", .HeaderText = "Unit Cost", .Width = 100})
+        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "UnitCost", .HeaderText = "Unit Cost (Incl VAT)", .Width = 120})
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LineTotal", .HeaderText = "Line Total", .Width = 100, .ReadOnly = True})
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "ShortageQty", .HeaderText = "Shortage", .Width = 80, .ReadOnly = True})
         dgvLines.Columns.Add(New DataGridViewButtonColumn With {.Name = "CreditNote", .HeaderText = "Credit Note", .Width = 100, .Text = "Create Credit", .UseColumnTextForButtonValue = True})
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "ProductID", .HeaderText = "ProductID", .Visible = False})
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "ProductType", .HeaderText = "Type", .Visible = False})
+        dgvLines.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "IsVatable", .HeaderText = "VATable", .Visible = False})
     End Sub
 
     Private Sub ConfigureControls()
@@ -151,6 +152,7 @@ Public Class InvoiceGRVForm
                 dgvLines.Rows(row).Cells("ShortageQty").Value = 0D
                 dgvLines.Rows(row).Cells("ProductID").Value = line("ProductID")
                 dgvLines.Rows(row).Cells("ProductType").Value = line("ProductType").ToString()
+                dgvLines.Rows(row).Cells("IsVatable").Value = If(line.Table.Columns.Contains("IsVatable"), line("IsVatable"), True)
             Next
             
             CalculateTotals()
@@ -182,19 +184,29 @@ Public Class InvoiceGRVForm
 
     Private Sub CalculateTotals()
         Try
-            Dim subTotal As Decimal = 0
+            ' Unit Cost in grid is INCLUSIVE of VAT (from PO Line Total / Qty)
+            ' Need to calculate backwards: SubTotal (excl), VAT, Total (incl)
+            Dim totalIncl As Decimal = 0
+            Dim subTotalExcl As Decimal = 0
+            
             For Each row As DataGridViewRow In dgvLines.Rows
                 If row.Cells("LineTotal").Value IsNot Nothing Then
-                    subTotal += Convert.ToDecimal(row.Cells("LineTotal").Value)
+                    Dim lineTotal = Convert.ToDecimal(row.Cells("LineTotal").Value)
+                    Dim isVatable = If(row.Cells("IsVatable").Value IsNot Nothing, Convert.ToBoolean(row.Cells("IsVatable").Value), True)
+                    
+                    totalIncl += lineTotal
+                    
+                    ' If VATable, line total includes VAT, so excl = incl / 1.15
+                    ' If not VATable, line total = excl (no VAT)
+                    subTotalExcl += If(isVatable, lineTotal / 1.15D, lineTotal)
                 End If
             Next
             
-            Dim vat As Decimal = subTotal * 0.15D
-            Dim total As Decimal = subTotal + vat
+            Dim vat As Decimal = totalIncl - subTotalExcl
             
-            txtSubTotal.Text = subTotal.ToString("F2")
+            txtSubTotal.Text = subTotalExcl.ToString("F2")
             txtVAT.Text = vat.ToString("F2")
-            txtTotal.Text = total.ToString("F2")
+            txtTotal.Text = totalIncl.ToString("F2")
         Catch
             ' Handle calculation errors
         End Try
@@ -381,17 +393,39 @@ Public Class InvoiceGRVForm
                 ' DEBUG: Show what happened
                 MessageBox.Show($"Stock Update: ProductID={productId}, BranchID={currentBranchId}, Qty={receivedQty}, RowsAffected={rowsAffected}", "DEBUG", MessageBoxButtons.OK, MessageBoxIcon.Information)
                 
-                ' Update Demo_Retail_Prices with last paid price for this branch
+                ' Update Demo_Retail_Price with last paid price for this branch
                 Dim unitCost = Convert.ToDecimal(row.Cells("UnitCost").Value)
                 Dim cmdPrice As New SqlCommand(
-                    "IF EXISTS (SELECT 1 FROM Demo_Retail_Prices WHERE ProductID = @ProductID AND BranchID = @BranchID) " &
-                    "  UPDATE Demo_Retail_Prices SET CostPrice = @UnitCost, UpdatedDate = GETDATE() WHERE ProductID = @ProductID AND BranchID = @BranchID " &
+                    "IF EXISTS (SELECT 1 FROM Demo_Retail_Price WHERE ProductID = @ProductID AND BranchID = @BranchID) " &
+                    "  UPDATE Demo_Retail_Price SET CostPrice = @UnitCost WHERE ProductID = @ProductID AND BranchID = @BranchID " &
                     "ELSE " &
-                    "  INSERT INTO Demo_Retail_Prices (ProductID, BranchID, CostPrice, UpdatedDate) VALUES (@ProductID, @BranchID, @UnitCost, GETDATE())", conn, trans)
+                    "  INSERT INTO Demo_Retail_Price (ProductID, BranchID, CostPrice, EffectiveFrom) VALUES (@ProductID, @BranchID, @UnitCost, GETDATE())", conn, trans)
                 cmdPrice.Parameters.AddWithValue("@ProductID", productId)
                 cmdPrice.Parameters.AddWithValue("@BranchID", currentBranchId)
                 cmdPrice.Parameters.AddWithValue("@UnitCost", unitCost)
                 cmdPrice.ExecuteNonQuery()
+                
+                ' Record price history using stored procedure
+                Try
+                    Dim cmdHistory As New SqlCommand("sp_RecordProductPriceFromInvoice", conn, trans)
+                    cmdHistory.CommandType = CommandType.StoredProcedure
+                    cmdHistory.Parameters.AddWithValue("@ProductID", productId)
+                    cmdHistory.Parameters.AddWithValue("@SKU", If(dgvLines.Columns.Contains("SKU") AndAlso row.Cells("SKU").Value IsNot Nothing, row.Cells("SKU").Value, DBNull.Value))
+                    cmdHistory.Parameters.AddWithValue("@ProductName", row.Cells("ProductName").Value.ToString())
+                    cmdHistory.Parameters.AddWithValue("@SupplierID", selectedSupplierId)
+                    cmdHistory.Parameters.AddWithValue("@SupplierName", cboSupplier.Text)
+                    cmdHistory.Parameters.AddWithValue("@InvoiceNumber", $"GRV-{DateTime.Now:yyyyMMdd}-{selectedPOId}")
+                    cmdHistory.Parameters.AddWithValue("@InvoiceDate", dtpReceived.Value)
+                    cmdHistory.Parameters.AddWithValue("@CostPrice", unitCost)
+                    cmdHistory.Parameters.AddWithValue("@Quantity", receivedQty)
+                    cmdHistory.Parameters.AddWithValue("@UnitOfMeasure", If(dgvLines.Columns.Contains("UOM") AndAlso row.Cells("UOM").Value IsNot Nothing, row.Cells("UOM").Value, "Each"))
+                    cmdHistory.Parameters.AddWithValue("@BranchID", currentBranchId)
+                    cmdHistory.Parameters.AddWithValue("@CapturedBy", AppSession.CurrentUser.Username)
+                    cmdHistory.ExecuteNonQuery()
+                Catch ex As Exception
+                    ' Price history is optional - don't fail if it errors
+                    Debug.WriteLine($"Price history error: {ex.Message}")
+                End Try
 
                 ' Create stock movement record
                 Dim movCmd As New SqlCommand("INSERT INTO StockMovements (MaterialID, MovementType, QuantityIn, UnitCost, TotalValue, MovementDate, ReferenceType, ReferenceNumber, BranchID, InventoryArea, CreatedBy, CreatedDate) VALUES (@MaterialID, @MovementType, @QuantityIn, @UnitCost, @TotalValue, @MovementDate, @ReferenceType, @ReferenceNumber, @BranchID, @InventoryArea, @CreatedBy, @CreatedDate)", conn, trans)

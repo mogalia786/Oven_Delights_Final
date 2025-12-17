@@ -178,26 +178,33 @@ Public Class SubRecipeIngredientDialog
         Try
             Using cn As New SqlConnection(_connectionString)
                 cn.Open()
-                ' ONLY show Raw Materials from Ingredients, Consumables, Packaging, Miscellaneous categories
-                ' NO manufactured products!
-                ' Query Demo_Retail_Product for INGREDIENTS only - use DISTINCT Name
-                Dim query = "SELECT DISTINCT Name AS ProductName " &
-                           "FROM Demo_Retail_Product " &
-                           "WHERE (Name LIKE @search OR ISNULL(Code, SKU) LIKE @search) " &
-                           "  AND IsActive = 1 " &
-                           "  AND Category LIKE '%ingredient%' " &
-                           "ORDER BY Name"
+                ' Show ALL active products that can be used as ingredients
+                ' Exclude only Internal manufactured products (ProductType = 'Internal')
+                ' Get ProductID and CostPrice from Demo_Retail_Price for current branch
+                ' Use DISTINCT on Name to avoid duplicates across branches
+                Dim branchId As Integer = If(AppSession.CurrentUser?.BranchID, 1)
+                Dim query = "SELECT MIN(p.ProductID) AS ProductID, p.Name AS ProductName, " &
+                           "MIN(ISNULL(p.Code, p.SKU)) AS ProductCode, " &
+                           "ISNULL((SELECT TOP 1 CostPrice FROM Demo_Retail_Price " &
+                           "WHERE ProductID = MIN(p.ProductID) AND BranchID = @BranchID " &
+                           "ORDER BY EffectiveFrom DESC), 0) AS Cost " &
+                           "FROM Demo_Retail_Product p " &
+                           "WHERE (p.Name LIKE @search OR ISNULL(p.Code, p.SKU) LIKE @search) " &
+                           "  AND p.IsActive = 1 " &
+                           "  AND (p.ProductType <> 'Internal' OR p.ProductType IS NULL) " &
+                           "GROUP BY p.Name " &
+                           "ORDER BY p.Name"
                 Using cmd As New SqlCommand(query, cn)
                     cmd.Parameters.AddWithValue("@search", searchParam)
+                    cmd.Parameters.AddWithValue("@BranchID", branchId)
                     Using reader = cmd.ExecuteReader()
                         While reader.Read()
-                            Dim name = reader.GetString(0)
                             lstIngredients.Items.Add(New With {
-                                .ProductID = 0,
-                                .ProductCode = "",
-                                .ProductName = name,
-                                .Cost = 0D,
-                                .Display = name
+                                .ProductID = reader.GetInt32(0),
+                                .ProductCode = If(reader.IsDBNull(2), "", reader.GetString(2)),
+                                .ProductName = reader.GetString(1),
+                                .Cost = reader.GetDecimal(3),
+                                .Display = reader.GetString(1)
                             })
                         End While
                     End Using

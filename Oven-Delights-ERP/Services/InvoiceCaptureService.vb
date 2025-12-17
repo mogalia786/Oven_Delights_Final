@@ -52,6 +52,9 @@ Public Class InvoiceCaptureService
                     ' 4. Create Ledger Entries
                     CreateInvoiceLedgerEntries(con, tx, invoiceId, branchId, supplierId, invoiceLines, invoiceNumber, createdBy)
                     
+                    ' 5. Recalculate manufactured product costs based on updated ingredient costs
+                    UpdateManufacturedProductCosts(con, tx, branchId)
+                    
                     tx.Commit()
                     Return invoiceId
                     
@@ -168,25 +171,35 @@ Public Class InvoiceCaptureService
         End If
         
         ' CRITICAL: Update Demo_Retail_Price for BRANCH-SPECIFIC pricing
-        ' unitCost from invoice is INCLUDING VAT (as entered by user)
-        ' Calculate CostPrice EXCLUDING VAT for storage
-        Dim costExclVAT As Decimal = Math.Round(unitCost / 1.15D, 2)
+        ' Check if product is vatable
+        Dim isVatable As Boolean = True
+        Dim checkVatSql = "SELECT ISNULL(IsVatable, 1) FROM Demo_Retail_Product WHERE ProductID = @ProductID AND BranchID = @BranchID"
+        Using cmd As New SqlCommand(checkVatSql, con, tx)
+            cmd.Parameters.AddWithValue("@ProductID", productId)
+            cmd.Parameters.AddWithValue("@BranchID", branchId)
+            Dim result = cmd.ExecuteScalar()
+            If result IsNot Nothing Then isVatable = Convert.ToBoolean(result)
+        End Using
+        
+        ' unitCost from invoice is the price entered (with or without VAT depending on IsVatable)
+        ' If vatable: unitCost includes VAT, so divide by 1.15 to get excl VAT
+        ' If non-vatable: unitCost is already excl VAT (no VAT to remove)
+        Dim safeCost As Decimal = If(unitCost > 0, unitCost, 0D)
+        Dim costExclVAT As Decimal = If(isVatable, Math.Round(safeCost / 1.15D, 2), safeCost)
         
         Dim updatePriceSql = "UPDATE dbo.Demo_Retail_Price " &
                              "SET CostPrice = @CostExclVAT, " &
-                             "    SellingPrice = @CostInclVAT, " &
-                             "    SellingPriceExVAT = @CostExclVAT, " &
-                             "    UpdatedAt = GETDATE() " &
+                             "    EffectiveFrom = GETDATE() " &
                              "WHERE ProductID = @ProductID AND BranchID = @BranchID; " &
                              "IF @@ROWCOUNT = 0 " &
-                             "INSERT INTO dbo.Demo_Retail_Price (ProductID, BranchID, CostPrice, SellingPrice, SellingPriceExVAT, EffectiveFrom, CreatedAt) " &
-                             "VALUES (@ProductID, @BranchID, @CostExclVAT, @CostInclVAT, @CostExclVAT, GETDATE(), GETDATE())"
+                             "INSERT INTO dbo.Demo_Retail_Price (ProductID, BranchID, CostPrice, EffectiveFrom, CreatedAt) " &
+                             "VALUES (@ProductID, @BranchID, @CostExclVAT, GETDATE(), GETDATE())"
         
         Using cmd As New SqlCommand(updatePriceSql, con, tx)
             cmd.Parameters.AddWithValue("@ProductID", productId)
             cmd.Parameters.AddWithValue("@BranchID", branchId)
             cmd.Parameters.AddWithValue("@CostExclVAT", costExclVAT)
-            cmd.Parameters.AddWithValue("@CostInclVAT", unitCost)
+            cmd.Parameters.AddWithValue("@CostInclVAT", safeCost)
             cmd.ExecuteNonQuery()
         End Using
         
@@ -207,8 +220,7 @@ Public Class InvoiceCaptureService
                            "    AverageCost = CASE " &
                            "        WHEN ISNULL(QtyOnHand, 0) + @Qty = 0 THEN AverageCost " &
                            "        ELSE ((ISNULL(AverageCost, 0) * ISNULL(QtyOnHand, 0)) + (@Cost * @Qty)) / (ISNULL(QtyOnHand, 0) + @Qty) " &
-                           "    END, " &
-                           "    UpdatedAt = GETDATE() " &
+                           "    END " &
                            "WHERE VariantID = @ProductID AND BranchID = @BranchID"
             
             Using cmd As New SqlCommand(updateSql, con, tx)
@@ -220,8 +232,8 @@ Public Class InvoiceCaptureService
             End Using
         Else
             ' Insert new stock record
-            Dim insertSql = "INSERT INTO Demo_Retail_Stock (VariantID, BranchID, QtyOnHand, AverageCost, UpdatedAt) " &
-                           "VALUES (@ProductID, @BranchID, @Qty, @Cost, GETDATE())"
+            Dim insertSql = "INSERT INTO Demo_Retail_Stock (VariantID, BranchID, QtyOnHand, AverageCost) " &
+                           "VALUES (@ProductID, @BranchID, @Qty, @Cost)"
             
             Using cmd As New SqlCommand(insertSql, con, tx)
                 cmd.Parameters.AddWithValue("@ProductID", productId)
@@ -355,4 +367,17 @@ Public Class InvoiceCaptureService
             Return Convert.ToInt32(cmd.ExecuteScalar())
         End Using
     End Function
+    
+    ''' <summary>
+    ''' Recalculate manufactured product costs based on BOM and ingredient costs
+    ''' Called after capturing invoices for raw materials
+    ''' </summary>
+    Private Sub UpdateManufacturedProductCosts(con As SqlConnection, tx As SqlTransaction, branchId As Integer)
+        Using cmd As New SqlCommand("sp_UpdateManufacturedProductCosts", con, tx)
+            cmd.CommandType = CommandType.StoredProcedure
+            cmd.Parameters.AddWithValue("@BranchID", branchId)
+            cmd.Parameters.AddWithValue("@ProductID", DBNull.Value) ' Update all products
+            cmd.ExecuteNonQuery()
+        End Using
+    End Sub
 End Class

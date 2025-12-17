@@ -86,6 +86,44 @@ Partial Class MainDashboard
         RemoveHandler miExt.Click, AddressOf OpenPOReceiving
         AddHandler miExt.Click, AddressOf OpenPOReceiving
 
+        ' IBT (Inter-Branch Transfer) > Complete Workflow
+        Dim ibt As ToolStripMenuItem = GetOrCreateSubMenu(retail, "IBT (Inter-Branch Transfer)")
+        
+        ' Request Products (I request from another branch)
+        Dim miRequestProducts As ToolStripMenuItem = GetOrCreateSubMenu(ibt, "Request Products")
+        Dim miNewRequest As ToolStripMenuItem = GetOrCreateSubMenu(miRequestProducts, "New Request")
+        RemoveHandler miNewRequest.Click, AddressOf OpenNewRequest
+        AddHandler miNewRequest.Click, AddressOf OpenNewRequest
+        Dim miMyRequests As ToolStripMenuItem = GetOrCreateSubMenu(miRequestProducts, "My Requests Status")
+        RemoveHandler miMyRequests.Click, AddressOf OpenMyRequests
+        AddHandler miMyRequests.Click, AddressOf OpenMyRequests
+        Dim miInTransitToMe As ToolStripMenuItem = GetOrCreateSubMenu(miRequestProducts, "In-Transit to Me")
+        RemoveHandler miInTransitToMe.Click, AddressOf OpenInTransitToMe
+        AddHandler miInTransitToMe.Click, AddressOf OpenInTransitToMe
+        Dim miReceiveDelivery As ToolStripMenuItem = GetOrCreateSubMenu(miRequestProducts, "Receive Delivery")
+        RemoveHandler miReceiveDelivery.Click, AddressOf OpenReceiveDelivery
+        AddHandler miReceiveDelivery.Click, AddressOf OpenReceiveDelivery
+        
+        ' Requested Products (Another branch requested from me)
+        Dim miRequestedProducts As ToolStripMenuItem = GetOrCreateSubMenu(ibt, "Requested Products")
+        Dim miPendingApproval As ToolStripMenuItem = GetOrCreateSubMenu(miRequestedProducts, "Pending Approval")
+        RemoveHandler miPendingApproval.Click, AddressOf OpenPendingApproval
+        AddHandler miPendingApproval.Click, AddressOf OpenPendingApproval
+        Dim miCreateDelivery As ToolStripMenuItem = GetOrCreateSubMenu(miRequestedProducts, "Create Delivery Note")
+        RemoveHandler miCreateDelivery.Click, AddressOf OpenCreateDelivery
+        AddHandler miCreateDelivery.Click, AddressOf OpenCreateDelivery
+        Dim miDispatchedByMe As ToolStripMenuItem = GetOrCreateSubMenu(miRequestedProducts, "Dispatched by Me")
+        RemoveHandler miDispatchedByMe.Click, AddressOf OpenDispatchedByMe
+        AddHandler miDispatchedByMe.Click, AddressOf OpenDispatchedByMe
+        
+        ' Common
+        Dim miDelivered As ToolStripMenuItem = GetOrCreateSubMenu(ibt, "Delivered Items (All)")
+        RemoveHandler miDelivered.Click, AddressOf OpenDeliveredItems
+        AddHandler miDelivered.Click, AddressOf OpenDeliveredItems
+        Dim miLedger As ToolStripMenuItem = GetOrCreateSubMenu(ibt, "Inter-Branch Ledger")
+        RemoveHandler miLedger.Click, AddressOf OpenInterBranchLedger
+        AddHandler miLedger.Click, AddressOf OpenInterBranchLedger
+
         ' Reports > Low Stock, Catalog, Price History (stub wiring; reports will follow)
         Dim reports As ToolStripMenuItem = GetOrCreateSubMenu(retail, "Reports")
         Dim miLow As ToolStripMenuItem = GetOrCreateSubMenu(reports, "Low Stock")
@@ -97,6 +135,11 @@ Partial Class MainDashboard
         Dim miHist As ToolStripMenuItem = GetOrCreateSubMenu(reports, "Price History")
         RemoveHandler miHist.Click, AddressOf OpenPriceHistoryReport
         AddHandler miHist.Click, AddressOf OpenPriceHistoryReport
+        
+        ' Print Barcode Labels (standalone menu item)
+        Dim miPrintBarcodes As ToolStripMenuItem = GetOrCreateSubMenu(retail, "Print Barcode Labels")
+        RemoveHandler miPrintBarcodes.Click, AddressOf OpenBarcodeLabelPrint
+        AddHandler miPrintBarcodes.Click, AddressOf OpenBarcodeLabelPrint
     End Sub
 
     Private Function GetOrCreateTopMenu(text As String) As ToolStripMenuItem
@@ -234,6 +277,117 @@ Partial Class MainDashboard
             frm.WindowState = FormWindowState.Maximized
         Catch ex As Exception
             MessageBox.Show("Error opening Manufacturing → Retail Receiving: " & ex.Message, "Retail", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ' IBT Workflow Event Handlers - Request Products (I request from another branch)
+    Private Sub OpenNewRequest(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New Forms.IBT.InternalPurchaseOrderForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening New Request: " & ex.Message, "IBT", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenMyRequests(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New MyRequestsStatusForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening My Requests Status: " & ex.Message, "IBT", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenInTransitToMe(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New Forms.IBT.InTransitDeliveriesForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening In-Transit to Me: " & ex.Message, "IBT", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenReceiveDelivery(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New Forms.IBT.InTransitDeliveriesForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Receive Delivery: " & ex.Message, "IBT", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ' IBT Workflow Event Handlers - Requested Products (Another branch requested from me)
+    Private Sub OpenPendingApproval(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New Forms.IBT.PendingRequestsForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Pending Approval: " & ex.Message, "IBT", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenCreateDelivery(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New Forms.IBT.PendingRequestsForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Create Delivery: " & ex.Message, "IBT", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenDispatchedByMe(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New DispatchedItemsForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Dispatched by Me: " & ex.Message, "IBT", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenDeliveredItems(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New Forms.IBT.DeliveredItemsForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Delivered Items: " & ex.Message, "IBT", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenInterBranchLedger(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New Forms.IBT.InterBranchLedgerForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Inter-Branch Ledger: " & ex.Message, "IBT", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenBarcodeLabelPrint(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New BarcodeLabelPrintForm()
+            frm.StartPosition = FormStartPosition.CenterParent
+            frm.ShowDialog(Me)
+        Catch ex As Exception
+            MessageBox.Show("Error opening Barcode Label Print: " & ex.Message & vbCrLf & vbCrLf & "Stack Trace: " & ex.StackTrace, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 

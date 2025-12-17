@@ -218,8 +218,8 @@ Public Class PurchaseOrderForm
         ' Optional unit cost (can be blank/null). We keep DataPropertyName = UnitCost to avoid backend changes
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "UnitCost", .HeaderText = "Unit Price (Incl VAT)", .DataPropertyName = "UnitCost", .Width = 130, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}})
         ' Guidance prices
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LastPaidPrice", .HeaderText = "Last Paid", .ReadOnly = True, .Width = 100, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .ForeColor = Color.FromArgb(90, 90, 90), .Format = "N2"}})
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LastCost", .HeaderText = "Last Cost", .ReadOnly = True, .Width = 100, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .ForeColor = Color.FromArgb(120, 120, 120), .Format = "N2"}})
+        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LastPaidPrice", .HeaderText = "Last Paid (Incl)", .ReadOnly = True, .Width = 100, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .ForeColor = Color.FromArgb(90, 90, 90), .Format = "N2"}})
+        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LastCost", .HeaderText = "Avg Cost (Incl)", .ReadOnly = True, .Width = 100, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .ForeColor = Color.FromArgb(120, 120, 120), .Format = "N2"}})
         ' Expected total uses UnitCost if provided, otherwise LastPaidPrice
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LineTotal", .HeaderText = "Expected Total", .ReadOnly = True, .Width = 120, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}})
         AddHandler dgvLines.CellValueChanged, AddressOf dgvLines_CellValueChanged

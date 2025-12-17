@@ -105,12 +105,12 @@ Partial Class MainDashboard
         ' Initialize services
         InitializeServices()
 
-        ' Sidebar: host once on parent (non-invasive to children)
-        Try
-            SetupSidebar()
-        Catch
-            ' Do not block dashboard if sidebar fails
-        End Try
+        ' Sidebar: DISABLED - Using menu strip with role-based access only
+        ' Try
+        '     SetupSidebar()
+        ' Catch
+        '     ' Do not block dashboard if sidebar fails
+        ' End Try
 
         ' Add brand strip and logo, and ensure dashboard is visible with charts
         Try
@@ -2356,6 +2356,13 @@ Partial Class MainDashboard
                 System.Diagnostics.Debug.WriteLine($"Error setting up stock report menus: {ex.Message}")
             End Try
             
+            ' Sync menus to MenuRegistry automatically
+            Try
+                SyncMenusToRegistry()
+            Catch ex As Exception
+                System.Diagnostics.Debug.WriteLine($"Error syncing menus to registry: {ex.Message}")
+            End Try
+            
             ' Apply role-based menu permissions
             Try
                 ApplyRoleBasedMenuPermissions()
@@ -2366,6 +2373,84 @@ Partial Class MainDashboard
         End Try
     End Sub
 
+    Private Sub SyncMenusToRegistry()
+        ' Automatically sync all menus to MenuRegistry table
+        ' This ensures new menus are immediately available in Role Access Management
+        Try
+            If Me.MenuStrip1 Is Nothing Then Return
+            
+            Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                conn.Open()
+                
+                ' Get existing menus from registry
+                Dim existingMenus As New HashSet(Of String)
+                Dim sql = "SELECT MenuName, SubMenuName FROM MenuRegistry"
+                Using cmd As New SqlCommand(sql, conn)
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            Dim menuName = reader("MenuName").ToString()
+                            Dim subMenuName = If(IsDBNull(reader("SubMenuName")), Nothing, reader("SubMenuName").ToString())
+                            Dim key = If(String.IsNullOrEmpty(subMenuName), menuName, $"{menuName}|{subMenuName}")
+                            existingMenus.Add(key)
+                        End While
+                    End Using
+                End Using
+                
+                ' Scan current menus and add missing ones
+                Dim newMenusAdded As Integer = 0
+                Dim displayOrder As Integer = 1
+                
+                For Each topItem As ToolStripMenuItem In Me.MenuStrip1.Items.OfType(Of ToolStripMenuItem)()
+                    Dim mainMenuName = topItem.Text.Replace("&", "").Trim()
+                    
+                    ' Skip Exit menu
+                    If mainMenuName.Contains("Exit") Then Continue For
+                    
+                    ' Add main menu if not exists
+                    If Not existingMenus.Contains(mainMenuName) Then
+                        Dim sqlInsert = "INSERT INTO MenuRegistry (MenuName, SubMenuName, DisplayOrder, IsActive) VALUES (@menuName, NULL, @displayOrder, 1)"
+                        Using cmd As New SqlCommand(sqlInsert, conn)
+                            cmd.Parameters.AddWithValue("@menuName", mainMenuName)
+                            cmd.Parameters.AddWithValue("@displayOrder", displayOrder)
+                            cmd.ExecuteNonQuery()
+                            newMenusAdded += 1
+                        End Using
+                        existingMenus.Add(mainMenuName)
+                    End If
+                    
+                    ' Add sub-menus
+                    Dim subOrder As Integer = 1
+                    For Each subItem As ToolStripMenuItem In topItem.DropDownItems.OfType(Of ToolStripMenuItem)()
+                        Dim subMenuName = subItem.Text.Replace("&", "").Trim()
+                        Dim key = $"{mainMenuName}|{subMenuName}"
+                        
+                        If Not existingMenus.Contains(key) Then
+                            Dim sqlInsert = "INSERT INTO MenuRegistry (MenuName, SubMenuName, DisplayOrder, IsActive) VALUES (@menuName, @subMenuName, @displayOrder, 1)"
+                            Using cmd As New SqlCommand(sqlInsert, conn)
+                                cmd.Parameters.AddWithValue("@menuName", mainMenuName)
+                                cmd.Parameters.AddWithValue("@subMenuName", subMenuName)
+                                cmd.Parameters.AddWithValue("@displayOrder", subOrder)
+                                cmd.ExecuteNonQuery()
+                                newMenusAdded += 1
+                            End Using
+                            existingMenus.Add(key)
+                        End If
+                        subOrder += 1
+                    Next
+                    
+                    displayOrder += 1
+                Next
+                
+                If newMenusAdded > 0 Then
+                    System.Diagnostics.Debug.WriteLine($"Auto-synced {newMenusAdded} new menu(s) to MenuRegistry")
+                End If
+            End Using
+            
+        Catch ex As Exception
+            System.Diagnostics.Debug.WriteLine($"Error in SyncMenusToRegistry: {ex.Message}")
+        End Try
+    End Sub
+    
     Private Sub ApplyRoleBasedMenuPermissions()
         ' Super Administrator has access to everything - skip permission check
         If AppSession.CurrentRoleName IsNot Nothing AndAlso 
@@ -2379,6 +2464,7 @@ Partial Class MainDashboard
         
         Try
             Dim permissions As New Dictionary(Of String, Boolean)
+            Dim hasAnyPermissions As Boolean = False
             
             Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
                 conn.Open()
@@ -2390,6 +2476,7 @@ Partial Class MainDashboard
                     
                     Using reader = cmd.ExecuteReader()
                         While reader.Read()
+                            hasAnyPermissions = True
                             Dim menuName = reader("MenuName").ToString()
                             Dim subMenuName = If(IsDBNull(reader("SubMenuName")), Nothing, reader("SubMenuName").ToString())
                             Dim hasAccess = CBool(reader("HasAccess"))
@@ -2401,6 +2488,19 @@ Partial Class MainDashboard
                 End Using
             End Using
             
+            ' If no permissions defined for this role, hide all menus except Exit
+            If Not hasAnyPermissions Then
+                System.Diagnostics.Debug.WriteLine($"No permissions found for RoleID {roleID}. Hiding all menus.")
+                If Me.MenuStrip1 IsNot Nothing Then
+                    For Each item As ToolStripMenuItem In Me.MenuStrip1.Items
+                        If Not item.Text.Contains("Exit") Then
+                            item.Visible = False
+                        End If
+                    Next
+                End If
+                Return
+            End If
+            
             ' Apply permissions to MenuStrip
             If Me.MenuStrip1 IsNot Nothing Then
                 For Each item As ToolStripMenuItem In Me.MenuStrip1.Items
@@ -2410,36 +2510,37 @@ Partial Class MainDashboard
                     ' Check main menu permission
                     Dim mainMenuName = item.Text.Replace("&", "").Trim()
                     
+                    ' Default to no access if not in permissions
+                    Dim hasMainAccess As Boolean = False
                     If permissions.ContainsKey(mainMenuName) Then
-                        Dim hasAccess = permissions(mainMenuName)
-                        item.Enabled = hasAccess
-                        item.ForeColor = If(hasAccess, Color.Black, Color.Gray)
-                        
-                        ' If main menu is disabled, disable all sub-menus
-                        If Not hasAccess Then
-                            For Each subItem As ToolStripMenuItem In item.DropDownItems.OfType(Of ToolStripMenuItem)()
-                                subItem.Enabled = False
-                                subItem.ForeColor = Color.Gray
-                            Next
-                        Else
-                            ' Check individual sub-menu permissions
-                            For Each subItem As ToolStripMenuItem In item.DropDownItems.OfType(Of ToolStripMenuItem)()
-                                Dim subMenuName = subItem.Text.Replace("&", "").Trim()
-                                Dim subKey = $"{mainMenuName}|{subMenuName}"
-                                
-                                If permissions.ContainsKey(subKey) Then
-                                    Dim subHasAccess = permissions(subKey)
-                                    subItem.Enabled = subHasAccess
-                                    subItem.ForeColor = If(subHasAccess, Color.Black, Color.Gray)
-                                End If
-                            Next
-                        End If
+                        hasMainAccess = permissions(mainMenuName)
+                    End If
+                    
+                    ' Hide/show main menu based on access
+                    item.Visible = hasMainAccess
+                    
+                    ' If main menu has access, check individual sub-menu permissions
+                    If hasMainAccess Then
+                        For Each subItem As ToolStripMenuItem In item.DropDownItems.OfType(Of ToolStripMenuItem)()
+                            Dim subMenuName = subItem.Text.Replace("&", "").Trim()
+                            Dim subKey = $"{mainMenuName}|{subMenuName}"
+                            
+                            ' Default to no access if not in permissions
+                            Dim hasSubAccess As Boolean = False
+                            If permissions.ContainsKey(subKey) Then
+                                hasSubAccess = permissions(subKey)
+                            End If
+                            
+                            ' Hide/show sub-menu based on access
+                            subItem.Visible = hasSubAccess
+                        Next
                     End If
                 Next
             End If
             
         Catch ex As Exception
             System.Diagnostics.Debug.WriteLine($"Error in ApplyRoleBasedMenuPermissions: {ex.Message}")
+            MessageBox.Show($"Error applying menu permissions: {ex.Message}", "Security Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End Try
     End Sub
 
@@ -2618,6 +2719,64 @@ Partial Class MainDashboard
         Dim miSystemSettings As ToolStripMenuItem = EnsureSubMenu(admin, "System Settings")
         RemoveHandler miSystemSettings.Click, AddressOf OpenSystemSettings
         AddHandler miSystemSettings.Click, AddressOf OpenSystemSettings
+        
+        ' Menu Registry Scanner
+        Dim miMenuScanner As ToolStripMenuItem = EnsureSubMenu(admin, "Menu Registry Scanner")
+        RemoveHandler miMenuScanner.Click, AddressOf OpenMenuRegistryScanner
+        AddHandler miMenuScanner.Click, AddressOf OpenMenuRegistryScanner
+        
+        ' Reset Day End
+        Dim miResetDayEnd As ToolStripMenuItem = EnsureSubMenu(admin, "Reset Day End")
+        RemoveHandler miResetDayEnd.Click, AddressOf OpenResetDayEnd
+        AddHandler miResetDayEnd.Click, AddressOf OpenResetDayEnd
+    End Sub
+    
+    Private Sub OpenMenuRegistryScanner(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New MenuRegistryScannerForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show($"Error opening Menu Registry Scanner: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    
+    Private Sub OpenResetDayEnd(sender As Object, e As EventArgs)
+        Try
+            ' Check if user is Administrator
+            If currentUser Is Nothing Then
+                MessageBox.Show("Access Denied. Please log in.", "Access Denied", MessageBoxButtons.OK, MessageBoxIcon.Stop)
+                Return
+            End If
+            
+            ' Get role name from database
+            Dim roleName As String = ""
+            Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                conn.Open()
+                Dim sql = "SELECT RoleName FROM Roles WHERE RoleID = @RoleID"
+                Using cmd As New SqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@RoleID", currentUser.RoleID)
+                    Dim result = cmd.ExecuteScalar()
+                    If result IsNot Nothing Then
+                        roleName = result.ToString()
+                    End If
+                End Using
+            End Using
+            
+            If Not roleName.Equals("Administrator", StringComparison.OrdinalIgnoreCase) Then
+                MessageBox.Show("Access Denied. Only Administrators can reset day-end.", "Access Denied", MessageBoxButtons.OK, MessageBoxIcon.Stop)
+                Return
+            End If
+            
+            Dim frm As New ResetDayEndForm(currentUser.UserID, currentUser.Username)
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Normal
+            frm.StartPosition = FormStartPosition.CenterScreen
+        Catch ex As Exception
+            MessageBox.Show($"Error opening Reset Day End: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub OpenSystemSettings(sender As Object, e As EventArgs)
@@ -4442,10 +4601,8 @@ Partial Class MainDashboard
 
     Private Sub OpenContinuousPrinterSetup(sender As Object, e As EventArgs)
         Try
-            MessageBox.Show("Continuous Printer Setup form coming soon!" & vbCrLf & vbCrLf & 
-                          "This will allow you to configure network printer settings for continuous feed receipt printing.", 
-                          "Utilities", MessageBoxButtons.OK, MessageBoxIcon.Information)
-            ' TODO: Create ContinuousPrinterSetupForm
+            Dim form As New ReceiptTemplateDesigner()
+            form.ShowDialog()
             ' For Each child As Form In Me.MdiChildren
             '     If TypeOf child Is ContinuousPrinterSetupForm Then
             '         child.Activate()

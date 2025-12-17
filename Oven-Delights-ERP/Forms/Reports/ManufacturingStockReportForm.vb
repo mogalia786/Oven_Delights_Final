@@ -23,6 +23,10 @@ Public Class ManufacturingStockReportForm
         End If
 
         LoadBranches()
+        AddHandler Me.Load, AddressOf Form_Load
+    End Sub
+
+    Private Sub Form_Load(sender As Object, e As EventArgs)
         LoadReport()
     End Sub
 
@@ -55,20 +59,27 @@ Public Class ManufacturingStockReportForm
     Private Sub LoadReport()
         Try
             Dim branchId As Integer = If(isSuperAdmin AndAlso cboBranch.SelectedValue IsNot Nothing, Convert.ToInt32(cboBranch.SelectedValue), currentBranchId)
-            
+
             Using con As New SqlConnection(connectionString)
-                Dim sql = "SELECT mi.MaterialID, rm.MaterialCode, rm.MaterialName, " &
-                         "ISNULL(rm.MaterialType, 'Ingredient') AS MaterialType, " &
-                         "ISNULL(rm.UnitOfMeasure, rm.BaseUnit) AS UnitOfMeasure, " &
-                         "mi.QtyOnHand, mi.AverageCost, " &
-                         "(mi.QtyOnHand * mi.AverageCost) AS StockValue, " &
-                         "mi.LastUpdated, b.BranchName " &
-                         "FROM Manufacturing_Inventory mi " &
-                         "INNER JOIN RawMaterials rm ON rm.MaterialID = mi.MaterialID " &
-                         "INNER JOIN Branches b ON b.BranchID = mi.BranchID " &
-                         "WHERE mi.BranchID = @BranchID " &
-                         "AND mi.QtyOnHand > 0 " &
-                         "ORDER BY rm.MaterialName"
+                ' Query fulfilled BOM ingredients (materials sent to manufacturing)
+                Dim sql = "SELECT " &
+                         "brf.FulfillmentID AS MaterialID, " &
+                         "brf.IngredientName AS MaterialCode, " &
+                         "brf.IngredientName AS MaterialName, " &
+                         "'Ingredient' AS MaterialType, " &
+                         "brf.UnitOfMeasure AS UnitOfMeasure, " &
+                         "SUM(brf.QuantityRequired - ISNULL(brf.QuantityFulfilled, 0)) AS QtyOnHand, " &
+                         "0 AS AverageCost, " &
+                         "0 AS StockValue, " &
+                         "MAX(brf.FulfilledDate) AS LastUpdated, " &
+                         "b.BranchName " &
+                         "FROM BOMRequisitionFulfillment brf " &
+                         "INNER JOIN ReOrderBooks rob ON rob.ReOrderBookID = brf.ReOrderBookID " &
+                         "INNER JOIN Branches b ON b.BranchID = rob.BranchID " &
+                         "WHERE rob.BranchID = @BranchID " &
+                         "AND brf.QuantityRequired > ISNULL(brf.QuantityFulfilled, 0) " &
+                         "GROUP BY brf.FulfillmentID, brf.IngredientName, brf.UnitOfMeasure, b.BranchName " &
+                         "ORDER BY brf.IngredientName"
 
                 Using ad As New SqlDataAdapter(sql, con)
                     ad.SelectCommand.Parameters.AddWithValue("@BranchID", branchId)

@@ -149,7 +149,8 @@ Public Class PurchaseOrderFormNew
         dgvLines.Columns.Add(productCol)
         
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "Qty", .HeaderText = "Quantity", .Width = 100, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}})
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "UnitPrice", .HeaderText = "Unit Price (Incl VAT)", .Width = 140, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}})
+        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "UnitPrice", .HeaderText = "Unit Price (Excl VAT)", .Width = 140, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}})
+        dgvLines.Columns.Add(New DataGridViewCheckBoxColumn With {.Name = "IsVatable", .HeaderText = "VATable", .Width = 80, .TrueValue = True, .FalseValue = False})
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LastPaid", .HeaderText = "Last Paid", .Width = 120, .ReadOnly = True, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2", .ForeColor = Color.FromArgb(100, 100, 100)}})
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LastCost", .HeaderText = "Avg Cost", .Width = 120, .ReadOnly = True, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2", .ForeColor = Color.FromArgb(120, 120, 120)}})
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LineTotal", .HeaderText = "Line Total", .Width = 140, .ReadOnly = True, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2", .Font = New Font("Segoe UI", 10.0F, FontStyle.Bold)}})
@@ -223,9 +224,16 @@ Public Class PurchaseOrderFormNew
     Private Sub LoadProductLookup()
         productLookup.Clear()
         If allProducts IsNot Nothing Then
+            Dim currentBranchProducts As New Dictionary(Of String, Integer)()
+            Dim otherBranchProducts As New Dictionary(Of String, Integer)()
+            
+            ' Separate products by branch - prefer current branch
             For Each row As DataRow In allProducts.Rows
                 Dim name As String = row("MaterialName").ToString()
                 Dim id As Integer = Convert.ToInt32(row("MaterialID"))
+                
+                ' Check if this product belongs to current branch (from allProducts query)
+                ' Since we're filtering by branch in GetPOItemsLookup, all should be current branch
                 If Not productLookup.ContainsKey(name) Then
                     productLookup.Add(name, id)
                 End If
@@ -246,8 +254,8 @@ Public Class PurchaseOrderFormNew
     End Sub
 
     Private Sub ProductType_Changed(sender As Object, e As EventArgs)
-        ' Reload products based on type
-        LoadProductLookup()
+        ' Product type dropdown is now informational only - all items are loaded
+        ' No need to reload products
     End Sub
 
     Private Sub Grid_EditingControlShowing(sender As Object, e As DataGridViewEditingControlShowingEventArgs)
@@ -297,45 +305,56 @@ Public Class PurchaseOrderFormNew
         Try
             Dim lastPaid As Decimal = 0
             Dim avgCost As Decimal = 0
+            Dim isVatable As Boolean = True ' Default to true
+            Dim branchId = If(isSuperAdmin AndAlso cboBranch.SelectedValue IsNot Nothing, Convert.ToInt32(cboBranch.SelectedValue), currentBranchId)
             
-            If cboProductType.SelectedIndex = 0 Then
-                ' External Product - Demo_Retail_Price has: CostPrice (Excl VAT), SellingPrice (Incl VAT)
-                Dim branchId = If(isSuperAdmin AndAlso cboBranch.SelectedValue IsNot Nothing, Convert.ToInt32(cboBranch.SelectedValue), currentBranchId)
+            ' Check if this is External Product or Raw Material
+            ' Get latest price from ProductPriceHistory table
+            Using conn As New SqlConnection(connectionString)
+                conn.Open()
                 
-                System.Diagnostics.Debug.WriteLine($"LoadPricesForProduct: ProductID={productId}, BranchID={branchId}")
-                
-                Using conn As New SqlConnection(connectionString)
-                    conn.Open()
-                    ' CostPrice = Last price paid to supplier (Excl VAT)
-                    ' Convert to Incl VAT for display (multiply by 1.15)
-                    Using cmd As New SqlCommand("SELECT ISNULL(CostPrice, 0) * 1.15, ISNULL(CostPrice, 0) FROM dbo.Demo_Retail_Price WHERE ProductID = @id AND BranchID = @branchId", conn)
-                        cmd.Parameters.AddWithValue("@id", productId)
-                        cmd.Parameters.AddWithValue("@branchId", branchId)
-                        Using reader = cmd.ExecuteReader()
-                            If reader.Read() Then
-                                lastPaid = reader.GetDecimal(0)  ' CostPrice * 1.15 (Incl VAT)
-                                avgCost = reader.GetDecimal(1)   ' CostPrice (Excl VAT)
-                                System.Diagnostics.Debug.WriteLine($"FOUND: LastPaid={lastPaid}, AvgCost={avgCost}")
-                            Else
-                                System.Diagnostics.Debug.WriteLine($"NO RECORD FOUND for ProductID={productId}, BranchID={branchId}")
-                            End If
-                        End Using
+                ' First, try to get latest price from price history
+                Using cmd As New SqlCommand("sp_GetLatestProductPrice", conn)
+                    cmd.CommandType = CommandType.StoredProcedure
+                    cmd.Parameters.AddWithValue("@ProductID", productId)
+                    cmd.Parameters.AddWithValue("@BranchID", AppSession.CurrentUser.BranchID)
+                    
+                    Using reader = cmd.ExecuteReader()
+                        If reader.Read() Then
+                            lastPaid = reader.GetDecimal(0) ' CostPrice from price history
+                            ' Show last purchase info in tooltip or status
+                            Dim lastDate = reader.GetDateTime(1)
+                            Dim lastSupplier = reader.GetString(2)
+                            row.Cells("LastPaid").ToolTipText = $"Last purchased from {lastSupplier} on {lastDate:yyyy-MM-dd}"
+                        End If
                     End Using
                 End Using
-            Else
-                ' Raw Material
-                Dim supplierId = GetSupplierID()
-                Dim lpp = service.GetLastPaidPrice(supplierId, productId)
-                If lpp.HasValue Then lastPaid = lpp.Value
-                avgCost = service.GetMaterialLastCost(productId)
-            End If
+                
+                ' Get current average cost and VAT status from Demo_Retail_Price
+                Using cmd As New SqlCommand("SELECT ISNULL(rp.CostPrice, 0), ISNULL(p.IsVatable, 1) FROM Demo_Retail_Product p LEFT JOIN Demo_Retail_Price rp ON p.ProductID = rp.ProductID AND p.BranchID = rp.BranchID WHERE p.ProductID = @id AND p.BranchID = @branch", conn)
+                    cmd.Parameters.AddWithValue("@id", productId)
+                    cmd.Parameters.AddWithValue("@branch", AppSession.CurrentUser.BranchID)
+                    Using reader = cmd.ExecuteReader()
+                        If reader.Read() Then
+                            avgCost = reader.GetDecimal(0)
+                            isVatable = reader.GetBoolean(1)
+                        End If
+                    End Using
+                End Using
+            End Using
             
-            row.Cells("LastPaid").Value = lastPaid
+            ' Set the values
+            row.Cells("LastPaid").Value = If(lastPaid > 0, lastPaid, avgCost)
             row.Cells("LastCost").Value = avgCost
+            row.Cells("IsVatable").Value = isVatable
             
-            ' Auto-fill unit price if empty
+            ' Auto-fill unit price with last paid if empty
+            ' IMPORTANT: UnitPrice column is "Unit Price (Excl VAT)"
+            ' Prices stored in ProductPriceHistory and Demo_Retail_Price are ALREADY Excl VAT
+            ' No conversion needed - use price as-is regardless of vatable status
             If row.Cells("UnitPrice").Value Is Nothing OrElse Convert.ToDecimal(row.Cells("UnitPrice").Value) = 0 Then
-                row.Cells("UnitPrice").Value = If(lastPaid > 0, lastPaid, avgCost)
+                Dim priceToUse As Decimal = If(lastPaid > 0, lastPaid, avgCost)
+                row.Cells("UnitPrice").Value = priceToUse
             End If
             
             CalculateLineTotal(row)
@@ -348,7 +367,9 @@ Public Class PurchaseOrderFormNew
         If e.RowIndex < 0 Then Return
         Dim row = dgvLines.Rows(e.RowIndex)
         
-        If e.ColumnIndex = dgvLines.Columns("Qty").Index OrElse e.ColumnIndex = dgvLines.Columns("UnitPrice").Index Then
+        If e.ColumnIndex = dgvLines.Columns("Qty").Index OrElse 
+           e.ColumnIndex = dgvLines.Columns("UnitPrice").Index OrElse
+           e.ColumnIndex = dgvLines.Columns("IsVatable").Index Then
             CalculateLineTotal(row)
         End If
     End Sub
@@ -356,16 +377,23 @@ Public Class PurchaseOrderFormNew
     Private Sub CalculateLineTotal(row As DataGridViewRow)
         Try
             Dim qty As Decimal = 0
-            Dim price As Decimal = 0
+            Dim priceExclVAT As Decimal = 0
+            Dim isVatable As Boolean = False
             
             If row.Cells("Qty").Value IsNot Nothing Then
                 Decimal.TryParse(row.Cells("Qty").Value.ToString(), qty)
             End If
             If row.Cells("UnitPrice").Value IsNot Nothing Then
-                Decimal.TryParse(row.Cells("UnitPrice").Value.ToString(), price)
+                Decimal.TryParse(row.Cells("UnitPrice").Value.ToString(), priceExclVAT)
+            End If
+            If row.Cells("IsVatable").Value IsNot Nothing Then
+                Boolean.TryParse(row.Cells("IsVatable").Value.ToString(), isVatable)
             End If
             
-            row.Cells("LineTotal").Value = qty * price
+            ' Line Total = Qty * Price INCLUDING VAT
+            Dim priceInclVAT As Decimal = If(isVatable, priceExclVAT * 1.15D, priceExclVAT)
+            row.Cells("LineTotal").Value = qty * priceInclVAT
+            
             RecalculateTotals()
         Catch ex As Exception
             System.Diagnostics.Debug.WriteLine($"Error calculating line total: {ex.Message}")
@@ -378,25 +406,42 @@ Public Class PurchaseOrderFormNew
             ' LineTotal = Qty * UnitPrice = INCLUDING VAT (e.g., 100 * 345 = 34,500)
             ' Total = Sum of LineTotals = INCLUDING VAT (e.g., 34,500)
             ' CALCULATE BACKWARDS:
-            ' SubTotal = Total ÷ 1.15 = EXCLUDING VAT (e.g., 34,500 ÷ 1.15 = 30,000)
-            ' VAT = Total - SubTotal (e.g., 34,500 - 30,000 = 4,500)
+            ' Calculate totals - price entered is actual price paid
+            ' Vatable items: Price includes VAT, so SubTotal = Price/1.15, VAT = Price - SubTotal
+            ' Non-vatable items: Price has no VAT, so SubTotal = Price, VAT = 0
+            ' Example: Apple R100 (vatable) → SubTotal R86.96, VAT R13.04
+            '          Flour R10 (non-vatable) → SubTotal R10, VAT R0
+            '          Total: SubTotal R96.96, VAT R13.04, Total R110
             
-            Dim totalInclVAT As Decimal = 0
+            Dim subTotalVatable As Decimal = 0
+            Dim subTotalNonVatable As Decimal = 0
+            Dim vatTotal As Decimal = 0
             
             For Each row As DataGridViewRow In dgvLines.Rows
                 If row.IsNewRow Then Continue For
                 If row.Cells("LineTotal").Value IsNot Nothing Then
-                    totalInclVAT += Convert.ToDecimal(row.Cells("LineTotal").Value)
+                    Dim lineTotal As Decimal = Convert.ToDecimal(row.Cells("LineTotal").Value)
+                    Dim isVatable As Boolean = If(row.Cells("IsVatable").Value IsNot Nothing, Convert.ToBoolean(row.Cells("IsVatable").Value), True)
+                    
+                    If isVatable Then
+                        ' Price includes VAT - extract excl VAT and VAT amount
+                        Dim lineTotalExclVAT As Decimal = Math.Round(lineTotal / 1.15D, 2)
+                        Dim lineVAT As Decimal = lineTotal - lineTotalExclVAT
+                        subTotalVatable += lineTotalExclVAT
+                        vatTotal += lineVAT
+                    Else
+                        ' Price has no VAT - it's already excl VAT
+                        subTotalNonVatable += lineTotal
+                    End If
                 End If
             Next
             
-            ' Calculate BACKWARDS from VAT-inclusive total
-            Dim subTotal As Decimal = Math.Round(totalInclVAT / 1.15D, 2)
-            Dim vat As Decimal = Math.Round(totalInclVAT - subTotal, 2)
+            Dim subTotal As Decimal = subTotalVatable + subTotalNonVatable
+            Dim total As Decimal = subTotal + vatTotal
             
-            txtSubTotal.Text = subTotal.ToString("N2")  ' Excl VAT (calculated)
-            txtVAT.Text = vat.ToString("N2")            ' VAT amount (calculated)
-            txtTotal.Text = totalInclVAT.ToString("N2") ' Incl VAT (entered)
+            txtSubTotal.Text = subTotal.ToString("N2")  ' Excl VAT
+            txtVAT.Text = vatTotal.ToString("N2")       ' VAT amount (only on vatable items)
+            txtTotal.Text = total.ToString("N2")        ' Total
         Catch ex As Exception
             System.Diagnostics.Debug.WriteLine($"Error calculating totals: {ex.Message}")
         End Try
@@ -424,27 +469,43 @@ Public Class PurchaseOrderFormNew
                 Return
             End If
             
-            ' Collect lines
+            ' Collect lines and update IsVatable status
             Dim lines As New List(Of (ProductID As Integer, Qty As Decimal, Price As Decimal))
-            For Each row As DataGridViewRow In dgvLines.Rows
-                If row.IsNewRow Then Continue For
-                If row.Cells("ProductID").Value Is Nothing Then Continue For
+            Dim branchId = If(isSuperAdmin AndAlso cboBranch.SelectedValue IsNot Nothing, Convert.ToInt32(cboBranch.SelectedValue), currentBranchId)
+            
+            Using conn As New SqlConnection(connectionString)
+                conn.Open()
                 
-                Dim pid = Convert.ToInt32(row.Cells("ProductID").Value)
-                Dim qty As Decimal = 0
-                Dim price As Decimal = 0
-                
-                If row.Cells("Qty").Value IsNot Nothing Then
-                    Decimal.TryParse(row.Cells("Qty").Value.ToString(), qty)
-                End If
-                If row.Cells("UnitPrice").Value IsNot Nothing Then
-                    Decimal.TryParse(row.Cells("UnitPrice").Value.ToString(), price)
-                End If
-                
-                If qty > 0 AndAlso price > 0 Then
-                    lines.Add((pid, qty, price))
-                End If
-            Next
+                For Each row As DataGridViewRow In dgvLines.Rows
+                    If row.IsNewRow Then Continue For
+                    If row.Cells("ProductID").Value Is Nothing Then Continue For
+                    
+                    Dim pid = Convert.ToInt32(row.Cells("ProductID").Value)
+                    Dim qty As Decimal = 0
+                    Dim price As Decimal = 0
+                    Dim isVatable As Boolean = If(row.Cells("IsVatable").Value IsNot Nothing, Convert.ToBoolean(row.Cells("IsVatable").Value), True)
+                    
+                    If row.Cells("Qty").Value IsNot Nothing Then
+                        Decimal.TryParse(row.Cells("Qty").Value.ToString(), qty)
+                    End If
+                    If row.Cells("UnitPrice").Value IsNot Nothing Then
+                        Decimal.TryParse(row.Cells("UnitPrice").Value.ToString(), price)
+                    End If
+                    
+                    If qty > 0 AndAlso price > 0 Then
+                        lines.Add((pid, qty, price))
+                        
+                        ' Update IsVatable in Demo_Retail_Product for this branch
+                        Dim updateVatSql = "UPDATE Demo_Retail_Product SET IsVatable = @IsVatable WHERE ProductID = @ProductID AND BranchID = @BranchID"
+                        Using cmd As New SqlCommand(updateVatSql, conn)
+                            cmd.Parameters.AddWithValue("@IsVatable", isVatable)
+                            cmd.Parameters.AddWithValue("@ProductID", pid)
+                            cmd.Parameters.AddWithValue("@BranchID", branchId)
+                            cmd.ExecuteNonQuery()
+                        End Using
+                    End If
+                Next
+            End Using
             
             If lines.Count = 0 Then
                 MessageBox.Show("Please add at least one line item", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
@@ -452,7 +513,6 @@ Public Class PurchaseOrderFormNew
             End If
             
             ' Save PO
-            Dim branchId = If(isSuperAdmin AndAlso cboBranch.SelectedValue IsNot Nothing, Convert.ToInt32(cboBranch.SelectedValue), currentBranchId)
             Dim isExternal = (cboProductType.SelectedIndex = 0)
             
             Dim poNumber = service.CreatePurchaseOrder(

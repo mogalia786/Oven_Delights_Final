@@ -250,6 +250,7 @@ Partial Class MainDashboard
         pnlSidebar.Padding = New Padding(12)
         pnlSidebar.Size = New Size(220, 899)
         pnlSidebar.TabIndex = 1
+        pnlSidebar.Visible = False
         ' 
         ' lblSidebarTitle
         ' 

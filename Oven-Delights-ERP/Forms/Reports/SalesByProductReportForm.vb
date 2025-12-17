@@ -71,12 +71,38 @@ Public Class SalesByProductReportForm
             Dim dt As New DataTable()
             Using conn As New SqlConnection(connectionString)
                 conn.Open()
-                Using cmd As New SqlCommand("sp_Report_SalesByProduct", conn)
-                    cmd.CommandType = CommandType.StoredProcedure
+                
+                Dim sql = "SELECT 
+                            i.ProductName,
+                            p.Category,
+                            SUM(i.Quantity) AS TotalQuantity,
+                            SUM(i.LineTotal) AS TotalSales,
+                            COUNT(DISTINCT i.InvoiceNumber) AS TransactionCount,
+                            AVG(i.UnitPrice) AS AvgPrice
+                          FROM Invoices i
+                          LEFT JOIN Demo_Retail_Product p ON p.ProductID = i.ProductID
+                          WHERE i.SaleDate BETWEEN @StartDate AND @EndDate"
+                
+                Dim branchID = GetSelectedBranchID()
+                If branchID > 0 Then
+                    sql &= " AND i.BranchID = @BranchID"
+                End If
+                
+                If categoryID > 0 Then
+                    sql &= " AND p.CategoryID = @CategoryID"
+                End If
+                
+                sql &= " GROUP BY i.ProductName, p.Category ORDER BY TotalSales DESC"
+                
+                Using cmd As New SqlCommand(sql, conn)
                     cmd.Parameters.AddWithValue("@StartDate", dtpStartDate.Value.Date)
                     cmd.Parameters.AddWithValue("@EndDate", dtpEndDate.Value.Date)
-                    cmd.Parameters.AddWithValue("@BranchID", GetSelectedBranchID())
-                    cmd.Parameters.AddWithValue("@CategoryID", categoryID)
+                    If branchID > 0 Then
+                        cmd.Parameters.AddWithValue("@BranchID", branchID)
+                    End If
+                    If categoryID > 0 Then
+                        cmd.Parameters.AddWithValue("@CategoryID", categoryID)
+                    End If
 
                     Using adapter As New SqlDataAdapter(cmd)
                         adapter.Fill(dt)

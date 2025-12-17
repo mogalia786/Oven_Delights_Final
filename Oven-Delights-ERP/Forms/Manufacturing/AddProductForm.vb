@@ -30,6 +30,7 @@ Namespace Manufacturing
         Private txtReorderLevel As TextBox
         Private txtReorderQuantity As TextBox
         Private chkIsActive As CheckBox
+        Private chkIsVatable As CheckBox
         Private btnSave As Button
         Private btnCancel As Button
         Private btnUploadImage As Button
@@ -247,17 +248,31 @@ Namespace Manufacturing
             pnlPricing.Controls.AddRange({lblPricingHeader, lblLastPaid, txtLastPaidPrice, lblAvgCost, txtAverageCost, lblReorder, txtReorderLevel, lblReorderQty, txtReorderQuantity})
             y += 120
 
-            ' Active checkbox
+            ' Active and VATable checkboxes
             chkIsActive = New CheckBox() With {
                 .Text = "✓ Product is Active",
                 .Left = 0,
                 .Top = y,
                 .Checked = True,
                 .Font = New Font("Segoe UI", 10, FontStyle.Bold),
-                .ForeColor = ColorDark
+                .ForeColor = ColorDark,
+                .AutoSize = True
+            }
+            
+            chkIsVatable = New CheckBox() With {
+                .Name = "chkIsVatable",
+                .Text = "✓ VATable (15% VAT)",
+                .Left = 200,
+                .Top = y,
+                .Checked = True,
+                .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+                .ForeColor = Color.FromArgb(0, 120, 0),
+                .BackColor = Color.FromArgb(240, 255, 240),
+                .AutoSize = True,
+                .Padding = New Padding(5)
             }
 
-            pnlLeft.Controls.AddRange({lblName, txtProductName, lblCode, txtProductCode, lblSKU, txtSKU, picBarcode, lblItemType, cmbItemType, lblCategory, categorySelector, lblDesc, txtDescription, pnlPricing, chkIsActive})
+            pnlLeft.Controls.AddRange({lblName, txtProductName, lblCode, txtProductCode, lblSKU, txtSKU, picBarcode, lblItemType, cmbItemType, lblCategory, categorySelector, lblDesc, txtDescription, pnlPricing, chkIsActive, chkIsVatable})
 
             ' Right side - Image upload
             Dim pnlRight As New Panel() With {.Left = 540, .Top = 0, .Width = 300, .Height = 650}
@@ -584,61 +599,61 @@ Namespace Manufacturing
         Private Sub SaveProduct()
             Using con As New SqlConnection(_connectionString)
                 con.Open()
-                Using tx = con.BeginTransaction()
-                    Try
-                        ' Get category ID (subcategory not used)
-                        Dim categoryId As Integer = categorySelector.SelectedCategoryId
-                        Dim subcategoryId As Integer = 0 ' Not using subcategory
+                
+                Try
+                    ' Get category ID (subcategory not used)
+                    Dim categoryId As Integer = categorySelector.SelectedCategoryId
+                    Dim subcategoryId As Integer = 0 ' Not using subcategory
 
-                        ' Validate category exists
-                        If categoryId <= 0 Then
-                            Throw New Exception("Please select a valid Category.")
+                    ' Validate category exists
+                    If categoryId <= 0 Then
+                        Throw New Exception("Please select a valid Category.")
+                    End If
+
+                    ' Parse numeric values
+                    Dim costPrice As Decimal = 0D
+                    Decimal.TryParse(txtAverageCost.Text, costPrice)
+
+                    Dim sellingPrice As Decimal = 0D
+                    Decimal.TryParse(txtLastPaidPrice.Text, sellingPrice)
+
+                    ' Use stored procedure to save product to ALL branches
+                    Using cmd As New SqlCommand("sp_SaveProductToAllBranches", con)
+                        cmd.CommandType = CommandType.StoredProcedure
+                        
+                        cmd.Parameters.AddWithValue("@ProductName", txtProductName.Text.Trim())
+                        cmd.Parameters.AddWithValue("@ProductCode", txtProductCode.Text.Trim())
+                        cmd.Parameters.AddWithValue("@SKU", If(String.IsNullOrWhiteSpace(txtSKU.Text), DBNull.Value, CType(txtSKU.Text.Trim(), Object)))
+                        cmd.Parameters.AddWithValue("@CategoryID", categoryId)
+                        cmd.Parameters.AddWithValue("@SubcategoryID", DBNull.Value)
+                        cmd.Parameters.AddWithValue("@ItemType", If(cmbItemType.SelectedItem IsNot Nothing, cmbItemType.SelectedItem.ToString(), "internal"))
+                        cmd.Parameters.AddWithValue("@IsActive", chkIsActive.Checked)
+                        cmd.Parameters.AddWithValue("@IsVatable", chkIsVatable.Checked)
+                        cmd.Parameters.AddWithValue("@CostPrice", costPrice)
+                        cmd.Parameters.AddWithValue("@SellingPrice", sellingPrice)
+                        cmd.Parameters.AddWithValue("@CreatedBy", "System") ' TODO: Use actual username
+                        
+                        ' Properly handle binary image data
+                        If _productImageBytes Is Nothing Then
+                            cmd.Parameters.Add("@ProductImage", SqlDbType.VarBinary).Value = DBNull.Value
+                        Else
+                            cmd.Parameters.Add("@ProductImage", SqlDbType.VarBinary, -1).Value = _productImageBytes
                         End If
-
-                        ' Parse numeric values
-                        Dim lastPaidPrice As Decimal = 0D
-                        Decimal.TryParse(txtLastPaidPrice.Text, lastPaidPrice)
-
-                        Dim avgCost As Decimal = 0D
-                        Decimal.TryParse(txtAverageCost.Text, avgCost)
-
-                        Dim reorderLevel As Integer = 0
-                        Integer.TryParse(txtReorderLevel.Text, reorderLevel)
-
-                        Dim reorderQty As Integer = 0
-                        Integer.TryParse(txtReorderQuantity.Text, reorderQty)
-
-                        ' Insert product with RecipeCreated = 'No' and ProductImage
-                        ' Using only columns that exist in Products table
-                        ' Make CategoryID and SubcategoryID nullable to avoid FK constraint issues
-                        Dim sql As String = "INSERT INTO Products (ProductName, ProductCode, SKU, CategoryID, SubcategoryID, ItemType, IsActive, RecipeCreated, ProductImage, CreatedDate) " &
-                                          "VALUES (@Name, @Code, @SKU, @CatID, @SubcatID, @ItemType, @IsActive, 'No', @Image, GETDATE())"
-
-                        Using cmd As New SqlCommand(sql, con, tx)
-                            cmd.Parameters.AddWithValue("@Name", txtProductName.Text.Trim())
-                            cmd.Parameters.AddWithValue("@Code", txtProductCode.Text.Trim())
-                            cmd.Parameters.AddWithValue("@SKU", If(String.IsNullOrWhiteSpace(txtSKU.Text), DBNull.Value, CType(txtSKU.Text.Trim(), Object)))
-                            cmd.Parameters.AddWithValue("@ItemType", If(cmbItemType.SelectedItem IsNot Nothing, cmbItemType.SelectedItem.ToString(), "internal"))
-                            cmd.Parameters.AddWithValue("@CatID", If(categoryId > 0, CType(categoryId, Object), DBNull.Value))
-                            cmd.Parameters.AddWithValue("@SubcatID", DBNull.Value) ' Subcategory not used
-                            cmd.Parameters.AddWithValue("@IsActive", chkIsActive.Checked)
-                            
-                            ' Properly handle binary image data
-                            If _productImageBytes Is Nothing Then
-                                cmd.Parameters.Add("@Image", SqlDbType.VarBinary).Value = DBNull.Value
-                            Else
-                                cmd.Parameters.Add("@Image", SqlDbType.VarBinary, -1).Value = _productImageBytes
-                            End If
-                            
-                            cmd.ExecuteNonQuery()
-                        End Using
-
-                        tx.Commit()
-                    Catch
-                        tx.Rollback()
-                        Throw
-                    End Try
-                End Using
+                        
+                        ' Output parameter for new ProductID
+                        Dim outputParam As New SqlParameter("@NewProductID", SqlDbType.Int)
+                        outputParam.Direction = ParameterDirection.Output
+                        cmd.Parameters.Add(outputParam)
+                        
+                        cmd.ExecuteNonQuery()
+                        
+                        ' Get the new ProductID
+                        Dim newProductID As Integer = CInt(outputParam.Value)
+                    End Using
+                    
+                Catch ex As Exception
+                    Throw New Exception($"Error saving product: {ex.Message}")
+                End Try
             End Using
         End Sub
 

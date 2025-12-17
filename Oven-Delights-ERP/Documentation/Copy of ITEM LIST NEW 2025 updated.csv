@@ -1,0 +1,1588 @@
+I+1:1579TEM CCODE,BARCODE,ITEM DESCRIPTION,Sub Category,Main Category,item catergory,unit of measure
+DRI-AME-250ML,,Americano Short,drink,Beverages ,internal,ea
+DRI-AME-350ML,,Americano Tall,drink,Beverages ,internal,ea
+DRI-CAF-EAC,,Caramel Freezo,drink,Beverages ,internal,ea
+DRI-CFR=EAC,,Coffee Freezo,drink,Beverages ,internal,ea
+DRI-CHA-350ML,,Chai Latte Short,drink,Beverages ,internal,ea
+DRI-CHF-250ML,,Chocolate Freezo Short,drink,Beverages ,internal,ea
+DRI-CHF-350ML,,Chocolate Freezo Tall,drink,Beverages ,internal,ea
+DRI-CHL-EACH,,Chai Latte Tall,drink,Beverages ,internal,ea
+DRI-COR-250ML,,Cortado Short,drink,Beverages ,internal,ea
+DRI-ESS-250ML,,Espresso Short,drink,Beverages ,internal,ea
+DRI-ESS-350ML,,Espresso Tall,drink,Beverages ,internal,ea
+DRI-FLW-250ML,,Flat White Short,drink,Beverages ,internal,ea
+DRI-FLW-350ML,,Flat White Tall,drink,Beverages ,internal,ea
+DRI-FRT-250ML,,Five Roses Tea Short,drink,Beverages ,internal,ea
+DRI-FRT-350ML,,Five Roses Tea Tall,drink,Beverages ,internal,ea
+DRI-HAF-EAC,,Hazelnut Freezo,drink,Beverages ,internal,ea
+DRI-HOC-250ML,,Hot Chocolate Short,drink,Beverages ,internal,ea
+DRI-HOC-350ML,,Hot Chocolate Tall,drink,Beverages ,internal,ea
+DRI-HWT-EAC,,Tall White Hot Chocolate,drink,Beverages ,internal,ea
+DRI-IAM-EAC,,Iced Americano,drink,Beverages ,internal,ea
+DRI-ICC-250ML,,Iced Cappuccino Short,drink,Beverages ,internal,ea
+DRI-ICC-350ML,,Iced Cappuccino Tall,drink,Beverages ,internal,ea
+DRI-ICF-250ML,,Iced Coffee Freezo Short,drink,Beverages ,internal,ea
+DRI-ICF-350ML,,Iced Coffee Freezo Tall,drink,Beverages ,internal,ea
+DRI-ICF-KGR,,Instabean Coffee Freezo,drink,Beverages ,internal,ea
+DRI-ICL-250ML,,Iced Chai Latte Short,drink,Beverages ,internal,ea
+DRI-ICL-350ML,,Iced Chai Latte Tall,drink,Beverages ,internal,ea
+DRI-ILA-EAC,,Iced Latte,drink,Beverages ,internal,ea
+DRI-IMO-EAC,,Iced Mocha,drink,Beverages ,internal,ea
+DRI-IWM-EAC,,Iced White Mocha,drink,Beverages ,internal,ea
+DRI-LAT-350ML,,Latte Tall,drink,Beverages ,internal,ea
+DRI-LATT-250ML,,Latte Short,drink,Beverages ,internal,ea
+DRI-MAC-250ML,,Macchiato Short,drink,Beverages ,internal,ea
+DRI-MAC-350ML,,Macchiato Tall,drink,Beverages ,internal,ea
+DRI-MBO-EAC,,OD Bombay Crush,drink,Beverages ,internal,ea
+DRI-MBU-EAC,,OD Bubblegum Milkshake,drink,Beverages ,internal,ea
+DRI-MCH-EAC,,OD Chocolate Milkshake,drink,Beverages ,internal,ea
+DRI-MCO-EAC,,OD Coffee Milkshake,drink,Beverages ,internal,ea
+DRI-MLI-EAC,,OD Lime Milkshake,drink,Beverages ,internal,ea
+DRI-MOC-250ML,,Mocha Short,drink,Beverages ,internal,ea
+DRI-MOC-350ML,,Mocha Tall,drink,Beverages ,internal,ea
+DRI-MOF-250ML,,Mocha Freezo Short,drink,Beverages ,internal,ea
+DRI-MOF-350ML,,Mocha Freezo Tall,drink,Beverages ,internal,ea
+DRI-MSC-EAC,,OD Salted Caramel Milkshake,drink,Beverages ,internal,ea
+DRI-MSC-KGR,,Malora Spicey Chai Latte,drink,Beverages ,internal,ea
+DRI-MST-EAC,,OD Strawberry Milkshake,drink,Beverages ,internal,ea
+DRI-MVA-EAC,,OD Vanilla Milkshake,drink,Beverages ,internal,ea
+DRI-OBS-EAC,,OD Berry Smoothie,drink,Beverages ,internal,ea
+DRI-OMS-EAC,,OD Mango Smoothie,drink,Beverages ,internal,ea
+DRI-OOM-EAC,,OD Oreo Milkshake,drink,Beverages ,internal,ea
+DRI-OSP-EAC,,OD Peanut Butter Smoothie,drink,Beverages ,internal,ea
+DRI-ROB-250ML,,Rooibos Tea Short,drink,Beverages ,internal,ea
+DRI-SWM-250ML,,Short White Mocha,drink,Beverages ,internal,ea
+DRI-TWM-350ML,,Tall White Mocha,drink,Beverages ,internal,ea
+DRI-VAF-EAC,,Vanilla Freezo,drink,Beverages ,internal,ea
+DRI-WCF-EAC,,White Chocolate Freezo,drink,Beverages ,internal,ea
+DRI-WHS-EAC,,Short White Hot Chocolate,drink,Beverages ,internal,ea
+SHP-FRT-LRG,,Five Roses Tea Tall,drink,Beverages ,Internal,ea
+SHP-FRT-SML,,Five Roses Tea Small,drink,Beverages ,Internal,ea
+SHP-ICL-LRG,,Iced Coffee Large,drink,Beverages ,internal,ea
+SHP-RBS-SML,,Rooibos Tea Small,drink,Beverages ,internal,ea
+SHP-RBT-LRG,,Rooibos Tea Tall,drink,Beverages ,internal,ea
+XTO- GRT-EAC,,Green Tea,drink,Beverages ,Internal,kg
+BIS- CHC-EAC,,Biscuit Choc Chip,biscuits,biscuits,internal,ea
+BIS-ABB-EAC,16001,Biscuit Assorted Pure Butter,biscuits,biscuits,internal,ea
+BIS-BCV-EAC,,Biscuit Choc Vanilla 300g,biscuits,biscuits,internal,ea
+BIS-BUB-EAC,14071,Biscuit Butter Biscuit,biscuits,biscuits,internal,ea
+BIS-CCC-EAC,,Biscuit Choc Chip Cookie,biscuits,biscuits,internal,ea
+BIS-CHD-EAC,14079,Biscuit Choc Delights 300G,biscuits,biscuits,internal,ea
+BIS-CJN-EAC,14067,Biscuit Jam Nest 300G,biscuits,biscuits,internal,ea
+BIS-COC-EAC,,Biscuit Coconut,biscuits,biscuits,internal,ea
+BIS-CRU-EACH,14099,GLUTEN FREE RUSKS,biscuits,biscuits,internal,ea
+BIS-CUS-EAC,16201,Biscuit Custard,biscuits,biscuits,internal,ea
+BIS-DAT-EAC,,Biscuit Date Roll 300G,biscuits,biscuits,internal,ea
+BIS-DEB-EAC,14073,Designer Biscuits 300G,biscuits,biscuits,internal,ea
+BIS-FEB-EAC,16200,Biscuit Fego 300G,biscuits,biscuits,internal,ea
+BIS-FLF-EAC,14068,Biscuit choc Fingers 300G,biscuits,biscuits,internal,ea
+BIS-HSB-EAC,14076,Biscuit Horse Shoe 300G,biscuits,biscuits,internal,ea
+BIS-NAK-EAC,16077,Biscuit Naan Katai 300G,biscuits,biscuits,internal,ea
+BIS-PAO-EAC,16203,Biscuit Pcn & almnd 300G,biscuits,biscuits,internal,ea
+BIS-PNS-EAC,14069,Biscuit Pecan Nut Squares 300G,biscuits,biscuits,internal,ea
+BIS-RMC-EAC,16002,Biscuit Romany Creams,biscuits,biscuits,internal,ea
+BIS-ROC-EAC,14070,Biscuit Romany Creams,biscuits,biscuits,internal,ea
+BIS-SBB-EAC,16006,Biscuit Short Bread,biscuits,biscuits,internal,ea
+XTO-BOO-EAC,,Biscuit Original Oreo,biscuits,biscuits,internal,
+CBC-BBG-EAC,11001,BC Birthday Gateaux,buttercream cake,Buttercream,internal,ea
+CBC-BCC-EAC,30337,Icing Cup Cakes,buttercream cake,Buttercream,internal,ea
+CBC-BCD-EAC,11004,BC Chocolate Delight,buttercream cake,Buttercream,internal,ea
+CBC-BCE-EAC,,BC Eggless Vanilla Gateaux,buttercream cake,Buttercream,internal,ea
+CBC-BCG-EAC,11003,BC Chocolate Gateaux,buttercream cake,Buttercream,internal,ea
+CBC-BCN-EAC,30339,Icing Cup Cakes With Name,buttercream cake,Buttercream,internal,ea
+CBC-BCS-EAC,11005,BC Chocolate Slice,buttercream cake,Buttercream,internal,ea
+CBC-BDN-EAC,11016,BC Doughnut,buttercream cake,Buttercream,internal,ea
+CBC-BEG-EAC,11040,BC Eggless Birthday Gateaux,buttercream cake,Buttercream,internal,ea
+CBC-BET-EAC,11041,BC Triple Layer Eggless Drip Gateaux,buttercream cake,Buttercream,internal,ea
+CBC-BRG-EAC,11042,BC Smash Choc Rose Pattern Gateaux,buttercream cake,Buttercream,internal,ea
+CBC-BTD-EAC,11096,BC Triple Layer Drip Gateaux,buttercream cake,Buttercream,internal,ea
+CBC-CBG-EAC,11097,Christmas Buttercream Gateaux,buttercream cake,Buttercream,internal,ea
+CBC-CDB-EAC,15060,BC Choc Drip Gateaux,buttercream cake,Buttercream,internal,ea
+CBC-CDN-EAC,11018,Chocolate Doughnut,buttercream cake,Buttercream,internal,ea
+CBC-CNL-EAC,11032,Coconut Tartlet,buttercream cake,Buttercream,internal,ea
+CBC-CNR-EAC,11030,Coconut Ring,buttercream cake,Buttercream,internal,ea
+CBC-CNS-EAC,11008,Coconut Slice,buttercream cake,Buttercream,internal,ea
+CBC-CNT-EAC,11031,Coconut Tart,buttercream cake,Buttercream,internal,ea
+CBC-CUS-EAC,11035,Currant Square,buttercream cake,Buttercream,internal,ea
+CBC-FLA-EAC,11036,Flakey Bits,buttercream cake,Buttercream,internal,ea
+CBC-JAP-EAC,11037,Jam Puff,buttercream cake,Buttercream,internal,ea
+CBC-JAT-EAC,11038,Jam Tart,buttercream cake,Buttercream,internal,ea
+CBC-JDN-EAC,11019,Jam Doughnut,buttercream cake,Buttercream,internal,ea
+CBC-JTO-EAC,11039,Jam Turnover,buttercream cake,Buttercream,internal,ea
+CBC-KOE-EAC,11020,Koeksuster 1s,buttercream cake,Buttercream,internal,ea
+CBC-LPC-EAC,11009,Choc Lamington Plain,buttercream cake,Buttercream,internal,ea
+CBC-LPR-EAC,11010,Raspberry Lamington Plain,buttercream cake,Buttercream,internal,ea
+CBC-MBD-EAC,11043,Mini Buttercream D/N,buttercream cake,Buttercream,internal,ea
+CBC-MBG-EAC,11098,Mothers Day Buttercream Gateaux,buttercream cake,Buttercream,internal,ea
+CBC-MCD-EAC,11044,Mini Chocolate D/N,buttercream cake,Buttercream,internal,ea
+CBC-MEL-40G,11021,Melting Moments 40g (Round),buttercream cake,Buttercream,external,ea
+CBC-MEL-60G,11023,Melting Moments 60g (Long),buttercream cake,Buttercream,internal,ea
+CBC-MFL-EAC,11045,Mini F/BITS,buttercream cake,Buttercream,internal,ea
+CBC-MRL-EAC,,Mini Lamington Raspberry Plain,buttercream cake,Buttercream,internal,ea
+CBC-MSB-EACH,11046,Mini S/B,buttercream cake,Buttercream,internal,ea
+CBC-MUE-EAC,11007,Muesli Slice,buttercream cake,Buttercream,internal,ea
+CBC-PCC-EAC,30338,BD Picture Cup Cakes,buttercream cakes,Buttercream,internal,ea
+CBC-QUC-EAC,11011,Queen Cakes 1s,buttercream cake,Buttercream,internal,ea
+CBC-SNO-EAC,11013,Snowballs 1s,buttercream cake,Buttercream,internal,ea
+CBS-SBE-EACH,30650,Eggless Small Buttercream Gateaux,buttercream cake,Buttercream,internal,ea
+CFC-FDI-EAC,8101,Cake Buttercream In Dome Eggless,buttercream cake,Buttercream,internal,ea
+CFC-FLM-EAC,,Choc Mini Lamington,buttercream cake,Buttercream,internal,ea
+CFC-FRM-EAC,,Mini Jam TurnOvers,buttercream cake,Buttercream,internal,ea
+CFC-MFL-EAC,,Mini CreamPuffs,buttercream cake,Buttercream,internal,ea
+SHP-BVS-EAC,16009,BC Vanilla Swiss Roll,buttercream cake,Buttercream,internal,ea
+CBC-CRP-EAC,11034,Cream Puff,buttercream cake,Buttercream ,internal,ea
+CBC-EB1-1M,,BD 1MX500 BC Eggless,buttercream 1mx500,Buttercream Birthday Cake,internal,ea
+CBF-BCF-018,10088,BD Buttercream Figure 18,buttercream figure cake,Buttercream Birthday Cake,internal,ea
+CBF-BCF-018,10088,BD Buttercream Figure 18,buttercream figure cake,Buttercream Birthday Cake,internal,ea
+CBF-BCF-020,10090,BD Buttercream Figure 20,buttercream figure,Buttercream Birthday Cake,internal,ea
+CBF-BCF-020,10090,BD Buttercream Figure 20,buttercream figure,Buttercream Birthday Cake,internal,ea
+CBF-BFE-020,10199,BD 20 Buttercream Figure on Base Eggless,buttercream figure,Buttercream Birthday Cake,internal,ea
+CBF-BFS-018,10092,BD Buttercream Fig on SL 18,buttercream figure cake,Buttercream Birthday Cake,internal,ea
+CBF-BFS-018,10092,BD Buttercream Fig on SL 18,buttercream figure cake,Buttercream Birthday Cake,internal,ea
+CBF-BFS-020,10094,BD Buttercream Fig on SL 20,buttercream figure cake,Buttercream Birthday Cake,internal,ea
+CBF-FOE-020,,BD 20 Buttercream Figure Only Eggless,buttercream figure,Buttercream Birthday Cake,internal,ea
+CBR-BCR-012,10105,BD Buttercream 12 Round,buttercream cake round,Buttercream Birthday Cake,internal,ea
+CBR-BCR-014,10107,BD Buttercream 14 Round,buttercream cake round,Buttercream Birthday Cake,internal,ea
+CBR-BCR-016,10109,BD Buttercream 16 Round,buttercream round,Buttercream Birthday Cake,internal,ea
+CBR-BCR-018,10104,BD Buttercream 18 Round,buttercream cake round,Buttercream Birthday Cake,internal,ea
+CBR-BCR-020,10112,BD Buttercream 20 Round,buttercream round,Buttercream Birthday Cake,internal,ea
+CBS-BCD-012,10005,BD Buttercream 12 DL,buttercream square,Buttercream Birthday Cake,internal,ea
+CBS-BCD-014,10007,BD Buttercream 14 DL,buttercream square,Buttercream Birthday Cake,internal,ea
+CBS-BCD-016,10011,BD Buttercream 16 DL,buttercream square,Buttercream Birthday Cake,internal,ea
+CBS-BCD-018,10015,BD Buttercream 18 DL,buttercream square cake,Buttercream Birthday Cake,internal,ea
+CBS-BCD-020,10018,BD Buttercream 20 DL,buttercream square,Buttercream Birthday Cake,internal,ea
+CBS-BCD-022,10031,BD Buttercream 22 DL,buttercream square,Buttercream Birthday Cake,internal,ea
+CBS-BCE-016,10033,BD 16 BC DL Eggless,buttercream square,Buttercream Birthday Cake,internal,ea
+CNO-BC1-1X5,10083,BD Buttercream 1mx500,buttercream 1mx500,Buttercream Birthday Cake,internal,ea
+CNO-BC1-1X5,10083,BD Buttercream 1mx500,buttercream 1mx500,Buttercream Birthday Cake,internal,ea
+CNO-BCE-1X5,,BD Buttercream 1mx500 Eggless,buttercream 1mx500,Buttercream Birthday Cake,internal,ea
+SRN-BCE-020,,BD20 Buttercream Eggless Cake,buttercream square ,Buttercream Birthday Cake,internal,ea
+SRN-BCR-022,,BC 22 Cut out Figure,buttercream figure,Buttercream Birthday Cake,internal,ea
+SRN-FIG-020,,Buttercream Eggless Figure on base 20,buttercream figure,Buttercream Birthday Cake,internal,ea
+CAN-CMS-EAC,,Candles 10s- Silver,candle,candle,external,ea
+CAN-DOU-010,80351,Candle Numeral Double,candle,candle,external,ea
+CAN-DOU-080,8034,Candle Numeral Double,candle,candle,external,ea
+CAN-GOL-000,,Candle Numeral 0 Gold,candle,candle,external,ea
+CAN-GOL-001,,Candle Numeral 1 Gold,candle,candle,external,ea
+CAN-GOL-002,,Candle Numeral 2 Gold,candle,candle,external,ea
+CAN-GOL-003,,Candle Numeral 3 Gold,candle,candle,external,ea
+CAN-GOL-004,,Candle Numeral 4 Gold,candle,candle,external,ea
+CAN-GOL-005,,Candle Numeral 5 Gold,candle,candle,external,ea
+CAN-GOL-006,,Candle Numeral 6 Gold,candle,candle,external,ea
+CAN-GOL-007,,Candle Numeral 7 Gold,candle,candle,external,ea
+CAN-GOL-008,,Candle Numeral 8 Gold,candle,candle,external,ea
+CAN-GOL-009,,Candle Numeral 9 Gold,candle,candle,external,ea
+CAN-MAG-24S,8004,Candle Magic Assorted,candle,candle,external,ea
+CAN-MCA-EAC,30714,Magic Candles,candle,candle,external,ea
+CAN-MIX-24S,8005,Candle Mixed - 24x24,candle,candle,external,ea
+CAN-RAI-000,8006,Candle Numeral 0 Rainbow,candle,candle,external,ea
+CAN-RAI-001,8007,Candle Numeral 1 Rainbow,candle,candle,external,ea
+CAN-RAI-002,8008,Candle Numeral 2 Rainbow,candle,candle,external,ea
+CAN-RAI-003,8009,Candle Numeral 3 Rainbow,candle,candle,external,ea
+CAN-RAI-004,8010,Candle Numeral 4 Rainbow,candle,candle,external,ea
+CAN-RAI-005,8011,Candle Numeral 5 Rainbow,candle,candle,external,ea
+CAN-RAI-006,8012,Candle Numeral 6 Rainbow,candle,candle,external,ea
+CAN-RAI-007,8013,Candle Numeral 7 Rainbow,candle,candle,external,ea
+CAN-RAI-009,8015,Candle Numeral 9 Rainbow,candle,candle,external,ea
+CAN-SIL-000,,Candle Numeral 0 Silver,candle,candle,external,ea
+CAN-SIL-001,,Candle Numeral 1 Silver,candle,candle,external,ea
+CAN-SIL-002,,Candle Numeral 2 Silver,candle,candle,external,ea
+CAN-SIL-003,,Candle Numeral 3 Silver,candle,candle,external,ea
+CAN-SIL-004,,Candle Numeral 4 Silver,candle,candle,external,ea
+CAN-SIL-005,,Candle Numeral 5 Silver,candle,candle,external,ea
+CAN-SIL-006,,Candle Numeral 6 Silver,candle,candle,external,ea
+CAN-SIL-007,,Candle Numeral 7 Silver,candle,candle,external,ea
+CAN-SIL-008,,Candle Numeral 8 Silver,candle,candle,external,ea
+CAN-SIL-009,,Candle Numeral 9 Silver,candle,candle,external,ea
+CAN-WHI-000,8025,Candle Numeral 0 White,candle,candle,external,ea
+CAN-WHI-001,8016,Candle Numeral 1 White,candle,candle,external,ea
+CAN-WHI-002,8017,Candle Numeral 2 White,candle,candle,external,ea
+CAN-WHI-003,8018,Candle Numeral 3 White,candle,candle,external,ea
+CAN-WHI-004,8019,Candle Numeral 4 White,candle,candle,external,ea
+CAN-WHI-005,8020,Candle Numeral 5 White,candle,candle,external,ea
+CAN-WHI-006,8021,Candle Numeral 6 White,candle,candle,external,ea
+CAN-WHI-007,8022,Candle Numeral 7 White,candle,candle,external,ea
+CAN-WHI-008,8023,Candle Numeral 8 White,candle,candle,external,ea
+CAN-WHI-009,8024,Candle Numeral 9 White,candle,candle,external,ea
+MIS-CSA-(6S),,Candle Assorted Sparkle (6s),candle,candle,external,ea
+MIS-CSG-(6s),,Candle Sparkle Gold (6s),candle,candle,external,ea
+DRI- CZE-440,,Coke Zero 440ml can,drink,Drinks,external,ea
+DRI-APT-275,6001048003323,Appletiser 275ml NRB,drink,Drinks,external,ea
+DRI-APT-330,6001048004481,Appletiser 330ml CAN,drink,Drinks,external,ea
+DRI-BAA-500,90492853,Bonaqua 500ml,drink,Drinks,external,ea
+DRI-BAN-500,5449000117816,Bonaqua 500ml Naartjie,drink,Drinks,external,ea
+DRI-BON-500ML,,Water Bonaqua Still 500ml,drink,Drinks,external,ea
+DRI-CBB-1500,,Cappy Breakfast Blend 1.5litre,drink,Drinks,external,ea
+DRI-CBB-EAC,5449000256010,Cappy Breakfast Blend 330ml,drink,Drinks,external,ea
+DRI-COC-125,5449000009746,Coca-Cola 1250ml,drink,Drinks,external,ea
+DRI-COC-1LT,5449000054227,Coca-Cola 1L,drink,Drinks,external,ea
+DRI-COC-2LT,5449000009067,Coca-Cola 2l,drink,Drinks,external,ea
+DRI-COC-300,2003,Coca-Cola 300ml Bottle,drink,Drinks,external,ea
+DRI-COC-330,5449000256805,Coca-Cola 300ml Can,drink,Drinks,external,ea
+DRI-COC-440,,Coca- Cola 500ml Can,drink,Drinks,external,ea
+DRI-COC-500,5449000664686,Coca-Cola 440ml Buddy,drink,Drinks,external,ea
+DRI-COL-1.5LT,5449000133335,Coca-Cola Zero 1.5ltr,drink,Drinks,external,ea
+DRI-COL-125,5449000140913,Coca-Cola Light 1250ml,drink,Drinks,external,ea
+DRI-COL-225,,Coke Light 2250ml,drink,Drinks,external,ea
+DRI-COL-2LT,5449000050229,Coca-Cola Light 2l,drink,Drinks,external,ea
+DRI-COL-2LT,5449000050229,Coca-Cola Light 2l,drink,Drinks,external,ea
+DRI-COL-300C,549000256805,Coke 300ml Can,drink,Drinks,external,ea
+DRI-COL-330,5449000050205,Coca-Cola Light 330ml Can,drink,Drinks,external,ea
+DRI-COL-500,5449000664709,Coca-Cola Light 500ml,drink,Drinks,external,ea
+DRI-COZ-2250,,Coke Zero 2250ml,drink,Drinks,external,ea
+DRI-COZ-2LT,5449000131843,Coca-Cola Zero 2l,drink,Drinks,external,ea
+DRI-COZ-2LT,5449000131843,Coca-Cola Zero 2l,drink,Drinks,external,ea
+DRI-COZ-330,5449000256898,Coca-Cola Zero 300ml Can,drink,Drinks,external,ea
+DRI-CPP-EAC,5449000255792,Cappy Passion Peach,drink,Drinks,external,ea
+DRI-CRE-400ML,5449000265364,Cream Soda 400ml,drink,Drinks,external,ea
+DRI-CTP-330,5449000255693,Cappy Trop Punch 330ml,drink,Drinks,external,ea
+DRI-FAG-1LT,54490000252346,Fanta Grape,drink,Drinks,external,ea
+DRI-FAG-2LT,5449000010070,Fanta Grape 2l,drink,Drinks,external,ea
+DRI-FAG-300,2004,Fanta Grape 300ml Bottle,drink,Drinks,external,ea
+DRI-FAG-330,5449000257093,Fanta Grape 300ml CAN,drink,Drinks,external,ea
+DRI-FAG-500,5449000664723,Fanta Grape 440ml Buddy,drink,Drinks,external,ea
+DRI-FAN-300C,,Fanta Orange 300ml Can,drink,Drinks,external,ea
+DRI-FAN-440,5449000257130,Fanta Orange 400ml can,drink,Drinks,external,ea
+DRI-FAO-2LT,5449000010049,Fanta Orange 2l,drink,Drinks,external,ea
+DRI-FAO-300,2008,Fanta Orange 300ml Bottle,drink,Drinks,external,ea
+DRI-FAO-330,5449000257000,Fanta Orange 300ml Can,drink,Drinks,external,ea
+DRI-FAO-500,5449000664754,Fanta Orange 440ml Buddy,drink,Drinks,external,ea
+DRI-FAP-2LT,5449000003768,Fanta Pineapple 2l,drink,Drinks,external,ea
+DRI-FAP-2LT,5449000003768,Fanta Pineapple 2l,drink,Drinks,external,ea
+DRI-FAP-300,2007,Fanta Pine 300ml Bottle,drink,Drinks,external,ea
+DRI-FAP-330,5449000003201,Fanta Pineapple 330ml Can,drink,Drinks,external,ea
+DRI-FAP-500,5449000664747,Fanta Pineapple 440ml Buddy,drink,Drinks,external,ea
+DRI-FAS-125,,Fanta 1 litre,drink,Drinks,external,ea
+DRI-FOC-500ML,5449000050809,Fanta Orange Can 500ml,drink,Drinks,external,ea
+DRI-FWT-400ML,5449000316332,Fanta What The Flavour 400ml Buddy,drink,Drinks,external,ea
+DRI-GRA-275,6001048003385,Grapetiser 275ml NRB,drink,Drinks,external,ea
+DRI-GRA-330,6001048004511,Grapetiser 330ml Can,drink,Drinks,external,ea
+DRI-GRW-330,6001048003897,Grapetiser Wht 330ml Can,drink,Drinks,external,ea
+DRI-IBR-125,,Iron Brew1.25ml,drink,Drinks,external,ea
+DRI-IRO-2LT,6001134297308,Iron Brew 2l,drink,Drinks,external,ea
+DRI-IRO-2LT,6001134297308,Iron Brew 2l,drink,Drinks,external,ea
+DRI-IRO-300,2009,Iron Brew 300ml,drink,Drinks,external,ea
+DRI-IRO-330,5449000106261,Iron Brew 330ml Can,drink,Drinks,external,ea
+DRI-KAPP-500ML,6001299049668,Clover Krush 100% Apple,juice,Drinks,external,ea
+DRI-KFF-500ML,6001299045813,Clover Krush 6 Fruit £ Fibre,juice,Drinks,external,ea
+DRI-KOR-500ML,6001299010101,Clover Krush 100% Orange,juice,Drinks,external,ea
+DRI-MEN-500,5060166698874,Monster Engery 500ml,drink,Drinks,external,ea
+DRI-MML-500,5060517888299,Monster Mucho Logo 500ml,drink,Drinks,external,ea
+DRI-MON-330,5060517888664,Monster Original,drink,Drinks,external,ea
+DRI-MON-EAC,5060337509411,Monster,drink,Drinks,external,ea
+DRI-PBB-EAC,54490482,Powerade Blueberry 500ml,drink,Drinks,external,ea
+DRI-PGE-500,5060517888848,Predator Gold Energy Drink 500ml,drink,Drinks,external,ea
+DRI-PJI-EAC,90492488,Powerade Jagged Ice,drink,Drinks,external,ea
+DRI-PNA-500ML,90492501,Powerade Naartjie,drink,Drinks,external,ea
+DRI-PPL-EAC,,Powerplay,drink,Drinks,external,ea
+DRI-REB-EAC,9002490100070,Red Bull 250ml,drink,Drinks,external,ea
+DRI-REC-350ML,,Red Cappuccino,drink,Drinks,external,ea
+DRI-RSF-EAC,9002490200220,Red Bull Sugar Free,drink,Drinks,external,ea
+DRI-SCS-125,2017,Spar C/Soda 1250ml,drink,Drinks,external,ea
+DRI-SCS-2LT,6001134087305,Spar C\Soda 2lt,drink,Drinks,external,ea
+DRI-SCS-300,5449000257536,Spar C/Soda 300ml,drink,Drinks,external,ea
+DRI-SCS-330,5449000106322,Spar C/Soda 330ml Can,drink,Drinks,external,ea
+DRI-SCS-500,5449000664846,Spar Cream Soda 440ml Buddy,drink,Drinks,external,ea
+DRI-SIB-125,2011,Spar Iron Brew 1250ml,drink,Drinks,external,ea
+DRI-SPN-125,2012,Spar Pine Nut 1250ml,drink,Drinks,external,ea
+DRI-SPN-2LT,5449000117977,Spar Sparbry Pine Nut 2ltr,drink,Drinks,external,ea
+DRI-SPR-125,5449000234612,Sprite 1 litre,drink,Drinks,external,ea
+DRI-SPR-2LT,5449000234636,Sprite 2l,drink,Drinks,external,ea
+DRI-SPR-300,5449000257222,Sprite 300ml Can,drink,Drinks,external,ea
+DRI-SPR-330,5449000014535,Sprite 330ml Can,drink,Drinks,external,ea
+DRI-SPR-440,5449000257239,Sprite 400ml can,drink,Drinks,external,ea
+DRI-SPR-500,5449000234643,Sprite 440ml Buddy,drink,Drinks,external,ea
+DRI-SPZ-2LT,5449000104885,Sprite Zero 2l,drink,Drinks,external,ea
+DRI-SPZ-330,5449000106704,Sprite Zero 330ml Can,Drink,Drinks,external,ea
+DRI-SPZ-500,5449000109613,Sprite Zero 500ml,drink,Drinks,external,ea
+DRI-SRB-500,5449000664853,Sparletta Raspberry 440ml Buddy,drink,Drinks,external,ea
+DRI-SSB-125,6001134005507,Sparletta 1250ml,drink,Drinks,external,ea
+DRI-SSB-2LT,6001134687307,Spar Sparberry 2LTR,drink,Drinks,external,ea
+DRI-SSB-330,5449000257628,Spar Sparbry 300ml Can,drink,Drinks,external,ea
+DRI-SST-300,5449000257420,Spar Stoney 300ml,drink,Drinks,external,ea
+DRI-SST-330,5449000106421,Spar Stoney 330ml Can,drink,Drinks,external,ea
+DRI-STO-125,5449000064950,Stoney 1 litre,drink,Drinks,external,ea
+DRI-STO-2LT,6001134707302,Stoney Ginger Beer 2lt,drink,Drinks,external,ea
+DRI-STO-440,5449000257413,Stoney 400ml can,drink,Drinks,external,ea
+DRI-STO-500,5449000664808,Stoney -gingerbeer 440ml Buddy,drink,Drinks,external,ea
+DRI-STW-500,6009633490022,Water 500ml Still,drink,Drinks,external,ea
+DRI-STW-EAC,30607,Still Water,drink,Drinks,external,ea
+DRI-TGR-1.5L,5449000180889,Twist Grandilla 1.5ltr,drink,Drinks,external,ea
+DRI-TWG-125,6001133001104,Twist Gran 1250ml,drink,Drinks,external,ea
+DRI-TWG-2LT,5449000098580,Twist Gran 2l,drink,Drinks,external,ea
+DRI-TWG-2LT,5449000098580,Twist Gran 2l,drink,Drinks,external,ea
+DRI-TWG-300,2016,Twist Gran 300ml,drink,Drinks,external,ea
+DRI-TWG-330,5449000257567,Twist Gran 300ml Can,drink,Drinks,external,ea
+DRI-TWG-500,5449000664839,Twist Gran 440ml Buddy,drink,Drinks,external,ea
+DRI-TWL-1.5L,,Twist Lemon 1.5 Litre,drink,Drinks,external,ea
+DRI-TWL-125,6001134395509,Twist Lemon 1250ml,drink,Drinks,external,ea
+DRI-TWL-2LT,5449000060082,Twist Lemon 2l,drink,Drinks,external,ea
+DRI-TWL-330,5449000257505,Twist Lemon 300ml Can,drink,Drinks,external,ea
+DRI-TWL-500,40822747,Twist Lemon 500ml,drink,Drinks,external,ea
+DRI-VAL-150,5449000107787,Water valpre still 1500ml,drink,Drinks,external,ea
+DRI-VAL-500,5449000107664,Water Valpre Still 500ml,drink,Drinks,external,ea
+DRI-WTF-2LTR,5449000308146,Fanta What The Flavour 2litre,drink,Drinks,external,ea
+JUI- FNB-500ML,6001299024634,Juice Krush Fruit Nectar 500ml,juice,Drinks,external,ea
+JUI-EBL-500,6001324254371,Energade 500ml Blueberry,drink,Drinks,external,ea
+JUI-EGR-500,6001324238098,Energade 500ml Grape,drink,Drinks,external,ea
+JUI-ELL-500,6001324217338,Energade 500ml Lemon & Lime,drink,Drinks,external,ea
+JUI-EMB-500,6001324299556,Energade 500ml Mixed Berry,drink,Drinks,external,ea
+JUI-ENA-500,6001324217253,Energade 500ml Naartjie,drink,Drinks,external,ea
+JUI-ENO-500,6001324217178,Energade 500ml Orange,drink,Drinks,external,ea
+JUI-ETR-500,6001324238173,Energade 500ml Tropical,drink,Drinks,external,ea
+JUI-KRM-500ML,6001299010118,Clover Krush 100% Mango,juice,Drinks,external,ea
+JUI-ORA-2LT,6001299043079,Juice 2l Orange Nectar,juice,Drinks,external,ea
+JUI-ORA-500,6001299007521,Juice 500ml Orange Nectar,juice,Drinks,external,ea
+JUI-PIN-1LT,6001299015793,Juice Tropika 1Litre,juice,Drinks,external,ea
+JUI-TRO-1.5L,6001299015724,Tropika 1.5lt pineapple,juice,Drinks,external,ea
+JUI-TRO-1.5Lt,6001299015687,Tropika 1.5lt Orange,juice,Drinks,external,ea
+JUI-TRO-1LT,6001299008054,Tropika 1l Orange,juice,Drinks,external,ea
+JUI-TRO-500,6001299007965,Tropika 500ml Orange,juice,Drinks,external,ea
+JUI-TRP-1LT,6001299008115,Tropika 1l Pineapple,juice,Drinks,external,ea
+JUI-TRP-250,6001299008092,Tropika 250ml Pineapple,juice,Drinks,external,ea
+JUI-TRP-500,6001299007972,Tropika 500ml Pineapple,juice,Drinks,external,ea
+MIL-SMB-EAC,6001299044540,Super M 300ml Banana,drink,Drinks,external,ea
+MIL-SMC-EAC,6001299044601,Super M 300ml Chocolate,drink,Drinks,external,ea
+MIL-SMO-EAC,6001299044663,Super M 300ml Cream Soda,drink,Drinks,external,ea
+MIL-SMS-EAC,6001299044519,Super M 300ml Strawberry,drink,Drinks,external,ea
+CEX- BDC-EAC,,Bar One 6 Layer Drip With Toppings,exotic cakes,exotic cakes,internal,ea
+CEX- BEG-EAC,14050,FC Bar One Eggless Drip,exotic cakes,exotic cakes,internal,ea
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,packaging,,

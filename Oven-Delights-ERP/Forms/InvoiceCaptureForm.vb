@@ -25,6 +25,7 @@ Public Class InvoiceCaptureForm
             AddHandler cboPO.SelectedIndexChanged, AddressOf cboPO_SelectedIndexChanged
             AddHandler btnSave.Click, AddressOf btnSave_Click
             AddHandler btnCancel.Click, AddressOf btnCancel_Click
+            AddHandler btnApplyDiscount.Click, AddressOf btnApplyDiscount_Click
             AddHandler dgvLines.DataError, AddressOf dgvLines_DataError
 
         Catch ex As Exception
@@ -406,16 +407,29 @@ Public Class InvoiceCaptureForm
 
                         ' Check if it's a raw material (includes ingredients and sub-recipes)
                         If productType.Contains("Material") OrElse productType.Contains("Ingredient") OrElse productType.Contains("Recipe") Then
-                            ' Get MaterialID for raw materials
+                            ' Get MaterialID for raw materials - try all possible columns
                             Dim materialId As Integer = 0
-                            If dgvLines.Columns.Contains("MaterialID") AndAlso row.Cells("MaterialID").Value IsNot Nothing Then
+                            If dgvLines.Columns.Contains("MaterialID") AndAlso row.Cells("MaterialID").Value IsNot Nothing AndAlso Not IsDBNull(row.Cells("MaterialID").Value) Then
                                 materialId = Convert.ToInt32(row.Cells("MaterialID").Value)
-                            ElseIf dgvLines.Columns.Contains("ProductID") AndAlso row.Cells("ProductID").Value IsNot Nothing Then
+                            ElseIf dgvLines.Columns.Contains("ProductID") AndAlso row.Cells("ProductID").Value IsNot Nothing AndAlso Not IsDBNull(row.Cells("ProductID").Value) Then
                                 materialId = Convert.ToInt32(row.Cells("ProductID").Value)
+                            ElseIf dgvLines.Columns.Contains("RawMaterialCode") AndAlso row.Cells("RawMaterialCode").Value IsNot Nothing Then
+                                ' Try to get MaterialID from RawMaterialCode
+                                Dim code = row.Cells("RawMaterialCode").Value.ToString()
+                                Using con As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                                    con.Open()
+                                    Using cmd As New SqlCommand("SELECT MaterialID FROM RawMaterials WHERE MaterialCode = @Code", con)
+                                        cmd.Parameters.AddWithValue("@Code", code)
+                                        Dim result = cmd.ExecuteScalar()
+                                        If result IsNot Nothing Then materialId = Convert.ToInt32(result)
+                                    End Using
+                                End Using
                             End If
 
                             If materialId > 0 Then
                                 stockroomService.UpdateRawMaterialStock(materialId, receiveNow, "Received from PO " & cboPO.Text)
+                                Dim productName = If(row.Cells("ProductName").Value, "").ToString().Trim()
+                                If Not String.IsNullOrEmpty(productName) Then UpdateLastPaidPriceByName(productName, unitCost)
                             End If
                         ElseIf productType.Contains("Product") OrElse productType = "External" Then
                             ' Get ProductID for external products
@@ -443,6 +457,7 @@ Public Class InvoiceCaptureForm
 
                             If materialId > 0 Then
                                 stockroomService.UpdateRawMaterialStock(materialId, receiveNow, "Received from PO " & cboPO.Text)
+                                UpdateLastPaidPrice(materialId, unitCost, "RawMaterial")
                             End If
                         End If
                     End If
@@ -494,34 +509,96 @@ Public Class InvoiceCaptureForm
 
     Private Sub CalculateTotals(sender As Object, e As EventArgs)
         Try
-            ' USER ENTERS: Unit Cost INCLUDING VAT (e.g., 200.00)
-            ' LineTotal = Qty * UnitCost = INCLUDING VAT (e.g., 10 * 200 = 2,000)
-            ' Total = Sum of LineTotals = INCLUDING VAT (e.g., 2,000)
-            ' CALCULATE BACKWARDS:
-            ' SubTotal = Total ÷ 1.15 = EXCLUDING VAT (e.g., 2,000 ÷ 1.15 = 1,739.13)
-            ' VAT = Total - SubTotal (e.g., 2,000 - 1,739.13 = 260.87)
-
-            Dim totalInclVAT As Decimal = 0
+            ' Calculate totals respecting IsVatable status
+            ' Vatable items: Price includes VAT, extract excl VAT
+            ' Non-vatable items: Price has no VAT
+            
+            Dim subTotalVatable As Decimal = 0
+            Dim subTotalNonVatable As Decimal = 0
+            Dim vatTotal As Decimal = 0
+            
             For Each row As DataGridViewRow In dgvLines.Rows
                 If Not row.IsNewRow Then
                     Dim receiveNow = If(row.Cells("ReceiveNow").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("ReceiveNow").Value))
                     Dim unitCost = If(row.Cells("UnitCost").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("UnitCost").Value))
-                    totalInclVAT += receiveNow * unitCost  ' Total INCLUDING VAT
+                    Dim lineTotal As Decimal = receiveNow * unitCost
+                    
+                    ' Get ProductID to check IsVatable
+                    Dim productId As Integer = 0
+                    If row.Cells("ProductID").Value IsNot Nothing Then
+                        productId = Convert.ToInt32(row.Cells("ProductID").Value)
+                    End If
+                    
+                    ' Check if product is vatable
+                    Dim isVatable As Boolean = True
+                    If productId > 0 Then
+                        Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                            conn.Open()
+                            Using cmd As New SqlCommand("SELECT ISNULL(IsVatable, 1) FROM Demo_Retail_Product WHERE ProductID = @ProductID", conn)
+                                cmd.Parameters.AddWithValue("@ProductID", productId)
+                                Dim result = cmd.ExecuteScalar()
+                                If result IsNot Nothing Then isVatable = Convert.ToBoolean(result)
+                            End Using
+                        End Using
+                    End If
+                    
+                    If isVatable Then
+                        ' Price includes VAT - extract excl VAT and VAT amount
+                        Dim lineTotalExclVAT As Decimal = Math.Round(lineTotal / 1.15D, 2)
+                        Dim lineVAT As Decimal = lineTotal - lineTotalExclVAT
+                        subTotalVatable += lineTotalExclVAT
+                        vatTotal += lineVAT
+                    Else
+                        ' Price has no VAT - it's already excl VAT
+                        subTotalNonVatable += lineTotal
+                    End If
                 End If
             Next
+            
+            Dim subTotal As Decimal = subTotalVatable + subTotalNonVatable
+            
+            ' Apply discount PERCENTAGE if entered
+            Dim discountPercent As Decimal = 0
+            If Decimal.TryParse(txtDiscount.Text, discountPercent) AndAlso discountPercent > 0 Then
+                ' Calculate discount amount from percentage
+                Dim discountAmount As Decimal = Math.Round(subTotal * (discountPercent / 100), 2)
+                subTotal = subTotal - discountAmount
+                vatTotal = Math.Round(subTotal * 0.15D / 1.15D, 2)
+            End If
+            
+            Dim total As Decimal = subTotal + vatTotal
 
-            ' Calculate BACKWARDS from VAT-inclusive total
-            Dim subTotal As Decimal = Math.Round(totalInclVAT / 1.15D, 2)  ' Excl VAT
-            Dim vatAmount As Decimal = Math.Round(totalInclVAT - subTotal, 2)  ' VAT amount
-
-            txtSubTotal.Text = subTotal.ToString("F2")      ' Excl VAT (calculated)
-            txtVat.Text = vatAmount.ToString("F2")          ' VAT (calculated)
-            txtTotal.Text = totalInclVAT.ToString("F2")     ' Incl VAT (entered)
+            txtSubTotal.Text = subTotal.ToString("F2")
+            txtVat.Text = vatTotal.ToString("F2")
+            txtTotal.Text = total.ToString("F2")
         Catch ex As Exception
             ' Ignore calculation errors
         End Try
     End Sub
 
+    Private Sub btnApplyDiscount_Click(sender As Object, e As EventArgs)
+        Try
+            Dim discountPercent As Decimal
+            If Not Decimal.TryParse(txtDiscount.Text, discountPercent) Then
+                MessageBox.Show("Please enter a valid discount percentage.", "Invalid Discount", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                txtDiscount.Focus()
+                Return
+            End If
+            
+            If discountPercent < 0 OrElse discountPercent > 100 Then
+                MessageBox.Show("Discount must be between 0% and 100%.", "Invalid Discount", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                txtDiscount.Focus()
+                Return
+            End If
+            
+            CalculateTotals(Nothing, EventArgs.Empty)
+            
+            MessageBox.Show($"Discount of {discountPercent}% applied successfully!\n\nNew Total: R {txtTotal.Text}", "Discount Applied", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Catch ex As Exception
+            MessageBox.Show($"Error applying discount: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    
     Private Sub CreateSupplierInvoice(supplierId As Integer, invoiceNumber As String, invoiceDate As DateTime, subTotal As Decimal, vatAmount As Decimal, totalAmount As Decimal, grvId As Integer)
         Try
             Using con As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
@@ -734,5 +811,28 @@ Public Class InvoiceCaptureForm
                 End Try
             End Using
         End Using
+    End Sub
+
+    Private Sub UpdateLastPaidPrice(materialId As Integer, unitCost As Decimal, itemType As String)
+        ' IGNORE materialId - update by product name from grid instead
+    End Sub
+    
+    Private Sub UpdateLastPaidPriceByName(productName As String, unitCost As Decimal)
+        Try
+            Using con As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                con.Open()
+                
+                ' Update by MaterialName - more reliable than ID
+                Dim sql = "UPDATE RawMaterials SET LastPaidPrice = @UnitCost, LastPurchaseDate = GETDATE() WHERE MaterialName = @Name"
+                
+                Using cmd As New SqlCommand(sql, con)
+                    cmd.Parameters.AddWithValue("@UnitCost", unitCost)
+                    cmd.Parameters.AddWithValue("@Name", productName)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+        Catch ex As Exception
+            ' Silent
+        End Try
     End Sub
 End Class

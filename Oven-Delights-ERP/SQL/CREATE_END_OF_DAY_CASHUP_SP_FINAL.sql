@@ -40,26 +40,46 @@ BEGIN
         COALESCE(SUM(S.TotalAmount / 1.15), 0) AS TotalSalesExclVAT,
         COALESCE(SUM(S.TotalAmount - (S.TotalAmount / 1.15)), 0) AS VATAmount,
         COALESCE(SUM(S.TotalAmount), 0) AS TotalSalesInclVAT,
-        COUNT(DISTINCT S.SalesID) AS TransactionCount,
+        COUNT(DISTINCT S.SaleID) AS TransactionCount,
         
-        -- Payment Breakdown
-        COALESCE(SUM(CASE WHEN S.PaymentMethod IN ('Cash', 'CASH', 'cash') THEN S.TotalAmount ELSE 0 END), 0) AS CashPayments,
-        COALESCE(SUM(CASE WHEN S.PaymentMethod IN ('Card', 'CARD', 'Debit Card', 'Credit Card', 'card') THEN S.TotalAmount ELSE 0 END), 0) AS CardPayments,
+        -- Payment Breakdown (Sales - Returns)
+        COALESCE(SUM(CASE WHEN S.PaymentMethod IN ('Cash', 'CASH', 'cash') THEN S.TotalAmount ELSE 0 END), 0) - 
+        COALESCE((SELECT SUM(R.CashAmount) FROM POS_Returns R WHERE R.TillPointID = T.TillPointID AND CAST(R.ReturnDate AS DATE) = @ReportDate), 0) AS CashPayments,
+        COALESCE(SUM(CASE WHEN S.PaymentMethod IN ('Card', 'CARD', 'Debit Card', 'Credit Card', 'card') THEN S.TotalAmount ELSE 0 END), 0) - 
+        COALESCE((SELECT SUM(R.CardAmount) FROM POS_Returns R WHERE R.TillPointID = T.TillPointID AND CAST(R.ReturnDate AS DATE) = @ReportDate), 0) AS CardPayments,
         COALESCE(SUM(CASE WHEN S.PaymentMethod IN ('EFT', 'eft', 'Bank Transfer') THEN S.TotalAmount ELSE 0 END), 0) AS EFTPayments,
         COALESCE(SUM(CASE WHEN S.PaymentMethod IN ('Account', 'ACCOUNT', 'Credit', 'account') THEN S.TotalAmount ELSE 0 END), 0) AS AccountPayments,
         
-        -- Expected Cash (Cash payments + CashAmount from split payments)
+        -- Expected Cash (Cash payments + CashAmount from split payments - Cash Returns)
         COALESCE(SUM(CASE 
             WHEN S.PaymentMethod IN ('Cash', 'CASH', 'cash') THEN S.TotalAmount 
             WHEN S.CashAmount IS NOT NULL AND S.CashAmount > 0 THEN S.CashAmount
             ELSE 0 
-        END), 0) AS ExpectedCash,
+        END), 0) - COALESCE((SELECT SUM(R.CashAmount) 
+                             FROM POS_Returns R 
+                             WHERE R.TillPointID = T.TillPointID 
+                               AND CAST(R.ReturnDate AS DATE) = @ReportDate), 0) AS ExpectedCash,
         
         -- Opening Float (if tracked in a separate table)
         CAST(0.00 AS DECIMAL(18,2)) AS OpeningFloat,
         
-        -- Refunds (you don't have SaleType column, so set to 0 for now)
-        CAST(0.00 AS DECIMAL(18,2)) AS Refunds,
+        -- Returns/Refunds from POS_Returns table
+        COALESCE((SELECT COUNT(*) 
+                  FROM POS_Returns R 
+                  WHERE R.TillPointID = T.TillPointID 
+                    AND CAST(R.ReturnDate AS DATE) = @ReportDate), 0) AS ReturnCount,
+        COALESCE((SELECT SUM(R.TotalAmount) 
+                  FROM POS_Returns R 
+                  WHERE R.TillPointID = T.TillPointID 
+                    AND CAST(R.ReturnDate AS DATE) = @ReportDate), 0) AS TotalReturns,
+        COALESCE((SELECT SUM(R.CashAmount) 
+                  FROM POS_Returns R 
+                  WHERE R.TillPointID = T.TillPointID 
+                    AND CAST(R.ReturnDate AS DATE) = @ReportDate), 0) AS CashReturns,
+        COALESCE((SELECT SUM(R.CardAmount) 
+                  FROM POS_Returns R 
+                  WHERE R.TillPointID = T.TillPointID 
+                    AND CAST(R.ReturnDate AS DATE) = @ReportDate), 0) AS CardReturns,
         
         -- Discounts (you don't have DiscountAmount column, so set to 0 for now)
         CAST(0.00 AS DECIMAL(18,2)) AS TotalDiscounts
@@ -85,7 +105,7 @@ PRINT '';
 PRINT 'Using actual schema:';
 PRINT '  - Till Table: TillPoints (TillPointID, TillNumber)';
 PRINT '  - Sales Table: Demo_Sales';
-PRINT '  - Sales ID: SalesID';
+PRINT '  - Sales ID: SaleID (FIXED)';
 PRINT '  - Cashier: CashierID';
 PRINT '  - Date: SaleDate';
 PRINT '  - Amount: TotalAmount';
@@ -96,7 +116,8 @@ PRINT 'Test with:';
 PRINT '  EXEC sp_GetEndOfDayCashUp @BranchID=1, @ReportDate=''2025-11-12'', @TillID=NULL';
 PRINT '';
 PRINT 'Notes:';
-PRINT '  - Refunds set to 0 (no SaleType column found)';
+PRINT '  - Returns tracked from POS_Returns table';
+PRINT '  - Cash and Card totals deduct returns by payment method';
 PRINT '  - Discounts set to 0 (no DiscountAmount column found)';
 PRINT '  - Adjust payment method names if needed (Cash, Card, EFT, Account)';
 GO

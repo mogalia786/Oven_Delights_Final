@@ -898,13 +898,17 @@ Namespace Manufacturing
                         Dim hasIngredients = Convert.ToInt32(cmd.ExecuteScalar()) > 0
 
                         If hasIngredients Then
-                            ' Add ingredients from RecipeNode
-                            Dim ingredientQuery = "SELECT rn.ItemName, rn.Qty, p.ProductID, ISNULL(p.AverageCost, 0) AS Cost " &
+                            ' Add ingredients from RecipeNode with cost from Demo_Retail_Price
+                            Dim ingredientQuery = "SELECT rn.ItemName, rn.Qty, p.ProductID, " &
+                                                "ISNULL((SELECT TOP 1 CostPrice FROM Demo_Retail_Price " &
+                                                "WHERE ProductID = p.ProductID AND BranchID = @BranchID " &
+                                                "ORDER BY EffectiveFrom DESC), 0) AS Cost " &
                                                 "FROM RecipeNode rn " &
-                                                "LEFT JOIN Products p ON p.ProductName = rn.ItemName " &
+                                                "LEFT JOIN Demo_Retail_Product p ON p.Name = rn.ItemName " &
                                                 "WHERE rn.ProductID = @id AND rn.ParentNodeID IS NOT NULL"
                             Using cmdIngredients As New SqlCommand(ingredientQuery, cn)
                                 cmdIngredients.Parameters.AddWithValue("@id", subRecipeID)
+                                cmdIngredients.Parameters.AddWithValue("@BranchID", If(AppSession.CurrentUser?.BranchID, 1))
                                 Using reader = cmdIngredients.ExecuteReader()
                                     While reader.Read()
                                         Dim ingredientName = reader.GetString(0)
@@ -991,15 +995,14 @@ Namespace Manufacturing
 
                 row("TotalCost") = totalCost
                 subtotal += totalCost
-
-                If Convert.ToBoolean(row("IsVatable")) Then
-                    vatAmount += totalCost * 0.15D
-                End If
+                
+                ' CostPrice is already stored EXCLUDING VAT in Demo_Retail_Price
+                ' No need to add VAT here - this is manufacturing cost, not selling price
             Next
 
             lblSubtotal.Text = $"R {subtotal:N2}"
-            lblVAT.Text = $"R {vatAmount:N2}"
-            lblTotal.Text = $"R {(subtotal + vatAmount):N2}"
+            lblVAT.Text = "R 0.00"  ' No VAT on manufacturing cost
+            lblTotal.Text = $"R {subtotal:N2}"  ' Total = Subtotal (no VAT)
         End Sub
 
         Private Sub OnSaveMethodClick(sender As Object, e As EventArgs)

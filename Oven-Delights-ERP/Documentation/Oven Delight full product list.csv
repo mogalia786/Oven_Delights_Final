@@ -1,0 +1,2415 @@
+TEM CCODE;BARCODE;ITEM DESCRIPTION;SUB CATEGORY;MAIN CATEGORY;ITEM CATEGORY;UNIT OF MEASURE;OFFICE
+DRI-AME-250ML;;Americano Short;drink;Beverages ;internal;ea;pos
+DRI-AME-350ML;;Americano Tall;drink;Beverages ;internal;ea;pos
+DRI-CAF-EAC;;Caramel Freezo;drink;Beverages ;internal;ea;pos
+DRI-CFR=EAC;;Coffee Freezo;drink;Beverages ;internal;ea;pos
+DRI-CHA-350ML;;Chai Latte Short;drink;Beverages ;internal;ea;pos
+DRI-CHF-250ML;;Chocolate Freezo Short;drink;Beverages ;internal;ea;pos
+DRI-CHF-350ML;;Chocolate Freezo Tall;drink;Beverages ;internal;ea;pos
+DRI-CHL-EACH;;Chai Latte Tall;drink;Beverages ;internal;ea;pos
+DRI-COR-250ML;;Cortado Short;drink;Beverages ;internal;ea;pos
+DRI-ESS-250ML;;Espresso Short;drink;Beverages ;internal;ea;pos
+DRI-ESS-350ML;;Espresso Tall;drink;Beverages ;internal;ea;pos
+DRI-FLW-250ML;;Flat White Short;drink;Beverages ;internal;ea;pos
+DRI-FLW-350ML;;Flat White Tall;drink;Beverages ;internal;ea;pos
+DRI-FRT-250ML;;Five Roses Tea Short;drink;Beverages ;internal;ea;pos
+DRI-FRT-350ML;;Five Roses Tea Tall;drink;Beverages ;internal;ea;pos
+DRI-HAF-EAC;;Hazelnut Freezo;drink;Beverages ;internal;ea;pos
+DRI-HOC-250ML;;Hot Chocolate Short;drink;Beverages ;internal;ea;pos
+DRI-HOC-350ML;;Hot Chocolate Tall;drink;Beverages ;internal;ea;pos
+DRI-HWT-EAC;;Tall White Hot Chocolate;drink;Beverages ;internal;ea;pos
+DRI-IAM-EAC;;Iced Americano;drink;Beverages ;internal;ea;pos
+DRI-ICC-250ML;;Iced Cappuccino Short;drink;Beverages ;internal;ea;pos
+DRI-ICC-350ML;;Iced Cappuccino Tall;drink;Beverages ;internal;ea;pos
+DRI-ICF-250ML;;Iced Coffee Freezo Short;drink;Beverages ;internal;ea;pos
+DRI-ICF-350ML;;Iced Coffee Freezo Tall;drink;Beverages ;internal;ea;pos
+DRI-ICF-KGR;;Instabean Coffee Freezo;drink;Beverages ;internal;ea;pos
+DRI-ICL-250ML;;Iced Chai Latte Short;drink;Beverages ;internal;ea;pos
+DRI-ICL-350ML;;Iced Chai Latte Tall;drink;Beverages ;internal;ea;pos
+DRI-ILA-EAC;;Iced Latte;drink;Beverages ;internal;ea;pos
+DRI-IMO-EAC;;Iced Mocha;drink;Beverages ;internal;ea;pos
+DRI-IWM-EAC;;Iced White Mocha;drink;Beverages ;internal;ea;pos
+DRI-LAT-350ML;;Latte Tall;drink;Beverages ;internal;ea;pos
+DRI-LATT-250ML;;Latte Short;drink;Beverages ;internal;ea;pos
+DRI-MAC-250ML;;Macchiato Short;drink;Beverages ;internal;ea;pos
+DRI-MAC-350ML;;Macchiato Tall;drink;Beverages ;internal;ea;pos
+DRI-MBO-EAC;;OD Bombay Crush;drink;Beverages ;internal;ea;pos
+DRI-MBU-EAC;;OD Bubblegum Milkshake;drink;Beverages ;internal;ea;pos
+DRI-MCH-EAC;;OD Chocolate Milkshake;drink;Beverages ;internal;ea;pos
+DRI-MCO-EAC;;OD Coffee Milkshake;drink;Beverages ;internal;ea;pos
+DRI-MLI-EAC;;OD Lime Milkshake;drink;Beverages ;internal;ea;pos
+DRI-MOC-250ML;;Mocha Short;drink;Beverages ;internal;ea;pos
+DRI-MOC-350ML;;Mocha Tall;drink;Beverages ;internal;ea;pos
+DRI-MOF-250ML;;Mocha Freezo Short;drink;Beverages ;internal;ea;pos
+DRI-MOF-350ML;;Mocha Freezo Tall;drink;Beverages ;internal;ea;pos
+DRI-MSC-EAC;;OD Salted Caramel Milkshake;drink;Beverages ;internal;ea;pos
+DRI-MSC-KGR;;Malora Spicey Chai Latte;drink;Beverages ;internal;ea;pos
+DRI-MST-EAC;;OD Strawberry Milkshake;drink;Beverages ;internal;ea;pos
+DRI-MVA-EAC;;OD Vanilla Milkshake;drink;Beverages ;internal;ea;pos
+DRI-OBS-EAC;;OD Berry Smoothie;drink;Beverages ;internal;ea;pos
+DRI-OMS-EAC;;OD Mango Smoothie;drink;Beverages ;internal;ea;pos
+DRI-OOM-EAC;;OD Oreo Milkshake;drink;Beverages ;internal;ea;pos
+DRI-OSP-EAC;;OD Peanut Butter Smoothie;drink;Beverages ;internal;ea;pos
+DRI-ROB-250ML;;Rooibos Tea Short;drink;Beverages ;internal;ea;pos
+DRI-SWM-250ML;;Short White Mocha;drink;Beverages ;internal;ea;pos
+DRI-TWM-350ML;;Tall White Mocha;drink;Beverages ;internal;ea;pos
+DRI-VAF-EAC;;Vanilla Freezo;drink;Beverages ;internal;ea;pos
+DRI-WCF-EAC;;White Chocolate Freezo;drink;Beverages ;internal;ea;pos
+DRI-WHS-EAC;;Short White Hot Chocolate;drink;Beverages ;internal;ea;pos
+SHP-FRT-LRG;;Five Roses Tea Tall;drink;Beverages ;Internal;ea;pos
+SHP-FRT-SML;;Five Roses Tea Small;drink;Beverages ;Internal;ea;pos
+SHP-ICL-LRG;;Iced Coffee Large;drink;Beverages ;internal;ea;pos
+SHP-RBS-SML;;Rooibos Tea Small;drink;Beverages ;internal;ea;pos
+SHP-RBT-LRG;;Rooibos Tea Tall;drink;Beverages ;internal;ea;pos
+XTO- GRT-EAC;;Green Tea;drink;Beverages ;Internal;kg;pos
+BIS- CHC-EAC;;Biscuit Choc Chip;biscuits;biscuits;internal;ea;pos
+BIS-ABB-EAC;16001;Biscuit Assorted Pure Butter;biscuits;biscuits;internal;ea;pos
+BIS-BCV-EAC;;Biscuit Choc Vanilla 300g;biscuits;biscuits;internal;ea;pos
+BIS-BUB-EAC;14071;Biscuit Butter Biscuit;biscuits;biscuits;internal;ea;pos
+BIS-CCC-EAC;;Biscuit Choc Chip Cookie;biscuits;biscuits;internal;ea;pos
+BIS-CHD-EAC;14079;Biscuit Choc Delights 300G;biscuits;biscuits;internal;ea;pos
+BIS-CJN-EAC;14067;Biscuit Jam Nest 300G;biscuits;biscuits;internal;ea;pos
+BIS-COC-EAC;;Biscuit Coconut;biscuits;biscuits;internal;ea;pos
+BIS-CRU-EACH;14099;GLUTEN FREE RUSKS;biscuits;biscuits;internal;ea;pos
+BIS-CUS-EAC;16201;Biscuit Custard;biscuits;biscuits;internal;ea;pos
+BIS-DAT-EAC;;Biscuit Date Roll 300G;biscuits;biscuits;internal;ea;pos
+BIS-DEB-EAC;14073;Designer Biscuits 300G;biscuits;biscuits;internal;ea;pos
+BIS-FEB-EAC;16200;Biscuit Fego 300G;biscuits;biscuits;internal;ea;pos
+BIS-FLF-EAC;14068;Biscuit choc Fingers 300G;biscuits;biscuits;internal;ea;pos
+BIS-HSB-EAC;14076;Biscuit Horse Shoe 300G;biscuits;biscuits;internal;ea;pos
+BIS-NAK-EAC;16077;Biscuit Naan Katai 300G;biscuits;biscuits;internal;ea;pos
+BIS-PAO-EAC;16203;Biscuit Pcn & almnd 300G;biscuits;biscuits;internal;ea;pos
+BIS-PNS-EAC;14069;Biscuit Pecan Nut Squares 300G;biscuits;biscuits;internal;ea;pos
+BIS-RMC-EAC;16002;Biscuit Romany Creams;biscuits;biscuits;internal;ea;pos
+BIS-ROC-EAC;14070;Biscuit Romany Creams;biscuits;biscuits;internal;ea;pos
+BIS-SBB-EAC;16006;Biscuit Short Bread;biscuits;biscuits;internal;ea;pos
+XTO-BOO-EAC;;Biscuit Original Oreo;biscuits;biscuits;internal;;pos
+CBC-BBG-EAC;11001;BC Birthday Gateaux;buttercream cake;Buttercream;internal;ea;pos
+CBC-BCC-EAC;30337;Icing Cup Cakes;buttercream cake;Buttercream;internal;ea;pos
+CBC-BCD-EAC;11004;BC Chocolate Delight;buttercream cake;Buttercream;internal;ea;pos
+CBC-BCE-EAC;;BC Eggless Vanilla Gateaux;buttercream cake;Buttercream;internal;ea;pos
+CBC-BCG-EAC;11003;BC Chocolate Gateaux;buttercream cake;Buttercream;internal;ea;pos
+CBC-BCN-EAC;30339;Icing Cup Cakes With Name;buttercream cake;Buttercream;internal;ea;pos
+CBC-BCS-EAC;11005;BC Chocolate Slice;buttercream cake;Buttercream;internal;ea;pos
+CBC-BDN-EAC;11016;BC Doughnut;buttercream cake;Buttercream;internal;ea;pos
+CBC-BEG-EAC;11040;BC Eggless Birthday Gateaux;buttercream cake;Buttercream;internal;ea;pos
+CBC-BET-EAC;11041;BC Triple Layer Eggless Drip Gateaux;buttercream cake;Buttercream;internal;ea;pos
+CBC-BRG-EAC;11042;BC Smash Choc Rose Pattern Gateaux;buttercream cake;Buttercream;internal;ea;pos
+CBC-BTD-EAC;11096;BC Triple Layer Drip Gateaux;buttercream cake;Buttercream;internal;ea;pos
+CBC-CBG-EAC;11097;Christmas Buttercream Gateaux;buttercream cake;Buttercream;internal;ea;pos
+CBC-CDB-EAC;15060;BC Choc Drip Gateaux;buttercream cake;Buttercream;internal;ea;pos
+CBC-CDN-EAC;11018;Chocolate Doughnut;buttercream cake;Buttercream;internal;ea;pos
+CBC-CNL-EAC;11032;Coconut Tartlet;buttercream cake;Buttercream;internal;ea;pos
+CBC-CNR-EAC;11030;Coconut Ring;buttercream cake;Buttercream;internal;ea;pos
+CBC-CNS-EAC;11008;Coconut Slice;buttercream cake;Buttercream;internal;ea;pos
+CBC-CNT-EAC;11031;Coconut Tart;buttercream cake;Buttercream;internal;ea;pos
+CBC-CUS-EAC;11035;Currant Square;buttercream cake;Buttercream;internal;ea;pos
+CBC-FLA-EAC;11036;Flakey Bits;buttercream cake;Buttercream;internal;ea;pos
+CBC-JAP-EAC;11037;Jam Puff;buttercream cake;Buttercream;internal;ea;pos
+CBC-JAT-EAC;11038;Jam Tart;buttercream cake;Buttercream;internal;ea;pos
+CBC-JDN-EAC;11019;Jam Doughnut;buttercream cake;Buttercream;internal;ea;pos
+CBC-JTO-EAC;11039;Jam Turnover;buttercream cake;Buttercream;internal;ea;pos
+CBC-KOE-EAC;11020;Koeksuster 1s;buttercream cake;Buttercream;internal;ea;pos
+CBC-LPC-EAC;11009;Choc Lamington Plain;buttercream cake;Buttercream;internal;ea;pos
+CBC-LPR-EAC;11010;Raspberry Lamington Plain;buttercream cake;Buttercream;internal;ea;pos
+CBC-MBD-EAC;11043;Mini Buttercream D/N;buttercream cake;Buttercream;internal;ea;pos
+CBC-MBG-EAC;11098;Mothers Day Buttercream Gateaux;buttercream cake;Buttercream;internal;ea;pos
+CBC-MCD-EAC;11044;Mini Chocolate D/N;buttercream cake;Buttercream;internal;ea;pos
+CBC-MEL-40G;11021;Melting Moments 40g (Round);buttercream cake;Buttercream;external;ea;pos
+CBC-MEL-60G;11023;Melting Moments 60g (Long);buttercream cake;Buttercream;internal;ea;pos
+CBC-MFL-EAC;11045;Mini F/BITS;buttercream cake;Buttercream;internal;ea;pos
+CBC-MRL-EAC;;Mini Lamington Raspberry Plain;buttercream cake;Buttercream;internal;ea;pos
+CBC-MSB-EACH;11046;Mini S/B;buttercream cake;Buttercream;internal;ea;pos
+CBC-MUE-EAC;11007;Muesli Slice;buttercream cake;Buttercream;internal;ea;pos
+CBC-PCC-EAC;30338;BD Picture Cup Cakes;buttercream cakes;Buttercream;internal;ea;pos
+CBC-QUC-EAC;11011;Queen Cakes 1s;buttercream cake;Buttercream;internal;ea;pos
+CBC-SNO-EAC;11013;Snowballs 1s;buttercream cake;Buttercream;internal;ea;pos
+CBS-SBE-EACH;30650;Eggless Small Buttercream Gateaux;buttercream cake;Buttercream;internal;ea;pos
+CFC-FDI-EAC;8101;Cake Buttercream In Dome Eggless;buttercream cake;Buttercream;internal;ea;pos
+CFC-FLM-EAC;;Choc Mini Lamington;buttercream cake;Buttercream;internal;ea;pos
+CFC-FRM-EAC;;Mini Jam TurnOvers;buttercream cake;Buttercream;internal;ea;pos
+CFC-MFL-EAC;;Mini CreamPuffs;buttercream cake;Buttercream;internal;ea;pos
+SHP-BVS-EAC;16009;BC Vanilla Swiss Roll;buttercream cake;Buttercream;internal;ea;pos
+CBC-CRP-EAC;11034;Cream Puff;buttercream cake;Buttercream ;internal;ea;pos
+CBC-EB1-1M;;BD 1MX500 BC Eggless;buttercream 1mx500;Buttercream Birthday Cake;internal;ea;pos
+CBF-BCF-018;10088;BD Buttercream Figure 18;buttercream figure cake;Buttercream Birthday Cake;internal;ea;pos
+CBF-BCF-018;10088;BD Buttercream Figure 18;buttercream figure cake;Buttercream Birthday Cake;internal;ea;pos
+CBF-BCF-020;10090;BD Buttercream Figure 20;buttercream figure;Buttercream Birthday Cake;internal;ea;pos
+CBF-BCF-020;10090;BD Buttercream Figure 20;buttercream figure;Buttercream Birthday Cake;internal;ea;pos
+CBF-BFE-020;10199;BD 20 Buttercream Figure on Base Eggless;buttercream figure;Buttercream Birthday Cake;internal;ea;pos
+CBF-BFS-018;10092;BD Buttercream Fig on SL 18;buttercream figure cake;Buttercream Birthday Cake;internal;ea;pos
+CBF-BFS-018;10092;BD Buttercream Fig on SL 18;buttercream figure cake;Buttercream Birthday Cake;internal;ea;pos
+CBF-BFS-020;10094;BD Buttercream Fig on SL 20;buttercream figure cake;Buttercream Birthday Cake;internal;ea;pos
+CBF-FOE-020;;BD 20 Buttercream Figure Only Eggless;buttercream figure;Buttercream Birthday Cake;internal;ea;pos
+CBR-BCR-012;10105;BD Buttercream 12 Round;buttercream cake round;Buttercream Birthday Cake;internal;ea;pos
+CBR-BCR-014;10107;BD Buttercream 14 Round;buttercream cake round;Buttercream Birthday Cake;internal;ea;pos
+CBR-BCR-016;10109;BD Buttercream 16 Round;buttercream round;Buttercream Birthday Cake;internal;ea;pos
+CBR-BCR-018;10104;BD Buttercream 18 Round;buttercream cake round;Buttercream Birthday Cake;internal;ea;pos
+CBR-BCR-020;10112;BD Buttercream 20 Round;buttercream round;Buttercream Birthday Cake;internal;ea;pos
+CBS-BCD-012;10005;BD Buttercream 12 DL;buttercream square;Buttercream Birthday Cake;internal;ea;pos
+CBS-BCD-014;10007;BD Buttercream 14 DL;buttercream square;Buttercream Birthday Cake;internal;ea;pos
+CBS-BCD-016;10011;BD Buttercream 16 DL;buttercream square;Buttercream Birthday Cake;internal;ea;pos
+CBS-BCD-018;10015;BD Buttercream 18 DL;buttercream square cake;Buttercream Birthday Cake;internal;ea;pos
+CBS-BCD-020;10018;BD Buttercream 20 DL;buttercream square;Buttercream Birthday Cake;internal;ea;pos
+CBS-BCD-022;10031;BD Buttercream 22 DL;buttercream square;Buttercream Birthday Cake;internal;ea;pos
+CBS-BCE-016;10033;BD 16 BC DL Eggless;buttercream square;Buttercream Birthday Cake;internal;ea;pos
+CNO-BC1-1X5;10083;BD Buttercream 1mx500;buttercream 1mx500;Buttercream Birthday Cake;internal;ea;pos
+CNO-BC1-1X5;10083;BD Buttercream 1mx500;buttercream 1mx500;Buttercream Birthday Cake;internal;ea;pos
+CNO-BCE-1X5;;BD Buttercream 1mx500 Eggless;buttercream 1mx500;Buttercream Birthday Cake;internal;ea;pos
+SRN-BCE-020;;BD20 Buttercream Eggless Cake;buttercream square ;Buttercream Birthday Cake;internal;ea;pos
+SRN-BCR-022;;BC 22 Cut out Figure;buttercream figure;Buttercream Birthday Cake;internal;ea;pos
+SRN-FIG-020;;Buttercream Eggless Figure on base 20;buttercream figure;Buttercream Birthday Cake;internal;ea;pos
+CAN-CMS-EAC;;Candles 10s- Silver;candle;miscellaneous;external;ea;pos
+CAN-DOU-010;80351;Candle Numeral Double;candle;miscellaneous;external;ea;pos
+CAN-DOU-080;8034;Candle Numeral Double;candle;miscellaneous;external;ea;pos
+CAN-GOL-000;;Candle Numeral 0 Gold;candle;miscellaneous;external;ea;pos
+CAN-GOL-001;;Candle Numeral 1 Gold;candle;miscellaneous;external;ea;pos
+CAN-GOL-002;;Candle Numeral 2 Gold;candle;miscellaneous;external;ea;pos
+CAN-GOL-003;;Candle Numeral 3 Gold;candle;miscellaneous;external;ea;pos
+CAN-GOL-004;;Candle Numeral 4 Gold;candle;miscellaneous;external;ea;pos
+CAN-GOL-005;;Candle Numeral 5 Gold;candle;miscellaneous;external;ea;pos
+CAN-GOL-006;;Candle Numeral 6 Gold;candle;miscellaneous;external;ea;pos
+CAN-GOL-007;;Candle Numeral 7 Gold;candle;miscellaneous;external;ea;pos
+CAN-GOL-008;;Candle Numeral 8 Gold;candle;miscellaneous;external;ea;pos
+CAN-GOL-009;;Candle Numeral 9 Gold;candle;miscellaneous;external;ea;pos
+CAN-MAG-24S;8004;Candle Magic Assorted;candle;miscellaneous;external;ea;pos
+CAN-MCA-EAC;30714;Magic Candles;candle;miscellaneous;external;ea;pos
+CAN-MIX-24S;8005;Candle Mixed - 24x24;candle;miscellaneous;external;ea;pos
+CAN-RAI-000;8006;Candle Numeral 0 Rainbow;candle;miscellaneous;external;ea;pos
+CAN-RAI-001;8007;Candle Numeral 1 Rainbow;candle;miscellaneous;external;ea;pos
+CAN-RAI-002;8008;Candle Numeral 2 Rainbow;candle;miscellaneous;external;ea;pos
+CAN-RAI-003;8009;Candle Numeral 3 Rainbow;candle;miscellaneous;external;ea;pos
+CAN-RAI-004;8010;Candle Numeral 4 Rainbow;candle;miscellaneous;external;ea;pos
+CAN-RAI-005;8011;Candle Numeral 5 Rainbow;candle;miscellaneous;external;ea;pos
+CAN-RAI-006;8012;Candle Numeral 6 Rainbow;candle;miscellaneous;external;ea;pos
+CAN-RAI-007;8013;Candle Numeral 7 Rainbow;candle;miscellaneous;external;ea;pos
+CAN-RAI-009;8015;Candle Numeral 9 Rainbow;candle;miscellaneous;external;ea;pos
+CAN-SIL-000;;Candle Numeral 0 Silver;candle;miscellaneous;external;ea;pos
+CAN-SIL-001;;Candle Numeral 1 Silver;candle;miscellaneous;external;ea;pos
+CAN-SIL-002;;Candle Numeral 2 Silver;candle;miscellaneous;external;ea;pos
+CAN-SIL-003;;Candle Numeral 3 Silver;candle;miscellaneous;external;ea;pos
+CAN-SIL-004;;Candle Numeral 4 Silver;candle;miscellaneous;external;ea;pos
+CAN-SIL-005;;Candle Numeral 5 Silver;candle;miscellaneous;external;ea;pos
+CAN-SIL-006;;Candle Numeral 6 Silver;candle;miscellaneous;external;ea;pos
+CAN-SIL-007;;Candle Numeral 7 Silver;candle;miscellaneous;external;ea;pos
+CAN-SIL-008;;Candle Numeral 8 Silver;candle;miscellaneous;external;ea;pos
+CAN-SIL-009;;Candle Numeral 9 Silver;candle;miscellaneous;external;ea;pos
+CAN-WHI-000;8025;Candle Numeral 0 White;candle;miscellaneous;external;ea;pos
+CAN-WHI-001;8016;Candle Numeral 1 White;candle;miscellaneous;external;ea;pos
+CAN-WHI-002;8017;Candle Numeral 2 White;candle;miscellaneous;external;ea;pos
+CAN-WHI-003;8018;Candle Numeral 3 White;candle;miscellaneous;external;ea;pos
+CAN-WHI-004;8019;Candle Numeral 4 White;candle;miscellaneous;external;ea;pos
+CAN-WHI-005;8020;Candle Numeral 5 White;candle;miscellaneous;external;ea;pos
+CAN-WHI-006;8021;Candle Numeral 6 White;candle;miscellaneous;external;ea;pos
+CAN-WHI-007;8022;Candle Numeral 7 White;candle;miscellaneous;external;ea;pos
+CAN-WHI-008;8023;Candle Numeral 8 White;candle;miscellaneous;external;ea;pos
+CAN-WHI-009;8024;Candle Numeral 9 White;candle;miscellaneous;external;ea;pos
+MIS-CSA-(6S);;Candle Assorted Sparkle (6s);candle;miscellaneous;external;ea;pos
+MIS-CSG-(6s);;Candle Sparkle Gold (6s);candle;miscellaneous;external;ea;pos
+DRI- CZE-440;;Coke Zero 440ml can;drink;Drinks;external;ea;pos
+DRI-APT-275;6001048003323;Appletiser 275ml NRB;drink;Drinks;external;ea;pos
+DRI-APT-330;6001048004481;Appletiser 330ml CAN;drink;Drinks;external;ea;pos
+DRI-BAA-500;90492853;Bonaqua 500ml;drink;Drinks;external;ea;pos
+DRI-BAN-500;5449000117816;Bonaqua 500ml Naartjie;drink;Drinks;external;ea;pos
+DRI-BON-500ML;;Water Bonaqua Still 500ml;drink;Drinks;external;ea;pos
+DRI-CBB-1500;;Cappy Breakfast Blend 1.5litre;drink;Drinks;external;ea;pos
+DRI-CBB-EAC;5449000256010;Cappy Breakfast Blend 330ml;drink;Drinks;external;ea;pos
+DRI-COC-125;5449000009746;Coca-Cola 1250ml;drink;Drinks;external;ea;pos
+DRI-COC-1LT;5449000054227;Coca-Cola 1L;drink;Drinks;external;ea;pos
+DRI-COC-2LT;5449000009067;Coca-Cola 2l;drink;Drinks;external;ea;pos
+DRI-COC-300;2003;Coca-Cola 300ml Bottle;drink;Drinks;external;ea;pos
+DRI-COC-330;5449000256805;Coca-Cola 300ml Can;drink;Drinks;external;ea;pos
+DRI-COC-440;;Coca- Cola 500ml Can;drink;Drinks;external;ea;pos
+DRI-COC-500;5449000664686;Coca-Cola 440ml Buddy;drink;Drinks;external;ea;pos
+DRI-COL-1.5LT;5449000133335;Coca-Cola Zero 1.5ltr;drink;Drinks;external;ea;pos
+DRI-COL-125;5449000140913;Coca-Cola Light 1250ml;drink;Drinks;external;ea;pos
+DRI-COL-225;;Coke Light 2250ml;drink;Drinks;external;ea;pos
+DRI-COL-2LT;5449000050229;Coca-Cola Light 2l;drink;Drinks;external;ea;pos
+DRI-COL-2LT;5449000050229;Coca-Cola Light 2l;drink;Drinks;external;ea;pos
+DRI-COL-300C;549000256805;Coke 300ml Can;drink;Drinks;external;ea;pos
+DRI-COL-330;5449000050205;Coca-Cola Light 330ml Can;drink;Drinks;external;ea;pos
+DRI-COL-500;5449000664709;Coca-Cola Light 500ml;drink;Drinks;external;ea;pos
+DRI-COZ-2250;;Coke Zero 2250ml;drink;Drinks;external;ea;pos
+DRI-COZ-2LT;5449000131843;Coca-Cola Zero 2l;drink;Drinks;external;ea;pos
+DRI-COZ-2LT;5449000131843;Coca-Cola Zero 2l;drink;Drinks;external;ea;pos
+DRI-COZ-330;5449000256898;Coca-Cola Zero 300ml Can;drink;Drinks;external;ea;pos
+DRI-CPP-EAC;5449000255792;Cappy Passion Peach;drink;Drinks;external;ea;pos
+DRI-CRE-400ML;5449000265364;Cream Soda 400ml;drink;Drinks;external;ea;pos
+DRI-CTP-330;5449000255693;Cappy Trop Punch 330ml;drink;Drinks;external;ea;pos
+DRI-FAG-1LT;54490000252346;Fanta Grape;drink;Drinks;external;ea;pos
+DRI-FAG-2LT;5449000010070;Fanta Grape 2l;drink;Drinks;external;ea;pos
+DRI-FAG-300;2004;Fanta Grape 300ml Bottle;drink;Drinks;external;ea;pos
+DRI-FAG-330;5449000257093;Fanta Grape 300ml CAN;drink;Drinks;external;ea;pos
+DRI-FAG-500;5449000664723;Fanta Grape 440ml Buddy;drink;Drinks;external;ea;pos
+DRI-FAN-300C;;Fanta Orange 300ml Can;drink;Drinks;external;ea;pos
+DRI-FAN-440;5449000257130;Fanta Orange 400ml can;drink;Drinks;external;ea;pos
+DRI-FAO-2LT;5449000010049;Fanta Orange 2l;drink;Drinks;external;ea;pos
+DRI-FAO-300;2008;Fanta Orange 300ml Bottle;drink;Drinks;external;ea;pos
+DRI-FAO-330;5449000257000;Fanta Orange 300ml Can;drink;Drinks;external;ea;pos
+DRI-FAO-500;5449000664754;Fanta Orange 440ml Buddy;drink;Drinks;external;ea;pos
+DRI-FAP-2LT;5449000003768;Fanta Pineapple 2l;drink;Drinks;external;ea;pos
+DRI-FAP-2LT;5449000003768;Fanta Pineapple 2l;drink;Drinks;external;ea;pos
+DRI-FAP-300;2007;Fanta Pine 300ml Bottle;drink;Drinks;external;ea;pos
+DRI-FAP-330;5449000003201;Fanta Pineapple 330ml Can;drink;Drinks;external;ea;pos
+DRI-FAP-500;5449000664747;Fanta Pineapple 440ml Buddy;drink;Drinks;external;ea;pos
+DRI-FAS-125;;Fanta 1 litre;drink;Drinks;external;ea;pos
+DRI-FOC-500ML;5449000050809;Fanta Orange Can 500ml;drink;Drinks;external;ea;pos
+DRI-FWT-400ML;5449000316332;Fanta What The Flavour 400ml Buddy;drink;Drinks;external;ea;pos
+DRI-GRA-275;6001048003385;Grapetiser 275ml NRB;drink;Drinks;external;ea;pos
+DRI-GRA-330;6001048004511;Grapetiser 330ml Can;drink;Drinks;external;ea;pos
+DRI-GRW-330;6001048003897;Grapetiser Wht 330ml Can;drink;Drinks;external;ea;pos
+DRI-IBR-125;;Iron Brew1.25ml;drink;Drinks;external;ea;pos
+DRI-IRO-2LT;6001134297308;Iron Brew 2l;drink;Drinks;external;ea;pos
+DRI-IRO-2LT;6001134297308;Iron Brew 2l;drink;Drinks;external;ea;pos
+DRI-IRO-300;2009;Iron Brew 300ml;drink;Drinks;external;ea;pos
+DRI-IRO-330;5449000106261;Iron Brew 330ml Can;drink;Drinks;external;ea;pos
+DRI-KAPP-500ML;6001299049668;Clover Krush 100% Apple;juice;Drinks;external;ea;pos
+DRI-KFF-500ML;6001299045813;Clover Krush 6 Fruit £ Fibre;juice;Drinks;external;ea;pos
+DRI-KOR-500ML;6001299010101;Clover Krush 100% Orange;juice;Drinks;external;ea;pos
+DRI-MEN-500;5060166698874;Monster Engery 500ml;drink;Drinks;external;ea;pos
+DRI-MML-500;5060517888299;Monster Mucho Logo 500ml;drink;Drinks;external;ea;pos
+DRI-MON-330;5060517888664;Monster Original;drink;Drinks;external;ea;pos
+DRI-MON-EAC;5060337509411;Monster;drink;Drinks;external;ea;pos
+DRI-PBB-EAC;54490482;Powerade Blueberry 500ml;drink;Drinks;external;ea;pos
+DRI-PGE-500;5060517888848;Predator Gold Energy Drink 500ml;drink;Drinks;external;ea;pos
+DRI-PJI-EAC;90492488;Powerade Jagged Ice;drink;Drinks;external;ea;pos
+DRI-PNA-500ML;90492501;Powerade Naartjie;drink;Drinks;external;ea;pos
+DRI-PPL-EAC;;Powerplay;drink;Drinks;external;ea;pos
+DRI-REB-EAC;9002490100070;Red Bull 250ml;drink;Drinks;external;ea;pos
+DRI-REC-350ML;;Red Cappuccino;drink;Drinks;external;ea;pos
+DRI-RSF-EAC;9002490200220;Red Bull Sugar Free;drink;Drinks;external;ea;pos
+DRI-SCS-125;2017;Spar C/Soda 1250ml;drink;Drinks;external;ea;pos
+DRI-SCS-2LT;6001134087305;Spar C\Soda 2lt;drink;Drinks;external;ea;pos
+DRI-SCS-300;5449000257536;Spar C/Soda 300ml;drink;Drinks;external;ea;pos
+DRI-SCS-330;5449000106322;Spar C/Soda 330ml Can;drink;Drinks;external;ea;pos
+DRI-SCS-500;5449000664846;Spar Cream Soda 440ml Buddy;drink;Drinks;external;ea;pos
+DRI-SIB-125;2011;Spar Iron Brew 1250ml;drink;Drinks;external;ea;pos
+DRI-SPN-125;2012;Spar Pine Nut 1250ml;drink;Drinks;external;ea;pos
+DRI-SPN-2LT;5449000117977;Spar Sparbry Pine Nut 2ltr;drink;Drinks;external;ea;pos
+DRI-SPR-125;5449000234612;Sprite 1 litre;drink;Drinks;external;ea;pos
+DRI-SPR-2LT;5449000234636;Sprite 2l;drink;Drinks;external;ea;pos
+DRI-SPR-300;5449000257222;Sprite 300ml Can;drink;Drinks;external;ea;pos
+DRI-SPR-330;5449000014535;Sprite 330ml Can;drink;Drinks;external;ea;pos
+DRI-SPR-440;5449000257239;Sprite 400ml can;drink;Drinks;external;ea;pos
+DRI-SPR-500;5449000234643;Sprite 440ml Buddy;drink;Drinks;external;ea;pos
+DRI-SPZ-2LT;5449000104885;Sprite Zero 2l;drink;Drinks;external;ea;pos
+DRI-SPZ-330;5449000106704;Sprite Zero 330ml Can;Drink;Drinks;external;ea;pos
+DRI-SPZ-500;5449000109613;Sprite Zero 500ml;drink;Drinks;external;ea;pos
+DRI-SRB-500;5449000664853;Sparletta Raspberry 440ml Buddy;drink;Drinks;external;ea;pos
+DRI-SSB-125;6001134005507;Sparletta 1250ml;drink;Drinks;external;ea;pos
+DRI-SSB-2LT;6001134687307;Spar Sparberry 2LTR;drink;Drinks;external;ea;pos
+DRI-SSB-330;5449000257628;Spar Sparbry 300ml Can;drink;Drinks;external;ea;pos
+DRI-SST-300;5449000257420;Spar Stoney 300ml;drink;Drinks;external;ea;pos
+DRI-SST-330;5449000106421;Spar Stoney 330ml Can;drink;Drinks;external;ea;pos
+DRI-STO-125;5449000064950;Stoney 1 litre;drink;Drinks;external;ea;pos
+DRI-STO-2LT;6001134707302;Stoney Ginger Beer 2lt;drink;Drinks;external;ea;pos
+DRI-STO-440;5449000257413;Stoney 400ml can;drink;Drinks;external;ea;pos
+DRI-STO-500;5449000664808;Stoney -gingerbeer 440ml Buddy;drink;Drinks;external;ea;pos
+DRI-STW-500;6009633490022;Water 500ml Still;drink;Drinks;external;ea;pos
+DRI-STW-EAC;30607;Still Water;drink;Drinks;external;ea;pos
+DRI-TGR-1.5L;5449000180889;Twist Grandilla 1.5ltr;drink;Drinks;external;ea;pos
+DRI-TWG-125;6001133001104;Twist Gran 1250ml;drink;Drinks;external;ea;pos
+DRI-TWG-2LT;5449000098580;Twist Gran 2l;drink;Drinks;external;ea;pos
+DRI-TWG-2LT;5449000098580;Twist Gran 2l;drink;Drinks;external;ea;pos
+DRI-TWG-300;2016;Twist Gran 300ml;drink;Drinks;external;ea;pos
+DRI-TWG-330;5449000257567;Twist Gran 300ml Can;drink;Drinks;external;ea;pos
+DRI-TWG-500;5449000664839;Twist Gran 440ml Buddy;drink;Drinks;external;ea;pos
+DRI-TWL-1.5L;;Twist Lemon 1.5 Litre;drink;Drinks;external;ea;pos
+DRI-TWL-125;6001134395509;Twist Lemon 1250ml;drink;Drinks;external;ea;pos
+DRI-TWL-2LT;5449000060082;Twist Lemon 2l;drink;Drinks;external;ea;pos
+DRI-TWL-330;5449000257505;Twist Lemon 300ml Can;drink;Drinks;external;ea;pos
+DRI-TWL-500;40822747;Twist Lemon 500ml;drink;Drinks;external;ea;pos
+DRI-VAL-150;5449000107787;Water valpre still 1500ml;drink;Drinks;external;ea;pos
+DRI-VAL-500;5449000107664;Water Valpre Still 500ml;drink;Drinks;external;ea;pos
+DRI-WTF-2LTR;5449000308146;Fanta What The Flavour 2litre;drink;Drinks;external;ea;pos
+JUI- FNB-500ML;6001299024634;Juice Krush Fruit Nectar 500ml;juice;Drinks;external;ea;pos
+JUI-EBL-500;6001324254371;Energade 500ml Blueberry;drink;Drinks;external;ea;pos
+JUI-EGR-500;6001324238098;Energade 500ml Grape;drink;Drinks;external;ea;pos
+JUI-ELL-500;6001324217338;Energade 500ml Lemon & Lime;drink;Drinks;external;ea;pos
+JUI-EMB-500;6001324299556;Energade 500ml Mixed Berry;drink;Drinks;external;ea;pos
+JUI-ENA-500;6001324217253;Energade 500ml Naartjie;drink;Drinks;external;ea;pos
+JUI-ENO-500;6001324217178;Energade 500ml Orange;drink;Drinks;external;ea;pos
+JUI-ETR-500;6001324238173;Energade 500ml Tropical;drink;Drinks;external;ea;pos
+JUI-KRM-500ML;6001299010118;Clover Krush 100% Mango;juice;Drinks;external;ea;pos
+JUI-ORA-2LT;6001299043079;Juice 2l Orange Nectar;juice;Drinks;external;ea;pos
+JUI-ORA-500;6001299007521;Juice 500ml Orange Nectar;juice;Drinks;external;ea;pos
+JUI-PIN-1LT;6001299015793;Juice Tropika 1Litre;juice;Drinks;external;ea;pos
+JUI-TRO-1.5L;6001299015724;Tropika 1.5lt pineapple;juice;Drinks;external;ea;pos
+JUI-TRO-1.5Lt;6001299015687;Tropika 1.5lt Orange;juice;Drinks;external;ea;pos
+JUI-TRO-1LT;6001299008054;Tropika 1l Orange;juice;Drinks;external;ea;pos
+JUI-TRO-500;6001299007965;Tropika 500ml Orange;juice;Drinks;external;ea;pos
+JUI-TRP-1LT;6001299008115;Tropika 1l Pineapple;juice;Drinks;external;ea;pos
+JUI-TRP-250;6001299008092;Tropika 250ml Pineapple;juice;Drinks;external;ea;pos
+JUI-TRP-500;6001299007972;Tropika 500ml Pineapple;juice;Drinks;external;ea;pos
+MIL-SMB-EAC;6001299044540;Super M 300ml Banana;drink;Drinks;external;ea;pos
+MIL-SMC-EAC;6001299044601;Super M 300ml Chocolate;drink;Drinks;external;ea;pos
+MIL-SMO-EAC;6001299044663;Super M 300ml Cream Soda;drink;Drinks;external;ea;pos
+MIL-SMS-EAC;6001299044519;Super M 300ml Strawberry;drink;Drinks;external;ea;pos
+CEX- BDC-EAC;;Bar One 6 Layer Drip With Toppings;exotic cakes;exotic cakes;internal;ea;pos
+CEX- BEG-EAC;14050;FC Bar One Eggless Drip;exotic cakes;exotic cakes;internal;ea;pos
+CLE-BGS-EAC;;Betasan Gel Sanitizer Refills;consumables;Consumables;external;ea;
+CLE-TPR-EAC;;Tad Paper Refil;consumables;Consumables;external;ea;
+CLE-VIB-EAC;;Viper Boards;consumables;Consumables;external;ea;
+MIS-BLI-EAC;;Braai Lighter;consumables;Consumables;external;ea;
+CEX CCD-EAC;14030;Cheese Cake Dessert;exotic cakes;exotic cakes;internal;ea;pos
+CEX- MCP-EAC;14091;Moist Chocolate Pudding;exotic cakes;exotic cakes;internal;ea;pos
+CEX- MDB-EAC;;Buttercream 6 Layer Drip Cake with toppings;exotic cakes;exotic cakes;internal;ea;pos
+CEX- NBS-EAC;;New York Blueberry Cheese Cake Slice;exotic cakes;exotic cakes;internal;ea;pos
+CEX -NYW-EAC;30665;New York Baked Cheese Cake Round;exotic cakes;exotic cakes;internal;ea;pos
+CEX-AMB-EAC;14001;American Brownie;exotic cakes;exotic cakes;internal;ea;pos
+CEX-APP-EAC;14025;Apple Tart;exotic cakes;exotic cakes;internal;ea;pos
+CEX-ATS-EAC;;Apple Tartlet;exotic cakes;exotic cakes;internal;ea;pos
+CEX-BAR-012;10001;BD Bar One Square 12;novelty;novelty;internal;ea;pos
+CEX-BAR-014;10002;BD Bar One Square 14;novelty;novelty;internal;ea;pos
+CEX-BAR-016;10003;BD Bar One Square 16;novelty;novelty;internal;ea;pos
+CEX-BAR-018;;BD Bar One Square 18;novelty;novelty;internal;ea;pos
+CEX-BAR-020;;BD Bar One Square 20;novelty;novelty;internal;ea;pos
+CEX-BCC-EAC;14027;Baked Citrus Cheese Cake;exotic cakes;exotic cakes;internal;ea;pos
+CEX-BOL-EAC;4005;Bar One Log;exotic cakes;exotic cakes;internal;ea;pos
+CEX-BOM-EAC;14065;Mothers Day Bar One Round with rose and leaves;exotic cakes;exotic cakes;internal;ea;pos
+CEX-BOR-EAC;14003;Bar One Round;exotic cakes;exotic cakes;internal;ea;pos
+CEX-BOS-EAC;4008;Bar One Slice;exotic cakes;exotic cakes;internal;ea;pos
+CEX-BRC-EAC;14028;Baked Red Velvet Cheese Cake;exotic cakes;exotic cakes;internal;ea;pos
+CEX-BVC-EAC;;Baked Vanilla Cheese Cake;exotic cakes;exotic cakes;internal;ea;pos
+CEX-CAC-012;;BD 12 Carrot Cake square wit cream cheese;novelty;novelty;internal;ea;pos
+CEX-CAC-014;;BD 14' Carrot cake square with cream cheese;novelty;novelty;internal;ea;pos
+CEX-CAC-016;;BD 16' Carrot Cake Square with cream cheese;novelty;novelty;internal;ea;pos
+CEX-CAC-018;;BD 18 Carrot Cake Square with cream cheese;novelty;novelty;internal;ea;pos
+CEX-CAC-020;;BD 20 Carrot Cake Square with cream cheese;novelty;novelty;internal;ea;pos
+CEX-CAC-EAC;;Carrot Cake Cupcake;exotic cakes;exotic cakes;internal;ea;pos
+CEX-CBD-EAC;;Chocolate Bar One 6 Layer Drip Cake;exotic cakes;exotic cakes;internal;ea;pos
+CEX-CBO-EAC;14006;Christmas Bar One Round;exotic cakes;exotic cakes;internal;ea;pos
+CEX-CCC-EAC;14033;Baked Choclate Cheese Cake;exotic cakes;exotic cakes;internal;ea;pos
+CEX-CCP-6S;140295;Chocolate Cake Pops (6s);shop front;shop front;internal;ea;pos
+CEX-CCS-EAC;14007;Cheese Cake Slice;exotic cakes;exotic cakes;internal;ea;pos
+CEX-CCT-EAC;14008;Cheese Cake Tart;exotic cakes;exotic cakes;internal;ea;pos
+CEX-CEG-EAC;14035;Caramel Exotic Gateaux;exotic cakes;exotic cakes;internal;ea;pos
+CEX-CFD-EAC;;Chocolate Fererro 6 Layer Drip Cake;exotic cakes;exotic cakes;internal;ea;pos
+CEX-CFE-EAC;14010;Christmas Ferrero Cake;exotic cakes;exotic cakes;internal;ea;pos
+CEX-CHC-EAC;14036;Chocolate Cheese Cake Cup;exotic cakes;exotic cakes;internal;ea;pos
+CEX-CIC-EAC;14037;Citrus Cheese Cake Cup;exotic cakes;exotic cakes;internal;ea;pos
+MIS-CGR-EAC;;Custom Google Review Sign;consumables;Consumables;external;ea;
+CEX-CRM-EAC;14199;Moist Choc Cake With Cream Cheese;exotic cakes;exotic cakes;internal;ea;pos
+CEX-CUS-EAC;14042;Custard & Jelly;exotic cakes;exotic cakes;internal;ea;pos
+CEX-DCV-EAC;14044;Decorative Chocolate Vanilla Gateaux;exotic cakes;exotic cakes;internal;ea;pos
+CEX-EBC-EACH;;Bar One Cupcake Eggless;exotic cakes;exotic cakes;internal;ea;pos
+CEX-FEM-EAC;14045;Mothers Day Ferrero Round with rose and leaves;exotic cakes;exotic cakes;internal;ea;pos
+CEX-FER-012;10075;BD Ferrero Cake 12;novelty;novelty;internal;ea;pos
+MIS-CRS-EAC;;C20 Red Stamp;consumables;Consumables;external;ea;
+CEX-FER-014;10076;BD Ferrero Cake 14;novelty;novelty;internal;ea;pos
+CEX-FER-016;10077;BD Ferrero Cake 16;novelty;novelty;internal;ea;pos
+CEX-FER-018;;BD Ferrero Cake 18;novelty;novelty;internal;ea;pos
+CEX-FER-020;;BD Ferrero Cake 20;novelty;novelty;internal;ea;pos
+CEX-FRC-EAC;14012;Ferrero Rocher Cake;exotic cakes;exotic cakes;internal;ea;pos
+CEX-GCA-EAC;;Giant Cappuchino Muffin;exotic cakes;exotic cakes;internal;ea;pos
+CEX-GCC-EAC;;Giant Corn & Chives Muffin;exotic cakes;exotic cakes;internal;ea;pos
+CEX-GCH-EAC;;Giant Choc Muffin;exotic cakes;exotic cakes;internal;ea;pos
+MIS-DOR-EAC;30856;Oven Delights Flags;consumables;Consumables;internal;ea;
+CEX-GCM-EAC;;Giant Chicken & Mushroom Muffin;exotic cakes;exotic cakes;internal;ea;pos
+CEX-GIM-EAC;14046;Giant Muffins;exotic cakes;exotic cakes;internal;ea;pos
+CEX-GLP-EAC;;Giant Lemon Poppy& Nuts;exotic cakes;exotic cakes;internal;ea;pos
+CEX-GPC-EAC;;Giant Pecan & Carrot Muffin;exotic cakes;exotic cakes;internal;ea;pos
+CEX-GSF-EAC;;Giant Spinach & Feta Muffin;exotic cakes;exotic cakes;internal;ea;pos
+CEX-GVA-EAC;;Giant Vanilla Muffins;exotic cakes;exotic cakes;internal;ea;pos
+CEX-LMS-EAC;;Lemon Meringue Tart Small;exotic cakes;exotic cakes;internal;ea;pos
+CEX-LMT-EAC;;Lemon Meringue Tart Large;exotic cakes;exotic cakes;internal;ea;pos
+CEX-MAC-EAC;14047;Macaroons (4s);exotic cakes;exotic cakes;internal;ea;pos
+CEX-MAL-EAC;14048;Malva Pudding;exotic cakes;exotic cakes;internal;ea;pos
+CEX-MAO-EAC;;Macaroons (1s);exotic cakes;exotic cakes;internal;ea;pos
+CEX-MBE-EAC;14049;Milky Bar Exotic;exotic cakes;exotic cakes;internal;ea;pos
+CEX-MBS-EAC;;Bar One Swissroll Slice;exotic cakes;exotic cakes;internal;ea;pos
+CEX-MCL-EACH;;Moist Chocolate Cake Large With Cream Cheese;exotic cakes;exotic cakes;internal;ea;pos
+CEX-MIL-12;;BD Milky Bar 12'';novelty;novelty;internal;ea;pos
+CEX-MIL-14;;BD Milky Bar 14'';novelty;novelty;internal;ea;pos
+CEX-MIL-EAC;;Milky Bar Swissroll Slice;exotic cakes;exotic cakes;internal;ea;pos
+CEX-MPN-EAC;;Mini Pecan Nut Tart;exotic cakes;exotic cakes;internal;ea;pos
+CEX-MPT-EAC;;Malva Pudding Tartlet;exotic cakes;exotic cakes;internal;ea;pos
+CEX-MRC-EAC;;Cream Cheese Rainbow Cake;exotic cakes;exotic cakes;internal;ea;pos
+CEX-MRS-EAC;;Cream Cheese Rainbow Slice;exotic cakes;exotic cakes;internal;ea;pos
+MIS-FAK-EAC;;First Aid Kit;consumables;Consumables;external;ea;
+CEX-MVC-EAC;14092;Moist Vanilla Cake with Caramel Drizzle;exotic cakes;exotic cakes;internal;ea;pos
+CEX-NBC-EAC;;New York Baked Blueberry Cheesecake Round;exotic cakes;exotic cakes;internal;ea;pos
+CEX-NRV-EAC;14057;New Red Velvet Cake;exotic cakes;exotic cakes;internal;ea;pos
+CEX-NUT-18;;18'' Nibbed Nuts Only;miscellaneous;miscellaneous;internal;ea;pos
+CEX-NYC-EAC;;New York Baked Cheese Cake Slice;exotic cakes;exotic cakes;internal;ea;pos
+CEX-PCT-4S;;Portuguese Custard Tart (4S);exotic cakes;exotic cakes;external;ea;pos
+CEX-PCT-EAC;;Portuguese Custard Tart;exotic cakes;exotic cakes;external;ea;pos
+CEX-PET-EACH;;Pecan Nut Tartlet;exotic cakes;exotic cakes;internal;ea;pos
+CEX-PMC-EACH;14014;Peppermint Crisp Cake;exotic cakes;exotic cakes;internal;ea;pos
+CEX-PNT-EAC;14016;Pecan Nut Tart;exotic cakes;exotic cakes;internal;ea;pos
+CEX-RCC-EAC;14058;CARROT CAKE ROUND;exotic cakes;exotic cakes;internal;ea;pos
+CEX-REC-EAC;14038;Redvelvet Cheese Cake Cup;exotic cakes;exotic cakes;internal;ea;pos
+CEX-RED-016;30778;BD 16 Red Velvet Square;novelty;novelty;internal;ea;pos
+CEX-RMC-EAC;14059;OREO CAKE;exotic cakes;exotic cakes;internal;ea;pos
+CEX-RSW-EAC;14060;Red velvet Swissroll;exotic cakes;exotic cakes;internal;ea;pos
+CEX-RVB-018;;BD 18 Red Velvet Square;novelty;novelty;internal;ea;pos
+CEX-RVB-020;;BD 20 Red Velvet Square;novelty;novelty;internal;ea;pos
+CEX-RVC-EAC;14017;Red Velvet Cupcakes;exotic cakes;exotic cakes;internal;ea;pos
+CEX-RVG-EAC;30776;Red Velvet Gateaux;exotic cakes;exotic cakes;internal;ea;pos
+CEX-RVL-EAC;14019;Red Velvet Log;exotic cakes;exotic cakes;internal;ea;pos
+CEX-RVS-EAC;14020;Red Velvet Slice;exotic cakes;exotic cakes;internal;ea;pos
+CEX-TID-EAC;;Tirumisu Dessert;exotic cakes;exotic cakes;internal;ea;pos
+CEX-TIR-EAC;14021;Cake Tiramisu;exotic cakes;exotic cakes;internal;ea;pos
+CEX-TIS-EAC;14022;tirumisu slice;exotic cakes;exotic cakes;internal;ea;pos
+CEX-TRE-EAC;;Truffles Eggless 6s;exotic cakes;exotic cakes;internal;ea;pos
+CEX-TRF-EAC;14062;Truffles (1)s;exotic cakes;exotic cakes;internal;ea;pos
+CEX-TRO-EAC;14023;Tirumisu round;exotic cakes;exotic cakes;internal;ea;pos
+CEX-TRU-EAC;14061;Truffles (6s);exotic cakes;exotic cakes;internal;ea;pos
+CEX-VAC-EAC;14039;Vanilla Cheese Cake Cup;exotic cakes;exotic cakes;internal;ea;pos
+CEX-VGB-EACH;;Vegan Chocolate Brownie;exotic cakes;exotic cakes;internal;ea;pos
+CEZ-MIL-16;;BD Milky Bar 16'';novelty;novelty;internal;ea;pos
+CFC-CCT-15CM;;Gluten Free Carrot Cake Tub 15cm;exotic cakes;exotic cakes;internal;ea;pos
+CFC-FCP-EAC;12030;FC Caramel Sponge;exotic cakes;exotic cakes;internal;ea;pos
+CFC-FMS-EAC;12011;FC Milky Bar Slice;exotic cakes;exotic cakes;internal;ea;pos
+CFC-VVB-EAC;;Vegan Vanilla 4 Layer -Berry Garnish;exotic cakes;exotic cakes;internal;ea;pos
+ICE-SMO-EAC;6001087357821;GLUTEN FREE LEMON FRIDGE CHEESECAKE TUB;exotic cakes;exotic cakes;internal;ea;pos
+ICE-SRP-EAC;6001087357814;GLUTEN FREE CHOCOLATE GANACHE TUB;exotic cakes;exotic cakes;internal;ea;pos
+PAC-STL-EAC;;GLUTEN FREE COFFEE CAKE TUB;exotic cakes;exotic cakes;internal;;pos
+PAC-TAL-EAC;;GLUTEN FREE CHOC MOUSSE CAKE TUB;exotic cakes;exotic cakes;internal;;pos
+XCH-BAR-EAC;;Chocolate Bar One;exotic cakes;exotic cakes;internal;;pos
+YCC-MMC-EAC;30831;RICH MOIST XMAS CAKE;exotic cakes;exotic cakes;internal;ea;pos
+ZDB-SDT-EAC;;GLUTEN FREE COFFEE CAKE TUB;exotic cakes;exotic cakes;internal;ea;pos
+CBF-BLF-014;12001;BD Freshcream 14 Black Forest;freshcream square black forest;Fresh Cream Birthday Cakes;internal;ea;pos
+CBF-BLF-016;12020;BD Freshcream 16 Blackforest;freshcream blackforest;Fresh Cream Birthday Cakes;internal;ea;pos
+CBF-FCD-014;10039;BD Freshcream 14 DL;freshcream square;Fresh Cream Birthday Cakes;internal;ea;pos
+CBF-FCF-018;10089;BD Freshcream Figure 18;freshcream figure cake;Fresh Cream Birthday Cakes;internal;ea;pos
+CBF-FCF-020;10091;BD Freshcream Figure 20;freshcream figure;Fresh Cream Birthday Cakes;internal;ea;pos
+CBF-FF0-020;;BD 20 Freshcream Figure Only Eggless;freshcream figure;Fresh Cream Birthday Cakes;internal;ea;pos
+CBF-FFE-020;10198;BD Freshcream Figure on Base Eggless 20;freshcream figure cake;Fresh Cream Birthday Cakes;internal;ea;pos
+CBF-FFS-018;10093;BD Freshcream Fig on SL 18;freshcream figure cake;Fresh Cream Birthday Cakes;internal;ea;pos
+CBF-FFS-020;10095;BD Freshcream Fig on SL 20;freshcream figure;Fresh Cream Birthday Cakes;internal;ea;pos
+CBR-FCR-012;10106;BD Freshcream 12 Round;freshcream cake round;Fresh Cream Birthday Cakes;internal;ea;pos
+CBR-FCR-014;10108;BD Freshcream 14 Round;freshcream cake round;Fresh Cream Birthday Cakes;internal;ea;pos
+CBR-FCR-016;10110;BD Freshcream 16 Round;freashcream round;Fresh Cream Birthday Cakes;internal;ea;pos
+CBR-FCR-018;10111;BD Freshcream 18 Round;freshcream round;Fresh Cream Birthday Cakes;internal;ea;pos
+CBR-FCR-020;10113;BD Freshcream 20 Round;freshcream round;Fresh Cream Birthday Cakes;internal;ea;pos
+CBS-BLF-012;10078;BD Freshcream 12 Black Forest;freshcream black forest;Fresh Cream Birthday Cakes;internal;ea;pos
+CBS-FCD-012;10037;BD Freshcream 12 DL;freshcream square;Fresh Cream Birthday Cakes;internal;ea;pos
+CBS-FCD-016;10041;BD Freshcream 16 DL;freshcream square;Fresh Cream Birthday Cakes;internal;ea;pos
+CBS-FCD-018;10045;BD Freshcream 18 DL;freshcream square;Fresh Cream Birthday Cakes;internal;ea;pos
+CBS-FCD-020;10050;BD Freshcream 20 DL;freshcream square;Fresh Cream Birthday Cakes;internal;ea;pos
+CBS-FCD-022;10054;BD Freshcream 22 DL;freshcream square;Fresh Cream Birthday Cakes;internal;ea;pos
+CBS-FCE-016;10103;BD 16 Freshcream Eggless;freshcream square;Fresh Cream Birthday Cakes;internal;ea;pos
+CFC-EF1-1M;;BD 1M X500 FC Eggless;freshcream 1mx 500;Fresh Cream Birthday Cakes;internal;ea;pos
+CNO-FC1-1X5;10084;BD Freshcream 1mx500;freshcream 1mx 500;Fresh Cream Birthday Cakes;internal;ea;pos
+CNO-FCE-1X5;;BD Freshcream 1m x 500 Eggless;freshcream cakes 1mx500 eggless;Fresh Cream Birthday Cakes;internal;ea;pos
+SRN-FCE-020;;BD 20 Fresh Cream Eggless cake;freshcream square eggless;Fresh Cream Birthday Cakes;internal;ea;pos
+CFC-BET-EAC;12022;Belgica Tart;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-BTL-EAC;12023;Belgica Tartlet;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-CBS-EAC;12009;FC Black Forest Slice;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-CCC-EAC;30866;Carrot Cake With Cream Cheese;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-CCD-EAC;12035;Custard Doughnut;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-CFD-EAC;15049;FC Choc Drip Gateaux;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-CFE-EACH;;Christmas Freshcream Eggless Gateaux;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-CUD-EAC;12024;Custard Danish;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-CUS-EAC;12025;Custard Slice;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-EMT-EACH;;Eggless Milk Tartlet;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-FBF-EAC;12004;FC Black Forest Gateaux;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-FBG-EAC;12002;FC Birthday Gateaux;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-FCD-EAC;12015;Fresh Cream Doughnut;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-FCE-EAC;12027;FC Eclair Chocolate;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-FCG-EAC;12006;FC Chocolate Gateaux;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-FCJ-EAC;12037;Christmas Freshcream Choc Gateaux;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-FCL-EAC;12010;FC Fresh Cream Slice;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-FCM-EAC;12012;FC Lamington Chocolate;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-FCR-EAC;12026;FC Croissant 80g;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-FCS-EAC;12014;FC Chocolate Swiss Roll;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-FDD-EAC;8102;Cake Freshcream In Dome Eggless;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-FEB-EAC;30519;FC Eggless Birthday Gateaux;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-FEG-EAC;12007;FC Eggless Vanilla Gateaux;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-FES-EAC;30621;FC Eggless Slice;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-FOS-EAC;;Freshcream Oreo Slice;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-FRL-EAC;12013;FC Lamington Raspberry;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-FSM-EAC;;Mini Freshcream Swissroll;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-FSS-EAC;12031;FC Strawberry Sponge;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-MEG-EAC;12034;Mothers Day Eggless Freshcream Gateaux;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-MFD-EAC;;Mini FC D/N;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-MFE-EAC;;Mini Freshcream Eclairs;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-MFG-EAC;12033;Mothers Day FC Choc Gateaux with rose and leaves;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-MMT-EAC;;Mini Milk Tart;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-MTA-EAC;12028;Milk Tart Large;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-MTL-EAC;12029;Milk Tartlet;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-NOB-EAC;12032;No Bake Cake;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-SEF-EAC;30670;Eggless Small Freshcream Gateaux;freshcream cakes;Fresh Cream;internal;ea;pos
+CFC-FRU-010;10079;BD Fruit Cake 10;fruit cake;Fruitcake;internal;ea;pos
+CFC-FRU-012;10080;BDFruit Cake 12;fruit cake;Fruitcake;internal;ea;pos
+CFC-FRU-014;10081;BD Fruit Cake 14;fruit cake;Fruitcake;internal;ea;pos
+CFC-FRU-016;10082;BD Fruit Cake 16;fruit cake;Fruitcake;internal;ea;pos
+CFC-FRU-EAU;;Fruit Cake Pieces Unwrapped;fruit cake;Fruitcake;internal;ea;pos
+CFC-FRU-EAW;;Fruit Cake Pieces Wrapped;fruit cake;Fruitcake;internal;ea;pos
+CFR-CFR-012;30340;BD Round Fruitcake 12;fruit cake;Fruitcake;internal;ea;pos
+CFR-CFR-012;30340;BD Round Fruitcake 12;fruit cake;Fruitcake;internal;ea;pos
+CFR-CFR-014;30363;BD Round Fruitcake 14;fruit cake;Fruitcake;internal;ea;pos
+CFR-CFR-016;30364;BD Round Fruitcake 16;fruit cake;Fruitcake;internal;ea;pos
+CFR-CFR-016;30364;BD Round Fruitcake 16;fruit cake;Fruitcake;internal;ea;pos
+CEX-NUT-12;;12'' Nibbed Nuts Only;miscellaneous;miscellaneous;internal;ea;pos
+CEX-NUT-14;;14'' Nibbed Nuts Only;miscellaneous;miscellaneous;internal;ea;pos
+CEX-NUT-16;;16'' Nibbed Nuts Only;miscellaneous;miscellaneous;internal;ea;pos
+CEX-NUT-20;;20'' Nibbed Nuts Only;miscellaneous;miscellaneous;internal;ea;pos
+CEX-NUT-22;;22'' Nibbed Nuts Only;miscellaneous;miscellaneous;internal;ea;pos
+CEX-PEA-12;;12'' Peaches Slices Only;miscellaneous;miscellaneous;internal;ea;pos
+CEX-PEA-14;;14'' Peaches Slices Only;miscellaneous;miscellaneous;internal;ea;pos
+CEX-PEA-16;;16'' Peaches Slices Only;miscellaneous;miscellaneous;internal;ea;pos
+CEX-PEA-18;;18'' Peaches Slices Only;miscellaneous;miscellaneous;internal;ea;pos
+CEX-PEA-20;;20'' Peaches Slices Only;miscellaneous;miscellaneous;internal;ea;pos
+CEX-PEA-22;;22'' Peaches Slices Only;miscellaneous;miscellaneous;internal;ea;pos
+MIS - CCB-12;;Colour Cream - 12'';miscellaneous;miscellaneous;internal;ea;pos
+MIS - SCB-KGR;;Solid Colour Buttercream;miscellaneous;miscellaneous;internal;ea;pos
+MIS- CCB-14;;Colour Cream - 14'';miscellaneous;miscellaneous;internal;ea;pos
+MIS- FIT-EAC;;Happy Anniversary Cake Topper;miscellaneous;miscellaneous;external;ea;pos
+MIS- FON-EAC;;Fondant Writing;miscellaneous;miscellaneous;internal;ea;pos
+MIS-ACC-EAC;;Plastic Icing Baby Accessory Set;miscellaneous;miscellaneous;external;ea;pos
+MIS-AES-EACH;;Additional Espresso Shot;miscellaneous;miscellaneous;internal;ea;pos
+MIS-BAB-EAC;;Plastic icing Baby with blanket;miscellaneous;miscellaneous;internal;ea;pos
+MIS-BGM-EAC;30540;Bride & Groom Meduim;miscellaneous;miscellaneous;external;ea;pos
+MIS-BGS-EAC;30541;Bride & Groom Small;miscellaneous;miscellaneous;external;ea;pos
+MIS-BMV-EAC;8100;Mvutu Bar One;miscellaneous;miscellaneous;internal;ea;pos
+MIS-BOO-EAC;;Plastic icing Booties;miscellaneous;miscellaneous;internal;ea;pos
+MIS-BRP-EAC;;Big Roses With Polysterene;miscellaneous;miscellaneous;internal;ea;pos
+MIS-CAN-EAC;30516;Cancellation;miscellaneous;miscellaneous;internal;ea;pos
+MIS-HEL-5LTR;;Heluim Small Cylinder;consumables;Consumables;external;ea;
+MIS-CAT-EAC;;Cake Toppers Acyrlic;miscellaneous;miscellaneous;external;ea;pos
+MIS-CBC-BDC;;Chocolate Buttercream -Birthday Cake;miscellaneous;miscellaneous;internal;ea;pos
+MIS-CCB-16;;Colour Cream - 16'';miscellaneous;miscellaneous;internal;ea;pos
+MIS-CCB-18;;Colour Cream - 18'';miscellaneous;miscellaneous;internal;ea;pos
+MIS-CCB-20;;Colour Cream - 20'';miscellaneous;miscellaneous;internal;ea;pos
+MIS-CCB-22;;Colour Cream - 22'';miscellaneous;miscellaneous;internal;ea;pos
+MIS-CHA-EAC;;Service Charge for Changes;miscellaneous;miscellaneous;internal;ea;pos
+MIS-CHT-EAC;;Figure Cake Topper;miscellaneous;miscellaneous;external;ea;pos
+MIS-MAT-EAC;60069795;Matches;consumables;Consumables;external;ea;
+MIS-CHW-EAC;30523;Choc Writing;miscellaneous;miscellaneous;internal;ea;pos
+MIS-CUP-EAC;8016;Foam Cups 250ml;miscellaneous;miscellaneous;external;ea;pos
+MIS-CWR-EAC;;Customised Writing;miscellaneous;miscellaneous;internal;ea;pos
+MIS-DAO-EAC;;Day Old Cakes;miscellaneous;miscellaneous;internal;ea;pos
+MIS-DBC-012;23002;Dbl Choc 12;miscellaneous;miscellaneous;internal;ea;pos
+MIS-DBC-014;24002;Dbl Choc 14;miscellaneous;miscellaneous;internal;ea;pos
+MIS-DBC-016;25002;Dbl Choc 16;miscellaneous;miscellaneous;internal;ea;pos
+MIS-DBC-018;26002;Dbl Choc 18;miscellaneous;miscellaneous;internal;ea;pos
+MIS-DBC-020;27002;Dbl Choc 20;miscellaneous;miscellaneous;internal;ea;pos
+MIS-DBC-022;28002;Dbl Choc 22;miscellaneous;miscellaneous;internal;ea;
+MIS-OOH-EACH;;Overheads;consumables;Consumables;external;ea;
+MIS-PAN-EAC;60094391;Panado;consumables;Consumables;external;ea;
+MIS-PLA-EAC;8019;Plasters;consumables;Consumables;external;ea;
+PAC- NAB-EAC;;Name Badges;consumables;Consumables;external;ea;
+PAC-VPC-EAC;;Vinyl Print Coffee Boards;consumables;Consumables;external;ea;
+MIS-DBV-012;23001;Dbl Vanilla 12;miscellaneous;miscellaneous;internal;ea;pos
+PAC-WRG-EAC;;Wrist Guard;consumables;Consumables;external;ea;
+MIS-DBV-014;24001;Dbl Vanilla 14;miscellaneous;miscellaneous;internal;ea;pos
+MIS-DBV-016;25001;Dbl Vanilla 16;miscellaneous;miscellaneous;internal;ea;pos
+MIS-DBV-018;26001;Dbl Vanilla 18;miscellaneous;miscellaneous;internal;ea;pos
+MIS-DBV-020;27001;Dbl Vanilla 20;miscellaneous;miscellaneous;internal;ea;pos
+XDA-FLO-KGR;;Flora light;consumables;Consumables;external;kg;
+MIS-DBV-022;28001;Dbl Vanilla 22;miscellaneous;miscellaneous;internal;ea;pos
+MIS-DEL-EAC;;Delivery;miscellaneous;miscellaneous;internal;ea;pos
+MIS-DMV-EACH;8099;Mvutu Donut 4s;miscellaneous;miscellaneous;internal;ea;pos
+MIS-DOS-EAC;8202;Day Old Scones;miscellaneous;miscellaneous;internal;ea;pos
+MIS-EPO-EAC;30422;Edible Picture Only;miscellaneous;miscellaneous;external;ea;pos
+MIS-FCB-EAC;;Balloons -Foil Character;miscellaneous;miscellaneous;external;ea;pos
+MIS-FFL-EAC;;Fresh Flowers Each;miscellaneous;miscellaneous;external;ea;pos
+XDE-DIW-EAC;;Diwali Sticker;consumables;Consumables;external;ea;
+MIS-FGB-EAC;;Balloons-Foil General;miscellaneous;miscellaneous;external;ea;pos
+MIS-FMG-EAC;;Balloons- Foil Number Gold;miscellaneous;miscellaneous;external;ea;pos
+MIS-FNG-EAC;;Balloons- Foil Number Rose Gold;miscellaneous;miscellaneous;external;ea;pos
+XDE-RIB-EAC;30198;Ribbon;consumables;Consumables;external;meter;
+MIS-FNR-EAC;;Balloons-Foil Number Rainbow Splash;miscellaneous;miscellaneous;external;ea;pos
+MIS-FNS-EAC;;Balloons- Foil Number Silver;miscellaneous;miscellaneous;external;ea;pos
+MIS-FWO-EACH;;Fondant Wording;miscellaneous;miscellaneous;external;ea;pos
+MIS-GBE-EAC;8017;Gold Beads;miscellaneous;miscellaneous;external;ea;pos
+MIS-GWR-EAC;30521;Gold Writing;miscellaneous;miscellaneous;external;ea;pos
+MIS-HBT-EAC;;Happy Birthday Cake Topper;miscellaneous;miscellaneous;external;ea;pos
+MIS-HEL-LAR;;Heluim Large;miscellaneous;miscellaneous;external;ea;pos
+MIS-HEL-SML;;Heluim Small;miscellaneous;miscellaneous;external;ea;pos
+MIS-LEA-EAC;8018;Leaves;miscellaneous;miscellaneous;external;ea;pos
+MIS-MGR-EAC;8035;Rib Metallic Gold;miscellaneous;miscellaneous;external;ea;pos
+YBU-JUG-2LT;;Jug Plastic 2 litre;consumables;Consumables;external;ea;
+MIS-MSR-EAC;8036;Rib Metallic Silver;miscellaneous;miscellaneous;external;ea;pos
+MIS-MVU-EAC;8032;Mvutu;miscellaneous;miscellaneous;external;ea;pos
+MIS-NOV-EAC;30524;Novelities Sets;miscellaneous;miscellaneous;external;ea;pos
+YBU-JUG-5LT;;Jug Plastic 5 litre;consumables;Consumables;external;ea;
+MIS-PLD-EAC;;Platter Dip 70ml;miscellaneous;miscellaneous;external;ea;pos
+MIS-RAS-EACH;;Rakhi String;miscellaneous;miscellaneous;external;ea;pos
+MIS-RMV-EAC;8033;Mvutu Rainbow;miscellaneous;miscellaneous;external;ea;pos
+MIS-ROS-EAC;8020;Roses;miscellaneous;miscellaneous;external;ea;pos
+MIS-RSS-EAC;;Roses Small New Assorted Colours;miscellaneous;miscellaneous;external;ea;pos
+MIS-SBE-EAC;8030;Silver Beads;miscellaneous;miscellaneous;external;ea;pos
+MIS-SCB-EAC;;Balloons- Stick Character;miscellaneous;miscellaneous;external;ea;pos
+MIS-SDC-EAC;30515;Same Day Charge;miscellaneous;miscellaneous;external;ea;pos
+MIS-SFB-EAC;;Sign Happy Birthday Gold Foil;miscellaneous;miscellaneous;external;ea;pos
+MIS-SGA-EAC;8026;Sign H.A. Gold;miscellaneous;miscellaneous;external;ea;pos
+MIS-SGB-EAC;8028;Sign H.B. Gold;miscellaneous;miscellaneous;external;ea;pos
+MIS-STG-EAC;;Balloons-Stick General;miscellaneous;miscellaneous;external;ea;pos
+MIS-STR-EAC;;Strawberry;miscellaneous;miscellaneous;external;ea;pos
+MIS-SWR-EAC;30522;Silver Writing;miscellaneous;miscellaneous;external;ea;pos
+MIS-TOO-EAC;;Toothpicks 1000s;miscellaneous;miscellaneous;external;ea;
+MIS-WHC-EAC;;Additional Whipped Cream;miscellaneous;miscellaneous;external;ea;pos
+MIS-XSR-EAC;;Xmas Sticker Scroll English;miscellaneous;miscellaneous;external;ea;
+SRC-CHO-CRE;;Choc Cream -20 Fig On Base;miscellaneous;miscellaneous;internal;kg;pos
+SRN-CML-016;;Caramel Spread only - on 16;miscellaneous;miscellaneous;internal;ea;pos
+YBU-OVM-EAC;30005;Oven Mittens;consumables;Consumables;external;ea;
+SRN-CRM-016;;Cream colour cream only - 16;miscellaneous;miscellaneous;internal;ea;pos
+SRN-JAM-012;;Strawberry Jam only - 12;miscellaneous;miscellaneous;internal;ea;pos
+YBU-PAL-EAC;30653;Palette Knife;consumables;Consumables;external;ea;
+SRN-JAM-012;;Strawberry Jam only - 12;miscellaneous;miscellaneous;internal;ea;pos
+SRN-JAM-014;;Strawberry Jam only - 14;miscellaneous;miscellaneous;internal;ea;pos
+SRN-JAM-014;;Strawberry Jam only - 14;miscellaneous;miscellaneous;internal;ea;pos
+SRN-JAM-016;;Strawberry Jam only - 16;miscellaneous;miscellaneous;internal;ea;pos
+SRN-JAM-18;;Strawberry Jam Only-18;miscellaneous;miscellaneous;internal;ea;pos
+SRN-JAM-20;;Strawberry Jam Only-20;miscellaneous;miscellaneous;internal;ea;pos
+SRN-PAI-EAC;;Painting on Roses;miscellaneous;miscellaneous;internal;ea;pos
+YBU-PBR-EACH;;Pastry Brush Nylon 60mm;consumables;Consumables;external;ea;
+SRN-PEA-014;;Peach Slices Only 14;miscellaneous;miscellaneous;internal;ea;pos
+SRN-PLI-012;;Plastic Icing Covering Only 12;miscellaneous;miscellaneous;internal;ea;pos
+SRN-PLI-016;;Plastic Icing Covering Only 16;miscellaneous;miscellaneous;internal;ea;pos
+SRN-PLI-016;;Plastic Icing Covering Only 16;miscellaneous;miscellaneous;internal;ea;pos
+YBU-SBP-EAC;30012;Sponge for bread pan;consumables;Consumables;external;ea;
+XDE-AST-EAC;30836;Astd roses;miscellaneous;miscellaneous;external;ea;pos
+XDE-SIL-KGR;30202;Silver Beads Per Kg;miscellaneous;miscellaneous;external;kg;pos
+XDE-TEA-EAC;30201;Ribbon tear 1 Roll;miscellaneous;miscellaneous;external;meter;pos
+YBU-SSC-EAC;;Scraper Steel 115x80mm;consumables;Consumables;external;ea;
+YCC-CHA-EAC;30630;Champagne Bottle;miscellaneous;miscellaneous;external;ea;pos
+YCC-LEA-EAC;30624;Leaves No.Large;miscellaneous;miscellaneous;external;ea;pos
+YCC-MIS-EAC;30817;Mistletoe Garland ribbon;miscellaneous;miscellaneous;external;ea;pos
+YCC-OCC-KGR;;Old Cakes Currant Square;miscellaneous;miscellaneous;external;ea;pos
+YCC-APR-EAC;;White Plastic Aprons;consumables;Consumables;external;ea;
+YCC-BUN-EAC;30044;Paper 10kg Bunny;consumables;Consumables;external;kg;
+YCC-CRG-EAC;;Cream Gun 500g;consumables;Consumables;external;ea;
+YCC-PIL-EAC;30046;Pillars White;miscellaneous;miscellaneous;external;ea;pos
+YCC-SOS-EAC;30701;Soccer Set;miscellaneous;miscellaneous;external;ea;pos
+YCC-GLG-EAC;30626;Gel Food Col.Leaf Green;consumables;Consumables;Internal;kg;
+YCC-XPS-EAC;30815;Xmas Poinsettia Star Ribbon;miscellaneous;miscellaneous;external;ea;pos
+YGA-AFS-EAC;;Air Filled Stand 1550x500;miscellaneous;miscellaneous;external;ea;pos
+CBA-BAC-014;;BD 14'' Buttercream Alphabet Cake;novelty;novelty;internal;ea;pos
+CBA-BEA-016;;BD 16'' Eggless Buttercream Alphabet Cake;novelty;novelty;internal;ea;pos
+CBF-BCK-020;10096;BD Buttercream Key;novelty;novelty;internal;ea;pos
+CBF-FCK-020;10097;BD Freshcream Key;novelty;novelty;internal;ea;pos
+CBN-B1M-EACH;;BD Buttercream 1MX1M;novelty;novelty;internal;ea;pos
+CBN-F1M-EACH;;BD Freshcream 1M X1M;novelty;novelty;internal;ea;pos
+CEX- LFD-EACH;;20cmBC4LayerDrip Cake- Fresh Flowers Macaroon/topp;novelty;novelty;internal;ea;pos
+CEX- RTR-12;;BC 12'' Round Triple Layer Rose Pattern;novelty;novelty;internal;ea;pos
+CEX-RTR-14;;BC 14'' Round Triple Layer Rose Pattern;novelty;novelty;internal;ea;pos
+CEX-RTR-16;;BC 16'' Round Triple Layer Rose Pattern;novelty;novelty;internal;ea;pos
+CEX-RTR-18;;BC 18'' Round Triple Layer Rose Pattern;novelty;novelty;internal;ea;pos
+CEX-RTR-20;;BC 20'' Round Triple Layer Rose Pattern;novelty;novelty;internal;ea;pos
+CFA-FAC-014;;BD 14'' Freshcream Alphabet Cake;novelty;novelty;internal;ea;
+YCC-GOM-EAC;30002;GlovesOven Mittens;consumables;Consumables;external;ea;
+YCC-GPP-EAC;30766;Grease Proof Paper;consumables;Consumables;external;kg;
+YCC-GPR-EAC;30740;GP REAM;consumables;Consumables;external;kg;
+YCC-MET-EAC;30003;metallic nozzil 15mm star;consumables;Consumables;external;ea;
+YCC-MGS-EAC;30641;Ed Cart Canon Mg Series;consumables;Consumables;external;ea;
+YCC-MOH-EAC;;Mop Hats;consumables;Consumables;external;ea;
+YCC-MXR-EAC;30816;Merry xmas ribbon;consumables;Consumables;external;ea;
+YCC-NME-EAC;30014;Nozzels metallic;consumables;Consumables;external;ea;
+YCC-NST-EAC;30004;Nozzles star tubes 5s ( 42);consumables;Consumables;external;ea;
+YCC-PAS-EAC;30006;Pastry Bag 13040 4 46cm;consumables;Consumables;external;ea;
+YCC-PIP-EAC;30674;Piping Bags No 4;consumables;Consumables;external;ea;
+YCC-PLG-EAC;;Plastic Gloves;consumables;Consumables;external;kg;
+YCC-PSR-EAC;30045;Paper Silicone Ream;consumables;Consumables;external;ea;
+YCC-PSS-EAC;30008;Piping Tip Star Set;consumables;Consumables;external;kg;
+YCC-PST-EAC;30007;Pastry Bag 13040 5 50cm Export;consumables;Consumables;external;ea;
+YCC-SIL-EAC;30655;Silicon Paper 500;consumables;Consumables;external;ea;
+YCC-XSS-EAC;30834;Xmas stickers scroll;consumables;Consumables;external;meter;
+YCL-BLD-LTR;;Black Dip;consumables;Consumables;external;lt;
+YCL-BLE-EAC;30049;Bleach 5L;consumables;Consumables;external;lt;
+YCL-BRE-250G;;Detergent Brewtool 250G;consumables;Consumables;external;kg;
+YCL-CEM-KGR;;Clenzo Espresso Cleaning Detergent;consumables;Consumables;external;kg;
+YCL-DIS-EAC;30051;Dish Washing Liquid 25L;consumables;Consumables;external;lt;
+YCL-DOO-EAC;;Doom;consumables;Consumables;external;ea;
+YCL-FAS-LTR;;Fat Solves;consumables;Consumables;external;lt;
+YCL-FLO-EAC;30053;Floor Cleaner Lav;consumables;Consumables;external;lt;
+YCL-HHG-EAC;30814;Household Gloves;consumables;Consumables;external;ea;
+YCL-HHH-EAC;30054;Handy Household 5l;consumables;Consumables;external;lt;
+YCL-MRM-EAC;30819;Mr min;consumables;Consumables;external;ea;
+YCL-OVC-EAC;30055;Oven Cleaner;consumables;Consumables;external;lt;
+YCL-POT-EAC;30056;Pot Scourers;consumables;Consumables;external;ea;
+YCL-SAN-500;;Hand Sanitiser 500ml;consumables;Consumables;external;lt;
+YCL-SCC-KGR;;Speciality Cleaning Chemicals -Machine Cleaner 900;consumables;Consumables;external;lt;
+YCL-SLW-EAC;30640;Steel Wool;consumables;Consumables;external;ea;
+YCL-UCD-900G;;Urnex Cafiza2 Detergent;consumables;Consumables;external;kg;
+YGA-19K-EAC;30061;Gas 19kg;consumables;Consumables;external;kg;
+YST-A4P-EAC;30066;A4 PAPER;consumables;Consumables;external;ea;
+YST-ABR-EAC;30745;Absa Rolls;consumables;Consumables;external;ea;
+YST-BAT-EAC;30837;Battery;consumables;Consumables;external;ea;
+YST-BCI-EAC;;New Birthday Cake Invoices;consumables;Consumables;external;ea;
+YST-BCO-EAC;30069;book cover;consumables;Consumables;external;ea;
+YST-BRO-EAC;30632;Brother Toner Cart.7225N;consumables;Consumables;external;ea;
+YST-BTI-EAC;30070;Books Tax Invoice;consumables;Consumables;external;ea;
+YST-BTP-EAC;30840;Black Tape;consumables;Consumables;external;ea;
+YST-DIW-EAC;30782;Diwali Invoice Books;consumables;Consumables;external;ea;
+YST-ERC-EAC;;Epson Ribbon Cartridge;consumables;Consumables;external;ea;
+YST-EXE-EAC;30065;A4 exercise book;consumables;Consumables;external;ea;
+YST-HCB-EAC;30732;Hard cover book;consumables;Consumables;external;ea;
+YST-HLS-EAC;30843;High lighters;consumables;Consumables;external;ea;
+YST-LMP-EAC;30797;Laminating Plastic;consumables;Consumables;external;ea;
+YST-LPS-EAC;30074;Laser Payslips;consumables;Consumables;external;ea;
+YST-PFL-EAC;30075;paper file;consumables;Consumables;external;ea;
+YST-PRI-EAC;30750;Pritt;consumables;Consumables;external;ea;
+YST-SQA-PAC;30078;square white paper;consumables;Consumables;external;ea;
+YST-STA-BOX;30079;Staples rexel no .56;consumables;Consumables;external;ea;
+YST-TAP-EAC;30728;tape;consumables;Consumables;external;ea;
+YST-TIL-EAC;30687;Till Rolls;consumables;Consumables;external;ea;
+YST-TIP-EAC;30860;Tipex;consumables;Consumables;external;ea;
+YST-TRL-EAC;30059;toilet roll;consumables;Consumables;external;ea;
+YUT-GRU-EAC;30654;Grunter Knife;consumables;Consumables;external;ea;
+YUT-PIP-EAC;30594;Piping Bag No 5;consumables;Consumables;external;ea;
+ZPA- SSW-EAC;;Stirrer Sticks Wooden;consumables;Consumables;external;ea;
+ZPA-SER-BOX;30315;Servittes 200x300;consumables;Consumables;external;ea;
+ZPA-SSW-EAC;;Stirrer Sticks Wooden;consumables;Consumables;external;ea;
+ZPL-DES-EAC;30274;Desert Spoons;consumables;Consumables;external;ea;
+ZPL-STR-BOX;30317;Wrapped Straws;consumables;Consumables;external;ea;
+ZPL-TRO-EAC;30316;Trolley Cover;consumables;Consumables;external;ea;
+ZPL-WSS--BOX;;Wrapped Smoothie Straw;consumables;Consumables;external;ea;
+REP-BRE-EAC;;Bread Slicer Blades;equipment;Equipment;external;ea;
+YBU -CTR-EAC;;Cake ring tins 170X70mm;equipment;Equipment;external;ea;
+YBU-SPR-EAC;30013;Springform Cake Pan;equipment;Equipment;external;ea;
+YCC-CSC-EAC;;Coffee Scale;equpment;Equipment;external;ea;
+YCC-ESL-EAC;30677;Electronic Scale;equpment;Equipment;external;ea;
+YCC-SHB-EAC;;Smartchef Heavy Duty Blender;equpment;Equipment;external;ea;
+YGA-FIR-EAC;30799;Fire Extinguisher;equipment;Equipment;external;ea;
+YUT-CDW-EAC;;Cutter Dough Wheel Divider;equipment;Equipment;external;ea;
+YUT-SCA-EAC;30652;Scale Electronic;equipment;Equipment;external;ea;
+YUT-WHI-EAC;;Whisks 350mm;equipment;Equipment;external;ea;
+DRI-AMA-EAC;;Clover Amasi 2kg;ingredients;ingredients;Internal;kg;
+DRI-BLI-EAC;;Clover Bliss Double cream yogurt;ingredients;ingredients;Internal;ea;
+DRI-CHF-EAC;;Chocolate Freezo;ingredients;ingredients;Internal;kg;
+DRI-COZ-500;5449000131836;Coca-Cola Zero 500ml;ingredients;ingredients;Internal;ea;
+JUI-DBY-EAC;;Dairy Bel Double Cream Yogurt 1kg;ingredients;ingredients;Internal;kg;
+JUI-MAA-EAC;6009616048974;Maas 500g Low Fat;ingredients;ingredients;Internal;ea;
+MIL-ALM-EAC;;Almond Milk;ingredients;ingredients;Internal;lt;
+MIL-CON-EAC;;Clover Condensed Milk 385g;ingredients;ingredients;Internal;kg;
+MIL-MFC-1LT;6001299025402;Milk 1l Full Cream;ingredients;ingredients;Internal;ea;
+MIL-MFC-250;6001299025419;Milk 250ml Full Cream;ingredients;ingredients;Internal;ea;
+MIL-MFC-2LT;;Milk 2ltr Full Cream;ingredients;ingredients;Internal;lt;
+MIL-OAT-EAC;;Oat Milk;ingredients;ingredients;Internal;lt;
+MIL-SOY-EAC;;Soy Milk;ingredients;ingredients;Internal;ea;
+MIS-API-EAC;30421;Picture;ingredients;ingredients;Internal;ea;
+MIS-RIP-EAC;10299;Ribbon Picture;ingredients;ingredients;Internal;ea;
+CFA-FAE-016;;BD 16'' Eggless Freshcream Alphabet Cake;novelty;novelty;internal;ea;pos
+M-KOK-KGR;30106;Kokomix Pettina;ingredients;ingredients;Internal;kg;
+PIE-APP-KG;;Pie Apple;ingredients;ingredients;Internal;ea;
+SNA-NUT-EAC;5013;Nuts;ingredients;ingredients;Internal;ea;
+CNO-BCB-016;10060;BD Buttercream 16 Bible;novelty;novelty;internal;ea;pos
+SNA-OATS-EAC;;Fine Oats;ingredients;ingredients;Internal;kg;
+SPI-BPE-KGR;;Spice- Whole Black Pepper;ingredients;ingredients;Internal;kg;
+SPI-CIB-EAC;;Spice Cook In Bag;ingredients;ingredients;Internal;kg;
+SPI-CIS-EAC;;Spice - Cinnamon Sticks;ingredients;ingredients;Internal;kg;
+SPI-DHA-KGR;;Spice- Dhania Powder;ingredients;ingredients;Internal;kg;
+CNO-BCB-018;10065;BD Buttercream 18 Bible;novelty;novelty;internal;ea;pos
+CNO-BCB-020;10068;BD Buttercream 20 Bible;novelty;novelty;internal;ea;pos
+SPI-GAR-KGR;;Spice-Garum Masala;ingredients;ingredients;Internal;kg;
+CNO-BCH-016;10063;BD Buttercream 16 Heart;novelty;novelty;internal;ea;pos
+CNO-BCH-018;10067;BD Buttercream 18 Heart;novelty;novelty;internal;ea;pos
+CNO-BCH-020;10036;BD Buttercream 20 Heart;novelty;novelty;internal;ea;pos
+CNO-BCS-014;10059;BD Buttercream 14 Soccer;novelty;novelty;internal;ea;pos
+CNO-BCS-014;10059;BD Buttercream 14 Soccer;novelty;novelty;internal;ea;pos
+CNO-BCS-016;10064;BD Buttercream 16 Soccer;novelty;novelty;internal;ea;pos
+CNO-BNY-018;10085;BD Mould On SL 18;novelty;novelty;internal;ea;pos
+CNO-BNY-018;10085;BD Mould On SL 18;novelty;novelty;internal;ea;pos
+CNO-BUT-014;10057;BD Buttercream 14 Butterfly;novelty;novelty;internal;ea;pos
+CNO-BUT-016;10062;BD Buttercream 16 Butterfly;novelty;novelty;internal;ea;pos
+CNO-CAS-018;10087;BD Castle;novelty;novelty;internal;ea;pos
+CNO-DHB-020;10167;BD Buttercream 20 Double Heart With Base;novelty;novelty;internal;ea;pos
+CNO-DOLL-014;10058;BD Buttercream 14 Doll;novelty;novelty;internal;ea;pos
+CNO-DOLL-016;10061;BD Buttercream 16 Doll;novelty;novelty;internal;ea;pos
+CNO-DOLL-016;10061;BD Buttercream 16 Doll;novelty;novelty;internal;ea;pos
+CNO-FCB-016;30469;BD 16 Freshcream BIBLE;novelty;novelty;internal;ea;pos
+CNO-FCB-016;30469;BD 16 Freshcream BIBLE;novelty;novelty;internal;ea;pos
+CNO-FCB-018;10071;BD Freshcream 18 Bible;novelty;novelty;internal;ea;pos
+CNO-FCB-018;10071;BD Freshcream 18 Bible;novelty;novelty;internal;ea;pos
+CNO-FCB-020;10073;BD Freshcream 20 Bible;novelty;novelty;internal;ea;pos
+CNO-FCH-016;10070;BD Freshcream 16 Heart;novelty;novelty;internal;ea;pos
+CNO-FCH-016;10070;BD Freshcream 16 Heart;novelty;novelty;internal;ea;pos
+CNO-FCH-018;10072;BD Freshcream 18 Heart;novelty;novelty;internal;ea;pos
+CNO-FCH-020;10027;BD Freshcream 20 Heart;novelty;novelty;internal;ea;pos
+CNO-FCS-014;10069;BD Freshcream 14 Soccer;novelty;novelty;internal;ea;pos
+CNO-FCS-016;10074;BD Freshcream 16 Soccer;novelty;novelty;internal;ea;pos
+CNO-FSF-014;;BD FC With Strawberries & Fence;novelty;novelty;internal;ea;pos
+CNO-SPI-018;10086;BD Spiderman On SL 18;novelty;novelty;internal;ea;pos
+SRN-AER-022;;Aeroplane Cake 22 in Plastic Icing and B/C;novelty;novelty;internal;ea;pos
+SRN-ANI-016;;16 Buttercream Animal Farm;novelty;novelty;internal;ea;pos
+SRN-BIB-016;;16 Buttercream Eggless Bible Cake;novelty;novelty;internal;ea;pos
+SRN-BIB-020;;20 Fresh Cream Egless Bible Cake;novelty;novelty;internal;ea;pos
+SRN-BMW-014;;14 Sponge in plastic icing with BMW sign;novelty;novelty;internal;ea;pos
+SRN-BRE-016;;Buttercream Round Eggless with Baby;novelty;novelty;internal;ea;pos
+SRN-BSC-016;;BD 16Buttercream with baby grower in PI;novelty;novelty;internal;ea;pos
+SRN-BYK-022;;22 Motorbike on Base with Plastic icing;novelty;novelty;internal;ea;pos
+SRN-DAI-020;;20 Buttercream with Piped Daisies;novelty;novelty;internal;ea;pos
+SPI-GIN-KGR;;Ginger & Garlic;ingredients;ingredients;Internal;kg;
+SRN-DBF-020;;20 BC Double Base With Double Figure;novelty;novelty;internal;ea;pos
+SRN-DIA-020;;20 Round PI Diamond pattern & Daisies;novelty;novelty;internal;ea;pos
+SRN-DOL-016;;16 Doll Cake in Plastic Icing no base;novelty;novelty;internal;ea;pos
+SRN-FOB-020;;20 FC Fig on Base with Choc Flakes;novelty;novelty;internal;ea;pos
+SRN-HBS-020;;Hugo Boss Suitcase Belt 20 in Plastic Icing;novelty;novelty;internal;ea;pos
+SRN-LIV-022;;22 PI Liverpool with Scarf and Boots;novelty;novelty;internal;ea;pos
+SRN-LVB-016;;Louis Vittone Bag 16 in Plastic Icing;novelty;novelty;internal;ea;pos
+SRN-PAD-016;;40*50 B/C cake with Ipad in PI + pic;novelty;novelty;internal;ea;pos
+SRN-PID-014;;BD14' Round covered in plastic icing and daisies;novelty;novelty;internal;ea;pos
+SRN-PLR-016;;Plastic Icing 16 round with musical notes;novelty;novelty;internal;ea;pos
+SRN-ROA-014;;14 Buttercream with Plastic icing Road;novelty;novelty;internal;ea;pos
+SRN-SSC-016;;16 BC S/Berry Short/C Figurine-PI;novelty;novelty;internal;ea;pos
+SRN-STA-2TI;;BD2 Tier Stack Sponge- Plastic Icing-12&14;novelty;novelty;internal;ea;pos
+SRN-STA-2TI;;BD2 Tier Stack Sponge- Plastic Icing-12&14;novelty;novelty;internal;ea;pos
+PIE -CSR-EAC;15002;OD Premium Chicken Tikka Sausage Roll;pies;pies;external;ea;pos
+PIE- FSK-EAC;;Pie Steak & Kidney Foil;pies;pies;external;ea;pos
+PIE-BBP-EAC;;Pie - Burger Beef;pies;pies;external;ea;pos
+PIE-BRC-EAC;;Pie - Burger Chicken Cheese / Sweet Chilli;pies;pies;external;ea;pos
+PIE-CCG-EAC;15016;Pie Chicken Cheese Griller;pies;pies;external;ea;pos
+PIE-CMS-EAC;;Pie Chicken and Mayo Slice;pies;pies;external;ea;pos
+PIE-COD-EAC;15103;Pie OD Chicken & Mushroom;pies;pies;internal;ea;pos
+PIE-CPP-EAC;15007;Pie Chicken Peri Peri;pies;pies;external;ea;pos
+PIE-CRP-EAC;;Pie - Cornish Pastry;pies;pies;external;ea;pos
+PIE-FCP-EAC;;Pie Chicken Peri Peri Foil;pies;pies;external;ea;pos
+PIE-FVE-EAC;;Pie Vegetable Curry Foil;pies;pies;external;ea;pos
+PIE-MCB-EAC;15011;Pie Mutton Curry Burger;pies;pies;external;ea;pos
+PIE-MSR-EAC;15001;OD Premium Mutton Oriental Sausage Roll;pies;pies;external;ea;pos
+PIE-ODM-EAC;15101;Pie OD Mutton Curry;pies;pies;internal;ea;pos
+PIE-PPS-EAC;15009;Pie Pepper Steak;pies;pies;internal;ea;pos
+PIE-PRS-EAC;15017;Pie Prime Steak;pies;pies;external;ea;pos
+PIE-SAF-EAC;15005;Pie Spinach & Feta;pies;pies;external;ea;pos
+PIE-SAK-EAC;15010;Pie Steak & Kidney;pies;pies;external;ea;pos
+PIE-SRB-EACH;15105;Pie Sausage Roll( Beef);pies;pies;external;ea;pos
+PIE-VEG-EAC;15004;Pie OD Vegetable;pies;pies;internal;ea;pos
+SAV-FCM-EAC;;Frozen Chicken And Mushroom Pie;pies;pies;internal;ea;pos
+PLA- MIX-EAC;;Platter Mixy Delight;platter;platter;internal;ea;pos
+PLA- PEM-EAC;;Platter Mini Pecan Nut Tarts 24s;platter;platter;internal;ea;pos
+PLA -SCO-EAC;;Platter Scone Delight 18s;platter;platter;internal;ea;pos
+PLA-CHE-EAC;;Platter Cheeky Delight;platter;platter;internal;ea;pos
+PLA-CRM-EAC;;Platter Mini Cream Puffs 24s;platter;platter;internal;ea;pos
+PLA-CRO-EAC;;Platter Croissant Delight 20s;platter;platter;internal;ea;pos
+PLA-ECM-EAC;;Platter Mini Freshcream Eclairs;platter;platter;internal;ea;pos
+PLA-FLM-EAC;;Platter Mini Flakey Bits 24s;platter;platter;internal;ea;pos
+PLA-FRM-EAC;;Platter Mini Freshcream Donuts;platter;platter;internal;ea;pos
+PLA-JAM-EAC;;Platter Mini Jam Turnovers 24s;platter;platter;internal;ea;pos
+PLA-MBD-EAC;;Platter Mini Buttercream Donuts 24s;platter;platter;internal;ea;pos
+PLA-MCD-EAC;;Platter Mini Chocolate Donut 24s;platter;platter;internal;ea;pos
+PLA-MEA-EAC;;Platter Meaty Delight;platter;platter;internal;ea;pos
+PLA-MIM-EAC;;Platter Mini Milk Tarts 24S;platter;platter;internal;ea;pos
+PLA-MLP-EAC;;Platter Mini Lamingtons 24s;platter;platter;internal;ea;pos
+PLA-MUFF- EAC;;Platter Muffin Delight 30s;platter;platter;internal;ea;pos
+PLA-SMA-EAC;;Platter Snacky Delight;platter;platter;internal;ea;pos
+PLA-SNM-EAC;;Platter Mini Snowballs 24s;platter;platter;internal;ea;pos
+PLA-VEG-EAC;;Platter Veggy Delights;platter;platter;internal;ea;pos
+SHP- IDH-32S;;Idhli Platter 32s;platter;platter;internal;ea;pos
+SHP-BSP-24S;;Butter Scone Platter 24s;platter;platter;internal;ea;pos
+SHP-IDH-EACH;60071;Idhli Pure Butter (4s);platter;platter;internal;ea;pos
+SAV-CCS-EAC;;Crumbed Chicken Samoosa;savoury;savoury;internal;ea;pos
+SAV-CJF-EAC;;Frozen Cheese And Jalapeno;savoury;savoury;internal;ea;pos
+SAV-CJR-EAC;;Chicken & Jalapeno Rissoles;savoury;savoury;internal;ea;pos
+SAV-CSA-EAC;;Chicken Samoosa;savoury;savoury;internal;ea;pos
+SAV-FCR-EAC;;Frozen Chicken Sausage Rolls;savoury;savoury;internal;ea;pos
+SAV-FFI-EAC;;Frozen Fish Cake;savoury;savoury;internal;ea;pos
+SAV-FIS-EAC;;Fish Cake;savoury;savoury;internal;ea;pos
+SAV-FJC-EAC;;Frozen Chicken And Jalapeno;savoury;savoury;internal;ea;pos
+SAV-FKE-EAC;;Frozen Kebabs;savoury;savoury;internal;ea;pos
+SAV-FMV-EAC;;Frozen Mix Veg Pie;savoury;savoury;internal;ea;pos
+SAV-FPA-EACH;;Frozen Patha Wheel;savoury;savoury;internal;ea;pos
+SAV-LMS-EAC;;Lamb Mince Samoosa;savoury;savoury;internal;ea;pos
+SAV-PAP-EAC;;Puri & Patha (3s);savoury;savoury;internal;ea;pos
+SAV-PAS-EAC;;Patha Samoosa;savoury;savoury;internal;ea;pos
+SAV-PUP-EAC;;Puri Plain;savoury;savoury;internal;ea;pos
+SAV-RCJ-EAC;;Cheese & Jalapeno Rissoles;savoury;savoury;internal;ea;pos
+SAV-RRC-EAC;;Roti Roll Chicken;savoury;savoury;internal;ea;pos
+SAV-RRP-EAC;;Roti Roll Potatoe;savoury;savoury;internal;ea;pos
+SAV-SAM-EAC;;Samoosa 3s;savoury;savoury;internal;ea;pos
+SAV-SCC-EAC;;Cheese And Corn Samoosa;savoury;savoury;internal;ea;pos
+SAV-VED-EAC;;Veda;savoury;savoury;internal;ea;pos
+SHP- CRW-EAC;;Roti Chicken Wrap;savoury;savoury;internal;ea;pos
+SHP- PRW-EAC;;Roti Potatoe Wrap;savoury;savoury;internal;ea;pos
+CBC-MCL-EAC;;Mini Lamington Chocolate Plain;shop front;shop front;internal;ea;pos
+CEX-MDF-EAC;;Freshcream 6 Layer Drip Cake with Toppings;shop front;shop front;internal;ea;pos
+SHP - JAL-EACH;9009;Jalebi 250g;shop front;shop front;external;ea;pos
+SHP- BAN-EAC;16055;Banana Loaf;shop front;shop front;internal;ea;pos
+SHP- GUL-1KG;;Gulab Jamun 1kg;shop front;shop front;external;ea;pos
+SHP- GUL-4S;60001;Gulab Jamun 4s Pure Butter;shop front;shop front;external;ea;pos
+SHP- MOL-6S;;DC Sweetmeats Mini Oval Laser Cut Wooden (6s);shop front;shop front;external;ea;pos
+SHP- RAE-EAC;16058;Eggless Rainbow Sponge Log;shop front;shop front;internal;ea;pos
+SHP- SWEE-250G;;DC Sweet Meats Assorted 250g;shop front;shop front;external;ea;pos
+SHP-AUA-EAC;9008;DC Authentic Assorted Sweetmeats 11 pieces;shop front;shop front;external;ea;pos
+SHP-AUT-EAC;;Authentic Ladoo;shop front;shop front;external;ea;pos
+SHP-BAN-6S;8080;Banana Puri (6s);shop front;shop front;external;ea;pos
+SHP-BBS-EAC;;Sweetmeats Boujee Singles;shop front;shop front;external;ea;pos
+SHP-BCC-EAC;16041;Buttercream Christmas cakes;shop front;shop front;internal;ea;pos
+SHP-BCG-EAC;16042;ButterCream Christmas Gateaux;shop front;shop front;internal;ea;pos
+SHP-BRB-400;30370;Bread Brown 400g;shop front;shop front;internal;ea;pos
+SHP-BRB-400G;;Bread Bunny Loaf 400g;shop front;shop front;internal;ea;pos
+SHP-BRB-800;13005;Sun Bread Brown 800g;shop front;shop front;internal;ea;pos
+SHP-BRG-EAC;16003;Bread Garlic 300g;shop front;shop front;internal;ea;pos
+SHP-BRO-EAC;;Butter Roti (6s);shop front;shop front;internal;ea;pos
+SHP-BRR-500;16004;Bread Tea Ring;shop front;shop front;internal;ea;pos
+SHP-BRT-500;16005;Bread Tea Loaf 500g;shop front;shop front;internal;ea;pos
+SHP-BRW-400;30372;Bread White 400g;shop front;shop front;internal;ea;pos
+SHP-BRW-800;13003;Sun Bread White 800;shop front;shop front;internal;ea;pos
+SHP-BSC-EAC;16044;Butter Scones (4s);shop front;shop front;internal;ea;pos
+SHP-BTW-500;16007;Bread 500g Twist;shop front;shop front;internal;ea;pos
+SHP-BUN-EAC;16008;Buns 100g Soft 6s;shop front;shop front;internal;ea;pos
+SHP-BUR-1KG;;Burfee 1kg;shop front;shop front;internal;ea;pos
+SHP-BUR-KGR;;Burfee 9pc;shop front;shop front;internal;ea;pos
+SHP-CFI-EAC;16015;Christmas fruit Cake Round Iced;shop front;shop front;internal;ea;pos
+SHP-CFP-EAC;16016;Christmas Fruit Cake Round Plain;shop front;shop front;internal;ea;pos
+SHP-CHA-1KG;;Chana Magaj 1kg;shop front;shop front;internal;ea;pos
+SHP-CHB-04S;30755;Chelsea Buns (6s);shop front;shop front;internal;ea;pos
+SHP-CHO-PLN;16013;Chocolate Gateaux Plain;shop front;shop front;internal;ea;pos
+SHP-CPN-EAC;16014;Carrot and Pecan Nut Slab;shop front;shop front;internal;ea;pos
+SHP-CRB-06S;16017;Cream Buns 6s;shop front;shop front;internal;ea;pos
+SHP-CRM-EAC;;Christmas Round Mini Cake;shop front;shop front;internal;ea;pos
+SHP-CRO-06S;16018;Rolls 70g Soft Hotdog Cheese 6;shop front;shop front;internal;ea;pos
+SHP-CSC-EAC;6001651011913;Chocolate Sponge Cake;shop front;shop front;internal;ea;pos
+SHP-CTP-EAC;;Christmas Steamed Pudding;shop front;shop front;internal;ea;pos
+SHP-CTR-EAC;16020;Cocktail Rolls;shop front;shop front;internal;ea;pos
+SHP-CWP-EAC;16038;Christmas Windsor Plain;shop front;shop front;internal;ea;pos
+SHP-CWS-EAC;16049;Christmas Windsor Slice;shop front;shop front;internal;ea;pos
+SHP-DBB-EAC;;DC Diwali Bandhani Box;shop front;shop front;external;ea;pos
+SHP-DDB-EAC;;DC Diwali Designer Biscuit;shop front;shop front;external;ea;pos
+SHP-DDD-EAC;;DC Diwali Designer Burfee;shop front;shop front;external;ea;pos
+SHP-DEG-EAC;;DC Diwali Eggless Cake;shop front;shop front;internal;ea;pos
+SHP-DIB-EACH;;DC Authentic Diya Boxes;shop front;shop front;external;ea;pos
+SHP-DJA-EAC;;DC Diwali Jalebi;shop front;shop front;external;ea;pos
+SHP-DLB-EAC;;DC Diwali Large Bag;shop front;shop front;external;ea;pos
+SHP-DLD-EAC;;DC Diwali Large Designer Box;shop front;shop front;external;ea;pos
+SHP-DMA-EAC;;DC Diwali Macaroons;shop front;shop front;external;ea;pos
+SHP-DOP-10S;110103;Doughnut Pops 10s;shop front;shop front;external;ea;pos
+SHP-DPB-EAC;;DC Diwali Peacock Box;shop front;shop front;external;ea;pos
+SHP-DRO-EAC;16045;Dhall Roti (6s);shop front;shop front;external;ea;pos
+SHP-DSB-EAC;;DC Diwali Small Bag;shop front;shop front;external;ea;pos
+SHP-FCE-EAC;;Christmas Fruit Cake Eggless Round;shop front;shop front;internal;ea;pos
+SHP-GAT-EAC;16021;DC Diwali Gateaux;shop front;shop front;internal;ea;pos
+SHP-GLC-EAC;;DC Diwali Gold Laser Cut;shop front;shop front;external;ea;pos
+SHP-HBU-EAC;16022;Hot x Buns 6s;shop front;shop front;internal;ea;pos
+SHP-JSW-EAC;;Vanilla Jam Swissroll;shop front;shop front;internal;ea;pos
+SHP-LAC-EACH;110102;Chocolate Lamington 5 pack;shop front;shop front;internal;ea;pos
+SHP-LAD-EAC;;Ladoo 9 piece;shop front;shop front;internal;ea;pos
+SHP-LAR-EACH;110101;Raspberry Lamington 5 pack;shop front;shop front;internal;ea;pos
+SHP-LEM-EAC;;Lemon Loaf;shop front;shop front;internal;ea;pos
+SHP-LHS-375;9003;DC Large Hexagonal Deluxe Sweetmeats 375g;shop front;shop front;external;ea;pos
+SHP-LJS-350;9004;DC Large Jewels Deluxe Sweetmeats 350g;shop front;shop front;external;ea;pos
+SPI-JEE-KGR;;Spice - Mayas Jeera Powder;ingredients;ingredients;Internal;kg;
+SPI-JEP-KGR;;Spice Jeera Powder;ingredients;ingredients;Internal;kg;
+SHP-LWC-360G;;DC Sweetmeats Lamp Wooden Cut 360g;shop front;shop front;external;ea;pos
+SHP-MAD-EAC;16023;Madeira;shop front;shop front;internal;ea;pos
+SHP-MHS-165;9001;DC Mini Hexagonal Deluxe Sweetmeats 165g;shop front;shop front;external;ea;pos
+SHP-MIN-EAC;16024;Mince Pies;shop front;shop front;internal;ea;pos
+SHP-MJS-250;9002;DC Mini Jewels Deluxe Sweetmeats 250g;shop front;shop front;external;ea;pos
+SHP-MRO-EACH;16048;Brown Roti (6s);shop front;shop front;internal;ea;pos
+SHP-NAA-02S;16025;Naan 300g 2s;shop front;shop front;internal;ea;pos
+SHP-NAA-EAC;16026;Naan 300g;shop front;shop front;internal;ea;pos
+SHP-PFC-4S;60074;Poli With Fresh Coconut 4s;shop front;shop front;external;ea;pos
+SPI-KNO-EAC;;Spice- Knorrx Mutton Flavour 12s;ingredients;ingredients;Internal;kg;
+SPI-MAS-KGR;;Spice- Chilli Powder;ingredients;ingredients;Internal;kg;
+SPI-MIN-EAC;;Spice - Mint;ingredients;ingredients;Internal;kg;
+SPI-MIX-KGR;;Spice- Mayas Mixed Masala;ingredients;ingredients;Internal;kg;
+SPI-MSM-KGR;;Manilal Special Mix Masala;ingredients;ingredients;Internal;kg;
+SPI-NAN-KGR;;Nandos Sauce;ingredients;ingredients;Internal;lt;
+SPI-NOL-KGR;;Nola Mayonaise;ingredients;ingredients;Internal;kg;
+SPI-PAR-EAC;;Parsley;ingredients;ingredients;Internal;kg;
+SPI-SVS-100G;;SVS Spices 100g;ingredients;ingredients;Internal;kg;
+SPI-SVS-50G;;SVS Spices 50g;ingredients;ingredients;Internal;kg;
+SPI-THY-EACH;;Spice - Fresh Thyme;ingredients;ingredients;Internal;kg;
+SPI-TUM-KGR;;Spice Tumeric;ingredients;ingredients;Internal;kg;
+SWE-WHI-EAC;;Whispers 200g;ingredients;ingredients;Internal;kg;
+VEG -ONI-KGR;;Onions;ingredients;ingredients;Internal;kg;
+VEG- POT-KGR;;Potatoes;ingredients;ingredients;Internal;kg;
+VEG-CHI-KGR;;Green Chillies;ingredients;ingredients;Internal;kg;
+VEG-MUS-KGR;;Mushrooms;ingredients;ingredients;Internal;kg;
+Water;;Water;ingredients;ingredients;Internal;lt;
+XBF-BAN-EAC;30094;Fruit Banana;ingredients;ingredients;Internal;kg;
+XBF-BAN-KGR;;Banana Essence;ingredients;ingredients;Internal;lt;
+SHP-POL-EAC;60072;Poli (4s);shop front;shop front;external;ea;pos
+SHP-PPP-30S;;Puri Patha Platter 30s;shop front;shop front;internal;ea;pos
+SHP-RAI-EAC;16027;Rainbow Sponge Log;shop front;shop front;internal;ea;pos
+SHP-RAL-EAC;16028;Raisin Loaf;shop front;shop front;internal;ea;pos
+SHP-RJS-595;9006;DC Rajasthani Jewel Sweetmeats 595g;shop front;shop front;external;ea;pos
+SHP-RLC-EAC;;DC Diwali Round Clear Assorted;shop front;shop front;external;ea;pos
+SHP-ROLL-06S;16029;Rolls 60g Soft Hotdog 6s;shop front;shop front;internal;ea;pos
+SHP-ROLL-12S;16030;Rolls 60g Soft Hotdog 12s;shop front;shop front;internal;ea;pos
+SHP-ROT-EAC;16046;Rotis 12s;shop front;shop front;internal;ea;pos
+SHP-RWC-265G;;DC Sweetmeats Round Wooden Cut 265G;shop front;shop front;external;ea;pos
+SHP-RWC-380G;;DC Sweetmeats Rectangle Wooden Cut 380g;shop front;shop front;external;ea;pos
+SHP-SBB-EACH;;DC Sweetmeats Boujee Burfee;shop front;shop front;external;ea;pos
+SHP-SBC-EAC;8050;Burfee Soji Cake;shop front;shop front;internal;ea;pos
+SHP-SCF-EAC;16032;Scones Fruit 4s;shop front;shop front;internal;ea;pos
+SHP-SCG-EAC;16034;Dome Buttercream Christmas Cake;shop front;shop front;internal;ea;pos
+SHP-SCO-EAC;16033;Scones 4s;shop front;shop front;internal;ea;pos
+SHP-SDB-EAC;;DC Diwali Small Designer Box;shop front;shop front;external;ea;pos
+SHP-SGL-EAC;;Sweet Meats Gold Foil Large;shop front;shop front;external;ea;pos
+SHP-SGS-EAC;;Sweet Meats Gold Foil Small;shop front;shop front;external;ea;pos
+SHP-SPF-EAC;;Sweet Meats Paisley Gold Foil;shop front;shop front;external;ea;pos
+SHP-SPO-EACH;60073;Soji Poli (5s);shop front;shop front;external;ea;pos
+SHP-SSC-EAC;6001651009125;Strawberry Sponge Cake;shop front;shop front;internal;ea;pos
+SHP-STE-EAC;;Eggless Trifle Sponge;shop front;shop front;internal;ea;pos
+SHP-TLB-EAC;;DC Traingle Lotus Box;shop front;shop front;external;ea;pos
+SHP-TRI-EAC;16035;Trifle Sponge;shop front;shop front;internal;ea;pos
+SHP-VSA-EACH;;DC Vegan Sweetmeats Assorted Authentic;shop front;shop front;external;ea;pos
+SHP-WIC-EAC;16037;Christmas Windsor iced;shop front;shop front;internal;ea;pos
+SHP-WIS-EAC;16039;Windsor Slab;shop front;shop front;internal;ea;pos
+SHP-WMV-EAC;16040;Windsor Slice;shop front;shop front;internal;ea;pos
+SNA-CHE-340;6007597000028;DIWALI CHEVDA 250G;snacks;snacks;external;ea;pos
+SNA-CHE-EAC;16047;Maya Spices Chevda 250g;snacks;snacks;external;ea;pos
+SNA-KMU-EAC;6009659190678;Kashmiri Murkoo;snacks;snacks;external;ea;pos
+SNA-KNP-EAC;;Kara Nichhas Peanuts;snacks;snacks;external;ea;pos
+SNA-LMP-EAC;13007;Murkoo Extra Large Plain;snacks;snacks;external;ea;pos
+SNA-LMS-EAC;;Murkoo Extra Large;snacks;snacks;external;ea;pos
+SNA-MOC-EAC;6001651026986;Murkoo Original Crunch;snacks;snacks;external;ea;pos
+SNA-MSF-EAC;30781;Murkoo sticks flavoured;snacks;snacks;external;ea;pos
+SNA-MUS-EAC;5010;Murkoo Sticks;snacks;snacks;external;ea;pos
+SNA-NUT-60G;6002849000177;ralphies nutties 60g;snacks;snacks;external;ea;pos
+SNA-PGA-EAC;4001;Papdi Ganthiya;snacks;snacks;external;ea;pos
+SNA-PNM-EAC;30491;PNS Murkoo;snacks;snacks;external;ea;pos
+SNA-PNM-EAC;30491;PNS Murkoo;snacks;snacks;external;ea;pos
+snA-PNM-EAC;6009634280431;Serve and Nuts 400g;snacks;snacks;external;ea;pos
+SNA-PNT-EAC;6002415000501;PNS Traditional Murkoo;snacks;snacks;external;ea;pos
+SNA-SAN-EAC;;Serv & Nuts;snacks;snacks;external;ea;pos
+SNA-SGA-EAC;;Soft Gantia;snacks;snacks;external;ea;pos
+SNA-SUS-EAC;6009708771438;Sugar Sticks;snacks;snacks;external;ea;pos
+SNA-TMU-EAC;5011;Tub Murkoo;snacks;snacks;external;ea;pos
+CEX-FRT-EAC;14013;Ferrero;sweet;sweets;external;ea;pos
+SHP-COC-KGR;;Coconut Ice;sweet;sweets;internal;ea;pos
+SWE-ALC-EACH;;Almond Cones;sweet;sweets;external;ea;pos
+SWE-BOR-EAC;6009625510592;Masala Bor;sweet;sweets;external;ea;pos
+SWE-CAC-EACK;;Cashew Cones;sweet;sweets;external;ea;pos
+SWE-CCC-EAC;1017;Chocolate Coconut Cluster;sweet;sweets;external;ea;pos
+SWE-CCD-EAC;6009614200985;Caruchi Candy Dates;sweet;sweets;external;ea;pos
+SWE-CFW-EAC;10030;China fruit sweet;sweet;sweets;external;ea;pos
+SWE-CHF-EAC;6009625510615;China Fruit;sweet;sweets;external;ea;pos
+SWE-CHI-EAC;6001200000016;Chicks Violet;sweet;sweets;external;ea;pos
+SWE-CMM-EAC;30482;Choc Marshmallow;sweet;sweets;external;ea;pos
+SWE-CNI-EAC;30608;Coconut Ice;sweet;sweets;external;ea;pos
+SWE-CNW-EAC;6009614200046;Coconut Wheel;Sweet;sweets;external;ea;pos
+SWE-COI-EAC;;Coconut ice small;sweet;sweets;external;ea;pos
+SWE-CPC-EAC;6009614200008;Chocolate Peanut Cluster;sweet;sweets;external;ea;pos
+SWE-CRO-EAC;6009614200558;Chocolate Rocher;sweet;sweets;external;ea;pos
+SWE-CRO-EAC;6009614200558;Chocolate Rocher;sweet;sweets;external;ea;pos
+SWE-CSP-EAC;8850632605164;Sour Punk Cola;sweet;sweets;external;ea;pos
+SWE-FIG-EAC;6009625510608;Masala Figs;sweet;sweets;external;ea;pos
+SWE-KIT-EAC;;Kitkat 135g;sweet;sweets;external;ea;pos
+SWE-MES-EAC;1024;Mebos Sweets;sweet;sweets;external;ea;pos
+SWE-PAA-EAC;;Paan Cones;sweet;sweets;external;ea;pos
+SWE-PBS-EAC;;Peanut Brittle Slabs Singles;sweet;sweets;external;ea;pos
+SWE-PEC-EAC;;Peanut Cones;sweet;sweets;external;ea;pos
+SWE-PNB-EAC;6004796000941;peanut brittle;sweet;sweets;external;ea;pos
+SWE-PNB-EACH;6009633420525;Peanut Brittle Slab 10s;sweet;sweets;external;ea;pos
+SWE-PNP-EACH;6009663420594;Peanut Brittle Pieces;sweet;sweets;external;ea;pos
+XBF-CAR-KGR;30335;Carrots;ingredients;ingredients;Internal;kg;
+XBF-CHL-KGR;30084;Chellies Red Alpine;ingredients;ingredients;Internal;kg;
+XBF-COC-KGR;30634;Coconut;ingredients;ingredients;Internal;kg;
+XBF-CUT-KGR;30086;Fruit Cut Peel;ingredients;ingredients;Internal;kg;
+XBF-FMX-KGR;30089;Fruit Mix (Chipkins);ingredients;ingredients;Internal;kg;
+XBF-PDA-KGR;;Pitted Dates;ingredients;ingredients;Internal;kg;
+XBF-PIE-KGR;30092;Fruit Pie Apples;ingredients;ingredients;Internal;kg;
+XBF-RWC-KGR;30669;Red Whole Cherries;ingredients;ingredients;Internal;kg;
+XBR-BEB-1KGR;;Berries Blend;ingredients;ingredients;Internal;kg;
+XBR-MDF-1KGR;;Mango Diced Fruit;ingredients;ingredients;Internal;kg;
+XBR-PEA-KGR;;Peach Slices;ingredients;ingredients;Internal;kg;
+XBR-TOM-KGR;;Tomatoe Paste 3.06kg;ingredients;ingredients;Internal;kg;
+XCH-CCB-KGR;30158;Chocolate Choco Blocks;ingredients;ingredients;Internal;kg;
+XCH-CCM-KGR;30157;Chocolate Chockex Chips Milk;ingredients;ingredients;Internal;kg;
+XCH-CCW-KGR;30159;Chocolate Chockex Chips White;ingredients;ingredients;Internal;kg;
+XCH-CHO-KGR;30156;Choc milk block;ingredients;ingredients;Internal;kg;
+XCH-POW-KGR;30238;Powder Cocoa;ingredients;ingredients;Internal;kg;
+XCH-TIN-KG;;Tin Glide 5kg;ingredients;ingredients;Internal;kg;
+XCH-VER-KGR;30163;Vermicelli Chocolate;ingredients;ingredients;Internal;kg;
+XCH-WCH-KGR;;Choc Milk Block White;ingredients;ingredients;Internal;kg;
+SWE-SAB-EACH;;Almond Bar 40g single;sweet;sweets;external;ea;pos
+XCO-AES-LTR;;Aniseed Essence;ingredients;ingredients;Internal;lt;
+XCO-BCR-KGR;;Bread Crumbs;ingredients;ingredients;Internal;kg;
+XCO-BLA-KGR;30225;Black Jack;ingredients;ingredients;Internal;kg;
+XCO-LEM-KGR;30164;Coloured Powder Lemon Yellow;ingredients;ingredients;Internal;kg;
+XCO-PBL-KGR;30176;powder food colouring blue;ingredients;ingredients;Internal;kg;
+XCO-PGN-KGR;30175;Powder colouring green;ingredients;ingredients;Internal;kg;
+XCO-PIL-KGR;30173;Pillar Box Red;ingredients;ingredients;Internal;kg;
+XCO-REG-EAC;30177;Red piping gel;ingredients;ingredients;Internal;kg;
+XCO-VES-LTR;30708;Vanilla Essence;ingredients;ingredients;Internal;lt;
+XDA-BERG-KGR;;Berg Cheese;ingredients;ingredients;Internal;kg;
+XDA-BME-KGR;;Boneless Mutton;ingredients;ingredients;Internal;kg;
+XDA-BUT-EAC;30756;Buttermilk;ingredients;ingredients;Internal;lt;
+XDA-CBF-KGR;;Chicken Breast Fillet;ingredients;ingredients;Internal;kg;
+XDA-CCS-KGR;30179;Cheese Cottage Smooth;ingredients;ingredients;Internal;kg;
+XDA-CHE-KGR;30562;Cheddar Cheese;ingredients;ingredients;Internal;kg;
+XDA-CHI-EAC;;Chicken Wings Drumettes;ingredients;ingredients;Internal;kg;
+XDA-CRA-1KG;;Crab Sticks;ingredients;ingredients;Internal;kg;
+XDA-CRE-250;30848;Cream Cheese;ingredients;ingredients;Internal;kg;
+XDA-CRF-250;;Cream Fresh 250ml;ingredients;ingredients;Internal;lt;
+XDA-CRF-500;30180;Cream Fresh 500ml;ingredients;ingredients;Internal;lt;
+XDA-CSS-KGR;;Chicken Salsa Snack Wings 6kg;ingredients;ingredients;Internal;kg;
+XDA-CTS-KGR;;Chicken Tikka Sausage;ingredients;ingredients;Internal;ea;
+XDA-DHA-KGR;;Pea Dhall 5kg;ingredients;ingredients;Internal;kg;
+XDA-FCR-250ML;;Cream Fresh 250ml;ingredients;ingredients;Internal;lt;
+XDA-HAK-1KG;;Hake Fillet -fish;ingredients;ingredients;Internal;kg;
+XDA-JAL-KGR;;Jalapenos;ingredients;ingredients;Internal;kg;
+XDA-LAM- KGR;;Lamb Mince;ingredients;ingredients;Internal;kg;
+XDA-MBP-EAC;;Mini Butter Portions 8grams;ingredients;ingredients;Internal;kg;
+XDA-MCP-KGR;;Mutton Cheese Patties;ingredients;ingredients;Internal;kg;
+XDA-MJP-EAC;;Mini Jam Portions 15Grams;ingredients;ingredients;Internal;kg;
+XDA-MVE-KGR;;Mix Veggies Mcain;ingredients;ingredients;Internal;kg;
+XDA-NON-KGR;30183;Non Dairy Cream;ingredients;ingredients;Internal;kg;
+XDA-NUT-LTR;30597;Nutriday Yogurt Plain;ingredients;ingredients;Internal;kg;
+XDA-OGC-LTR;;Cream Fresh Orange Grove 1litre;ingredients;ingredients;Internal;lt;
+XDA-OMU-KGR;;Oriental Mutton Sausage;ingredients;ingredients;Internal;kg;
+XDA-PAR-EAC;;Unbaked Patha Rolls;ingredients;ingredients;Internal;kg;
+XDA-PEA-KGR;;Peas Frozen 10kg;ingredients;ingredients;Internal;kg;
+XDA-PUP-KGR;;Fathimas Puff Pastry 1kg;ingredients;ingredients;Internal;kg;
+XDA-SAC-1LT;;Milk 1lt Sachet;ingredients;ingredients;Internal;lt;
+XDA-SMF-EAC;;Saldanha Middlecut Tin Fish 400g;ingredients;ingredients;Internal;kg;
+XDA-SOY-KGR;;Tommy Marinated Mince;ingredients;ingredients;Internal;kg;
+XDA-SWC-KGR;;Mcain Sweetcorn 1kg;ingredients;ingredients;Internal;kg;
+XDA-TUC-KGR;;Tuna Chunks In Brine 1.7kg;ingredients;ingredients;Internal;kg;
+XDA-TUS-KGR;;Tuna Shredded In Brine 1.7kg;ingredients;ingredients;Internal;kg;
+XDA-TWP-KGR;;Tomato Whole Peeled;ingredients;ingredients;Internal;kg;
+XDA-YDR-KGR;;Yeast Dry;ingredients;ingredients;Internal;kg;
+XDE-GBD-KGR;30187;Gold Beads per Kg;ingredients;ingredients;Internal;kg;
+XDE-GLI-EAC;30186;Glitter;ingredients;ingredients;Internal;kg;
+XDE-NOP-KGR;30195;Non Pareil;ingredients;ingredients;Internal;kg;
+XDE-PMG-KGR;30196;Powder Metallic Gold;ingredients;ingredients;Internal;kg;
+XDE-PMS-KGR;30197;Powder Metallic Silver;ingredients;ingredients;Internal;kg;
+XDO-BTE-200G;;Bakers Tennis Biscuit 200g;ingredients;ingredients;Internal;kg;
+XFA-COO-LTR;;Cooking Oil 5ltrs;ingredients;ingredients;Internal;lt;
+XFA-CRI-LTR;30615;Crispa Oil;ingredients;ingredients;Internal;lt;
+XFA-EGG-KGR;;Eggs;ingredients;ingredients;Internal;kg;
+SWE-SCB-EAC;;Cashew Bar 40g single;sweet;sweets;external;ea;
+XFA-FPS-KGR;30206;Fat Pastrex Super;ingredients;ingredients;Internal;kg;
+XFA-GHE-KGR;;Clover Ghee;ingredients;ingredients;Internal;kg;
+XFA-MAR-KGR;30208;Margarine Marvello Yellow;ingredients;ingredients;Internal;kg;
+XFA-MAS-KGR;30209;Margarine Mastercraft White;ingredients;ingredients;Internal;kg;
+XFA-MOO-KGR;30780;Mooi river butter;ingredients;ingredients;Internal;kg;
+XFA-MRG-KGR;30210;Margarine Mr G;ingredients;ingredients;Internal;kg;
+XFA-OIL-LTR;30211;Oil Crispa Gold;ingredients;ingredients;Internal;lt;
+SWE-SPA-EAC;8850632605140;Sour Punk Apple;sweet;sweets;external;ea;pos
+SWE-SPB-EAC;6009663420938;Sesame Brittle Pieces;sweet;sweets;external;ea;pos
+XFA-OVA-KGR;30212;Ovalette;ingredients;ingredients;Internal;kg;
+XFA-PTX-KGR;30672;Pastrex Super;ingredients;ingredients;Internal;kg;
+XFA-RAM-KGR;30810;Rama;ingredients;ingredients;Internal;kg;
+XFA-REL-LTR;30213;Release;ingredients;ingredients;Internal;kg;
+XFA-SOI-LTR;;Sunflower Sunfoil 5 Ltr;ingredients;ingredients;Internal;lt;
+XFA-SOR-LRT;30242;Sorbitol 30LTR;ingredients;ingredients;Internal;lt;
+XFA-YWT-KGR;30244;Yeast Wet;ingredients;ingredients;Internal;kg;
+XFL-CAF-125;30217;FlourCake;ingredients;ingredients;Internal;kg;
+XFL-CMB-125;;Complete Mix - Brown Bread Flour;ingredients;ingredients;Internal;kg;
+XFL-CMW-125;;Complete Mix - White Bread Flour;ingredients;ingredients;Internal;kg;
+XFL-GSE-KGR;;Semolina Golden Cloud 1kg;ingredients;ingredients;Internal;kg;
+XFL-NYA-KGR;;Nyala Maize Meal 10kg;ingredients;ingredients;Internal;kg;
+XMO-BS6-KGR;;Premix Bread S6002 5%;ingredients;ingredients;Internal;kg;
+XMP -BFM-KGR;;Premix Butter Flavoured Madeira 12.5kg;ingredients;ingredients;Internal;kg;
+XMP-S60-KGR;;Premix S6002 Bread;ingredients;ingredients;Internal;kg;
+XMP-SCC-KGR;;Sponge Chocolate Coastal;ingredients;ingredients;Internal;kg;
+XMP-SRA-KGR;;Soft Roll Alpaga Improver;ingredients;ingredients;Internal;kg;
+XMP-SRE-EAC;;Sponge Redvelvet Premix;ingredients;ingredients;Internal;kg;
+XPM-5PB-KGR;;Premix bread 5%;ingredients;ingredients;Internal;kg;
+XPM-AFG-KGR;;Apricot Flan Gel;ingredients;ingredients;Internal;kg;
+XPM-CCM-KGR;30110;Mix Chocomousse;ingredients;ingredients;Internal;kg;
+XPM-EMC-KGR;;Sponge Ebony Moist Choc Mix;ingredients;ingredients;Internal;kg;
+XPM-FAI-KGR;30118;Premix 15% Sweet Fairglen;ingredients;ingredients;Internal;kg;
+XPM-FON-5KG;30233;Fond Suisse;ingredients;ingredients;Internal;kg;
+XPM-FRU-KGR;30088;Fruit Mince;ingredients;ingredients;Internal;kg;
+XPM-HXB-KGR;30104;Hot x bun full premix;ingredients;ingredients;Internal;kg;
+XPM-MUE-KGR;30113;Mix Muesli Slice;ingredients;ingredients;Internal;kg;
+XPM-NOB-KGR;;No-bake premix;ingredients;ingredients;Internal;kg;
+XPM-PAS-KGR;30116;Paste 4.5% Standard Bread;ingredients;ingredients;Internal;kg;
+XPM-SCH-KGR;30099;Sponge Chocolate;ingredients;ingredients;Internal;kg;
+XPM-SPC-KGR;30243;Stabiliser Pettina Cream;ingredients;ingredients;Internal;kg;
+XPM-SPE-KGR;30128;Sponge Eggless;ingredients;ingredients;Internal;kg;
+XPM-SPI-KGR;30100;Sponge Pettina Instant;ingredients;ingredients;Internal;kg;
+XPM-SVC-KGR;;Sponge Instant Coastal;ingredients;ingredients;Internal;kg;
+XPM-SWE-KGR;30119;Premix 20% Sweet Red;ingredients;ingredients;Internal;kg;
+XPO-BCS-KGR;;Specialty-Chai;ingredients;ingredients;Internal;kg;
+XPO-BMS-LTR;;Bubblegum Milkshake Syrup;ingredients;ingredients;Internal;lt;
+XPO-CMS-LTR;;Chocolate Milkshake Syrup;ingredients;ingredients;Internal;lt;
+XPO-LMS-LTR;;Lime Milkshake Syrup;ingredients;ingredients;Internal;lt;
+XPO-MHS-LTR;;Monin Hazelnut Syrup;ingredients;ingredients;Internal;lt;
+XPO-MVS-LTR;;Monin Vanilla Syrup;ingredients;ingredients;Internal;lt;
+XPO-SCF-KGR;;Specialty - Coffee Freezo;ingredients;ingredients;Internal;kg;
+XPO-SCM-LTR;;Salted Caramel Milkshake Syrup;ingredients;ingredients;Internal;kg;
+XPO-SIC-KGR;;Specialty -Indonesian Coffee;ingredients;ingredients;Internal;kg;
+XPO-SMC-EAC;;Monin Caramel Sauce;ingredients;ingredients;Internal;lt;
+XPO-SMC-LTR;;Monin Caramel Syrup;ingredients;ingredients;Internal;lt;
+XPO-SMS-LTR;;Strawberry Milkshake Syrup;ingredients;ingredients;Internal;lt;
+XSN-ANI-KGR;30479;Aniseed;ingredients;ingredients;Internal;kg;
+XSN-FLA-KGR;;Flaked Almonds 1Kg;ingredients;ingredients;Internal;kg;
+XSN-NUT-KGR;30131;Nuts Nibb;ingredients;ingredients;Internal;kg;
+XSN-PEH-KGR;;Pecan Nut Halves;ingredients;ingredients;Internal;kg;
+XSN-SDP-KGR;30135;seed poppy;ingredients;ingredients;Internal;kg;
+XSN-SES-KGR;30499;Sesame Seed;ingredients;ingredients;Internal;kg;
+XSN-SJEE-KGR;;Spice Jeera Whole;ingredients;ingredients;Internal;kg;
+XSN-SMI-KGR;;Spice Mixed Herbs;ingredients;ingredients;Internal;kg;
+XSN-SOR-KGR;;Spice Origanum;ingredients;ingredients;Internal;kg;
+XSN-WHS-KGR;;Whole Somph;ingredients;ingredients;Internal;kg;
+XSP- DHA-EAC;;Spice- Dhania;ingredients;ingredients;Internal;kg;
+XSP-ALG-KGR;;Ground Almonds;ingredients;ingredients;Internal;kg;
+XSP-BAK-KGR;30239;Baking Powder (Hercules);ingredients;ingredients;Internal;kg;
+XSP-BIC-KGR;30224;Bicarbonate Soda;ingredients;ingredients;Internal;kg;
+XSP-CIN-KGR;30506;Cinnamon Ground;ingredients;ingredients;Internal;kg;
+XSP-COR-KGR;30633;CornFlour;ingredients;ingredients;Internal;kg;
+XSP-SAL-EAC;30240;Salt Bale;ingredients;ingredients;Internal;kg;
+XSP-SBN-KGR;30142;Spice Bunspice;ingredients;ingredients;Internal;kg;
+XSP-SNU-800G;;Spice Nutmeg Ground 800g;ingredients;ingredients;Internal;kg;
+XSP-WNM-KGR;1034;Whole Nutmeg;ingredients;ingredients;Internal;kg;
+XSU-ESS-KGR;;Equisweet Sucralose Sachets;ingredients;ingredients;Internal;kg;
+XSU-HIS-KGR;30671;Huletts Icing Sugar;ingredients;ingredients;Internal;kg;
+XSU-IBS-KGR;;Hullets Brown Sugar Tubes;ingredients;ingredients;Internal;kg;
+XSU-IWS-KGR;;Huletts White Sugar Tubes;ingredients;ingredients;Internal;kg;
+XSU-SBN-KGR;30148;Sugar Brown;ingredients;ingredients;Internal;kg;
+XSU-SCH-KGR;30149;Sugar Castor Huletts;ingredients;ingredients;Internal;kg;
+XSU-SIC-KGR;30150;Sugar Icing Huletts;ingredients;ingredients;Internal;kg;
+XSU-SWH-KGR;30151;Sugar White Huletts;ingredients;ingredients;Internal;kg;
+XTO - PIR-KGR;;Pineapple Rings 440g;ingredients;ingredients;Internal;kg;
+XTO- ESG-KGR;;Espresso Grind Slojo Spiced Chai;ingredients;ingredients;Internal;kg;
+XTO- VIC-LTR;;Gatti Vanilla Ice Cream;ingredients;ingredients;Internal;kg;
+XTO-AJM-KGR;30219;Jam Apricot (All Gold);ingredients;ingredients;Internal;kg;
+XTO-ALE-KGR;;Almond Essence;ingredients;ingredients;Internal;kg;
+XTO-ALM-KGR;30188;Almond Icing;ingredients;ingredients;Internal;kg;
+XTO-ASA-KGR;;Ayesha Samoosa Strips;ingredients;ingredients;Internal;kg;
+XTO-BAR-KGR;30651;Bar One Spread;ingredients;ingredients;Internal;kg;
+XTO-CCL-KGR;;Officemate Creamy Chai Latte;ingredients;ingredients;Internal;kg;
+XTO-CFU-KGR;;Cereal Choc Future Life 1.25kg;ingredients;ingredients;Internal;kg;
+XTO-CHE-KGR;30222;Pie Filling Black Forest Pie Filling;ingredients;ingredients;Internal;kg;
+XTO-CHI-LTR;;Sauce Chilli 2lt;ingredients;ingredients;Internal;lt;
+XTO-COB-KGR;;Coffee Beans;ingredients;ingredients;Internal;kg;
+XTO-CTS-EAC;;Carte D Toffee Sauce;ingredients;ingredients;Internal;kg;
+SWE-SPS-EAC;8850632603566;Sour Punk;sweet;sweets;external;ea;pos
+XTO-DHC-KGR;;Officemate Dark Hot Choc;ingredients;ingredients;Internal;kg;
+XTO-GAR-KGR;;Spread Garlic & Herb;ingredients;ingredients;Internal;kg;
+XTO-GRA-KGR;30221;Pie Filling Granadilla;ingredients;ingredients;Internal;kg;
+XTO-GSP-KGR;30561;Golden Syrup;ingredients;ingredients;Internal;kg;
+XTO-HAS-KGR;;Spread Hazelnut 5kg;ingredients;ingredients;Internal;kg;
+XTO-HCC-KGR;;Hot Chocolate Coffee Merchant;ingredients;ingredients;Internal;kg;
+SWE-SSB-EAC;6009625510714;Sweet & Sour Bor;sweet;sweets;external;ea;pos
+XTO-HPM-EAC;;Carte D Hot Pudding Mix;ingredients;ingredients;Internal;kg;
+XTO-HZL-KGR;30152;Hazelnut Praline;ingredients;ingredients;Internal;kg;
+XTO-ICE-KGR;;Ice;ingredients;ingredients;Internal;kg;
+XTO-ICK-5KG;30105;Instant Custard Kramess;ingredients;ingredients;Internal;kg;
+XTO-JEL-KG;;Assorted Jelly;ingredients;ingredients;Internal;kg;
+XTO-KBO-EAC;;Knorr Brown Onion Soup;ingredients;ingredients;Internal;kg;
+XTO-KCM-EAC;;Knorr Creamy Mushroom Sauce;ingredients;ingredients;Internal;kg;
+XTO-KCS-EAC;;Knorr Cream of Chicken Soup;ingredients;ingredients;Internal;kg;
+XTO-KLI-KGR;;Klim 500g;ingredients;ingredients;Internal;kg;
+XTO-LEC-5KG;30230;Dip Leamington Chocolate;ingredients;ingredients;Internal;kg;
+XTO-LER-5KG;30231;Dip Leamington Raspberry;ingredients;ingredients;Internal;kg;
+XTO-MAY-KGR;;Mayonnaise Cross & Blackwell 3kg;ingredients;ingredients;Internal;kg;
+XTO-MBD-500ML;;Milky Bar Dessert Topping;ingredients;ingredients;Internal;kg;
+XTO-MHC-KGR;;Officemate Milky Hot Choc;ingredients;ingredients;Internal;kg;
+XTO-MUS-LTR;;Mustard Sauce;ingredients;ingredients;Internal;kg;
+XTO-NUT-KGR;;Nutella 3kg;ingredients;ingredients;Internal;kg;
+XTO-OAT-KGR;;Fine Oats 25 kg;ingredients;ingredients;Internal;kg;
+XTO-PCH-KGR;30162;Paste Chocolate;ingredients;ingredients;Internal;kg;
+XTO-PDA-KG;;Pitted Dates;ingredients;ingredients;Internal;kg;
+XTO-PEP-KGR;;Nestle Peppermint Topping;ingredients;ingredients;Internal;kg;
+XTO-PIN-EAC;;Pineapple crushed;ingredients;ingredients;Internal;kg;
+XTO-PLI-KGR;30189;Icing plastic;ingredients;ingredients;Internal;kg;
+XTO-RIC-KGR;;Aunt Caroline Rice;ingredients;ingredients;Internal;kg;
+XTO-SAJ-900G;;Jam Strawberry All Gold 900g;ingredients;ingredients;Internal;kg;
+XTO-SBJ-KGR;30220;Jam Strawberry (All Gold);ingredients;ingredients;Internal;kg;
+XTO-SBO-KGR;30154;Spread Bar One Nestle;ingredients;ingredients;Internal;kg;
+XTO-SCA-KGR;30155;Spread caramel;ingredients;ingredients;Internal;kg;
+XTO-SCF-KGR;;Coffee Freezo Slojo;ingredients;ingredients;Internal;kg;
+XTO-SHC-KGR;;Specialty Hot Chocolate;ingredients;ingredients;Internal;kg;
+XTO-SHW-KGR;;Specialty White Hot Chocolate;ingredients;ingredients;Internal;kg;
+XTO-SPE-KGR;;Spread Peanut Butter 3kg;ingredients;ingredients;Internal;kg;
+XTO-STR-KGR;30710;Pie Filling Strawberry;ingredients;ingredients;Internal;kg;
+XTO-TMR-KGR;;Taj Mahal Rice 10KG;ingredients;ingredients;Internal;kg;
+XTO-TOM-LTR;;Tomatoe Sauce;ingredients;ingredients;Internal;kg;
+XTO-VIN-LT;;Vinegar;ingredients;ingredients;Internal;kg;
+YCC-BLA-EAC;;Gel super black;ingredients;ingredients;Internal;ea;
+YCC-BRA-KGR;30530;Brandy;ingredients;ingredients;Internal;lt;
+YCC-BUR-EAC;30169;Gel Burgundy;ingredients;ingredients;Internal;kg;
+YCC-DEP-EAC;;Gel Food Deep Pink;ingredients;ingredients;Internal;kg;
+YCC-EDI-005;;Canon Edible Ink set 5s 480/1;ingredients;ingredients;Internal;ea;
+YCC-ELE-EAC;30165;Electric Green Gel;ingredients;ingredients;Internal;kg;
+YCC-EOR-EAC;30660;Gel Col. Elec Orange;ingredients;ingredients;Internal;kg;
+YCC-GEL-EAC;30185;Gel liquid gold /silver/ pearl;ingredients;ingredients;Internal;kg;
+YCC-GEP-EAC;30625;Gel Food Col.Elec Purple;ingredients;ingredients;Internal;kg;
+YCC-GLY-EAC;30628;Gel Food Col. Lemon Yellow;ingredients;ingredients;Internal;kg;
+YCC-GLY-KGR;30207;Glycerine;ingredients;ingredients;Internal;kg;
+YCC-GSB-EAC;30627;Gel Food ColSky Blue;ingredients;ingredients;Internal;kg;
+YCC-ICS-EAC;;Icing Sheet A4 New;ingredients;ingredients;Internal;ea;
+YCC-ISH-EAC;30235;Icing Sheet A4 Borderless;ingredients;ingredients;Internal;ea;
+YCC-LES-LTR;30690;Lemon Essense;ingredients;ingredients;Internal;ea;
+YCC-PIN-EAC;30166;Pink Gel;ingredients;ingredients;Internal;ea;
+YCC-POT-KGR;30237;Potassium Sorbate Granular;ingredients;ingredients;Internal;kg;
+YCC-PUR-EAC;30543;Gel Food Colouring Purple;ingredients;ingredients;Internal;kg;
+YCC-ROB-EAC;;Gel Food Royal Blue;ingredients;ingredients;Internal;kg;
+YCC-SRD-EAC;30657;Gel Col.Super Red;ingredients;ingredients;Internal;kg;
+YCC-SUP-EAC;30170;Gel Super Red;ingredients;ingredients;Internal;kg;
+YCC-TEA-EAC;30172;Gel Teal;ingredients;ingredients;Internal;kg;
+YCC-THF-KGR;;Thickflo 25kg;ingredients;ingredients;Internal;kg;
+YCC-VIT-KGR;;Vitap Starch 25kg;ingredients;ingredients;Internal;kg;
+YCL-SPO-EAC;30057;Sponges;ingredients;ingredients;Internal;ea;
+MIS-FNW-EAC;;Balloons-Foil Number White Gold;packaging;packaging;Internal;ea;
+PAC- BTL-EACH;;Bag Brown Thrifty Paper Bag Large;packaging;packaging;Internal;ea;
+PAC- CUC-350ML;;Cup Clear 350ML;packaging;packaging;Internal;ea;
+PAC -F3D-EAC;;F3 Double Wall Pie box;packaging;packaging;Internal;ea;
+PAC- HAB-EAC;;Hamburger Base Black F60;packaging;packaging;Internal;ea;
+PAC- LIC- 350ML;;Lids Clear 350ML;packaging;packaging;Internal;ea;
+PAC- MIN-EAC;;Cup Cake Boxes With Inserts;packaging;packaging;Internal;ea;
+PAC- SDL-EAC;;Square Desert Lid;packaging;packaging;Internal;ea;
+PAC-083-EAC;;83X54X300 30mic;packaging;packaging;Internal;ea;
+PAC-12X-EAC;30254;12x12x6;packaging;packaging;Internal;ea;pos
+PAC-14X-EAC;30255;14X14X6;packaging;packaging;Internal;ea;pos
+PAC-16X-EAC;30256;16x16x6;packaging;packaging;Internal;ea;pos
+PAC-18H-EAC;30257;18X18X5 High;packaging;packaging;Internal;ea;
+PAC-18X-EAC;30258;18X18X6;packaging;packaging;Internal;ea;pos
+PAC-196-EAC;30267;196T swissroll folder;packaging;packaging;Internal;ea;
+PAC-200-EAC;30291;Foil Container 100 (200IL);packaging;packaging;Internal;ea;
+PAC-20H-EAC;30266;20X20X5 High;packaging;packaging;Internal;ea;
+PAC-20X-EAC;30259;20X20X6;packaging;packaging;Internal;ea;pos
+PAC-214-EAC;;214 Gateaux Dome;packaging;packaging;Internal;ea;
+PAC-215-EAC;30706;215 Gateaux Base;packaging;packaging;Internal;ea;
+PAC-225-EAC;30804;225X270X30MIC Scone bag medium;packaging;packaging;Internal;ea;
+PAC-260-EAC;30806;260*450*25mic;packaging;packaging;Internal;ea;
+PAC-300-EAC;30292;Foil Container 100 (3001P);packaging;packaging;Internal;ea;
+PAC-310-EAC;30808;310*450*30mic;packaging;packaging;Internal;ea;
+PAC-315-EAC;30268;315 bar one dome;packaging;packaging;Internal;ea;
+PAC-317-EAC;30269;317 bar one base;packaging;packaging;Internal;ea;
+PAC-400-EAC;30807;250*400*40mic Rolls large;packaging;packaging;Internal;ea;
+PAC-405-EAC;30287;4051 foil container;packaging;packaging;Internal;ea;
+PAC-419-EAC;30692;4191 Foil Container;packaging;packaging;Internal;ea;
+PAC-450-EAC;30805;250*450*30mic Naan exlarge;packaging;packaging;Internal;ea;
+PAC-552-EAC;30801;5*5*2.5;packaging;packaging;Internal;ea;pos
+PAC-572-EAC;30737;5*5*2.5;packaging;packaging;Internal;ea;pos
+PAC-573-EAC;30827;5*7*3;packaging;packaging;Internal;ea;pos
+PAC-73D-EAC;30725;No 73D Foam Tray;packaging;packaging;Internal;ea;
+PAC-773-EAC;30800;7*7*3 Diwali Boxes;packaging;packaging;Internal;ea;
+PAC-835-EAC;30303;Bag 1000 83*54*300mm;packaging;packaging;Internal;ea;pos
+PAC-882-EAC;;8X8X2;packaging;packaging;Internal;ea;
+SWE-SSF-EAC;6009625510721;Sweet & Sour Figs;sweet;sweets;external;ea;pos
+PAC-884-EAC;30486;8X8X4;packaging;packaging;Internal;ea;pos
+PAC-A34-EAC;30587;A34 Round Cake Dome;packaging;packaging;Internal;ea;
+PAC-A35-EAC;30588;A35 Round Cake Base;packaging;packaging;Internal;ea;
+PAC-B75-EAC;;K75 Base;packaging;packaging;Internal;ea;
+PAC-BAG-EAC;6009681740704;Bags 1000 White Midi;packaging;packaging;Internal;ea;pos
+PAC-BAG-JUM;6009681740705;Bags 1000 White Jumbo;packaging;packaging;Internal;ea;pos
+PAC-BBC-EAC;;Bon Bon Biscuit Container;packaging;packaging;Internal;ea;
+PAC-BBL-EAC;;Bon Bon Biscuit Lid;packaging;packaging;Internal;ea;
+PAC-BEB-EAC;;Empty Bandini Box;packaging;packaging;Internal;ea;
+PAC-BOR-EAC;30308;Bag on Roll (30x45);packaging;packaging;Internal;ea;
+PAC-BPB-EAC;;Bag Brown Thrifty Paper Bag meduim;packaging;packaging;Internal;ea;
+PAC-BRE-EAC;30533;Packaging New 76x91 Black Refuse;packaging;packaging;Internal;ea;
+PAC-BUB-EAC;30311;bubble wrap;packaging;packaging;Internal;ea;
+PAC-CHO-EAC;30249;Oven Delight Cake Box Choc;packaging;packaging;Internal;ea;
+PAC-CLE-EAC;30313;CLEAR BIN BAGS;packaging;packaging;Internal;ea;
+PAC-CON-EAC;;7119P Foil container;packaging;packaging;Internal;ea;
+PAC-CUC-500ML;;Cup Clear 500ML;packaging;packaging;Internal;ea;
+PAC-D75-EAC;;K75 Dome;packaging;packaging;Internal;ea;
+PAC-DCW-EAC;;High Window Box For Drip cake;packaging;packaging;Internal;ea;
+PAC-EPI-EAC;;Faze 3 Boxes Empty for Pies;packaging;packaging;Internal;ea;
+SWE-TOA-EAC;1033;Toasted Jabs;sweet;sweets;external;ea;pos
+PAC-F5B-EAC;;F50 High Cake Base;packaging;packaging;Internal;ea;
+PAC-F5D-EAC;;F50 High Cake Dome;packaging;packaging;Internal;ea;
+PAC-FLP-EAC;;Foil - Loaf Pan 4161P;packaging;packaging;Internal;ea;
+CBW-CAK-003;10102;BD Buttercream 3 Tier Stacked;Wedding Cakes;Wedding Cakes;internal;ea;pos
+CBW-CKE-003;10098;BD Wedding Cake BC 10 12 14 Loose;Wedding Cakes;Wedding Cakes;internal;ea;pos
+PAC-FOI-EAC;30290;Foil Buns 4051D;packaging;packaging;Internal;ea;
+PAC-GP2-EAC;30300;Bag GP 2;packaging;packaging;Internal;ea;
+PAC-HAM-EAC;;Hamburger Dome F60;packaging;packaging;Internal;ea;
+PAC-JBU-EAC;;Jumbo bag unprinted;packaging;packaging;Internal;ea;
+CBW-STA-EAC;10289;BD Buttercream 2Tier Stacked 12 16;Wedding Cakes;Wedding Cakes;internal;ea;pos
+PAC-JUM-EAC;30567;Jumbo Econo White;packaging;packaging;Internal;ea;
+CFW-CAF-002;10100;BD WC Fruit 2 Layer;Wedding Cakes;Wedding Cakes;internal;ea;pos
+PAC-K96-EAC;30280;K 96 milk tart domes;packaging;packaging;Internal;ea;
+PAC-LCB-EAC;;Laser Cut Box Only;packaging;packaging;Internal;ea;
+PAC-LEV-EACH;;EPR LEVY;packaging;packaging;Internal;ea;
+PAC-LIC-500ML;;Lid Clear 500ML;packaging;packaging;Internal;ea;
+PAC-LID-EAC;;7119P Clear lids;packaging;packaging;Internal;ea;
+PAC-LLB-EAC;;Large Log Base;packaging;packaging;Internal;ea;
+PAC-LLD-EAC;;Large Log Dome;packaging;packaging;Internal;ea;
+PAC-MAD-EAC;;Madeira Packaging Small B;packaging;packaging;Internal;ea;
+PAC-MCC-350ML;;Milkshake Cup 350ml;packaging;packaging;Internal;ea;
+PAC-MCL-350ML;;Milkshake Cup Lids 350ml;packaging;packaging;Internal;ea;
+PAC-MFO-EAC;30282;Mince pie foil;packaging;packaging;Internal;ea;
+CFW-CAF-003;10101;BD WC Fruit 3 Layer;Wedding Cakes;Wedding Cakes;internal;ea;pos
+PAC-MIN-EAC;30293;Foil Container Mince Pie Tray;packaging;packaging;Internal;ea;
+PAC-MLA-EAC;;Mini Lamington trays;packaging;packaging;Internal;ea;
+PAC-NDI-EAC;;New Diwali Cake Boxes;packaging;packaging;Internal;ea;
+PAC-P45-EAC;;P45 Round platter;packaging;packaging;Internal;ea;
+PAC-PBH-EAC;;Platter base - half;packaging;packaging;Internal;ea;
+CFW-CAF-003;10101;BD WC Fruit 3 Layer;Wedding Cakes;Wedding Cakes;internal;ea;pos
+PAC-PFB-EAC;;Platter base;packaging;packaging;Internal;ea;pos
+PAC-PLD-EAC;;Platter Dome;packaging;packaging;Internal;ea;pos
+PAC-PLH-EAC;;Platter Lid -Half;packaging;packaging;Internal;ea;
+PAC-PRD-EAC;;P45 platter dome;packaging;packaging;Internal;ea;
+PAC-PTC-EAC;;Paper Tulip Cups giant cup cakes;packaging;packaging;Internal;ea;
+PAC-REC-EAC;;Rectangle Pie Foil;packaging;packaging;Internal;ea;
+PAC-REF-EAC;30492;Packaging Black Refuse;packaging;packaging;Internal;ea;
+PAC-SDT-EAC;;Square Desert Tub;packaging;packaging;Internal;ea;
+PAC-SLI-70ML;;Sauce Lids 70ml;packaging;packaging;Internal;ea;
+PAC-SO6-EAC;30299;Bag Brown BB3;packaging;packaging;Internal;ea;
+PAC-STR-EAC;30250;Oven Delight Cake Box Strbery;packaging;packaging;Internal;ea;
+PAC-STU-70ML;;Sauce Tub 70ml;packaging;packaging;Internal;ea;
+PAC-SWI-EAC;30826;Swissroll Box;packaging;packaging;Internal;ea;
+PAC-VUT-EAC;30309;Bread Bags (Vutu) PPG;packaging;packaging;Internal;ea;
+PAC-WIN-EAC;;Windsor X-Small B;packaging;packaging;Internal;ea;
+PAC-ZIP-EACH;;Ziplock Bags;packaging;packaging;Internal;ea;
+XFL-BRF-125;30215;Flour Brown;packaging;packaging;Internal;kg;
+YCC-14C-EAC;30288;Case No 14 Cake;packaging;packaging;Internal;ea;
+YCC-24E-EAC;30485;Madeira case 24e;packaging;packaging;Internal;ea;
+YCC-CUP-EAC;30803;Red Cupcakes Cup;packaging;packaging;Internal;ea;
+YCL-BAG-EAC;30048;Bag Black Refuse HD;packaging;packaging;Internal;ea;
+YCL-EMP-EAC;30052;Empty Boxes;packaging;packaging;Internal;ea;
+YST-DPL-EAC;;Diwali Cake Box Plates;packaging;packaging;Internal;ea;
+YST-WGE-EAC;30733;Wage Envelope;packaging;packaging;Internal;ea;
+ZBX-16B-EAC;30246;16 box;packaging;packaging;Internal;ea;
+ZBX-883-EAC;30739;8*8*3;packaging;packaging;Internal;ea;
+ZBX-884-EAC;30738;8*8*4;packaging;packaging;Internal;ea;
+ZBX-MUFF-EACH;;Muffin Box Rose Design;packaging;packaging;Internal;ea;
+ZDB-351-EAC;;L 351 Domes;packaging;packaging;Internal;ea;
+ZDB-38B-EAC;;38F Black Tray;packaging;packaging;Internal;ea;
+ZDB-38C-EAC;;38F Lid;packaging;packaging;Internal;ea;
+ZDB-38F-EAC;;38F Black Tray;packaging;packaging;Internal;ea;
+ZDB-S31-EAC;30281;Lids 300 Biscuit S312;packaging;packaging;Internal;ea;
+ZDB-SDL-EAC;;Square Desert Lid;packaging;packaging;Internal;ea;
+ZDO-DOY-EAC;30320;Doyley Round 240mm;packaging;packaging;Internal;ea;
+ZFO-10-EAC;30501;KR 10;packaging;packaging;Internal;ea;
+ZFO-14-EAC;30321;KR14;packaging;packaging;Internal;ea;
+ZFO-16-EAC;30322;KR16;packaging;packaging;Internal;ea;
+ZFO-18-EAC;30323;KR18;packaging;packaging;Internal;ea;
+ZFO-1M5-EAC;;KS 1MX500;packaging;packaging;Internal;ea;
+ZFO-20-EAC;30324;KR20;packaging;packaging;Internal;ea;
+ZFO-20R-EAC;30742;20 Round Board;packaging;packaging;Internal;ea;
+ZFO-500-EAC;30251;BOX 1M*500MM*6;packaging;packaging;Internal;ea;
+ZFO-NR1-EAC;30584;NR 10;packaging;packaging;Internal;ea;
+ZFO-NR2-EAC;30585;NR 12;packaging;packaging;Internal;ea;
+ZFO-NS1-EAC;30329;NS 10;packaging;packaging;Internal;ea;
+ZFO-NS2-EAC;30330;NS12;packaging;packaging;Internal;ea;pos
+ZFO-S16-EAC;30325;KS16;packaging;packaging;Internal;ea;pos
+ZFO-S18-EAC;30326;KS18;packaging;packaging;Internal;ea;pos
+ZFO-S20-EAC;30328;KS20;packaging;packaging;Internal;ea;pos
+CFW-CKE-003;10099;BD Wedding Cake FC 10 12 14 Loose;Wedding Cakes;Wedding Cakes;internal;ea;pos
+ZFO-T14-EAC;30331;NS14;packaging;packaging;Internal;ea;
+ZFO-TN6-EAC;30617;NR 6;packaging;packaging;Internal;ea;
+ZFO-TN8-EAC;30332;NS8;packaging;packaging;Internal;ea;
+ZLA- REA-EAC;;Label Real Butter;packaging;packaging;Internal;ea;
+ZLA-ALA-50MM;;Oven Delights logo labels 50mmx40mm;packaging;packaging;Internal;ea;
+ZLA-LAB-EAC;30333;Label 40x46 B/white Label;packaging;packaging;Internal;ea;
+ZLA-LKI-EACH;;Label White Keep In Fridge;packaging;packaging;Internal;ea;
+ZLA-LPL-EAC;;Label For Platter Domes;packaging;packaging;Internal;ea;
+ZLA-OLA-EAC;;Label Oven Delights Logo 50x50mm;packaging;packaging;Internal;ea;
+ZLA-PLA-EAC;;Label Plates logo 50x50mm;packaging;packaging;Internal;ea;
+ZLA-PLL-EAC;;Label for Platters Assorted Flavours;packaging;packaging;Internal;ea;
+ZLA-WLB-EACH;;Label 40x29 White Label;packaging;packaging;Internal;ea;
+ZPA-CDA-EAC;;4 Cup Drinkaway Carrier P2106;packaging;packaging;Internal;ea;
+ZPA-CDC-EAC;;2 Cup Drinkaway Carrier P2105;packaging;packaging;Internal;ea;
+ZPA-DWK-250ML;;250ml Double Wall Kraft Cup;packaging;packaging;Internal;ea;
+ZPA-DWK-350ML;;350ml Double Wall Kraft Cup;packaging;packaging;Internal;ea;
+ZPA-GRE-EAC;30302;Grease Proof 2(200*170);packaging;packaging;Internal;ea;
+ZPA-RSL-250ML;;250ml Ripple Sip Lid;packaging;packaging;Internal;ea;
+ZPA-RSL-350ML;;350ml Ripple Sip Lid;packaging;packaging;Internal;ea;
+ZPA-WHP-100ML;;100ml White Hot Paper Cup;packaging;packaging;Internal;ea;
+ZPL-70M-EAC;30284;Plastic Lids Clear 70mm;packaging;packaging;Internal;ea;
+ZPL-F70-EAC;30279;F70 BISCUIT CONTAINER;packaging;packaging;Internal;ea;
+CLE-MPP-EAC;;Monthly Pest Control;pest control;pest control;external;ea;
+ZDB- FIC-EAC;;Genus Eco 30 Flying Insect Catcher;pest control;pest control;external;ea;
+YBA-BOO-MX1;30446;Sub Batter - Bar One Sponge Round;sub recipe;sub recipe;Internal;kg;
+YBA-BSC-MXI;;Sub Batter- Butter Scones;sub recipe;sub recipe;Internal;kg;
+YBA-CAC-MX1;30432;Sub Batter Carrot Cake;sub recipe;sub recipe;Internal;kg;
+YBA-CCC-MX1;30859;Sub Batter-Carrot Cake with Cream Cheese Slab;sub recipe;sub recipe;Internal;kg;
+YBA-CGS-MX1;30442;Sub Batter- Chocolate Gateaux Sponge;sub recipe;sub recipe;Internal;kg;
+YBA-CHC-MX1;30434;Sub Batter-Chocolate Brownie;sub recipe;sub recipe;Internal;kg;
+YBA-CHO-MX1;30352;Sub Sponge Batter -Chocolate;sub recipe;sub recipe;Internal;kg;
+YBA-CHS-MX1;30441;Sub Batter-Chocolate Sponge Sheet;sub recipe;sub recipe;Internal;kg;
+YBA-CSP-MX1;30447;Sub Batter- Choc Swissroll Sponge;sub recipe;sub recipe;Internal;kg;
+YBA-CSS-MX1;30864;Sub Batter - choc sheet scratch mix;sub recipe;sub recipe;Internal;kg;
+YBA-DEG-MX1;;Sub Batter Eggless Diwali Cake;sub recipe;sub recipe;Internal;kg;
+YBA-DIS-MX1;30622;Sub Batter Diwali Sponge;sub recipe;sub recipe;Internal;kg;
+YBA-DIV-MX1;30537;Sub Sponge Batter Diwali;sub recipe;sub recipe;Internal;kg;
+YBA-EFS-MX1;30443;Sub Batter -Eggfree Sponge sheet;sub recipe;sub recipe;Internal;kg;
+YBA-EGS-MX1;30623;Sub Batter Eggless Gateaux Sponge;sub recipe;sub recipe;Internal;kg;
+YBA-ESN-MX1;30768;Sub Batter Snowball Eggles;sub recipe;sub recipe;Internal;kg;
+YBA-FRS-MX1;30438;Sub Batter- Fruit Scones;sub recipe;sub recipe;Internal;kg;
+YBA-HCB-MX1;30351;Sub Dough- Hot Cross Buns;sub recipe;sub recipe;Internal;kg;
+YBA-HCC-MX1;30659;Sub Batter Cross for Hot Cross Buns;sub recipe;sub recipe;Internal;kg;
+YBA-MAD-MX1;30435;Sub Batter - Madeira Slab;sub recipe;sub recipe;Internal;kg;
+YBA-MCC-MX1;;Sub Sponge Batter- Moist Choc Sponge C/C;sub recipe;sub recipe;Internal;kg;
+YBA-QUC-MX1;30436;Sub Batter -Queen Cake;sub recipe;sub recipe;Internal;kg;
+YBA-RBS-MX1;30618;Sub Batter Rainbow Sponge;sub recipe;sub recipe;Internal;kg;
+YBA-RCS-MX1;30656;Sub Batter Rich Choc Sponge;sub recipe;sub recipe;Internal;kg;
+YBA-ROT-MX1;;Sub Dough Roti 12s;sub recipe;sub recipe;Internal;kg;
+YBA-SCO-MX1;30437;Sub Batter - Scones;sub recipe;sub recipe;Internal;kg;
+YBA-SMC-MX1;;Sub Sponge Batter - Moist Choc Sponge Fererro;sub recipe;sub recipe;Internal;kg;
+YBA-SNB-MX1;30439;Sub Batter -Snowball;sub recipe;sub recipe;Internal;kg;
+YBA-SPO-MX1;30444;Sub Batter - Strawberry Sponge;sub recipe;sub recipe;Internal;kg;
+YBA-VAN-MX1;30353;Sub Sponge Batter - Vanilla Gateaux;sub recipe;sub recipe;Internal;kg;
+YBA-VNS-MX1;30445;Sub Batter Vanilla Sheets Coastal;sub recipe;sub recipe;Internal;kg;
+YBA-VSR-MX1;30448;Sub Batter- Vanilla Swissroll Sponge;sub recipe;sub recipe;Internal;kg;
+YBA-WNS-MX1;30440;Sub Batter- Windsor Slab;sub recipe;sub recipe;Internal;kg;
+YBU-CRE-MX6;30347;Sub Buns-Cream 6s;sub recipe;sub recipe;Internal;kg;
+YCC-CRC-MX1;;Sub Cream Cheese;sub recipe;sub recipe;Internal;kg;
+YCK-BAN-MX1;30748;Sub-Banana Cake;sub recipe;sub recipe;Internal;kg;
+YCK-FRC-MX1;30529;Sub Batter Christmas Windsor Plain;sub recipe;sub recipe;Internal;kg;
+YDO-BIS-MX1;30463;Sub Dough-Biscuit;sub recipe;sub recipe;Internal;kg;
+YDO-BRB-MX1;30413;Sub Dough Brown Bread;sub recipe;sub recipe;Internal;kg;
+YDO-BUN-MX1;;Sub Dough - Buns;sub recipe;sub recipe;Internal;kg;
+YDO-CRO-MX1;;Sub dough Croissants;sub recipe;sub recipe;Internal;kg;
+YDO-CUC-MX1;30794;Sub Dough - Butter Biscuits;sub recipe;sub recipe;Internal;kg;
+YDO-DAN-MX1;30451;Sub Dough -Danish;sub recipe;sub recipe;Internal;kg;
+YDO-DOU-MX1;30453;Sub Dough-Doughnut;sub recipe;sub recipe;Internal;kg;
+YDO-M3M-MX1;30464;Sub Dough Melting Moment Round 60g;sub recipe;sub recipe;Internal;kg;
+MIL-MFC-500;6001299025440;Milk 500ml Full Cream;Ingredients;ingredients;Internal;ea;
+YDO-MML-MX1;;Sub Dough Melting Moments Long 95g;sub recipe;sub recipe;Internal;kg;
+YDO-NAA-MX1;30449;Sub Dough - Naan;sub recipe;sub recipe;Internal;kg;
+YDO-ROL-MX1;30450;Sub Dough - Rolls;sub recipe;sub recipe;Internal;kg;
+YDP-CHD-MX1;30401;Sub Lamington -Dip Chocolate;sub recipe;sub recipe;Internal;kg;
+YDP-LAM-MX3;30402;Sub Raspberry Lamington - Dip;sub recipe;sub recipe;Internal;kg;
+YDP-SNO-MX1;30403;Sub Snowball Dip;sub recipe;sub recipe;Internal;kg;
+YEG-SNO-MX1;30767;Sub Snowball Eggless;sub recipe;sub recipe;Internal;kg;
+YFC-FRC-MX1;30366;Sub Fresh Cream;sub recipe;sub recipe;Internal;kg;
+YFI-BOG-MX1;30391;Sub Chocolate Ganache;sub recipe;sub recipe;Internal;kg;
+YFI-BOM-MX1;30409;Sub Choc Mousse Bar One;sub recipe;sub recipe;Internal;kg;
+YFI-CCC-KGR;;Sub Choc Cream Cheese;sub recipe;sub recipe;Internal;kg;
+YFI-CUS-MX1;30406;Sub Custard Filing;sub recipe;sub recipe;Internal;kg;
+YFI-FEM-MX1;;sub choc mousse ferrero;sub recipe;sub recipe;Internal;kg;
+YFI-MIL-MX1;30408;Sub Milk Tart Filling;sub recipe;sub recipe;Internal;kg;
+YFI-MOU-MX1;;Sub Mousse Mix;sub recipe;sub recipe;Internal;kg;
+YFI-SQF-MX1;30405;Sub Currant Square Filling;sub recipe;sub recipe;Internal;kg;
+YFI-STJ-MX1;30410;Sub Strawberry Jam Filling;sub recipe;sub recipe;Internal;kg;
+YFI-TIR-MX1;30411;Sub Tiramisu;sub recipe;sub recipe;Internal;kg;
+YPA-ECL-MX1;30457;Sub Batter Eclairs;sub recipe;sub recipe;Internal;kg;
+YPA-PUF-MX1;30459;Sub Pastry-Puff;sub recipe;sub recipe;Internal;kg;
+YPA-SWE-MX1;30461;Sub Sweet Paste;sub recipe;sub recipe;Internal;kg;
+YPI-PIC-MX1;30646;Sub Picture;sub recipe;sub recipe;Internal;kg;
+YRO-COR-M12;30649;Sub Cocktail Rolls 12s;sub recipe;sub recipe;Internal;kg;
+YSP-BSC-MX1;;Sub- Pie Bottom Short Crust Pastry;sub recipe;sub recipe;Internal;kg;
+YSP-SCM-MX1;;Sub- Chicken & Mushroom Pie Filling;sub recipe;sub recipe;Internal;kg;
+YSP-SHE-MX1;30389;Sub Bar One Sponge - Sheets;sub recipe;sub recipe;Internal;kg;
+YSP-SMC-MX1;;Sub- Mutton Curry Pie Filling;sub recipe;sub recipe;Internal;kg;
+YSP-SVP-MX1;;Sub- Veg Curry Pie Filling;sub recipe;sub recipe;Internal;kg;
+YSP-TRI-MX1;30355;Sub -Sponge Trifle;sub recipe;sub recipe;Internal;kg;
+YTB-MIL-MX1;30510;Sub Milk Tart Base Large;sub recipe;sub recipe;Internal;kg;
+YTB-MIS-MX1;30512;Sub Milk Tart Base Small;sub recipe;sub recipe;Internal;kg;
+YTB-NOB-EAC;;Sub No Bake Cake;sub recipe;sub recipe;Internal;kg;
+YTO-BEL-MX1;30418;Sub Belgica Tart Topping;sub recipe;sub recipe;Internal;kg;
+YTO-BLC-MX1;30508;Sub Belgica Crumbs;sub recipe;sub recipe;Internal;kg;
+YTO-BOF-KGR;;Sub Bar One Filling;sub recipe;sub recipe;Internal;kg;
+YTO-BOG-KGR;;Sub- Bar One Ganache;sub recipe;sub recipe;Internal;kg;
+YTO-BUC-MX1;30398;Sub Buttercream Chocolate;sub recipe;sub recipe;Internal;kg;
+YTO-BUW-MX1;30357;Sub Buttercream- White;sub recipe;sub recipe;Internal;kg;
+YTO-BUY-MX1;30400;Sub Buttercream Yellow;sub recipe;sub recipe;Internal;kg;
+YTO-FOC-MX1;30412;Sub Fondant Chocolate;sub recipe;sub recipe;Internal;kg;
+YTO-NAA-MX1;30375;Sub Naan topping;sub recipe;sub recipe;Internal;kg;
+YTO-SNO-MX1;30419;Sub Snowball Coconut Topping;sub recipe;sub recipe;Internal;kg;
+YTO-SUS-MX1;30417;Sub Sugar Syrup;sub recipe;sub recipe;Internal;kg;
+YTO-SUW-MX1;30416;Sub Glaze Sugar Water;sub recipe;sub recipe;Internal;kg;
+YTO-WFI-MX1;30539;Sub - White Fondant Icing;sub recipe;sub recipe;Internal;kg;
+;;;;packaging;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+;;;;;;;

@@ -38,6 +38,10 @@ Partial Class InvoiceCaptureForm
         Me.txtSubTotal = New System.Windows.Forms.TextBox()
         Me.lblVat = New System.Windows.Forms.Label()
         Me.txtVat = New System.Windows.Forms.TextBox()
+        Me.lblDiscount = New System.Windows.Forms.Label()
+        Me.txtDiscount = New System.Windows.Forms.TextBox()
+        Me.btnApplyDiscount = New System.Windows.Forms.Button()
+        Me.lblDiscountNote = New System.Windows.Forms.Label()
         Me.lblTotal = New System.Windows.Forms.Label()
         Me.txtTotal = New System.Windows.Forms.TextBox()
         CType(Me.dgvLines, System.ComponentModel.ISupportInitialize).BeginInit()
@@ -159,6 +163,48 @@ Partial Class InvoiceCaptureForm
         Me.txtVat.TabIndex = 12
         Me.txtVat.TextAlign = System.Windows.Forms.HorizontalAlignment.Right
         '
+        'lblDiscount
+        '
+        Me.lblDiscount.AutoSize = True
+        Me.lblDiscount.ForeColor = System.Drawing.Color.FromArgb(CType(CType(220, Byte), Integer), CType(CType(53, Byte), Integer), CType(CType(69, Byte), Integer))
+        Me.lblDiscount.Location = New System.Drawing.Point(800, 500)
+        Me.lblDiscount.Name = "lblDiscount"
+        Me.lblDiscount.Size = New System.Drawing.Size(52, 13)
+        Me.lblDiscount.TabIndex = 13
+        Me.lblDiscount.Text = "Discount:"
+        '
+        'txtDiscount
+        '
+        Me.txtDiscount.Location = New System.Drawing.Point(860, 497)
+        Me.txtDiscount.Name = "txtDiscount"
+        Me.txtDiscount.Size = New System.Drawing.Size(80, 20)
+        Me.txtDiscount.TabIndex = 14
+        Me.txtDiscount.Text = "0.00"
+        Me.txtDiscount.TextAlign = System.Windows.Forms.HorizontalAlignment.Right
+        '
+        'btnApplyDiscount
+        '
+        Me.btnApplyDiscount.BackColor = System.Drawing.Color.FromArgb(CType(CType(40, Byte), Integer), CType(CType(167, Byte), Integer), CType(CType(69, Byte), Integer))
+        Me.btnApplyDiscount.FlatStyle = System.Windows.Forms.FlatStyle.Flat
+        Me.btnApplyDiscount.ForeColor = System.Drawing.Color.White
+        Me.btnApplyDiscount.Location = New System.Drawing.Point(950, 495)
+        Me.btnApplyDiscount.Name = "btnApplyDiscount"
+        Me.btnApplyDiscount.Size = New System.Drawing.Size(60, 24)
+        Me.btnApplyDiscount.TabIndex = 15
+        Me.btnApplyDiscount.Text = "Apply"
+        Me.btnApplyDiscount.UseVisualStyleBackColor = False
+        '
+        'lblDiscountNote
+        '
+        Me.lblDiscountNote.AutoSize = True
+        Me.lblDiscountNote.Font = New System.Drawing.Font("Microsoft Sans Serif", 7.0!, System.Drawing.FontStyle.Italic)
+        Me.lblDiscountNote.ForeColor = System.Drawing.Color.Gray
+        Me.lblDiscountNote.Location = New System.Drawing.Point(800, 522)
+        Me.lblDiscountNote.Name = "lblDiscountNote"
+        Me.lblDiscountNote.Size = New System.Drawing.Size(120, 11)
+        Me.lblDiscountNote.TabIndex = 16
+        Me.lblDiscountNote.Text = "(Early payment discount)"
+        '
         'lblTotal
         '
         Me.lblTotal.AutoSize = True
@@ -166,7 +212,7 @@ Partial Class InvoiceCaptureForm
         Me.lblTotal.Location = New System.Drawing.Point(600, 550)
         Me.lblTotal.Name = "lblTotal"
         Me.lblTotal.Size = New System.Drawing.Size(39, 13)
-        Me.lblTotal.TabIndex = 13
+        Me.lblTotal.TabIndex = 17
         Me.lblTotal.Text = "Total:"
         '
         'txtTotal
@@ -176,7 +222,7 @@ Partial Class InvoiceCaptureForm
         Me.txtTotal.Name = "txtTotal"
         Me.txtTotal.ReadOnly = True
         Me.txtTotal.Size = New System.Drawing.Size(100, 20)
-        Me.txtTotal.TabIndex = 14
+        Me.txtTotal.TabIndex = 18
         Me.txtTotal.TextAlign = System.Windows.Forms.HorizontalAlignment.Right
         '
         'btnSave
@@ -213,6 +259,10 @@ Partial Class InvoiceCaptureForm
         Me.Controls.Add(Me.btnSave)
         Me.Controls.Add(Me.txtTotal)
         Me.Controls.Add(Me.lblTotal)
+        Me.Controls.Add(Me.lblDiscountNote)
+        Me.Controls.Add(Me.btnApplyDiscount)
+        Me.Controls.Add(Me.txtDiscount)
+        Me.Controls.Add(Me.lblDiscount)
         Me.Controls.Add(Me.txtVat)
         Me.Controls.Add(Me.lblVat)
         Me.Controls.Add(Me.txtSubTotal)
@@ -254,6 +304,10 @@ Partial Class InvoiceCaptureForm
     Friend WithEvents txtSubTotal As System.Windows.Forms.TextBox
     Friend WithEvents lblVat As System.Windows.Forms.Label
     Friend WithEvents txtVat As System.Windows.Forms.TextBox
+    Friend WithEvents lblDiscount As System.Windows.Forms.Label
+    Friend WithEvents txtDiscount As System.Windows.Forms.TextBox
+    Friend WithEvents btnApplyDiscount As System.Windows.Forms.Button
+    Friend WithEvents lblDiscountNote As System.Windows.Forms.Label
     Friend WithEvents lblTotal As System.Windows.Forms.Label
     Friend WithEvents txtTotal As System.Windows.Forms.TextBox
 

@@ -138,10 +138,12 @@ Namespace Forms
                 .Left = 0,
                 .Top = y + 25,
                 .Width = 800,
-                .DropDownStyle = ComboBoxStyle.DropDownList,
+                .DropDownStyle = ComboBoxStyle.DropDown,
+                .AutoCompleteMode = AutoCompleteMode.None,
                 .Font = New Font("Segoe UI", 10)
             }
             AddHandler cmbProduct.SelectedIndexChanged, AddressOf OnProductChanged
+            AddHandler cmbProduct.TextChanged, AddressOf OnProductSearchTextChanged
 
             y += 80
 
@@ -175,8 +177,8 @@ Namespace Forms
                 .Top = y + 25,
                 .Width = 150,
                 .Font = New Font("Segoe UI", 10),
-                .ReadOnly = True,
-                .BackColor = ColorLight
+                .ReadOnly = False,
+                .BackColor = Color.White
             }
 
             Dim lblTotalValue As New Label() With {
@@ -339,12 +341,13 @@ Namespace Forms
             End Try
         End Sub
 
-        Private Sub LoadProducts()
+        Private Sub LoadProducts(Optional searchText As String = "")
             Try
                 Using con As New SqlConnection(_connectionString)
                     con.Open()
-                    Dim sql As String = "SELECT ProductID, SKU, Name FROM demo_Retail_product WHERE IsActive = 1 ORDER BY Name"
+                    Dim sql As String = "SELECT DISTINCT ProductID, SKU, Name FROM demo_Retail_product WHERE IsActive = 1 AND (Name LIKE @search OR SKU LIKE @search) ORDER BY Name"
                     Using cmd As New SqlCommand(sql, con)
+                        cmd.Parameters.AddWithValue("@search", $"%{searchText}%")
                         Dim dt As New DataTable()
                         Using reader = cmd.ExecuteReader()
                             dt.Load(reader)
@@ -360,6 +363,18 @@ Namespace Forms
             Catch ex As Exception
                 MessageBox.Show($"Error loading products: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
+        End Sub
+        
+        Private Sub OnProductSearchTextChanged(sender As Object, e As EventArgs)
+            If _isLoading Then Return
+            
+            ' Search as user types with wildcards on both sides
+            Dim searchText As String = cmbProduct.Text
+            If searchText.Length >= 2 Then ' Start searching after 2 characters
+                LoadProducts(searchText)
+            ElseIf searchText.Length = 0 Then
+                LoadProducts() ' Load all if cleared
+            End If
         End Sub
 
         Private Sub OnFromBranchChanged(sender As Object, e As EventArgs)
@@ -381,6 +396,7 @@ Namespace Forms
         Private Sub OnProductChanged(sender As Object, e As EventArgs)
             If _isLoading Then Return
             
+            ' Only load cost when a product is actually selected (not while typing)
             If cmbProduct.SelectedValue Is Nothing Then 
                 txtUnitCost.Text = "0.00"
                 Return
@@ -398,9 +414,6 @@ Namespace Forms
                 Using con As New SqlConnection(_connectionString)
                     con.Open()
                     
-                    ' Debug: Show what we're searching for
-                    'MessageBox.Show($"Looking for ProductID: {productId}, BranchID: {branchId}", "Debug")
-                    
                     Dim sql As String = "SELECT TOP 1 CostPrice FROM demo_Retail_price WHERE ProductID = @pid AND BranchID = @bid AND CostPrice > 0 ORDER BY EffectiveFrom DESC"
                     Using cmd As New SqlCommand(sql, con)
                         cmd.Parameters.AddWithValue("@pid", productId)
@@ -411,15 +424,14 @@ Namespace Forms
                             Dim cost As Decimal = Convert.ToDecimal(result)
                             txtUnitCost.Text = cost.ToString("F2")
                         Else
-                            ' No price found in demo_Retail_price
-                            MessageBox.Show($"No cost price found for ProductID {productId} in BranchID {branchId}", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                            ' No price found - silently set to 0, user can edit manually
                             txtUnitCost.Text = "0.00"
                         End If
                     End Using
                 End Using
                 CalculateTotalValue(Nothing, Nothing)
             Catch ex As Exception
-                MessageBox.Show($"Error loading cost price: {ex.Message}{vbCrLf}ProductID: {cmbProduct.SelectedValue}{vbCrLf}BranchID: {cmbFromBranch.SelectedValue}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                ' Silently handle errors during typing - only show error on actual selection
                 txtUnitCost.Text = "0.00"
             End Try
         End Sub
@@ -465,9 +477,17 @@ Namespace Forms
             End If
             
             Dim unitCost As Decimal = 0
-            If Not Decimal.TryParse(txtUnitCost.Text, unitCost) OrElse unitCost <= 0 Then
-                MessageBox.Show("Unit cost must be greater than zero.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            If Not Decimal.TryParse(txtUnitCost.Text, unitCost) OrElse unitCost < 0 Then
+                MessageBox.Show("Unit cost cannot be negative.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
+            End If
+            
+            ' Warn if cost is zero but allow it
+            If unitCost = 0 Then
+                Dim result = MessageBox.Show("Unit cost is zero. Are you sure you want to continue?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
+                If result = DialogResult.No Then
+                    Return
+                End If
             End If
 
             Try
@@ -529,8 +549,8 @@ Namespace Forms
             Dim transferNumber As String = $"{branchCode}-IBT-{nextNumber.ToString("00000")}"
             
             ' Create transfer record with status 'Pending'
-            Dim sql As String = "INSERT INTO InterBranchTransfers (TransferNumber, FromBranchID, ToBranchID, ProductID, Quantity, UnitCost, TotalValue, Status, Notes, CreatedBy, CreatedDate) " &
-                               "VALUES (@number, @from, @to, @product, @qty, @cost, @total, 'Pending', @notes, @user, GETDATE()); SELECT SCOPE_IDENTITY()"
+            Dim sql As String = "INSERT INTO InterBranchTransfers (TransferNumber, FromBranchID, ToBranchID, ProductID, Quantity, UnitCost, TotalValue, TransferDate, Status, Notes, CreatedBy, CreatedDate) " &
+                               "VALUES (@number, @from, @to, @product, @qty, @cost, @total, GETDATE(), 'Pending', @notes, @user, GETDATE()); SELECT SCOPE_IDENTITY()"
             
             Dim transferId As Integer
             Using cmd As New SqlCommand(sql, con, tx)

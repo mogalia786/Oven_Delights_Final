@@ -417,6 +417,39 @@ Public Class EndOfDayCashUpForm
             currentY = AddReportLine(pnlCard, item.Item1, item.Item2, currentY, False)
         Next
         
+        ' RETURNS SECTION
+        If tillRow.Table.Columns.Contains("ReturnCount") AndAlso Convert.ToInt32(tillRow("ReturnCount")) > 0 Then
+            currentY += 10
+            Dim separatorReturns As New Panel With {
+                .Location = New Point(20, currentY),
+                .Size = New Size(1160, 2),
+                .BackColor = _accentColor
+            }
+            pnlCard.Controls.Add(separatorReturns)
+            currentY += 20
+            
+            Dim lblReturnsHeader As New Label With {
+                .Text = "RETURNS/REFUNDS",
+                .Font = New Font("Segoe UI", 14, FontStyle.Bold),
+                .ForeColor = Color.FromArgb(231, 76, 60),
+                .Location = New Point(20, currentY),
+                .AutoSize = True
+            }
+            pnlCard.Controls.Add(lblReturnsHeader)
+            currentY += 35
+            
+            Dim returnsData As New List(Of Tuple(Of String, Decimal)) From {
+                Tuple.Create("Number of Returns", Convert.ToDecimal(tillRow("ReturnCount"))),
+                Tuple.Create("Total Returns", Convert.ToDecimal(tillRow("TotalReturns"))),
+                Tuple.Create("Cash Returns", Convert.ToDecimal(tillRow("CashReturns"))),
+                Tuple.Create("Card Returns", Convert.ToDecimal(tillRow("CardReturns")))
+            }
+            
+            For Each item In returnsData
+                currentY = AddReportLine(pnlCard, item.Item1, item.Item2, currentY, False, Color.FromArgb(231, 76, 60))
+            Next
+        End If
+        
         currentY += 10
         Dim separator3 As New Panel With {
             .Location = New Point(20, currentY),
@@ -426,9 +459,63 @@ Public Class EndOfDayCashUpForm
         pnlCard.Controls.Add(separator3)
         currentY += 20
         
+        ' ORDER DEPOSITS SECTION (if any)
+        If tillRow.Table.Columns.Contains("OrderDepositCount") AndAlso Convert.ToInt32(tillRow("OrderDepositCount")) > 0 Then
+            Dim lblOrdersHeader As New Label With {
+                .Text = "ORDER DEPOSITS",
+                .Font = New Font("Segoe UI", 14, FontStyle.Bold),
+                .ForeColor = Color.FromArgb(52, 152, 219),
+                .Location = New Point(20, currentY),
+                .AutoSize = True
+            }
+            pnlCard.Controls.Add(lblOrdersHeader)
+            currentY += 35
+            
+            Dim orderData As New List(Of Tuple(Of String, Decimal)) From {
+                Tuple.Create("Order Transactions", Convert.ToDecimal(tillRow("OrderDepositCount"))),
+                Tuple.Create("Deposits Received", Convert.ToDecimal(tillRow("OrderDeposits")))
+            }
+            
+            For Each item In orderData
+                currentY = AddReportLine(pnlCard, item.Item1, item.Item2, currentY, False, Color.FromArgb(52, 152, 219))
+            Next
+            
+            currentY += 10
+            Dim separatorOrders As New Panel With {
+                .Location = New Point(20, currentY),
+                .Size = New Size(1160, 2),
+                .BackColor = _accentColor
+            }
+            pnlCard.Controls.Add(separatorOrders)
+            currentY += 20
+        End If
+        
+        ' CASH FLOAT SECTION
+        Dim lblFloatHeader As New Label With {
+            .Text = "CASH FLOAT",
+            .Font = New Font("Segoe UI", 14, FontStyle.Bold),
+            .ForeColor = Color.FromArgb(155, 89, 182),
+            .Location = New Point(20, currentY),
+            .AutoSize = True
+        }
+        pnlCard.Controls.Add(lblFloatHeader)
+        currentY += 35
+        
+        Dim openingFloat As Decimal = Convert.ToDecimal(tillRow("OpeningFloat"))
+        currentY = AddReportLine(pnlCard, "Opening Float", openingFloat, currentY, False, Color.FromArgb(155, 89, 182))
+        
+        currentY += 10
+        Dim separatorFloat As New Panel With {
+            .Location = New Point(20, currentY),
+            .Size = New Size(1160, 2),
+            .BackColor = _accentColor
+        }
+        pnlCard.Controls.Add(separatorFloat)
+        currentY += 20
+        
         ' EXPECTED CASH SECTION
         Dim lblExpectedHeader As New Label With {
-            .Text = "EXPECTED CASH IN TILL",
+            .Text = "TOTAL CASH IN TILL",
             .Font = New Font("Segoe UI", 14, FontStyle.Bold),
             .ForeColor = _successColor,
             .Location = New Point(20, currentY),
@@ -438,7 +525,7 @@ Public Class EndOfDayCashUpForm
         currentY += 35
         
         Dim expectedCash As Decimal = Convert.ToDecimal(tillRow("ExpectedCash"))
-        currentY = AddReportLine(pnlCard, "Expected Cash (System)", expectedCash, currentY, True, _successColor)
+        currentY = AddReportLine(pnlCard, "Expected Cash (Float + Sales + Orders)", expectedCash, currentY, True, _successColor)
         
         currentY += 20
         
