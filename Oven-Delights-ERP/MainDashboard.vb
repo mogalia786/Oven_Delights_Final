@@ -1581,8 +1581,23 @@ Partial Class MainDashboard
             
             miOrders.DropDownItems.AddRange(New ToolStripItem() {miCakeOrders, miGeneralOrders})
 
+            ' User Defined Orders menu item
+            Dim miUserDefinedOrders As New ToolStripMenuItem("User Defined Orders")
+            AddHandler miUserDefinedOrders.Click, Sub(sender, e)
+                                                      Try
+                                                          Dim branchId As Integer = If(currentUser IsNot Nothing AndAlso currentUser.BranchID.HasValue, currentUser.BranchID.Value, 0)
+                                                          Dim userId As Integer = If(currentUser IsNot Nothing, currentUser.UserID, 0)
+                                                          Dim frm As New UserDefinedOrdersManagement(branchId, userId)
+                                                          frm.MdiParent = Me
+                                                          frm.Show()
+                                                          frm.WindowState = FormWindowState.Maximized
+                                                      Catch ex As Exception
+                                                          MessageBox.Show("Error opening User Defined Orders: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                                                      End Try
+                                                  End Sub
+
             ManufacturingToolStripMenuItem.DropDownItems.AddRange(New ToolStripItem() {
-                miCategories, miSubcategories, miProducts, miAddProduct, miRecipeCreator, miBuildMyProduct, miBuildMyProductOld, miRecipeViewer, miBOM, miCompleteBuild, miMOActions, miOrders
+                miCategories, miSubcategories, miProducts, miAddProduct, miRecipeCreator, miBuildMyProduct, miBuildMyProductOld, miRecipeViewer, miBOM, miCompleteBuild, miMOActions, miOrders, miUserDefinedOrders
             })
         End If
     End Sub
