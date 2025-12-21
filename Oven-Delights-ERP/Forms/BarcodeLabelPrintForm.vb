@@ -211,59 +211,43 @@ Public Class BarcodeLabelPrintForm
 
     Private Function GenerateBarcode(text As String, width As Integer, height As Integer) As Bitmap
         Try
-            ' Manual Code 39 barcode generation - following research rules:
-            ' - Regular weight (not bold)
-            ' - Proper bar width for 203 DPI thermal printers
-            ' - Adequate quiet zones (margins)
+            ' Code 3 of 9 barcode using font
+            ' Requires "Free 3 of 9" or "Code 39" font installed on system
             Dim bmp As New Bitmap(width, height)
             Using g As Graphics = Graphics.FromImage(bmp)
                 g.Clear(Color.White)
-                g.SmoothingMode = Drawing2D.SmoothingMode.None
-                g.InterpolationMode = Drawing2D.InterpolationMode.NearestNeighbor
-                
-                ' Code 39 encoding
-                Dim code39 As New Dictionary(Of Char, String) From {
-                    {"0"c, "101001101101"}, {"1"c, "110100101011"}, {"2"c, "101100101011"},
-                    {"3"c, "110110010101"}, {"4"c, "101001101011"}, {"5"c, "110100110101"},
-                    {"6"c, "101100110101"}, {"7"c, "101001011011"}, {"8"c, "110100101101"},
-                    {"9"c, "101100101101"}, {"A"c, "110101001011"}, {"B"c, "101101001011"},
-                    {"C"c, "110110100101"}, {"D"c, "101011001011"}, {"E"c, "110101100101"},
-                    {"F"c, "101101100101"}, {"G"c, "101010011011"}, {"H"c, "110101001101"},
-                    {"I"c, "101101001101"}, {"J"c, "101011001101"}, {"K"c, "110101010011"},
-                    {"L"c, "101101010011"}, {"M"c, "110110101001"}, {"N"c, "101011010011"},
-                    {"O"c, "110101101001"}, {"P"c, "101101101001"}, {"Q"c, "101010110011"},
-                    {"R"c, "110101011001"}, {"S"c, "101101011001"}, {"T"c, "101011011001"},
-                    {"U"c, "110010101011"}, {"V"c, "100110101011"}, {"W"c, "110011010101"},
-                    {"X"c, "100101101011"}, {"Y"c, "110010110101"}, {"Z"c, "100110110101"},
-                    {"-"c, "100101011011"}, {"."c, "110010101101"}, {" "c, "100110101101"},
-                    {"*"c, "100101101101"}
-                }
-                
-                ' Build barcode pattern with start/stop
-                Dim pattern As String = code39("*"c)
-                For Each c As Char In text.ToUpper()
-                    If code39.ContainsKey(c) Then
-                        pattern &= "0" & code39(c) ' 0 = narrow space between chars
-                    End If
+                g.TextRenderingHint = Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit
+
+                ' Code 3 of 9 requires asterisks as start/stop characters
+                Dim barcodeText As String = "*" & text.ToUpper() & "*"
+
+                ' Try to use Code 3 of 9 font (common names)
+                Dim barcodeFont As Font = Nothing
+                Dim fontNames() As String = {"Free 3 of 9", "Code 39", "3 of 9 Barcode", "IDAutomationC39M"}
+
+                For Each fontName As String In fontNames
+                    Try
+                        barcodeFont = New Font(fontName, 24, FontStyle.Regular)
+                        If barcodeFont.Name = fontName Then
+                            Exit For
+                        End If
+                    Catch
+                        Continue For
+                    End Try
                 Next
-                pattern &= "0" & code39("*"c)
-                
-                ' Draw bars - following research-based sizing
-                ' 10% margins on each side for quiet zones (20% total)
-                ' Bar height 60% of total height
-                Dim barWidth As Single = CSng(width * 0.8) / pattern.Length
-                Dim x As Single = width * 0.1 ' 10% left margin (quiet zone)
-                Dim barHeight As Single = height * 0.6 ' 60% height for bars
-                
-                For Each bit As Char In pattern
-                    If bit = "1"c Then
-                        g.FillRectangle(Brushes.Black, x, 5, barWidth, barHeight)
-                    End If
-                    x += barWidth
-                Next
-                
-                ' Human-readable text removed to prevent touching barcode bars
-                ' Barcode number is already displayed above the barcode on the label
+
+                ' Fallback to Arial if Code 39 font not found
+                If barcodeFont Is Nothing OrElse Not fontNames.Contains(barcodeFont.Name) Then
+                    barcodeFont = New Font("Arial", 20, FontStyle.Regular)
+                End If
+
+                ' Measure and center the barcode
+                Dim textSize = g.MeasureString(barcodeText, barcodeFont)
+                Dim x As Single = (width - textSize.Width) / 2
+                Dim y As Single = (height - textSize.Height) / 2
+
+                ' Draw barcode
+                g.DrawString(barcodeText, barcodeFont, Brushes.Black, x, y)
             End Using
             
             Return bmp

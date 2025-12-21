@@ -45,8 +45,9 @@ Public Class InvoiceCaptureForm
             For Each r As DataGridViewRow In dgvLines.Rows
                 If dgvLines.Columns.Contains("ReceiveNow") Then
                     Dim v = r.Cells("ReceiveNow").Value
-                    Dim d As Decimal
-                    If v Is Nothing OrElse Not Decimal.TryParse(Convert.ToString(v), d) Then r.Cells("ReceiveNow").Value = 0D
+                    If v Is Nothing OrElse IsDBNull(v) Then
+                        r.Cells("ReceiveNow").Value = 0D
+                    End If
                 End If
             Next
         Catch
@@ -155,6 +156,13 @@ Public Class InvoiceCaptureForm
                         col.ValueType = GetType(String)
                     End If
                 Next
+                
+                ' Configure ReceiveNow column to accept decimals
+                If dgvLines.Columns.Contains("ReceiveNow") Then
+                    dgvLines.Columns("ReceiveNow").ValueType = GetType(Decimal)
+                    dgvLines.Columns("ReceiveNow").DefaultCellStyle.Format = "N2"
+                    dgvLines.Columns("ReceiveNow").DefaultCellStyle.NullValue = 0D
+                End If
 
                 ' Add dropdown for CreditReason column
                 If dgvLines.Columns.Contains("CreditReason") Then
@@ -560,10 +568,11 @@ Public Class InvoiceCaptureForm
             ' Apply discount PERCENTAGE if entered
             Dim discountPercent As Decimal = 0
             If Decimal.TryParse(txtDiscount.Text, discountPercent) AndAlso discountPercent > 0 Then
-                ' Calculate discount amount from percentage
+                ' Apply discount to subtotal (excl VAT)
                 Dim discountAmount As Decimal = Math.Round(subTotal * (discountPercent / 100), 2)
                 subTotal = subTotal - discountAmount
-                vatTotal = Math.Round(subTotal * 0.15D / 1.15D, 2)
+                ' Recalculate VAT on discounted subtotal
+                vatTotal = Math.Round(subTotal * 0.15D, 2)
             End If
             
             Dim total As Decimal = subTotal + vatTotal

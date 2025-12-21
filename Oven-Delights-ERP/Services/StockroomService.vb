@@ -3340,8 +3340,8 @@ Public Class StockroomService
                      "ISNULL(pol.ReceivedQuantity, 0) AS ReceivedQuantity, " &
                      "pol.UnitCost, " &
                      "pol.LineTotal, " &
-                     "0 AS ReceiveNow, " &
-                     "0 AS ReturnQty, " &
+                     "CAST(0.00 AS DECIMAL(18,2)) AS ReceiveNow, " &
+                     "CAST(0.00 AS DECIMAL(18,2)) AS ReturnQty, " &
                      "'No Credit Note' AS CreditReason, " &
                      "'' AS CreditComments, " &
                      "CASE " &
