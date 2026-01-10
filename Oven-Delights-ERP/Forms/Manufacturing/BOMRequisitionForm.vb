@@ -10,6 +10,7 @@ Namespace Manufacturing
         Private connectionString As String = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
         Private reOrderBookID As Integer
         Private requisitionText As String = ""
+        Private scaledBOMService As New ScaledBOMService()
         
         Public Sub New(reOrderBookID As Integer)
             Me.reOrderBookID = reOrderBookID
@@ -105,49 +106,60 @@ Namespace Manufacturing
                     ' Aggregate ingredients
                     Dim aggregatedItems As New Dictionary(Of String, (Qty As Decimal, Unit As String))
                     
-                    ' Process each product
+                    ' Process each product using NEW Recipe Management system
                     For Each product In productList
                         sb.AppendLine()
                         sb.AppendLine($"► {product.ProductName} (Quantity: {product.Qty})")
                         
-                        ' Get BOM
-                        Dim cmdBOM As New SqlCommand(
-                            "SELECT bl.ProductName, bl.Quantity, bl.UnitOfMeasure, bh.BatchSize " &
-                            "FROM BOM_Lines bl " &
-                            "INNER JOIN BOM_Header bh ON bl.BOMID = bh.BOMID " &
-                            "WHERE bh.ProductID = @ProductID AND bh.IsActive = 1 " &
-                            "ORDER BY bl.LineNumber", conn)
-                        cmdBOM.Parameters.AddWithValue("@ProductID", product.ProductID)
-                        
-                        Dim readerBOM = cmdBOM.ExecuteReader()
-                        Dim hasIngredients = False
-                        
-                        While readerBOM.Read()
-                            hasIngredients = True
-                            Dim ingredientName = readerBOM.GetString(0)
-                            Dim bomQty = readerBOM.GetDecimal(1)
-                            Dim batchSize = readerBOM.GetDecimal(3)
-                            Dim unit = readerBOM.GetString(2)
+                        Try
+                            ' Get scaled BOM from new Recipe Management system
+                            Dim bomItems = scaledBOMService.GetScaledBOM(product.ProductID, product.Qty)
                             
-                            ' Calculate: (BOM qty / batch size) * product qty ordered
-                            Dim totalQty = (bomQty / batchSize) * product.Qty
-                            
-                            sb.AppendLine($"   • {ingredientName} - {totalQty:N2} {unit}")
-                            
-                            ' Aggregate
-                            Dim key = $"{ingredientName}|{unit}"
-                            If aggregatedItems.ContainsKey(key) Then
-                                Dim existing = aggregatedItems(key)
-                                aggregatedItems(key) = (existing.Qty + totalQty, unit)
-                            Else
-                                aggregatedItems(key) = (totalQty, unit)
+                            If bomItems.Count = 0 Then
+                                sb.AppendLine("   (No recipe found for this product)")
+                                Continue For
                             End If
-                        End While
-                        readerBOM.Close()
-                        
-                        If Not hasIngredients Then
-                            sb.AppendLine("   (No BOM found for this product)")
-                        End If
+                            
+                            ' Show batch info
+                            Dim batchQty = bomItems.First().RecipeBatchQty
+                            Dim scalingFactor = bomItems.First().ScalingFactor
+                            sb.AppendLine($"   Recipe Batch: {batchQty} | Scaling Factor: {scalingFactor:N4}")
+                            sb.AppendLine()
+                            
+                            ' List ingredients with scaled quantities
+                            For Each item In bomItems
+                                sb.AppendLine($"   • {item.ItemName} - {item.Quantity:N3} {item.UnitOfMeasure} ({item.ItemType})")
+                                
+                                ' Aggregate for total summary
+                                Dim key = $"{item.ItemName}|{item.UnitOfMeasure}"
+                                If aggregatedItems.ContainsKey(key) Then
+                                    Dim existing = aggregatedItems(key)
+                                    aggregatedItems(key) = (existing.Qty + item.Quantity, item.UnitOfMeasure)
+                                Else
+                                    aggregatedItems(key) = (item.Quantity, item.UnitOfMeasure)
+                                End If
+                                
+                                ' Save to database for stockroom fulfillment
+                                Dim cmdInsertLine As New SqlCommand(
+                                    "INSERT INTO ReOrderBOMRequisition (ReOrderLineID, ItemID, ItemName, ItemType, Quantity, UnitOfMeasure, CostPerUnit, TotalCost) " &
+                                    "SELECT rbl.ReOrderLineID, @ItemID, @ItemName, @ItemType, @Quantity, @UnitOfMeasure, @CostPerUnit, @TotalCost " &
+                                    "FROM ReOrderBookLines rbl " &
+                                    "WHERE rbl.ReOrderBookID = @ReOrderBookID AND rbl.ProductID = @ProductID", conn)
+                                cmdInsertLine.Parameters.AddWithValue("@ReOrderBookID", reOrderBookID)
+                                cmdInsertLine.Parameters.AddWithValue("@ProductID", product.ProductID)
+                                cmdInsertLine.Parameters.AddWithValue("@ItemID", item.ItemID)
+                                cmdInsertLine.Parameters.AddWithValue("@ItemName", item.ItemName)
+                                cmdInsertLine.Parameters.AddWithValue("@ItemType", item.ItemType)
+                                cmdInsertLine.Parameters.AddWithValue("@Quantity", item.Quantity)
+                                cmdInsertLine.Parameters.AddWithValue("@UnitOfMeasure", item.UnitOfMeasure)
+                                cmdInsertLine.Parameters.AddWithValue("@CostPerUnit", item.CostPerUnit)
+                                cmdInsertLine.Parameters.AddWithValue("@TotalCost", item.TotalCost)
+                                cmdInsertLine.ExecuteNonQuery()
+                            Next
+                            
+                        Catch ex As Exception
+                            sb.AppendLine($"   ERROR: {ex.Message}")
+                        End Try
                     Next
                     
                     ' Summary

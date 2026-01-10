@@ -1479,11 +1479,40 @@ Partial Class MainDashboard
                                              OpenMdiSingleton(Of Manufacturing.ProductForm)()
                                          End Sub
 
+            ' Add Product submenu with Recipe Management
             Dim miAddProduct As New ToolStripMenuItem("Add Product")
-            AddHandler miAddProduct.Click, Sub(sender, e)
+            
+            Dim miAddProductForm As New ToolStripMenuItem("Add Product Form")
+            AddHandler miAddProductForm.Click, Sub(sender, e)
                                               Dim frm As New Manufacturing.AddProductForm()
                                               frm.ShowDialog()
                                           End Sub
+            
+            Dim miCreateSubRecipe As New ToolStripMenuItem("Create Sub-Recipe")
+            AddHandler miCreateSubRecipe.Click, Sub(sender, e)
+                                                    Try
+                                                        Dim frm As New CreateSubRecipeForm()
+                                                        frm.MdiParent = Me
+                                                        frm.Show()
+                                                        frm.WindowState = FormWindowState.Maximized
+                                                    Catch ex As Exception
+                                                        MessageBox.Show("Error opening Create Sub-Recipe: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                                                    End Try
+                                                End Sub
+            
+            Dim miCreateProductRecipe As New ToolStripMenuItem("Create Product Recipe")
+            AddHandler miCreateProductRecipe.Click, Sub(sender, e)
+                                                        Try
+                                                            Dim frm As New CreateProductRecipeForm()
+                                                            frm.MdiParent = Me
+                                                            frm.Show()
+                                                            frm.WindowState = FormWindowState.Maximized
+                                                        Catch ex As Exception
+                                                            MessageBox.Show("Error opening Create Product Recipe: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                                                        End Try
+                                                    End Sub
+            
+            miAddProduct.DropDownItems.AddRange(New ToolStripItem() {miAddProductForm, miCreateSubRecipe, miCreateProductRecipe})
 
             Dim miRecipeCreator As New ToolStripMenuItem("Recipe Creator")
             AddHandler miRecipeCreator.Click, Sub(sender, e)

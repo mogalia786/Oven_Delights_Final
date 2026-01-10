@@ -517,9 +517,10 @@ Public Class InvoiceCaptureForm
 
     Private Sub CalculateTotals(sender As Object, e As EventArgs)
         Try
+            ' PURCHASE ORDER PRICING: UnitCost is EXCLUDING VAT
             ' Calculate totals respecting IsVatable status
-            ' Vatable items: Price includes VAT, extract excl VAT
-            ' Non-vatable items: Price has no VAT
+            ' Vatable items: Add 15% VAT to excl VAT price
+            ' Non-vatable items: No VAT added
             
             Dim subTotalVatable As Decimal = 0
             Dim subTotalNonVatable As Decimal = 0
@@ -529,7 +530,7 @@ Public Class InvoiceCaptureForm
                 If Not row.IsNewRow Then
                     Dim receiveNow = If(row.Cells("ReceiveNow").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("ReceiveNow").Value))
                     Dim unitCost = If(row.Cells("UnitCost").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("UnitCost").Value))
-                    Dim lineTotal As Decimal = receiveNow * unitCost
+                    Dim lineTotalExclVAT As Decimal = receiveNow * unitCost
                     
                     ' Get ProductID to check IsVatable
                     Dim productId As Integer = 0
@@ -551,14 +552,13 @@ Public Class InvoiceCaptureForm
                     End If
                     
                     If isVatable Then
-                        ' Price includes VAT - extract excl VAT and VAT amount
-                        Dim lineTotalExclVAT As Decimal = Math.Round(lineTotal / 1.15D, 2)
-                        Dim lineVAT As Decimal = lineTotal - lineTotalExclVAT
+                        ' Price is excl VAT - calculate VAT amount
+                        Dim lineVAT As Decimal = Math.Round(lineTotalExclVAT * 0.15D, 2)
                         subTotalVatable += lineTotalExclVAT
                         vatTotal += lineVAT
                     Else
-                        ' Price has no VAT - it's already excl VAT
-                        subTotalNonVatable += lineTotal
+                        ' Price has no VAT
+                        subTotalNonVatable += lineTotalExclVAT
                     End If
                 End If
             Next
@@ -799,7 +799,7 @@ Public Class InvoiceCaptureForm
                     End Using
                     
                     ' Update Demo_Retail_Price with cost price
-                    Dim costExclVAT As Decimal = Math.Round(unitCost / 1.15D, 2)
+                    ' unitCost is ALREADY Excl VAT - save it as-is, no division needed
                     
                     Dim updatePriceSql = "IF EXISTS (SELECT 1 FROM Demo_Retail_Price WHERE ProductID = @ProductID AND BranchID = @BranchID) " &
                                         "  UPDATE Demo_Retail_Price SET CostPrice = @CostExclVAT, CreatedAt = GETDATE() WHERE ProductID = @ProductID AND BranchID = @BranchID " &
@@ -809,7 +809,7 @@ Public Class InvoiceCaptureForm
                     Using cmd As New SqlCommand(updatePriceSql, con, tx)
                         cmd.Parameters.AddWithValue("@ProductID", productId)
                         cmd.Parameters.AddWithValue("@BranchID", branchId)
-                        cmd.Parameters.AddWithValue("@CostExclVAT", costExclVAT)
+                        cmd.Parameters.AddWithValue("@CostExclVAT", unitCost)
                         cmd.ExecuteNonQuery()
                     End Using
                     

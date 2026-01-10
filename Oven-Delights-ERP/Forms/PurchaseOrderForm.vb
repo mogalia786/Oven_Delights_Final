@@ -216,10 +216,10 @@ Public Class PurchaseOrderForm
         dgvLines.Columns.Add(materialColumn)
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "OrderedQuantity", .HeaderText = "Qty", .DataPropertyName = "OrderedQuantity", .Width = 80, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}})
         ' Optional unit cost (can be blank/null). We keep DataPropertyName = UnitCost to avoid backend changes
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "UnitCost", .HeaderText = "Unit Price (Incl VAT)", .DataPropertyName = "UnitCost", .Width = 130, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}})
+        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "UnitCost", .HeaderText = "Unit Price (Excl VAT)", .DataPropertyName = "UnitCost", .Width = 130, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}})
         ' Guidance prices
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LastPaidPrice", .HeaderText = "Last Paid (Incl)", .ReadOnly = True, .Width = 100, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .ForeColor = Color.FromArgb(90, 90, 90), .Format = "N2"}})
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LastCost", .HeaderText = "Avg Cost (Incl)", .ReadOnly = True, .Width = 100, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .ForeColor = Color.FromArgb(120, 120, 120), .Format = "N2"}})
+        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LastPaidPrice", .HeaderText = "Last Paid (Excl)", .ReadOnly = True, .Width = 100, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .ForeColor = Color.FromArgb(90, 90, 90), .Format = "N2"}})
+        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LastCost", .HeaderText = "Avg Cost (Excl)", .ReadOnly = True, .Width = 100, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .ForeColor = Color.FromArgb(120, 120, 120), .Format = "N2"}})
         ' Expected total uses UnitCost if provided, otherwise LastPaidPrice
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LineTotal", .HeaderText = "Expected Total", .ReadOnly = True, .Width = 120, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}})
         AddHandler dgvLines.CellValueChanged, AddressOf dgvLines_CellValueChanged
@@ -506,14 +506,14 @@ Public Class PurchaseOrderForm
                 System.Diagnostics.Debug.WriteLine($"PopulateGuidancePrices: ProductID={materialId}, BranchID={branchId}")
                 Using conn As New SqlConnection(connectionString)
                     conn.Open()
-                    ' CostPrice = Last price paid to supplier (Excl VAT), convert to Incl VAT for display
-                    Dim sql = "SELECT ISNULL(CostPrice, 0) * 1.15, ISNULL(CostPrice, 0) FROM Demo_Retail_Price WHERE ProductID = @id AND BranchID = @branchId"
+                    ' CostPrice is stored as Excl VAT - display as-is (no conversion needed)
+                    Dim sql = "SELECT ISNULL(CostPrice, 0), ISNULL(CostPrice, 0) FROM Demo_Retail_Price WHERE ProductID = @id AND BranchID = @branchId"
                     Using cmd As New SqlCommand(sql, conn)
                         cmd.Parameters.AddWithValue("@id", materialId)
                         cmd.Parameters.AddWithValue("@branchId", branchId)
                         Using reader = cmd.ExecuteReader()
                             If reader.Read() Then
-                                Dim lpp = reader.GetDecimal(0)  ' CostPrice * 1.15 (Incl VAT)
+                                Dim lpp = reader.GetDecimal(0)  ' CostPrice (Excl VAT)
                                 If lpp > 0 Then lastPaidNullable = lpp
                                 lastCost = reader.GetDecimal(1)  ' CostPrice (Excl VAT)
                                 System.Diagnostics.Debug.WriteLine($"FOUND: LastPaid={lpp}, AvgCost={lastCost}")

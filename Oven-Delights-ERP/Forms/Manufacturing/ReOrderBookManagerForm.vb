@@ -8,6 +8,7 @@ Namespace Manufacturing
     Private currentReOrderBookID As Integer = 0
     Private currentBranchID As Integer = 0
     Private currentUserName As String = ""
+    Private scaledBOMService As New ScaledBOMService()
 
     Private Sub ReOrderBookManagerForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Try
@@ -95,27 +96,33 @@ Namespace Manufacturing
                 
                 If currentBranchID = 0 OrElse currentBranchID = 12 Then
                     ' HEAD OFFICE - show all branches with DISTINCT names
-                    sql = "SELECT MIN(ProductID) AS ProductID, Name AS ProductName, MIN(ISNULL(Code, SKU)) AS SKU " & _
-                          "FROM Demo_Retail_Product " & _
-                          "WHERE IsActive = 1 " & _
-                          "  AND Recipe_Created = 1 " & _
-                          "  AND ProductType = 'Internal' "
+                    ' Show Internal products (check for recipes if tables exist)
+                    sql = "SELECT MIN(p.ProductID) AS ProductID, p.Name AS ProductName, MIN(ISNULL(p.Code, p.SKU)) AS SKU " & _
+                          "FROM Demo_Retail_Product p " & _
+                          "WHERE p.IsActive = 1 " & _
+                          "  AND p.ProductType = 'Internal' " & _
+                          "  AND (NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Demo_ProductRecipe_Master') " & _
+                          "       OR EXISTS (SELECT 1 FROM Demo_ProductRecipe_Master pr WHERE pr.ProductID = p.ProductID AND pr.IsActive = 1) " & _
+                          "       OR EXISTS (SELECT 1 FROM Demo_SubRecipe_Master sr WHERE sr.SubRecipeID = p.ProductID AND sr.IsActive = 1)) "
                     If Not String.IsNullOrEmpty(searchText) Then
-                        sql &= " AND Name LIKE @search "
+                        sql &= " AND p.Name LIKE @search "
                     End If
-                    sql &= "GROUP BY Name ORDER BY Name"
+                    sql &= "GROUP BY p.Name ORDER BY p.Name"
                 Else
                     ' Specific branch - filter by BranchID
-                    sql = "SELECT ProductID, Name AS ProductName, ISNULL(Code, SKU) AS SKU " & _
-                          "FROM Demo_Retail_Product " & _
-                          "WHERE IsActive = 1 " & _
-                          "  AND BranchID = @BranchID " & _
-                          "  AND Recipe_Created = 1 " & _
-                          "  AND ProductType = 'Internal' "
+                    ' Show Internal products (check for recipes if tables exist)
+                    sql = "SELECT p.ProductID, p.Name AS ProductName, ISNULL(p.Code, p.SKU) AS SKU " & _
+                          "FROM Demo_Retail_Product p " & _
+                          "WHERE p.IsActive = 1 " & _
+                          "  AND p.BranchID = @BranchID " & _
+                          "  AND p.ProductType = 'Internal' " & _
+                          "  AND (NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Demo_ProductRecipe_Master') " & _
+                          "       OR EXISTS (SELECT 1 FROM Demo_ProductRecipe_Master pr WHERE pr.ProductID = p.ProductID AND pr.IsActive = 1) " & _
+                          "       OR EXISTS (SELECT 1 FROM Demo_SubRecipe_Master sr WHERE sr.SubRecipeID = p.ProductID AND sr.IsActive = 1)) "
                     If Not String.IsNullOrEmpty(searchText) Then
-                        sql &= " AND Name LIKE @search "
+                        sql &= " AND p.Name LIKE @search "
                     End If
-                    sql &= "ORDER BY Name"
+                    sql &= "ORDER BY p.Name"
                 End If
                 
                 Dim cmd As New SqlCommand(sql, conn)
@@ -225,7 +232,7 @@ Namespace Manufacturing
                 Dim productName As String = selectedRow("ProductName").ToString()
                 Dim barcode As String = If(selectedRow("SKU"), "").ToString()
                 
-                ' Insert new line
+                ' Insert new line (BOM will be generated later by baker from dashboard)
                 Dim cmdInsert As New SqlCommand(
                     "INSERT INTO ReOrderBookLines (ReOrderBookID, ProductID, ProductName, Barcode, LineNumber, QuantityOrdered, UnitOfMeasure, Notes) " &
                     "VALUES (@ReOrderBookID, @ProductID, @ProductName, @Barcode, @LineNumber, @QuantityOrdered, @UnitOfMeasure, @Notes)", conn)

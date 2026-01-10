@@ -1,0 +1,164 @@
+-- =============================================
+-- Stored Procedure: sp_GetScaledBOMFromRecipe
+-- Purpose: Get scaled BOM for production orders from new Recipe Management system
+-- =============================================
+-- This replaces the legacy BOM system with the new Recipe Management BOM
+-- Scales ingredient quantities based on requested quantity vs batch quantity
+-- =============================================
+
+IF OBJECT_ID('sp_GetScaledBOMFromRecipe', 'P') IS NOT NULL
+    DROP PROCEDURE sp_GetScaledBOMFromRecipe;
+GO
+
+CREATE PROCEDURE sp_GetScaledBOMFromRecipe
+    @ProductID INT,
+    @RequestedQuantity DECIMAL(18,2)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Check if this is a Product Recipe or Sub-Recipe
+    DECLARE @IsProduct BIT = 0;
+    DECLARE @IsSubRecipe BIT = 0;
+    DECLARE @BatchQty DECIMAL(18,2) = 1;
+    DECLARE @ScalingFactor DECIMAL(18,6);
+    
+    -- Check if Product Recipe exists
+    IF EXISTS (SELECT 1 FROM Demo_ProductRecipe_Master WHERE ProductID = @ProductID AND IsActive = 1)
+    BEGIN
+        SET @IsProduct = 1;
+        SELECT @BatchQty = BatchQty FROM Demo_ProductRecipe_Master WHERE ProductID = @ProductID AND IsActive = 1;
+    END
+    -- Check if Sub-Recipe exists
+    ELSE IF EXISTS (SELECT 1 FROM Demo_SubRecipe_Master WHERE SubRecipeID = @ProductID AND IsActive = 1)
+    BEGIN
+        SET @IsSubRecipe = 1;
+        SELECT @BatchQty = BatchQty FROM Demo_SubRecipe_Master WHERE SubRecipeID = @ProductID AND IsActive = 1;
+    END
+    ELSE
+    BEGIN
+        -- No recipe found
+        RAISERROR('No recipe found for ProductID %d', 16, 1, @ProductID);
+        RETURN;
+    END
+    
+    -- Calculate scaling factor: (RequestedQty / BatchQty)
+    SET @ScalingFactor = @RequestedQuantity / @BatchQty;
+    
+    -- Create temp table for consolidated BOM
+    CREATE TABLE #ConsolidatedBOM (
+        ItemID INT,
+        ItemName NVARCHAR(255),
+        ItemType NVARCHAR(50),
+        Quantity DECIMAL(18,6),
+        UnitOfMeasure NVARCHAR(50),
+        CostPerUnit DECIMAL(18,6),
+        TotalCost DECIMAL(18,6)
+    );
+    
+    -- =============================================
+    -- PRODUCT RECIPE: Get ingredients from sub-recipes + packaging
+    -- =============================================
+    IF @IsProduct = 1
+    BEGIN
+        -- Get ingredients from all sub-recipes in the product
+        INSERT INTO #ConsolidatedBOM (ItemID, ItemName, ItemType, Quantity, UnitOfMeasure, CostPerUnit, TotalCost)
+        SELECT 
+            sri.IngredientID AS ItemID,
+            p.Name AS ItemName,
+            'Ingredient' AS ItemType,
+            SUM(sri.Quantity * pbl.Quantity * @ScalingFactor) AS Quantity,
+            sri.UnitOfMeasure,
+            sri.CostPerUnit,
+            SUM(sri.Quantity * pbl.Quantity * @ScalingFactor * sri.CostPerUnit) AS TotalCost
+        FROM Demo_ProductRecipe_BOM pbl
+        INNER JOIN Demo_SubRecipe_Ingredients sri ON pbl.ComponentID = sri.SubRecipeID
+        INNER JOIN Demo_Retail_Product p ON sri.IngredientID = p.ProductID
+        WHERE pbl.ProductID = @ProductID
+          AND pbl.ComponentType = 'SubRecipe'
+          AND pbl.IsActive = 1
+          AND sri.IsActive = 1
+        GROUP BY sri.IngredientID, p.Name, sri.UnitOfMeasure, sri.CostPerUnit;
+        
+        -- Get packaging items
+        INSERT INTO #ConsolidatedBOM (ItemID, ItemName, ItemType, Quantity, UnitOfMeasure, CostPerUnit, TotalCost)
+        SELECT 
+            pbl.ComponentID AS ItemID,
+            p.Name AS ItemName,
+            'Packaging' AS ItemType,
+            pbl.Quantity * @ScalingFactor AS Quantity,
+            'unit' AS UnitOfMeasure,
+            pbl.CostPerUnit,
+            pbl.Quantity * @ScalingFactor * pbl.CostPerUnit AS TotalCost
+        FROM Demo_ProductRecipe_BOM pbl
+        INNER JOIN Demo_Retail_Product p ON pbl.ComponentID = p.ProductID
+        WHERE pbl.ProductID = @ProductID
+          AND pbl.ComponentType = 'Packaging'
+          AND pbl.IsActive = 1;
+    END
+    
+    -- =============================================
+    -- SUB-RECIPE: Get ingredients directly
+    -- =============================================
+    ELSE IF @IsSubRecipe = 1
+    BEGIN
+        INSERT INTO #ConsolidatedBOM (ItemID, ItemName, ItemType, Quantity, UnitOfMeasure, CostPerUnit, TotalCost)
+        SELECT 
+            sri.IngredientID AS ItemID,
+            p.Name AS ItemName,
+            'Ingredient' AS ItemType,
+            sri.Quantity * @ScalingFactor AS Quantity,
+            sri.UnitOfMeasure,
+            sri.CostPerUnit,
+            sri.Quantity * @ScalingFactor * sri.CostPerUnit AS TotalCost
+        FROM Demo_SubRecipe_Ingredients sri
+        INNER JOIN Demo_Retail_Product p ON sri.IngredientID = p.ProductID
+        WHERE sri.SubRecipeID = @ProductID
+          AND sri.IsActive = 1;
+    END
+    
+    -- =============================================
+    -- Return consolidated BOM with scaling applied
+    -- =============================================
+    SELECT 
+        ItemID,
+        ItemName,
+        ItemType,
+        CAST(Quantity AS DECIMAL(18,3)) AS Quantity,
+        UnitOfMeasure,
+        CAST(CostPerUnit AS DECIMAL(18,6)) AS CostPerUnit,
+        CAST(TotalCost AS DECIMAL(18,2)) AS TotalCost,
+        @BatchQty AS RecipeBatchQty,
+        @RequestedQuantity AS RequestedQty,
+        @ScalingFactor AS ScalingFactor
+    FROM #ConsolidatedBOM
+    ORDER BY ItemType, ItemName;
+    
+    -- Cleanup
+    DROP TABLE #ConsolidatedBOM;
+END
+GO
+
+PRINT '✅ sp_GetScaledBOMFromRecipe created successfully!';
+PRINT '';
+PRINT '📋 USAGE:';
+PRINT '   EXEC sp_GetScaledBOMFromRecipe @ProductID = 123, @RequestedQuantity = 10';
+PRINT '';
+PRINT '🔄 SCALING LOGIC:';
+PRINT '   - Reads recipe Batch Qty (e.g., 60)';
+PRINT '   - Calculates scaling factor: RequestedQty / BatchQty (e.g., 10/60 = 0.1667)';
+PRINT '   - Scales all ingredient quantities by factor';
+PRINT '   - Returns consolidated BOM ready for stockroom requisition';
+PRINT '';
+PRINT '📦 RETURNS:';
+PRINT '   - ItemID: Product/Ingredient ID';
+PRINT '   - ItemName: Product/Ingredient name';
+PRINT '   - ItemType: Ingredient, Packaging';
+PRINT '   - Quantity: Scaled quantity needed';
+PRINT '   - UnitOfMeasure: kg, L, unit, etc.';
+PRINT '   - CostPerUnit: Cost per unit';
+PRINT '   - TotalCost: Total cost for scaled quantity';
+PRINT '   - RecipeBatchQty: Original batch quantity from recipe';
+PRINT '   - RequestedQty: Quantity requested for production';
+PRINT '   - ScalingFactor: Calculated scaling factor';
+GO
