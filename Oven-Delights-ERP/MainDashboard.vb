@@ -1512,7 +1512,19 @@ Partial Class MainDashboard
                                                         End Try
                                                     End Sub
             
-            miAddProduct.DropDownItems.AddRange(New ToolStripItem() {miAddProductForm, miCreateSubRecipe, miCreateProductRecipe})
+            Dim miSubRecipeInventory As New ToolStripMenuItem("📊 Sub-Recipe Inventory Report")
+            AddHandler miSubRecipeInventory.Click, Sub(sender, e)
+                                                        Try
+                                                            Dim frm As New Manufacturing.SubRecipeInventoryReportForm()
+                                                            frm.MdiParent = Me
+                                                            frm.Show()
+                                                            frm.WindowState = FormWindowState.Maximized
+                                                        Catch ex As Exception
+                                                            MessageBox.Show("Error opening Sub-Recipe Inventory Report: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                                                        End Try
+                                                    End Sub
+            
+            miAddProduct.DropDownItems.AddRange(New ToolStripItem() {miAddProductForm, miCreateSubRecipe, miCreateProductRecipe, miSubRecipeInventory})
 
             Dim miRecipeCreator As New ToolStripMenuItem("Recipe Creator")
             AddHandler miRecipeCreator.Click, Sub(sender, e)
@@ -4457,11 +4469,15 @@ Partial Class MainDashboard
             Dim mnuReOrderManager As New ToolStripMenuItem("📋 Re-Order Book Manager")
             AddHandler mnuReOrderManager.Click, AddressOf OpenReOrderBookManager
             
+            Dim mnuSubRecipeRequest As New ToolStripMenuItem("🧁 Sub-Recipe Manufacturing Request")
+            AddHandler mnuSubRecipeRequest.Click, AddressOf OpenSubRecipeManufacturingRequest
+            
             Dim mnuBakerDashboard As New ToolStripMenuItem("👨‍🍳 Baker Dashboard")
             AddHandler mnuBakerDashboard.Click, AddressOf OpenBakerDashboard
             
             ManufacturingToolStripMenuItem.DropDownItems.Add(New ToolStripSeparator())
             ManufacturingToolStripMenuItem.DropDownItems.Add(mnuReOrderManager)
+            ManufacturingToolStripMenuItem.DropDownItems.Add(mnuSubRecipeRequest)
             ManufacturingToolStripMenuItem.DropDownItems.Add(mnuBakerDashboard)
             ManufacturingToolStripMenuItem.DropDownItems.Add(New ToolStripSeparator())
             ManufacturingToolStripMenuItem.DropDownItems.Add(mnuManufacturingReport)
@@ -4583,6 +4599,25 @@ Partial Class MainDashboard
             frm.WindowState = FormWindowState.Maximized
         Catch ex As Exception
             MessageBox.Show("Error opening Re-Order Book Manager: " & ex.Message, "Manufacturing", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenSubRecipeManufacturingRequest(sender As Object, e As EventArgs)
+        Try
+            For Each child As Form In Me.MdiChildren
+                If TypeOf child Is Manufacturing.SubRecipeManufacturingRequestForm Then
+                    child.Activate()
+                    child.WindowState = FormWindowState.Maximized
+                    Return
+                End If
+            Next
+
+            Dim frm As New Manufacturing.SubRecipeManufacturingRequestForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Sub-Recipe Manufacturing Request: " & ex.Message, "Manufacturing", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 

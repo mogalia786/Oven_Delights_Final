@@ -143,7 +143,7 @@ Namespace Manufacturing
                     Dim cmd As New SqlCommand("sp_StartReOrderBook", conn)
                     cmd.CommandType = CommandType.StoredProcedure
                     cmd.Parameters.AddWithValue("@ReOrderBookID", currentReOrderBookID)
-                    cmd.Parameters.AddWithValue("@StartedBy", bakerName)
+                    cmd.Parameters.AddWithValue("@ManufacturerUserID", bakerID)
                     
                     conn.Open()
                     cmd.ExecuteNonQuery()
@@ -328,6 +328,7 @@ Namespace Manufacturing
                         
                         ' Process each product
                         Dim branchId = If(AppSession.CurrentUser?.BranchID, 0)
+                        Dim hasSubRecipe As Boolean = False
                         
                         For Each item In yieldInputs
                             Dim actualQty = item.Input.Value
@@ -345,9 +346,9 @@ Namespace Manufacturing
                             cmdGetBOM.Parameters.AddWithValue("@ProductID", item.ProductID)
                             
                             Dim bomData As New DataTable()
-                            Using bomAdapter As New SqlDataAdapter(cmdGetBOM)
-                                bomAdapter.Fill(bomData)
-                            End Using
+                            Dim bomReader As SqlDataReader = cmdGetBOM.ExecuteReader()
+                            bomData.Load(bomReader)
+                            bomReader.Close()
                             
                             ' Calculate total cost
                             For Each bomRow As DataRow In bomData.Rows
@@ -389,15 +390,104 @@ Namespace Manufacturing
                             cmdLog.Parameters.AddWithValue("@BranchID", branchId)
                             cmdLog.ExecuteNonQuery()
                             
-                            ' Update finished product stock
-                            Dim cmdAddProduct As New SqlCommand(
-                                "UPDATE Demo_Retail_Product " &
-                                "SET CurrentStock = ISNULL(CurrentStock, 0) + @Qty " &
-                                "WHERE ProductID = @ProductID AND BranchID = @BranchID", conn, transaction)
-                            cmdAddProduct.Parameters.AddWithValue("@ProductID", item.ProductID)
-                            cmdAddProduct.Parameters.AddWithValue("@Qty", actualQty)
-                            cmdAddProduct.Parameters.AddWithValue("@BranchID", branchId)
-                            cmdAddProduct.ExecuteNonQuery()
+                            ' Check if product is a sub-recipe
+                            Dim cmdCheckSubRecipe As New SqlCommand(
+                                "SELECT Category FROM Demo_Retail_Product WHERE ProductID = @ProductID", conn, transaction)
+                            cmdCheckSubRecipe.Parameters.AddWithValue("@ProductID", item.ProductID)
+                            Dim category As String = If(cmdCheckSubRecipe.ExecuteScalar(), "").ToString()
+                            Dim isSubRecipe As Boolean = category.ToLower().Contains("sub") AndAlso category.ToLower().Contains("recipe")
+                            
+                            If isSubRecipe Then
+                                hasSubRecipe = True
+                                
+                                ' STEP 1: Consume ingredients from manufacturing stock for sub-recipe
+                                Dim cmdConsumeIngredients As New SqlCommand("sp_ConsumeIngredientsFromManufacturing", conn, transaction)
+                                cmdConsumeIngredients.CommandType = CommandType.StoredProcedure
+                                cmdConsumeIngredients.Parameters.AddWithValue("@ReOrderBookID", currentReOrderBookID)
+                                cmdConsumeIngredients.Parameters.AddWithValue("@BranchID", branchId)
+                                cmdConsumeIngredients.Parameters.AddWithValue("@ProductID", item.ProductID)
+                                cmdConsumeIngredients.Parameters.AddWithValue("@QuantityProduced", actualQty)
+                                cmdConsumeIngredients.Parameters.AddWithValue("@UserID", AppSession.CurrentUser.UserID)
+                                cmdConsumeIngredients.ExecuteNonQuery()
+                                
+                                ' STEP 2: Add to Sub-Recipe Inventory
+                                Dim cmdAddSubRecipe As New SqlCommand(
+                                    "INSERT INTO Demo_SubRecipe_Inventory " &
+                                    "(SubRecipeID, SubRecipeName, BatchNumber, Quantity, UnitOfMeasure, ManufacturedDate, ManufacturedTime, " &
+                                    "ExpiryDate, BranchID, ManufacturedBy, Status, Notes) " &
+                                    "VALUES (@SubRecipeID, @SubRecipeName, @BatchNumber, @Quantity, 'Each', CAST(GETDATE() AS DATE), " &
+                                    "CAST(GETDATE() AS TIME), DATEADD(DAY, 7, GETDATE()), @BranchID, @ManufacturedBy, 'Available', @Notes)", conn, transaction)
+                                cmdAddSubRecipe.Parameters.AddWithValue("@SubRecipeID", item.ProductID)
+                                cmdAddSubRecipe.Parameters.AddWithValue("@SubRecipeName", item.ProductName)
+                                cmdAddSubRecipe.Parameters.AddWithValue("@BatchNumber", $"BATCH-{currentReOrderBookID}-{item.ProductID}-{DateTime.Now:yyyyMMddHHmmss}")
+                                cmdAddSubRecipe.Parameters.AddWithValue("@Quantity", actualQty)
+                                cmdAddSubRecipe.Parameters.AddWithValue("@BranchID", branchId)
+                                cmdAddSubRecipe.Parameters.AddWithValue("@ManufacturedBy", AppSession.CurrentUser.UserID)
+                                cmdAddSubRecipe.Parameters.AddWithValue("@Notes", $"Manufactured from Re-Order Book {currentReOrderBookID}")
+                                cmdAddSubRecipe.ExecuteNonQuery()
+                            Else
+                                ' Manufacturing regular product
+                                
+                                ' Check if user chose to use sub-recipe stock
+                                Dim cmdCheckUsage As New SqlCommand(
+                                    "SELECT SubRecipeID, UseStock FROM ReOrderBook_SubRecipeUsage WHERE ReOrderBookID = @ReOrderBookID", conn, transaction)
+                                cmdCheckUsage.Parameters.AddWithValue("@ReOrderBookID", currentReOrderBookID)
+                                Dim usageReader = cmdCheckUsage.ExecuteReader()
+                                Dim subRecipeUsageChoices As New Dictionary(Of Integer, Boolean)
+                                While usageReader.Read()
+                                    subRecipeUsageChoices(usageReader.GetInt32(0)) = usageReader.GetBoolean(1)
+                                End While
+                                usageReader.Close()
+                                
+                                ' STEP 1: Consume sub-recipes from inventory ONLY if user chose to use stock
+                                If subRecipeUsageChoices.Any(Function(x) x.Value = True) Then
+                                    Dim cmdConsumeSubRecipes As New SqlCommand("sp_ConsumeSubRecipeFromInventory", conn, transaction)
+                                    cmdConsumeSubRecipes.CommandType = CommandType.StoredProcedure
+                                    cmdConsumeSubRecipes.Parameters.AddWithValue("@SubRecipeID", DBNull.Value) ' Will consume all sub-recipes in BOM
+                                    cmdConsumeSubRecipes.Parameters.AddWithValue("@QuantityNeeded", actualQty)
+                                    cmdConsumeSubRecipes.Parameters.AddWithValue("@ProductID", item.ProductID)
+                                    cmdConsumeSubRecipes.Parameters.AddWithValue("@BranchID", branchId)
+                                    cmdConsumeSubRecipes.Parameters.AddWithValue("@ReOrderBookID", currentReOrderBookID)
+                                    cmdConsumeSubRecipes.Parameters.AddWithValue("@UserID", AppSession.CurrentUser.UserID)
+                                    
+                                    Try
+                                        cmdConsumeSubRecipes.ExecuteNonQuery()
+                                    Catch ex As SqlException
+                                        ' If no sub-recipes in BOM, this is fine - continue
+                                        If Not ex.Message.Contains("No sub-recipes found") Then
+                                            Throw
+                                        End If
+                                    End Try
+                                End If
+                                
+                                ' STEP 2: Consume additional ingredients from manufacturing stock
+                                Dim cmdConsumeIngredients As New SqlCommand("sp_ConsumeIngredientsFromManufacturing", conn, transaction)
+                                cmdConsumeIngredients.CommandType = CommandType.StoredProcedure
+                                cmdConsumeIngredients.Parameters.AddWithValue("@ReOrderBookID", currentReOrderBookID)
+                                cmdConsumeIngredients.Parameters.AddWithValue("@BranchID", branchId)
+                                cmdConsumeIngredients.Parameters.AddWithValue("@ProductID", item.ProductID)
+                                cmdConsumeIngredients.Parameters.AddWithValue("@QuantityProduced", actualQty)
+                                cmdConsumeIngredients.Parameters.AddWithValue("@UserID", AppSession.CurrentUser.UserID)
+                                
+                                Try
+                                    cmdConsumeIngredients.ExecuteNonQuery()
+                                Catch ex As SqlException
+                                    ' If no ingredients in BOM (only sub-recipes), this is fine
+                                    If Not ex.Message.Contains("No ingredients found") Then
+                                        Throw
+                                    End If
+                                End Try
+                                
+                                ' STEP 3: Update finished product stock (add to POS/Retail)
+                                Dim cmdAddProduct As New SqlCommand(
+                                    "UPDATE Demo_Retail_Product " &
+                                    "SET CurrentStock = ISNULL(CurrentStock, 0) + @Qty " &
+                                    "WHERE ProductID = @ProductID AND BranchID = @BranchID", conn, transaction)
+                                cmdAddProduct.Parameters.AddWithValue("@ProductID", item.ProductID)
+                                cmdAddProduct.Parameters.AddWithValue("@Qty", actualQty)
+                                cmdAddProduct.Parameters.AddWithValue("@BranchID", branchId)
+                                cmdAddProduct.ExecuteNonQuery()
+                            End If
                             
                             ' Update or Insert cost price in Demo_Retail_Price
                             Dim cmdUpdateCost As New SqlCommand(
@@ -460,7 +550,15 @@ Namespace Manufacturing
                         
                         transaction.Commit()
                         
-                        MessageBox.Show("Production completed! Products added to retail stock.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                        ' Show appropriate success message based on what was produced
+                        Dim successMessage As String
+                        If hasSubRecipe Then
+                            successMessage = "Production Complete. Sub-Recipe added to Manufacturer stock"
+                        Else
+                            successMessage = "Production completed! Products added to retail stock."
+                        End If
+                        
+                        MessageBox.Show(successMessage, "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
                         LoadReOrderBooks()
                         
                     Catch ex As Exception

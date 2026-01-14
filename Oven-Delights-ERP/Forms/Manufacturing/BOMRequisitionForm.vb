@@ -11,6 +11,7 @@ Namespace Manufacturing
         Private reOrderBookID As Integer
         Private requisitionText As String = ""
         Private scaledBOMService As New ScaledBOMService()
+        Private subRecipeChoices As New Dictionary(Of Integer, Boolean) ' ItemID -> UseStock (True/False)
         
         Public Sub New(reOrderBookID As Integer)
             Me.reOrderBookID = reOrderBookID
@@ -103,8 +104,85 @@ Namespace Manufacturing
                     End While
                     readerProducts.Close()
                     
+                    ' Get branch ID for sub-recipe stock checking
+                    Dim branchID As Integer = AppSession.CurrentUser.BranchID
+                    
+                    ' Check for sub-recipes in BOM and prompt user
+                    Dim subRecipeStockInfo As New List(Of (ItemID As Integer, ItemName As String, Required As Decimal, Available As Decimal))
+                    
+                    For Each product In productList
+                        Dim bomItems = scaledBOMService.GetScaledBOM(product.ProductID, product.Qty)
+                        For Each item In bomItems
+                            If item.ItemType.ToLower().Contains("sub") AndAlso item.ItemType.ToLower().Contains("recipe") Then
+                                ' Check stock availability
+                                Dim cmdCheckStock As New SqlCommand(
+                                    "SELECT ISNULL(SUM(Quantity), 0) FROM Demo_SubRecipe_Inventory " &
+                                    "WHERE SubRecipeID = @SubRecipeID AND BranchID = @BranchID AND Status = 'Available'", conn)
+                                cmdCheckStock.Parameters.AddWithValue("@SubRecipeID", item.ItemID)
+                                cmdCheckStock.Parameters.AddWithValue("@BranchID", branchID)
+                                Dim availableStock = Convert.ToDecimal(cmdCheckStock.ExecuteScalar())
+                                
+                                If availableStock > 0 Then
+                                    ' Find if already added
+                                    Dim existing = subRecipeStockInfo.FirstOrDefault(Function(x) x.ItemID = item.ItemID)
+                                    If existing.ItemID = 0 Then
+                                        subRecipeStockInfo.Add((item.ItemID, item.ItemName, item.Quantity, availableStock))
+                                    Else
+                                        ' Update required quantity
+                                        Dim idx = subRecipeStockInfo.IndexOf(existing)
+                                        subRecipeStockInfo(idx) = (existing.ItemID, existing.ItemName, existing.Required + item.Quantity, existing.Available)
+                                    End If
+                                End If
+                            End If
+                        Next
+                    Next
+                    
+                    ' Prompt user for each sub-recipe with available stock
+                    For Each subRecipe In subRecipeStockInfo
+                        Dim promptMessage As String
+                        If subRecipe.Available >= subRecipe.Required Then
+                            promptMessage = $"You have {subRecipe.Available} {subRecipe.ItemName} in stock." & vbCrLf &
+                                          $"You need {subRecipe.Required}." & vbCrLf & vbCrLf &
+                                          $"Do you want to use from stock?" & vbCrLf &
+                                          $"(If YES: Sub-recipe ingredients will be EXCLUDED from requisition)" & vbCrLf &
+                                          $"(If NO: Request fresh ingredients for all {subRecipe.Required})"
+                        Else
+                            promptMessage = $"You have {subRecipe.Available} {subRecipe.ItemName} in stock." & vbCrLf &
+                                          $"You need {subRecipe.Required}." & vbCrLf & vbCrLf &
+                                          $"Do you want to use the {subRecipe.Available} from stock?" & vbCrLf &
+                                          $"(If YES: Ingredients for only {subRecipe.Required - subRecipe.Available} will be requested)" & vbCrLf &
+                                          $"(If NO: Request fresh ingredients for all {subRecipe.Required})"
+                        End If
+                        
+                        Dim result = MessageBox.Show(promptMessage, "Use Sub-Recipe Stock?", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                        subRecipeChoices(subRecipe.ItemID) = (result = DialogResult.Yes)
+                    Next
+                    
                     ' Aggregate ingredients
                     Dim aggregatedItems As New Dictionary(Of String, (Qty As Decimal, Unit As String))
+                    
+                    ' Build a list of sub-recipe IDs that will use stock (to exclude their ingredients)
+                    Dim subRecipesUsingStock As New HashSet(Of Integer)
+                    For Each choice In subRecipeChoices
+                        If choice.Value = True Then
+                            subRecipesUsingStock.Add(choice.Key)
+                        End If
+                    Next
+                    
+                    ' Get mapping of which ingredients belong to which sub-recipes
+                    Dim subRecipeIngredients As New Dictionary(Of Integer, List(Of Integer)) ' SubRecipeID -> List of IngredientIDs
+                    For Each subRecipeID In subRecipesUsingStock
+                        Dim cmdGetIngredients As New SqlCommand(
+                            "SELECT IngredientID FROM Demo_SubRecipe_Ingredients WHERE SubRecipeID = @SubRecipeID AND IsActive = 1", conn)
+                        cmdGetIngredients.Parameters.AddWithValue("@SubRecipeID", subRecipeID)
+                        Dim ingredientReader = cmdGetIngredients.ExecuteReader()
+                        Dim ingredientList As New List(Of Integer)
+                        While ingredientReader.Read()
+                            ingredientList.Add(ingredientReader.GetInt32(0))
+                        End While
+                        ingredientReader.Close()
+                        subRecipeIngredients(subRecipeID) = ingredientList
+                    Next
                     
                     ' Process each product using NEW Recipe Management system
                     For Each product In productList
@@ -128,15 +206,57 @@ Namespace Manufacturing
                             
                             ' List ingredients with scaled quantities
                             For Each item In bomItems
-                                sb.AppendLine($"   • {item.ItemName} - {item.Quantity:N3} {item.UnitOfMeasure} ({item.ItemType})")
+                                Dim isSubRecipe = item.ItemType.ToLower().Contains("sub") AndAlso item.ItemType.ToLower().Contains("recipe")
+                                Dim useStock = isSubRecipe AndAlso subRecipeChoices.ContainsKey(item.ItemID) AndAlso subRecipeChoices(item.ItemID)
                                 
-                                ' Aggregate for total summary
-                                Dim key = $"{item.ItemName}|{item.UnitOfMeasure}"
-                                If aggregatedItems.ContainsKey(key) Then
-                                    Dim existing = aggregatedItems(key)
-                                    aggregatedItems(key) = (existing.Qty + item.Quantity, item.UnitOfMeasure)
-                                Else
-                                    aggregatedItems(key) = (item.Quantity, item.UnitOfMeasure)
+                                ' Check if this ingredient belongs to a sub-recipe that's using stock
+                                Dim isIngredientOfStockSubRecipe = False
+                                If item.ItemType.ToLower() = "ingredient" Then
+                                    For Each kvp In subRecipeIngredients
+                                        If kvp.Value.Contains(item.ItemID) Then
+                                            isIngredientOfStockSubRecipe = True
+                                            Exit For
+                                        End If
+                                    Next
+                                End If
+                                
+                                ' Calculate adjusted quantity if using stock
+                                Dim adjustedQty = item.Quantity
+                                Dim displayNote = ""
+                                
+                                If useStock Then
+                                    ' Sub-recipe using stock
+                                    Dim cmdStock As New SqlCommand(
+                                        "SELECT ISNULL(SUM(Quantity), 0) FROM Demo_SubRecipe_Inventory " &
+                                        "WHERE SubRecipeID = @SubRecipeID AND BranchID = @BranchID AND Status = 'Available'", conn)
+                                    cmdStock.Parameters.AddWithValue("@SubRecipeID", item.ItemID)
+                                    cmdStock.Parameters.AddWithValue("@BranchID", branchID)
+                                    Dim availableStock = Convert.ToDecimal(cmdStock.ExecuteScalar())
+                                    
+                                    If availableStock >= item.Quantity Then
+                                        adjustedQty = 0 ' Exclude completely
+                                        displayNote = " [USING STOCK - EXCLUDED]"
+                                    Else
+                                        adjustedQty = item.Quantity - availableStock ' Partial
+                                        displayNote = $" [USING {availableStock} FROM STOCK - REQUESTING {adjustedQty}]"
+                                    End If
+                                ElseIf isIngredientOfStockSubRecipe Then
+                                    ' Ingredient belongs to a sub-recipe using stock - exclude it
+                                    adjustedQty = 0
+                                    displayNote = " [EXCLUDED - Sub-recipe using stock]"
+                                End If
+                                
+                                sb.AppendLine($"   • {item.ItemName} - {item.Quantity:N3} {item.UnitOfMeasure} ({item.ItemType}){displayNote}")
+                                
+                                ' Only aggregate if not completely excluded
+                                If adjustedQty > 0 Then
+                                    Dim key = $"{item.ItemName}|{item.UnitOfMeasure}"
+                                    If aggregatedItems.ContainsKey(key) Then
+                                        Dim existing = aggregatedItems(key)
+                                        aggregatedItems(key) = (existing.Qty + adjustedQty, item.UnitOfMeasure)
+                                    Else
+                                        aggregatedItems(key) = (adjustedQty, item.UnitOfMeasure)
+                                    End If
                                 End If
                                 
                                 ' Save to database for stockroom fulfillment
@@ -186,6 +306,17 @@ Namespace Manufacturing
                         cmdInsert.Parameters.AddWithValue("@QuantityRequired", item.Value.Qty)
                         cmdInsert.Parameters.AddWithValue("@UnitOfMeasure", item.Value.Unit)
                         cmdInsert.ExecuteNonQuery()
+                    Next
+                    
+                    ' Save sub-recipe usage choices to database for production completion
+                    For Each choice In subRecipeChoices
+                        Dim cmdSaveChoice As New SqlCommand(
+                            "INSERT INTO ReOrderBook_SubRecipeUsage (ReOrderBookID, SubRecipeID, UseStock) " &
+                            "VALUES (@ReOrderBookID, @SubRecipeID, @UseStock)", conn)
+                        cmdSaveChoice.Parameters.AddWithValue("@ReOrderBookID", reOrderBookID)
+                        cmdSaveChoice.Parameters.AddWithValue("@SubRecipeID", choice.Key)
+                        cmdSaveChoice.Parameters.AddWithValue("@UseStock", choice.Value)
+                        cmdSaveChoice.ExecuteNonQuery()
                     Next
                     
                     ' Mark re-order book as posted

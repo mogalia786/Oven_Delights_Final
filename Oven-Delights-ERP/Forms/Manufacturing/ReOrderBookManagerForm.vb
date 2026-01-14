@@ -96,29 +96,31 @@ Namespace Manufacturing
                 
                 If currentBranchID = 0 OrElse currentBranchID = 12 Then
                     ' HEAD OFFICE - show all branches with DISTINCT names
-                    ' Show Internal products (check for recipes if tables exist)
+                    ' Show Internal products that have recipes (EXCLUDE sub-recipes)
                     sql = "SELECT MIN(p.ProductID) AS ProductID, p.Name AS ProductName, MIN(ISNULL(p.Code, p.SKU)) AS SKU " & _
                           "FROM Demo_Retail_Product p " & _
                           "WHERE p.IsActive = 1 " & _
                           "  AND p.ProductType = 'Internal' " & _
+                          "  AND p.Category NOT LIKE '%sub%recipe%' " & _
+                          "  AND p.Category NOT LIKE '%subrecipe%' " & _
                           "  AND (NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Demo_ProductRecipe_Master') " & _
-                          "       OR EXISTS (SELECT 1 FROM Demo_ProductRecipe_Master pr WHERE pr.ProductID = p.ProductID AND pr.IsActive = 1) " & _
-                          "       OR EXISTS (SELECT 1 FROM Demo_SubRecipe_Master sr WHERE sr.SubRecipeID = p.ProductID AND sr.IsActive = 1)) "
+                          "       OR EXISTS (SELECT 1 FROM Demo_ProductRecipe_Master pr WHERE pr.ProductID = p.ProductID AND pr.IsActive = 1)) "
                     If Not String.IsNullOrEmpty(searchText) Then
                         sql &= " AND p.Name LIKE @search "
                     End If
                     sql &= "GROUP BY p.Name ORDER BY p.Name"
                 Else
                     ' Specific branch - filter by BranchID
-                    ' Show Internal products (check for recipes if tables exist)
+                    ' Show Internal products that have recipes (EXCLUDE sub-recipes)
                     sql = "SELECT p.ProductID, p.Name AS ProductName, ISNULL(p.Code, p.SKU) AS SKU " & _
                           "FROM Demo_Retail_Product p " & _
                           "WHERE p.IsActive = 1 " & _
                           "  AND p.BranchID = @BranchID " & _
                           "  AND p.ProductType = 'Internal' " & _
+                          "  AND p.Category NOT LIKE '%sub%recipe%' " & _
+                          "  AND p.Category NOT LIKE '%subrecipe%' " & _
                           "  AND (NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Demo_ProductRecipe_Master') " & _
-                          "       OR EXISTS (SELECT 1 FROM Demo_ProductRecipe_Master pr WHERE pr.ProductID = p.ProductID AND pr.IsActive = 1) " & _
-                          "       OR EXISTS (SELECT 1 FROM Demo_SubRecipe_Master sr WHERE sr.SubRecipeID = p.ProductID AND sr.IsActive = 1)) "
+                          "       OR EXISTS (SELECT 1 FROM Demo_ProductRecipe_Master pr WHERE pr.ProductID = p.ProductID AND pr.IsActive = 1)) "
                     If Not String.IsNullOrEmpty(searchText) Then
                         sql &= " AND p.Name LIKE @search "
                     End If
