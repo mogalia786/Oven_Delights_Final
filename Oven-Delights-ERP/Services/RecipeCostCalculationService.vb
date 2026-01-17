@@ -56,6 +56,29 @@ Public Class RecipeCostCalculationService
         Return totalCost
     End Function
 
+    Public Function GetSubRecipeCostPerUnit(subRecipeID As Integer) As Decimal
+        Dim costPerUnit As Decimal = 0
+
+        Using conn As New SqlConnection(_connectionString)
+            Dim query As String = "
+                SELECT ISNULL(TotalCost, 0) / NULLIF(ISNULL(BatchQty, 1), 0) AS CostPerUnit
+                FROM Demo_SubRecipe_Master
+                WHERE SubRecipeID = @SubRecipeID AND IsActive = 1"
+            
+            Using cmd As New SqlCommand(query, conn)
+                cmd.Parameters.AddWithValue("@SubRecipeID", subRecipeID)
+                conn.Open()
+
+                Dim result = cmd.ExecuteScalar()
+                If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                    costPerUnit = Convert.ToDecimal(result)
+                End If
+            End Using
+        End Using
+
+        Return costPerUnit
+    End Function
+
     Public Function CalculateProductTotalCost(productID As Integer) As Decimal
         Dim totalCost As Decimal = 0
 
@@ -364,17 +387,21 @@ Public Class RecipeCostCalculationService
         Using conn As New SqlConnection(_connectionString)
             Dim query As String = "
                 SELECT 
-                    sb.BOMLineID,
-                    sb.IngredientID,
+                    sri.IngredientLineID AS BOMLineID,
+                    sri.IngredientID,
                     p.Name AS IngredientName,
-                    sb.Quantity,
-                    sb.UnitOfMeasure,
-                    sb.PackageSize,
-                    sb.CostPerUnit,
-                    sb.TotalCost
-                FROM Demo_SubRecipe_BOM sb
-                INNER JOIN Demo_Retail_Product p ON sb.IngredientID = p.ProductID
-                WHERE sb.SubRecipeID = @SubRecipeID
+                    sri.Quantity,
+                    sri.UnitOfMeasure,
+                    ISNULL(sri.PackageSize, 1) AS PackageSize,
+                    sri.CostPerUnit,
+                    (sri.Quantity * sri.CostPerUnit) AS TotalCost,
+                    ISNULL(srm.BatchQty, 1) AS BatchQty,
+                    (sri.Quantity / NULLIF(ISNULL(srm.BatchQty, 1), 0)) AS QuantityPerUnit
+                FROM Demo_SubRecipe_Ingredients sri
+                INNER JOIN Demo_Retail_Product p ON sri.IngredientID = p.ProductID
+                LEFT JOIN Demo_SubRecipe_Master srm ON sri.SubRecipeID = srm.SubRecipeID
+                WHERE sri.SubRecipeID = @SubRecipeID
+                  AND sri.IsActive = 1
                 ORDER BY p.Name"
 
             Using cmd As New SqlCommand(query, conn)
@@ -401,9 +428,10 @@ Public Class RecipeCostCalculationService
                     pb.Quantity,
                     pb.CostPerUnit,
                     pb.TotalCost
-                FROM Demo_Product_BOM pb
+                FROM Demo_ProductRecipe_BOM pb
                 INNER JOIN Demo_Retail_Product p ON pb.ComponentID = p.ProductID
                 WHERE pb.ProductID = @ProductID
+                  AND pb.IsActive = 1
                 ORDER BY pb.ComponentType, p.Name"
 
             Using cmd As New SqlCommand(query, conn)

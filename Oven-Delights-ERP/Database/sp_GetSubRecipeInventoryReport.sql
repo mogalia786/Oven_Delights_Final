@@ -17,6 +17,8 @@ BEGIN
         i.BatchNumber,
         i.Quantity,
         i.UnitOfMeasure,
+        ISNULL(i.UnitCost, 0) AS UnitCost,
+        ISNULL(i.TotalCost, 0) AS TotalCost,
         i.ManufacturedDate,
         FORMAT(i.ManufacturedDate, 'yyyy-MM-dd') AS ManufacturedDateFormatted,
         i.ManufacturedTime,
@@ -26,37 +28,37 @@ BEGIN
         b.BranchName,
         b.Prefix AS BranchPrefix,
         i.ManufacturedBy,
-        u.Username AS ManufacturedByName,
+        ISNULL(u.FirstName + ' ' + u.LastName, u.Username) AS ManufacturedByName,
         i.Status,
         i.Notes,
-        -- Age calculations
-        DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) AS AgeInHours,
-        DATEDIFF(DAY, i.ManufacturedDate, GETDATE()) AS AgeInDays,
+        -- Age calculations - combine date and time for accurate calculation using SAST
+        DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) AS AgeInHours,
+        DATEDIFF(DAY, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) AS AgeInDays,
         -- Freshness level
         CASE 
-            WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 24 THEN 'VeryFresh'
-            WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 48 THEN 'Fresh'
-            WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 72 THEN 'Good'
-            WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 120 THEN 'Aging'
-            WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 168 THEN 'Old'
+            WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 24 THEN 'VeryFresh'
+            WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 48 THEN 'Fresh'
+            WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 72 THEN 'Good'
+            WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 120 THEN 'Aging'
+            WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 168 THEN 'Old'
             ELSE 'VeryOld'
         END AS FreshnessLevel,
         -- Color codes for UI
         CASE 
-            WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 24 THEN 'DarkGreen'
-            WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 48 THEN 'Green'
-            WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 72 THEN 'LightGreen'
-            WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 120 THEN 'Yellow'
-            WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 168 THEN 'Orange'
+            WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 24 THEN 'DarkGreen'
+            WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 48 THEN 'Green'
+            WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 72 THEN 'LightGreen'
+            WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 120 THEN 'Yellow'
+            WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 168 THEN 'Orange'
             ELSE 'Red'
         END AS ColorCode,
         -- RGB values for exact color coding
         CASE 
-            WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 24 THEN '0,100,0'      -- Dark Green
-            WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 48 THEN '0,128,0'      -- Green
-            WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 72 THEN '144,238,144'  -- Light Green
-            WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 120 THEN '255,255,0'   -- Yellow
-            WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 168 THEN '255,165,0'   -- Orange
+            WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 24 THEN '0,100,0'      -- Dark Green
+            WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 48 THEN '0,128,0'      -- Green
+            WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 72 THEN '144,238,144'  -- Light Green
+            WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 120 THEN '255,255,0'   -- Yellow
+            WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 168 THEN '255,165,0'   -- Orange
             ELSE '255,0,0'                                                                 -- Red
         END AS RGBColor,
         -- Consumption priority (FIFO)
@@ -78,11 +80,11 @@ BEGIN
         AND (@SubRecipeID IS NULL OR i.SubRecipeID = @SubRecipeID)
         AND (@FreshnessFilter IS NULL OR 
             CASE 
-                WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 24 THEN 'VeryFresh'
-                WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 48 THEN 'Fresh'
-                WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 72 THEN 'Good'
-                WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 120 THEN 'Aging'
-                WHEN DATEDIFF(HOUR, i.ManufacturedDate, GETDATE()) <= 168 THEN 'Old'
+                WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 24 THEN 'VeryFresh'
+                WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 48 THEN 'Fresh'
+                WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 72 THEN 'Good'
+                WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 120 THEN 'Aging'
+                WHEN DATEDIFF(HOUR, CAST(CAST(i.ManufacturedDate AS DATE) AS DATETIME) + CAST(i.ManufacturedTime AS DATETIME), DATEADD(HOUR, 2, GETUTCDATE())) <= 168 THEN 'Old'
                 ELSE 'VeryOld'
             END = @FreshnessFilter
         )

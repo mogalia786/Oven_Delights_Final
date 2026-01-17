@@ -7,6 +7,7 @@ Namespace Manufacturing
         
         Private connectionString As String = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
         Private currentBranchID As Integer = 0
+        Private isSuperAdmin As Boolean = False
         
         Public Sub New()
             InitializeComponent()
@@ -26,6 +27,8 @@ Namespace Manufacturing
             ' Load data
             If AppSession.CurrentUser IsNot Nothing Then
                 currentBranchID = AppSession.CurrentUser.BranchID
+                ' Super admin check: UserID = 1 or RoleID = 1
+                isSuperAdmin = (AppSession.CurrentUser.UserID = 1 OrElse AppSession.CurrentUser.RoleID = 1)
             End If
             
             LoadBranches()
@@ -63,17 +66,43 @@ Namespace Manufacturing
             
             ' Clear existing columns and add new ones
             dgvInventory.Columns.Clear()
+            
+            ' Add hidden InventoryID column for delete functionality
+            Dim colInventoryID As New DataGridViewTextBoxColumn With {
+                .Name = "InventoryID",
+                .DataPropertyName = "InventoryID",
+                .Visible = False
+            }
+            dgvInventory.Columns.Add(colInventoryID)
+            
+            ' Add Delete button column
+            Dim colDelete As New DataGridViewButtonColumn With {
+                .Name = "Delete",
+                .HeaderText = "Action",
+                .Text = "Delete",
+                .UseColumnTextForButtonValue = True,
+                .Width = 80,
+                .DefaultCellStyle = New DataGridViewCellStyle With {
+                    .BackColor = Color.FromArgb(231, 76, 60),
+                    .ForeColor = Color.White,
+                    .SelectionBackColor = Color.FromArgb(192, 57, 43),
+                    .SelectionForeColor = Color.White
+                }
+            }
+            dgvInventory.Columns.Add(colDelete)
+            
             dgvInventory.Columns.AddRange({
-                New DataGridViewTextBoxColumn With {.Name = "BatchNumber", .HeaderText = "Batch Number", .DataPropertyName = "BatchNumber", .Width = 180},
-                New DataGridViewTextBoxColumn With {.Name = "SubRecipeName", .HeaderText = "Sub-Recipe", .DataPropertyName = "SubRecipeName", .Width = 200},
-                New DataGridViewTextBoxColumn With {.Name = "Quantity", .HeaderText = "Qty", .DataPropertyName = "Quantity", .Width = 80, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight}},
-                New DataGridViewTextBoxColumn With {.Name = "UnitOfMeasure", .HeaderText = "Unit", .DataPropertyName = "UnitOfMeasure", .Width = 80},
-                New DataGridViewTextBoxColumn With {.Name = "ManufacturedDateFormatted", .HeaderText = "Manufactured Date", .DataPropertyName = "ManufacturedDateFormatted", .Width = 130},
-                New DataGridViewTextBoxColumn With {.Name = "ManufacturedTimeFormatted", .HeaderText = "Time", .DataPropertyName = "ManufacturedTimeFormatted", .Width = 90},
-                New DataGridViewTextBoxColumn With {.Name = "AgeInHours", .HeaderText = "Age (Hours)", .DataPropertyName = "AgeInHours", .Width = 100, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight}},
-                New DataGridViewTextBoxColumn With {.Name = "FreshnessLevel", .HeaderText = "Freshness", .DataPropertyName = "FreshnessLevel", .Width = 100},
-                New DataGridViewTextBoxColumn With {.Name = "BranchName", .HeaderText = "Branch", .DataPropertyName = "BranchName", .Width = 120},
-                New DataGridViewTextBoxColumn With {.Name = "BakerName", .HeaderText = "Baker", .DataPropertyName = "BakerName", .Width = 150}
+                New DataGridViewTextBoxColumn With {.Name = "BatchNumber", .HeaderText = "Batch Number", .DataPropertyName = "BatchNumber", .Width = 150},
+                New DataGridViewTextBoxColumn With {.Name = "SubRecipeName", .HeaderText = "Sub-Recipe", .DataPropertyName = "SubRecipeName", .Width = 180},
+                New DataGridViewTextBoxColumn With {.Name = "Quantity", .HeaderText = "Qty", .DataPropertyName = "Quantity", .Width = 70, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}},
+                New DataGridViewTextBoxColumn With {.Name = "UnitOfMeasure", .HeaderText = "Unit", .DataPropertyName = "UnitOfMeasure", .Width = 70},
+                New DataGridViewTextBoxColumn With {.Name = "UnitCost", .HeaderText = "Unit Cost", .DataPropertyName = "UnitCost", .Width = 90, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "C2"}},
+                New DataGridViewTextBoxColumn With {.Name = "TotalCost", .HeaderText = "Total Cost", .DataPropertyName = "TotalCost", .Width = 100, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "C2"}},
+                New DataGridViewTextBoxColumn With {.Name = "ManufacturedDateFormatted", .HeaderText = "Mfg Date", .DataPropertyName = "ManufacturedDateFormatted", .Width = 100},
+                New DataGridViewTextBoxColumn With {.Name = "ManufacturedTimeFormatted", .HeaderText = "Time", .DataPropertyName = "ManufacturedTimeFormatted", .Width = 80},
+                New DataGridViewTextBoxColumn With {.Name = "AgeInHours", .HeaderText = "Age (Hrs)", .DataPropertyName = "AgeInHours", .Width = 80, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight}},
+                New DataGridViewTextBoxColumn With {.Name = "FreshnessLevel", .HeaderText = "Freshness", .DataPropertyName = "FreshnessLevel", .Width = 90},
+                New DataGridViewTextBoxColumn With {.Name = "BranchName", .HeaderText = "Branch", .DataPropertyName = "BranchName", .Width = 110}
             })
         End Sub
         
@@ -87,10 +116,10 @@ Namespace Manufacturing
                     Dim dt As New DataTable()
                     dt.Load(cmd.ExecuteReader())
                     
-                    ' Add "All Branches" option if Head Office
-                    If currentBranchID = 0 Then
+                    ' Add "All Branches" option for super admin (use -1 instead of NULL)
+                    If isSuperAdmin Then
                         Dim allRow = dt.NewRow()
-                        allRow("BranchID") = DBNull.Value
+                        allRow("BranchID") = -1  ' Use -1 for "All Branches"
                         allRow("BranchName") = "All Branches"
                         dt.Rows.InsertAt(allRow, 0)
                     End If
@@ -99,8 +128,16 @@ Namespace Manufacturing
                     cmbBranch.ValueMember = "BranchID"
                     cmbBranch.DataSource = dt
                     
-                    If currentBranchID > 0 Then
-                        cmbBranch.SelectedValue = currentBranchID
+                    ' Super admin can view all branches, regular users locked to their branch
+                    If isSuperAdmin Then
+                        ' Select "All Branches" by default
+                        cmbBranch.SelectedIndex = 0
+                        cmbBranch.Enabled = True
+                    Else
+                        ' Regular user locked to their branch
+                        If currentBranchID > 0 Then
+                            cmbBranch.SelectedValue = currentBranchID
+                        End If
                         cmbBranch.Enabled = False
                     End If
                 End Using
@@ -149,9 +186,10 @@ Namespace Manufacturing
                     Dim cmd As New SqlCommand("sp_GetSubRecipeInventoryReport", conn)
                     cmd.CommandType = CommandType.StoredProcedure
                     
-                    ' Branch filter
-                    If cmbBranch.SelectedValue IsNot Nothing AndAlso Not IsDBNull(cmbBranch.SelectedValue) Then
-                        cmd.Parameters.AddWithValue("@BranchID", cmbBranch.SelectedValue)
+                    ' Branch filter (-1 means "All Branches")
+                    Dim selectedBranchID As Integer = If(cmbBranch.SelectedValue IsNot Nothing, Convert.ToInt32(cmbBranch.SelectedValue), -1)
+                    If selectedBranchID > 0 Then
+                        cmd.Parameters.AddWithValue("@BranchID", selectedBranchID)
                     Else
                         cmd.Parameters.AddWithValue("@BranchID", DBNull.Value)
                     End If
@@ -240,6 +278,60 @@ Namespace Manufacturing
         
         Private Sub btnClose_Click(sender As Object, e As EventArgs) Handles btnClose.Click
             Me.Close()
+        End Sub
+        
+        Private Sub dgvInventory_CellContentClick(sender As Object, e As DataGridViewCellEventArgs) Handles dgvInventory.CellContentClick
+            ' Handle Delete button click
+            If e.RowIndex >= 0 AndAlso e.ColumnIndex = dgvInventory.Columns("Delete").Index Then
+                Try
+                    Dim row = dgvInventory.Rows(e.RowIndex)
+                    Dim inventoryID = Convert.ToInt32(row.Cells("InventoryID").Value)
+                    Dim batchNumber = row.Cells("BatchNumber").Value.ToString()
+                    Dim subRecipeName = row.Cells("SubRecipeName").Value.ToString()
+                    Dim quantity = Convert.ToDecimal(row.Cells("Quantity").Value)
+                    
+                    ' Confirm deletion
+                    Dim result = MessageBox.Show(
+                        $"Are you sure you want to delete this sub-recipe batch?" & vbCrLf & vbCrLf &
+                        $"Batch: {batchNumber}" & vbCrLf &
+                        $"Sub-Recipe: {subRecipeName}" & vbCrLf &
+                        $"Quantity: {quantity}" & vbCrLf & vbCrLf &
+                        "This action cannot be undone.",
+                        "Confirm Delete",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Warning)
+                    
+                    If result = DialogResult.Yes Then
+                        DeleteSubRecipeBatch(inventoryID)
+                    End If
+                Catch ex As Exception
+                    MessageBox.Show("Error processing delete: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End Try
+            End If
+        End Sub
+        
+        Private Sub DeleteSubRecipeBatch(inventoryID As Integer)
+            Try
+                Using conn As New SqlConnection(connectionString)
+                    conn.Open()
+                    
+                    ' Delete the batch from inventory
+                    Dim sql = "DELETE FROM Demo_SubRecipe_Inventory WHERE InventoryID = @InventoryID"
+                    Dim cmd As New SqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@InventoryID", inventoryID)
+                    
+                    Dim rowsAffected = cmd.ExecuteNonQuery()
+                    
+                    If rowsAffected > 0 Then
+                        MessageBox.Show("Sub-recipe batch deleted successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                        LoadInventoryReport() ' Refresh the grid
+                    Else
+                        MessageBox.Show("Batch not found or already deleted.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    End If
+                End Using
+            Catch ex As Exception
+                MessageBox.Show("Error deleting batch: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
         End Sub
     End Class
 End Namespace

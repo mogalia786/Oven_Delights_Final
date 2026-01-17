@@ -40,6 +40,7 @@ Partial Class CreateSubRecipeForm
         Me.txtBatchQty = New System.Windows.Forms.TextBox()
         Me.Label6 = New System.Windows.Forms.Label()
         Me.pnlFooter = New System.Windows.Forms.Panel()
+        Me.lblAdhocCost = New System.Windows.Forms.Label()
         Me.lblTotalCost = New System.Windows.Forms.Label()
         Me.btnClose = New System.Windows.Forms.Button()
         Me.btnPrint = New System.Windows.Forms.Button()
@@ -299,6 +300,7 @@ Partial Class CreateSubRecipeForm
         'pnlFooter
         '
         Me.pnlFooter.BackColor = System.Drawing.Color.White
+        Me.pnlFooter.Controls.Add(Me.lblAdhocCost)
         Me.pnlFooter.Controls.Add(Me.lblTotalCost)
         Me.pnlFooter.Controls.Add(Me.btnClose)
         Me.pnlFooter.Controls.Add(Me.btnPrint)
@@ -315,11 +317,22 @@ Partial Class CreateSubRecipeForm
         Me.lblTotalCost.AutoSize = True
         Me.lblTotalCost.Font = New System.Drawing.Font("Segoe UI", 14.0!, System.Drawing.FontStyle.Bold)
         Me.lblTotalCost.ForeColor = System.Drawing.Color.FromArgb(CType(CType(39, Byte), Integer), CType(CType(174, Byte), Integer), CType(CType(96, Byte), Integer))
-        Me.lblTotalCost.Location = New System.Drawing.Point(20, 28)
+        Me.lblTotalCost.Location = New System.Drawing.Point(20, 10)
         Me.lblTotalCost.Name = "lblTotalCost"
         Me.lblTotalCost.Size = New System.Drawing.Size(329, 25)
         Me.lblTotalCost.TabIndex = 4
         Me.lblTotalCost.Text = "Total Cost Per Sub-Recipe: R0.00"
+        '
+        'lblAdhocCost
+        '
+        Me.lblAdhocCost.AutoSize = True
+        Me.lblAdhocCost.Font = New System.Drawing.Font("Segoe UI", 14.0!, System.Drawing.FontStyle.Bold)
+        Me.lblAdhocCost.ForeColor = System.Drawing.Color.FromArgb(CType(CType(230, Byte), Integer), CType(CType(126, Byte), Integer), CType(CType(34, Byte), Integer))
+        Me.lblAdhocCost.Location = New System.Drawing.Point(20, 45)
+        Me.lblAdhocCost.Name = "lblAdhocCost"
+        Me.lblAdhocCost.Size = New System.Drawing.Size(329, 25)
+        Me.lblAdhocCost.TabIndex = 5
+        Me.lblAdhocCost.Text = "ADHOC COST (+20%): R0.00"
         '
         'btnClose
         '
@@ -426,6 +439,7 @@ Partial Class CreateSubRecipeForm
     Friend WithEvents Label6 As Label
     Friend WithEvents pnlFooter As Panel
     Friend WithEvents lblTotalCost As Label
+    Friend WithEvents lblAdhocCost As Label
     Friend WithEvents btnClose As Button
     Friend WithEvents btnPrint As Button
     Friend WithEvents btnClear As Button

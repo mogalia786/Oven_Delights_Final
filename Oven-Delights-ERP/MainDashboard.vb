@@ -4466,7 +4466,10 @@ Partial Class MainDashboard
             Dim mnuManufacturingReport As New ToolStripMenuItem("Manufacturing Stock Report")
             AddHandler mnuManufacturingReport.Click, AddressOf OpenManufacturingStockReport
             
-            Dim mnuReOrderManager As New ToolStripMenuItem("📋 Re-Order Book Manager")
+            Dim mnuIngredientInventory As New ToolStripMenuItem("🥫 Ingredient Inventory Report")
+            AddHandler mnuIngredientInventory.Click, AddressOf OpenIngredientInventoryReport
+            
+            Dim mnuReOrderManager As New ToolStripMenuItem("📋 Order Book Schedule Manager")
             AddHandler mnuReOrderManager.Click, AddressOf OpenReOrderBookManager
             
             Dim mnuSubRecipeRequest As New ToolStripMenuItem("🧁 Sub-Recipe Manufacturing Request")
@@ -4481,6 +4484,7 @@ Partial Class MainDashboard
             ManufacturingToolStripMenuItem.DropDownItems.Add(mnuBakerDashboard)
             ManufacturingToolStripMenuItem.DropDownItems.Add(New ToolStripSeparator())
             ManufacturingToolStripMenuItem.DropDownItems.Add(mnuManufacturingReport)
+            ManufacturingToolStripMenuItem.DropDownItems.Add(mnuIngredientInventory)
         End If
         
         ' Add Stock Reports and Adjustment to Retail Menu
@@ -4541,6 +4545,25 @@ Partial Class MainDashboard
             frm.WindowState = FormWindowState.Maximized
         Catch ex As Exception
             MessageBox.Show("Error opening Manufacturing Report: " & ex.Message, "Manufacturing", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenIngredientInventoryReport(sender As Object, e As EventArgs)
+        Try
+            For Each child As Form In Me.MdiChildren
+                If TypeOf child Is IngredientInventoryReportForm Then
+                    child.Activate()
+                    child.WindowState = FormWindowState.Maximized
+                    Return
+                End If
+            Next
+
+            Dim frm As New IngredientInventoryReportForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Ingredient Inventory Report: " & ex.Message, "Manufacturing", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 

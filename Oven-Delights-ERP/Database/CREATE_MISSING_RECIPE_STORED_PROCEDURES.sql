@@ -38,6 +38,7 @@ BEGIN
             IngredientID,
             Quantity,
             UnitOfMeasure,
+            PackageSize,
             CostPerUnit,
             IsActive,
             CreatedDate
@@ -47,6 +48,7 @@ BEGIN
             @IngredientID,
             @Quantity,
             @UnitOfMeasure,
+            @PackageSize,
             @CostPerUnit,
             1,
             GETDATE()

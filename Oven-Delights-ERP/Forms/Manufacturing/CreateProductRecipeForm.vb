@@ -8,6 +8,7 @@ Public Class CreateProductRecipeForm
     Private _currentBranchID As Integer
     Private _currentUserID As Integer
     Private _selectedProductID As Integer = 0
+    Private _isLoading As Boolean = True
 
     Public Sub New()
         InitializeComponent()
@@ -15,14 +16,45 @@ Public Class CreateProductRecipeForm
         _recipeService = New RecipeCostCalculationService()
         _currentBranchID = AppSession.CurrentUser.BranchID
         _currentUserID = AppSession.CurrentUser.UserID
+        
+        ' Setup grids immediately after InitializeComponent to ensure columns exist
+        SetupGridColumns()
     End Sub
 
     Private Sub CreateProductRecipeForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        _isLoading = True
         SetupForm()
         LoadProducts()
-        LoadSubRecipes()
-        LoadPackaging()
+        LoadComponents()
         AddHandler txtBatchQty.TextChanged, AddressOf txtBatchQty_TextChanged
+        _isLoading = False
+    End Sub
+    
+    Private Sub SetupGridColumns()
+        ' Setup dgvComponents columns
+        dgvComponents.AutoGenerateColumns = False
+        dgvComponents.AllowUserToAddRows = False
+        dgvComponents.Columns.Clear()
+        dgvComponents.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "BOMLineID", .HeaderText = "ID", .Visible = False})
+        dgvComponents.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "ComponentID", .HeaderText = "Component ID", .Visible = False})
+        dgvComponents.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "ComponentType", .HeaderText = "Type", .Visible = False})
+        dgvComponents.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "ComponentName", .HeaderText = "Component", .Width = 300, .ReadOnly = True})
+        dgvComponents.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "Category", .HeaderText = "Category", .Width = 120, .ReadOnly = True})
+        dgvComponents.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "Quantity", .HeaderText = "Quantity", .Width = 100, .ReadOnly = False})
+        dgvComponents.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "CostPerUnit", .HeaderText = "Cost Per Unit", .Width = 120, .ReadOnly = True, .DefaultCellStyle = New DataGridViewCellStyle With {.Format = "C2"}})
+        dgvComponents.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "TotalCost", .HeaderText = "Total Cost", .Width = 120, .ReadOnly = True, .DefaultCellStyle = New DataGridViewCellStyle With {.Format = "C2"}})
+        dgvComponents.Columns.Add(New DataGridViewButtonColumn With {.Name = "Edit", .HeaderText = "Edit", .Text = "Edit", .UseColumnTextForButtonValue = True, .Width = 70})
+        dgvComponents.Columns.Add(New DataGridViewButtonColumn With {.Name = "Delete", .HeaderText = "Delete", .Text = "Delete", .UseColumnTextForButtonValue = True, .Width = 70})
+        
+        ' Setup dgvConsolidatedBOM columns
+        dgvConsolidatedBOM.AutoGenerateColumns = False
+        dgvConsolidatedBOM.AllowUserToAddRows = False
+        dgvConsolidatedBOM.Columns.Clear()
+        dgvConsolidatedBOM.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "IngredientName", .HeaderText = "Ingredient", .Width = 300, .ReadOnly = True})
+        dgvConsolidatedBOM.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "TotalQuantity", .HeaderText = "Total Quantity", .Width = 150, .ReadOnly = True})
+        dgvConsolidatedBOM.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "UnitOfMeasure", .HeaderText = "Unit", .Width = 100, .ReadOnly = True})
+        dgvConsolidatedBOM.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "CostPerUnit", .HeaderText = "Cost/Unit", .Width = 120, .ReadOnly = True, .DefaultCellStyle = New DataGridViewCellStyle With {.Format = "C6"}})
+        dgvConsolidatedBOM.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "TotalCost", .HeaderText = "Total Cost", .Width = 120, .ReadOnly = True, .DefaultCellStyle = New DataGridViewCellStyle With {.Format = "C2"}})
     End Sub
     
     Private Sub txtBatchQty_TextChanged(sender As Object, e As EventArgs)
@@ -34,12 +66,29 @@ Public Class CreateProductRecipeForm
         Me.WindowState = FormWindowState.Maximized
         Me.BackColor = Color.FromArgb(240, 240, 245)
 
-        SetupGrid(dgvSubRecipes, "SubRecipes")
-        SetupGrid(dgvPackaging, "Packaging")
-        SetupGrid(dgvConsolidatedBOM, "Consolidated")
+        ' Apply styling to grids (columns already set up in constructor)
+        ApplyGridStyling(dgvComponents, "Components")
+        ApplyGridStyling(dgvConsolidatedBOM, "Consolidated")
 
         txtBatchQty.Text = "1"
         txtMethod.Font = New Font("Segoe UI", 10)
+    End Sub
+    
+    Private Sub ApplyGridStyling(grid As DataGridView, gridType As String)
+        ' Apply visual styling only - do NOT clear columns
+        grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect
+        grid.MultiSelect = False
+        grid.RowHeadersVisible = False
+        grid.BackgroundColor = Color.White
+        grid.BorderStyle = BorderStyle.None
+        grid.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal
+        grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(52, 152, 219)
+        grid.DefaultCellStyle.SelectionForeColor = Color.White
+        grid.EnableHeadersVisualStyles = False
+        grid.ColumnHeadersDefaultCellStyle.BackColor = If(gridType = "Components", Color.FromArgb(39, 174, 96), Color.FromArgb(52, 73, 94))
+        grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.White
+        grid.ColumnHeadersDefaultCellStyle.Font = New Font("Segoe UI", 10, FontStyle.Bold)
+        grid.ColumnHeadersHeight = 40
     End Sub
 
     Private Sub SetupGrid(grid As DataGridView, gridType As String)
@@ -54,30 +103,25 @@ Public Class CreateProductRecipeForm
         grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(52, 152, 219)
         grid.DefaultCellStyle.SelectionForeColor = Color.White
         grid.EnableHeadersVisualStyles = False
-        grid.ColumnHeadersDefaultCellStyle.BackColor = If(gridType = "SubRecipes", Color.FromArgb(39, 174, 96), If(gridType = "Packaging", Color.FromArgb(230, 126, 34), Color.FromArgb(52, 73, 94)))
+        grid.ColumnHeadersDefaultCellStyle.BackColor = If(gridType = "Components", Color.FromArgb(39, 174, 96), Color.FromArgb(52, 73, 94))
         grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.White
         grid.ColumnHeadersDefaultCellStyle.Font = New Font("Segoe UI", 10, FontStyle.Bold)
         grid.ColumnHeadersHeight = 40
 
         grid.Columns.Clear()
 
-        If gridType = "SubRecipes" Then
+        If gridType = "Components" Then
             grid.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "BOMLineID", .HeaderText = "ID", .Visible = False})
-            grid.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "ComponentID", .HeaderText = "Sub-Recipe ID", .Visible = False})
-            grid.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "ComponentName", .HeaderText = "Sub-Recipe", .Width = 300, .ReadOnly = True})
+            grid.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "ComponentID", .HeaderText = "Component ID", .Visible = False})
+            grid.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "ComponentType", .HeaderText = "Type", .Visible = False})
+            grid.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "ComponentName", .HeaderText = "Component", .Width = 300, .ReadOnly = True})
+            grid.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "Category", .HeaderText = "Category", .Width = 120, .ReadOnly = True})
             grid.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "Quantity", .HeaderText = "Quantity", .Width = 100})
             grid.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "CostPerUnit", .HeaderText = "Cost Per Unit", .Width = 120, .ReadOnly = True, .DefaultCellStyle = New DataGridViewCellStyle With {.Format = "C2"}})
             grid.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "TotalCost", .HeaderText = "Total Cost", .Width = 120, .ReadOnly = True, .DefaultCellStyle = New DataGridViewCellStyle With {.Format = "C2"}})
-            Dim btnDelete As New DataGridViewButtonColumn With {.Name = "Delete", .HeaderText = "Action", .Text = "Delete", .UseColumnTextForButtonValue = True, .Width = 80}
-            grid.Columns.Add(btnDelete)
-        ElseIf gridType = "Packaging" Then
-            grid.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "BOMLineID", .HeaderText = "ID", .Visible = False})
-            grid.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "ComponentID", .HeaderText = "Packaging ID", .Visible = False})
-            grid.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "ComponentName", .HeaderText = "Packaging/Decoration", .Width = 300, .ReadOnly = True})
-            grid.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "Quantity", .HeaderText = "Quantity", .Width = 100})
-            grid.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "CostPerUnit", .HeaderText = "Cost Per Unit", .Width = 120, .ReadOnly = True, .DefaultCellStyle = New DataGridViewCellStyle With {.Format = "C2"}})
-            grid.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "TotalCost", .HeaderText = "Total Cost", .Width = 120, .ReadOnly = True, .DefaultCellStyle = New DataGridViewCellStyle With {.Format = "C2"}})
-            Dim btnDelete As New DataGridViewButtonColumn With {.Name = "Delete", .HeaderText = "Action", .Text = "Delete", .UseColumnTextForButtonValue = True, .Width = 80}
+            Dim btnEdit As New DataGridViewButtonColumn With {.Name = "Edit", .HeaderText = "Edit", .Text = "Edit", .UseColumnTextForButtonValue = True, .Width = 70}
+            grid.Columns.Add(btnEdit)
+            Dim btnDelete As New DataGridViewButtonColumn With {.Name = "Delete", .HeaderText = "Delete", .Text = "Delete", .UseColumnTextForButtonValue = True, .Width = 70}
             grid.Columns.Add(btnDelete)
         Else
             grid.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "IngredientName", .HeaderText = "Ingredient", .Width = 300, .ReadOnly = True})
@@ -124,69 +168,46 @@ Public Class CreateProductRecipeForm
         cboProduct.DataSource = dt
     End Sub
 
-    Private Sub LoadSubRecipes()
+    Private Sub LoadComponents()
         Dim dt As New DataTable()
         dt.Columns.Add("ProductID", GetType(Integer))
         dt.Columns.Add("Name", GetType(String))
+        dt.Columns.Add("Category", GetType(String))
 
         Using conn As New SqlConnection(_connectionString)
             Dim query As String = "
-                SELECT MIN(p.ProductID) AS ProductID, p.Name
+                SELECT MIN(p.ProductID) AS ProductID, p.Name, p.Category
                 FROM Demo_Retail_Product p
-                INNER JOIN Demo_SubRecipe_Master sr ON p.ProductID = sr.SubRecipeID
+                LEFT JOIN Demo_SubRecipe_Master sr ON p.ProductID = sr.SubRecipeID AND (p.Category LIKE '%sub%recipe%' OR p.Category LIKE '%subrecipe%')
                 WHERE p.IsActive = 1
-                  AND sr.IsActive = 1
-                  AND (p.Category LIKE '%sub%recipe%' OR p.Category LIKE '%subrecipe%')
-                GROUP BY p.Name
-                ORDER BY p.Name"
+                  AND (
+                    (p.Category LIKE '%ingredient%') OR
+                    (p.Category LIKE '%consumable%') OR
+                    (p.Category LIKE '%pack%') OR
+                    (p.Category LIKE '%misce%') OR
+                    ((p.Category LIKE '%sub%recipe%' OR p.Category LIKE '%subrecipe%') AND sr.SubRecipeID IS NOT NULL)
+                  )
+                GROUP BY p.Name, p.Category
+                ORDER BY p.Category, p.Name"
 
             Using cmd As New SqlCommand(query, conn)
                 conn.Open()
                 Using reader As SqlDataReader = cmd.ExecuteReader()
                     While reader.Read()
-                        dt.Rows.Add(reader.GetInt32(0), reader.GetString(1))
+                        dt.Rows.Add(reader.GetInt32(0), reader.GetString(1), reader.GetString(2))
                     End While
                 End Using
             End Using
         End Using
         
-        cboSubRecipe.DataSource = Nothing
-        cboSubRecipe.DisplayMember = "Name"
-        cboSubRecipe.ValueMember = "ProductID"
-        cboSubRecipe.DataSource = dt
-    End Sub
-
-    Private Sub LoadPackaging()
-        Dim dt As New DataTable()
-        dt.Columns.Add("ProductID", GetType(Integer))
-        dt.Columns.Add("Name", GetType(String))
-
-        Using conn As New SqlConnection(_connectionString)
-            Dim query As String = "
-                SELECT MIN(ProductID) AS ProductID, Name
-                FROM Demo_Retail_Product
-                WHERE IsActive = 1
-                  AND (Category LIKE '%pack%' OR Category LIKE '%misce%')
-                GROUP BY Name
-                ORDER BY Name"
-
-            Using cmd As New SqlCommand(query, conn)
-                conn.Open()
-                Using reader As SqlDataReader = cmd.ExecuteReader()
-                    While reader.Read()
-                        dt.Rows.Add(reader.GetInt32(0), reader.GetString(1))
-                    End While
-                End Using
-            End Using
-        End Using
-        
-        cboPackaging.DataSource = Nothing
-        cboPackaging.DisplayMember = "Name"
-        cboPackaging.ValueMember = "ProductID"
-        cboPackaging.DataSource = dt
+        cboComponent.DataSource = Nothing
+        cboComponent.DisplayMember = "Name"
+        cboComponent.ValueMember = "ProductID"
+        cboComponent.DataSource = dt
     End Sub
 
     Private Sub cboProduct_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cboProduct.SelectedIndexChanged
+        If _isLoading Then Return
         If cboProduct.SelectedValue Is Nothing Then Return
         If Not IsNumeric(cboProduct.SelectedValue) Then Return
 
@@ -216,122 +237,112 @@ Public Class CreateProductRecipeForm
         End If
 
         Dim dt = _recipeService.GetProductBOMComponents(_selectedProductID)
-        dgvSubRecipes.Rows.Clear()
-        dgvPackaging.Rows.Clear()
+        dgvComponents.Rows.Clear()
 
         For Each row As DataRow In dt.Rows
-            If row("ComponentType").ToString() = "SubRecipe" Then
-                dgvSubRecipes.Rows.Add(
-                    row("BOMLineID"),
-                    row("ComponentID"),
-                    row("ComponentName"),
-                    row("Quantity"),
-                    row("CostPerUnit"),
-                    row("TotalCost")
-                )
-            Else
-                dgvPackaging.Rows.Add(
-                    row("BOMLineID"),
-                    row("ComponentID"),
-                    row("ComponentName"),
-                    row("Quantity"),
-                    row("CostPerUnit"),
-                    row("TotalCost")
-                )
-            End If
+            Dim componentID As Integer = CInt(row("ComponentID"))
+            Dim category As String = GetComponentCategory(componentID)
+            Dim componentType As String = row("ComponentType").ToString()
+            
+            dgvComponents.Rows.Add(
+                row("BOMLineID"),
+                componentID,
+                componentType,
+                row("ComponentName"),
+                category,
+                row("Quantity"),
+                row("CostPerUnit"),
+                row("TotalCost")
+            )
         Next
 
         LoadConsolidatedBOM()
         CalculateTotalCost()
     End Sub
 
-    Private Sub btnAddSubRecipe_Click(sender As Object, e As EventArgs) Handles btnAddSubRecipe.Click
-        If cboSubRecipe.SelectedValue Is Nothing Then
-            MessageBox.Show("Please select a sub-recipe.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+    Private Function GetComponentCategory(componentID As Integer) As String
+        Dim category As String = ""
+        Using conn As New SqlConnection(_connectionString)
+            Dim query As String = "SELECT TOP 1 Category FROM Demo_Retail_Product WHERE ProductID = @ProductID"
+            Using cmd As New SqlCommand(query, conn)
+                cmd.Parameters.AddWithValue("@ProductID", componentID)
+                conn.Open()
+                Dim result = cmd.ExecuteScalar()
+                If result IsNot Nothing Then
+                    category = result.ToString()
+                End If
+            End Using
+        End Using
+        Return category
+    End Function
+
+    Private Sub btnAddComponent_Click(sender As Object, e As EventArgs) Handles btnAddComponent.Click
+        If cboComponent.SelectedValue Is Nothing Then
+            MessageBox.Show("Please select a component.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
 
-        If Not IsNumeric(txtSubRecipeQty.Text) OrElse CDec(txtSubRecipeQty.Text) <= 0 Then
+        If Not IsNumeric(txtComponentQty.Text) OrElse CDec(txtComponentQty.Text) <= 0 Then
             MessageBox.Show("Please enter a valid quantity.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
 
-        Dim subRecipeID As Integer = CInt(cboSubRecipe.SelectedValue)
-        Dim subRecipeName As String = cboSubRecipe.Text
-        Dim quantity As Decimal = CDec(txtSubRecipeQty.Text)
+        Dim componentID As Integer = CInt(cboComponent.SelectedValue)
+        Dim componentName As String = cboComponent.Text
+        Dim quantity As Decimal = CDec(txtComponentQty.Text)
+        Dim category As String = CType(cboComponent.SelectedItem, DataRowView)("Category").ToString()
 
-        If Not _recipeService.CheckSubRecipeExists(subRecipeID) Then
-            MessageBox.Show($"Recipe for '{subRecipeName}' has not been created yet.{Environment.NewLine}{Environment.NewLine}Please create the sub-recipe first before adding it to the product.",
-                "Sub-Recipe Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            Return
+        ' Check if it's a sub-recipe and validate it has a recipe
+        If category.ToLower().Contains("sub") AndAlso category.ToLower().Contains("recipe") Then
+            If Not _recipeService.CheckSubRecipeExists(componentID) Then
+                MessageBox.Show($"Recipe for '{componentName}' has not been created yet.{Environment.NewLine}{Environment.NewLine}Please create the sub-recipe first before adding it to the product.",
+                    "Sub-Recipe Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
         End If
 
-        For Each row As DataGridViewRow In dgvSubRecipes.Rows
-            If row.Cells("ComponentID").Value IsNot Nothing AndAlso CInt(row.Cells("ComponentID").Value) = subRecipeID Then
-                MessageBox.Show("This sub-recipe is already added. Please edit the existing entry.", "Duplicate", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        ' Check for duplicates
+        For Each row As DataGridViewRow In dgvComponents.Rows
+            If row.Cells("ComponentID").Value IsNot Nothing AndAlso CInt(row.Cells("ComponentID").Value) = componentID Then
+                MessageBox.Show("This component is already added.", "Duplicate", MessageBoxButtons.OK, MessageBoxIcon.Information)
                 Return
             End If
         Next
 
-        Dim costPerUnit As Decimal = _recipeService.CalculateSubRecipeTotalCost(subRecipeID)
+        ' Get cost based on component type
+        Dim costPerUnit As Decimal = 0
+        Dim componentType As String = ""
+        
+        If category.ToLower().Contains("sub") AndAlso category.ToLower().Contains("recipe") Then
+            costPerUnit = _recipeService.GetSubRecipeCostPerUnit(componentID)
+            componentType = "SubRecipe"
+        Else
+            costPerUnit = GetComponentCost(componentID)
+            componentType = "Other"
+        End If
+
         Dim totalCost As Decimal = quantity * costPerUnit
 
-        dgvSubRecipes.Rows.Add(0, subRecipeID, subRecipeName, quantity, costPerUnit, totalCost)
+        dgvComponents.Rows.Add(0, componentID, componentType, componentName, category, quantity, costPerUnit, totalCost)
 
-        txtSubRecipeQty.Clear()
-        cboSubRecipe.SelectedIndex = -1
+        txtComponentQty.Clear()
+        cboComponent.SelectedIndex = -1
 
         LoadConsolidatedBOM()
         CalculateTotalCost()
     End Sub
 
-    Private Sub btnAddPackaging_Click(sender As Object, e As EventArgs) Handles btnAddPackaging.Click
-        If cboPackaging.SelectedValue Is Nothing Then
-            MessageBox.Show("Please select a packaging/decoration item.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            Return
-        End If
-
-        If Not IsNumeric(txtPackagingQty.Text) OrElse CDec(txtPackagingQty.Text) <= 0 Then
-            MessageBox.Show("Please enter a valid quantity.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            Return
-        End If
-
-        Dim packagingID As Integer = CInt(cboPackaging.SelectedValue)
-        Dim packagingName As String = cboPackaging.Text
-        Dim quantity As Decimal = CDec(txtPackagingQty.Text)
-
-        For Each row As DataGridViewRow In dgvPackaging.Rows
-            If row.Cells("ComponentID").Value IsNot Nothing AndAlso CInt(row.Cells("ComponentID").Value) = packagingID Then
-                MessageBox.Show("This item is already added. Please edit the existing entry.", "Duplicate", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                Return
-            End If
-        Next
-
-        Dim costPerUnit As Decimal = GetPackagingCost(packagingID)
-        Dim totalCost As Decimal = quantity * costPerUnit
-
-        dgvPackaging.Rows.Add(0, packagingID, packagingName, quantity, costPerUnit, totalCost)
-
-        txtPackagingQty.Clear()
-        cboPackaging.SelectedIndex = -1
-
-        LoadConsolidatedBOM()
-        CalculateTotalCost()
-    End Sub
-
-    Private Function GetPackagingCost(packagingID As Integer) As Decimal
+    Private Function GetComponentCost(componentID As Integer) As Decimal
         Dim cost As Decimal = 0
 
         Using conn As New SqlConnection(_connectionString)
             Dim query As String = "
-                SELECT TOP 1 ISNULL(CostPrice, 0)
-                FROM Demo_Retail_Price
-                WHERE ProductID = @ProductID AND BranchID = @BranchID
-                ORDER BY EffectiveFrom DESC"
+                SELECT TOP 1 ISNULL(AverageCost, ISNULL(LastPaidPrice, 0))
+                FROM Demo_Retail_Product
+                WHERE ProductID = @ProductID"
 
             Using cmd As New SqlCommand(query, conn)
-                cmd.Parameters.AddWithValue("@ProductID", packagingID)
-                cmd.Parameters.AddWithValue("@BranchID", _currentBranchID)
+                cmd.Parameters.AddWithValue("@ProductID", componentID)
                 conn.Open()
 
                 Dim result = cmd.ExecuteScalar()
@@ -344,60 +355,53 @@ Public Class CreateProductRecipeForm
         Return cost
     End Function
 
-    Private Sub dgvSubRecipes_CellContentClick(sender As Object, e As DataGridViewCellEventArgs) Handles dgvSubRecipes.CellContentClick
+    Private Sub dgvComponents_CellContentClick(sender As Object, e As DataGridViewCellEventArgs) Handles dgvComponents.CellContentClick
         If e.RowIndex < 0 Then Return
 
-        If dgvSubRecipes.Columns(e.ColumnIndex).Name = "Delete" Then
-            Dim result = MessageBox.Show("Are you sure you want to delete this sub-recipe?", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+        Dim row = dgvComponents.Rows(e.RowIndex)
+        Dim componentType As String = row.Cells("ComponentType").Value.ToString()
+        Dim componentID As Integer = CInt(row.Cells("ComponentID").Value)
+        Dim componentName As String = row.Cells("ComponentName").Value.ToString()
+
+        If dgvComponents.Columns(e.ColumnIndex).Name = "Edit" Then
+            ' Only allow editing sub-recipes
+            If componentType = "SubRecipe" Then
+                Dim editForm As New EditSubRecipeForm(componentID, componentName)
+                If editForm.ShowDialog() = DialogResult.OK Then
+                    ' Refresh cost per unit after editing
+                    Dim newCostPerUnit As Decimal = _recipeService.GetSubRecipeCostPerUnit(componentID)
+                    Dim quantity As Decimal = CDec(row.Cells("Quantity").Value)
+                    row.Cells("CostPerUnit").Value = newCostPerUnit
+                    row.Cells("TotalCost").Value = quantity * newCostPerUnit
+                    
+                    LoadConsolidatedBOM()
+                    CalculateTotalCost()
+                End If
+            Else
+                MessageBox.Show("Only sub-recipes can be edited from here.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+        ElseIf dgvComponents.Columns(e.ColumnIndex).Name = "Delete" Then
+            Dim result = MessageBox.Show($"Are you sure you want to delete '{componentName}'?", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
             If result = DialogResult.Yes Then
-                dgvSubRecipes.Rows.RemoveAt(e.RowIndex)
+                dgvComponents.Rows.RemoveAt(e.RowIndex)
                 LoadConsolidatedBOM()
                 CalculateTotalCost()
             End If
         End If
     End Sub
 
-    Private Sub dgvPackaging_CellContentClick(sender As Object, e As DataGridViewCellEventArgs) Handles dgvPackaging.CellContentClick
+    Private Sub dgvComponents_CellEndEdit(sender As Object, e As DataGridViewCellEventArgs) Handles dgvComponents.CellEndEdit
         If e.RowIndex < 0 Then Return
 
-        If dgvPackaging.Columns(e.ColumnIndex).Name = "Delete" Then
-            Dim result = MessageBox.Show("Are you sure you want to delete this item?", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
-            If result = DialogResult.Yes Then
-                dgvPackaging.Rows.RemoveAt(e.RowIndex)
-                LoadConsolidatedBOM()
-                CalculateTotalCost()
-            End If
-        End If
-    End Sub
+        Dim row = dgvComponents.Rows(e.RowIndex)
 
-    Private Sub dgvSubRecipes_CellEndEdit(sender As Object, e As DataGridViewCellEventArgs) Handles dgvSubRecipes.CellEndEdit
-        If e.RowIndex < 0 Then Return
-
-        Dim row = dgvSubRecipes.Rows(e.RowIndex)
-
-        If dgvSubRecipes.Columns(e.ColumnIndex).Name = "Quantity" Then
+        If dgvComponents.Columns(e.ColumnIndex).Name = "Quantity" Then
             If IsNumeric(row.Cells("Quantity").Value) AndAlso IsNumeric(row.Cells("CostPerUnit").Value) Then
                 Dim quantity As Decimal = CDec(row.Cells("Quantity").Value)
                 Dim costPerUnit As Decimal = CDec(row.Cells("CostPerUnit").Value)
                 row.Cells("TotalCost").Value = quantity * costPerUnit
 
                 LoadConsolidatedBOM()
-                CalculateTotalCost()
-            End If
-        End If
-    End Sub
-
-    Private Sub dgvPackaging_CellEndEdit(sender As Object, e As DataGridViewCellEventArgs) Handles dgvPackaging.CellEndEdit
-        If e.RowIndex < 0 Then Return
-
-        Dim row = dgvPackaging.Rows(e.RowIndex)
-
-        If dgvPackaging.Columns(e.ColumnIndex).Name = "Quantity" Then
-            If IsNumeric(row.Cells("Quantity").Value) AndAlso IsNumeric(row.Cells("CostPerUnit").Value) Then
-                Dim quantity As Decimal = CDec(row.Cells("Quantity").Value)
-                Dim costPerUnit As Decimal = CDec(row.Cells("CostPerUnit").Value)
-                row.Cells("TotalCost").Value = quantity * costPerUnit
-
                 CalculateTotalCost()
             End If
         End If
@@ -408,55 +412,56 @@ Public Class CreateProductRecipeForm
 
         Dim consolidatedIngredients As New Dictionary(Of Integer, ConsolidatedIngredient)
 
-        ' Add ingredients from sub-recipes
-        For Each row As DataGridViewRow In dgvSubRecipes.Rows
-            Dim subRecipeID As Integer = CInt(row.Cells("ComponentID").Value)
-            Dim subRecipeQty As Decimal = CDec(row.Cells("Quantity").Value)
-
-            Dim ingredients = _recipeService.GetSubRecipeIngredients(subRecipeID)
-
-            For Each ingredientRow As DataRow In ingredients.Rows
-                Dim ingredientID As Integer = CInt(ingredientRow("IngredientID"))
-                Dim ingredientName As String = ingredientRow("IngredientName").ToString()
-                Dim quantity As Decimal = CDec(ingredientRow("Quantity")) * subRecipeQty
-                Dim unit As String = ingredientRow("UnitOfMeasure").ToString()
-                Dim costPerUnit As Decimal = CDec(ingredientRow("CostPerUnit"))
-
-                If consolidatedIngredients.ContainsKey(ingredientID) Then
-                    consolidatedIngredients(ingredientID).TotalQuantity += quantity
-                    consolidatedIngredients(ingredientID).TotalCost = consolidatedIngredients(ingredientID).TotalQuantity * costPerUnit
-                Else
-                    consolidatedIngredients.Add(ingredientID, New ConsolidatedIngredient With {
-                        .IngredientID = ingredientID,
-                        .IngredientName = ingredientName,
-                        .TotalQuantity = quantity,
-                        .UnitOfMeasure = unit,
-                        .CostPerUnit = costPerUnit,
-                        .TotalCost = quantity * costPerUnit
-                    })
-                End If
-            Next
-        Next
-
-        ' Add packaging items to consolidated BOM
-        For Each row As DataGridViewRow In dgvPackaging.Rows
-            Dim packagingID As Integer = CInt(row.Cells("ComponentID").Value)
-            Dim packagingName As String = row.Cells("ComponentName").Value.ToString()
-            Dim quantity As Decimal = CDec(row.Cells("Quantity").Value)
+        ' Process all components
+        For Each row As DataGridViewRow In dgvComponents.Rows
+            Dim componentID As Integer = CInt(row.Cells("ComponentID").Value)
+            Dim componentType As String = row.Cells("ComponentType").Value.ToString()
+            Dim componentQty As Decimal = CDec(row.Cells("Quantity").Value)
+            Dim componentName As String = row.Cells("ComponentName").Value.ToString()
             Dim costPerUnit As Decimal = CDec(row.Cells("CostPerUnit").Value)
 
-            If consolidatedIngredients.ContainsKey(packagingID) Then
-                consolidatedIngredients(packagingID).TotalQuantity += quantity
-                consolidatedIngredients(packagingID).TotalCost = consolidatedIngredients(packagingID).TotalQuantity * costPerUnit
+            If componentType = "SubRecipe" Then
+                ' Expand sub-recipe into its ingredients
+                Dim ingredients = _recipeService.GetSubRecipeIngredients(componentID)
+
+                For Each ingredientRow As DataRow In ingredients.Rows
+                    Dim ingredientID As Integer = CInt(ingredientRow("IngredientID"))
+                    Dim ingredientName As String = ingredientRow("IngredientName").ToString()
+                    ' Use QuantityPerUnit (ingredient qty / sub-recipe batch qty) * component qty requested
+                    Dim quantityPerUnit As Decimal = CDec(ingredientRow("QuantityPerUnit"))
+                    Dim quantity As Decimal = quantityPerUnit * componentQty
+                    Dim unit As String = ingredientRow("UnitOfMeasure").ToString()
+                    Dim ingredientCostPerUnit As Decimal = CDec(ingredientRow("CostPerUnit"))
+
+                    If consolidatedIngredients.ContainsKey(ingredientID) Then
+                        consolidatedIngredients(ingredientID).TotalQuantity += quantity
+                        consolidatedIngredients(ingredientID).TotalCost = consolidatedIngredients(ingredientID).TotalQuantity * ingredientCostPerUnit
+                    Else
+                        consolidatedIngredients.Add(ingredientID, New ConsolidatedIngredient With {
+                            .IngredientID = ingredientID,
+                            .IngredientName = ingredientName,
+                            .TotalQuantity = quantity,
+                            .UnitOfMeasure = unit,
+                            .CostPerUnit = ingredientCostPerUnit,
+                            .TotalCost = quantity * ingredientCostPerUnit
+                        })
+                    End If
+                Next
             Else
-                consolidatedIngredients.Add(packagingID, New ConsolidatedIngredient With {
-                    .IngredientID = packagingID,
-                    .IngredientName = packagingName,
-                    .TotalQuantity = quantity,
-                    .UnitOfMeasure = "unit",
-                    .CostPerUnit = costPerUnit,
-                    .TotalCost = quantity * costPerUnit
-                })
+                ' Add direct component (ingredient, packaging, etc.)
+                If consolidatedIngredients.ContainsKey(componentID) Then
+                    consolidatedIngredients(componentID).TotalQuantity += componentQty
+                    consolidatedIngredients(componentID).TotalCost = consolidatedIngredients(componentID).TotalQuantity * costPerUnit
+                Else
+                    consolidatedIngredients.Add(componentID, New ConsolidatedIngredient With {
+                        .IngredientID = componentID,
+                        .IngredientName = componentName,
+                        .TotalQuantity = componentQty,
+                        .UnitOfMeasure = "unit",
+                        .CostPerUnit = costPerUnit,
+                        .TotalCost = componentQty * costPerUnit
+                    })
+                End If
             End If
         Next
 
@@ -474,13 +479,7 @@ Public Class CreateProductRecipeForm
     Private Sub CalculateTotalCost()
         Dim total As Decimal = 0
 
-        For Each row As DataGridViewRow In dgvSubRecipes.Rows
-            If row.Cells("TotalCost").Value IsNot Nothing AndAlso IsNumeric(row.Cells("TotalCost").Value) Then
-                total += CDec(row.Cells("TotalCost").Value)
-            End If
-        Next
-
-        For Each row As DataGridViewRow In dgvPackaging.Rows
+        For Each row As DataGridViewRow In dgvComponents.Rows
             If row.Cells("TotalCost").Value IsNot Nothing AndAlso IsNumeric(row.Cells("TotalCost").Value) Then
                 total += CDec(row.Cells("TotalCost").Value)
             End If
@@ -493,10 +492,42 @@ Public Class CreateProductRecipeForm
         End If
         
         Dim costPerUnit As Decimal = total / batchQty
+        Dim vatRate As Decimal = 0.15D ' 15% VAT
+        Dim adhocRate As Decimal = 0.15D ' 15% ADHOC
+        
+        ' Section 1: Per Unit Cost
+        Dim unitVAT As Decimal = costPerUnit * vatRate
+        Dim unitInclVAT As Decimal = costPerUnit + unitVAT
+        
+        ' Section 2: Full Batch Cost
+        Dim batchVAT As Decimal = total * vatRate
+        Dim batchInclVAT As Decimal = total + batchVAT
+        
+        ' Section 3: With 15% ADHOC
+        Dim adhocCostPerUnit As Decimal = costPerUnit * (1 + adhocRate)
+        Dim adhocVATPerUnit As Decimal = adhocCostPerUnit * vatRate
+        Dim adhocInclVATPerUnit As Decimal = adhocCostPerUnit + adhocVATPerUnit
+        
+        Dim adhocBatchTotal As Decimal = total * (1 + adhocRate)
+        Dim adhocBatchVAT As Decimal = adhocBatchTotal * vatRate
+        Dim adhocBatchInclVAT As Decimal = adhocBatchTotal + adhocBatchVAT
 
-        lblTotalCost.Text = $"Total Cost Per Product (1 unit): {costPerUnit.ToString("C2")} | Batch Qty: {batchQty} | Total: {total.ToString("C2")}"
-        lblTotalCost.Font = New Font("Segoe UI", 14, FontStyle.Bold)
-        lblTotalCost.ForeColor = Color.FromArgb(39, 174, 96)
+        ' Line 1: Single Unit Cost (Green)
+        lblTotalCost.Text = $"1 UNIT: Excl VAT: {costPerUnit.ToString("C2")} | VAT (15%): {unitVAT.ToString("C2")} | Incl VAT: {unitInclVAT.ToString("C2")}"
+        lblTotalCost.Font = New Font("Segoe UI", 11, FontStyle.Bold)
+        lblTotalCost.ForeColor = Color.FromArgb(39, 174, 96) ' Green
+        
+        ' Line 2: Full Batch Cost (Blue)
+        lblBatchCost.Text = $"BATCH ({batchQty} units): Excl VAT: {total.ToString("C2")} | VAT (15%): {batchVAT.ToString("C2")} | Incl VAT: {batchInclVAT.ToString("C2")}"
+        lblBatchCost.Font = New Font("Segoe UI", 11, FontStyle.Bold)
+        lblBatchCost.ForeColor = Color.FromArgb(41, 128, 185) ' Blue
+        lblBatchCost.Visible = True
+        
+        ' Line 3: With ADHOC Charges (Orange)
+        lblAdhocCost.Text = $"WITH ADHOC (+15%): Excl VAT: {adhocCostPerUnit.ToString("C2")} | VAT (15%): {adhocVATPerUnit.ToString("C2")} | Incl VAT: {adhocInclVATPerUnit.ToString("C2")} per unit | Batch Total Incl VAT: {adhocBatchInclVAT.ToString("C2")}"
+        lblAdhocCost.Font = New Font("Segoe UI", 11, FontStyle.Bold)
+        lblAdhocCost.ForeColor = Color.FromArgb(230, 126, 34) ' Orange
+        lblAdhocCost.Visible = True
     End Sub
 
     Private Sub btnSave_Click(sender As Object, e As EventArgs) Handles btnSave.Click
@@ -505,8 +536,8 @@ Public Class CreateProductRecipeForm
             Return
         End If
 
-        If dgvSubRecipes.Rows.Count = 0 Then
-            MessageBox.Show("Please add at least one sub-recipe.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        If dgvComponents.Rows.Count = 0 Then
+            MessageBox.Show("Please add at least one component.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
 
@@ -531,28 +562,16 @@ Public Class CreateProductRecipeForm
                 Return
             End If
 
-            For Each row As DataGridViewRow In dgvSubRecipes.Rows
+            For Each row As DataGridViewRow In dgvComponents.Rows
                 Dim componentID As Integer = CInt(row.Cells("ComponentID").Value)
+                Dim componentType As String = row.Cells("ComponentType").Value.ToString()
                 Dim quantity As Decimal = CDec(row.Cells("Quantity").Value)
                 Dim costPerUnit As Decimal = CDec(row.Cells("CostPerUnit").Value)
 
-                Dim componentResult = _recipeService.SaveProductBOMComponent(_selectedProductID, "SubRecipe", componentID, quantity, costPerUnit)
+                Dim componentResult = _recipeService.SaveProductBOMComponent(_selectedProductID, componentType, componentID, quantity, costPerUnit)
 
                 If Not componentResult.Item1 Then
-                    MessageBox.Show($"Error saving sub-recipe: {componentResult.Item2}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-                    Return
-                End If
-            Next
-
-            For Each row As DataGridViewRow In dgvPackaging.Rows
-                Dim componentID As Integer = CInt(row.Cells("ComponentID").Value)
-                Dim quantity As Decimal = CDec(row.Cells("Quantity").Value)
-                Dim costPerUnit As Decimal = CDec(row.Cells("CostPerUnit").Value)
-
-                Dim componentResult = _recipeService.SaveProductBOMComponent(_selectedProductID, "Packaging", componentID, quantity, costPerUnit)
-
-                If Not componentResult.Item1 Then
-                    MessageBox.Show($"Error saving packaging: {componentResult.Item2}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                    MessageBox.Show($"Error saving component: {componentResult.Item2}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
                     Return
                 End If
             Next
@@ -603,28 +622,16 @@ Public Class CreateProductRecipeForm
         e.Graphics.DrawString($"Date: {DateTime.Now:dd MMM yyyy}", font, Brushes.Black, 50, y)
         y += 35
 
-        e.Graphics.DrawString("SUB-RECIPES REQUIRED:", boldFont, Brushes.Black, 50, y)
+        e.Graphics.DrawString("COMPONENTS REQUIRED:", boldFont, Brushes.Black, 50, y)
         y += 25
 
-        For Each row As DataGridViewRow In dgvSubRecipes.Rows
-            Dim subRecipeName As String = row.Cells("ComponentName").Value.ToString().PadRight(35)
+        For Each row As DataGridViewRow In dgvComponents.Rows
+            Dim componentName As String = row.Cells("ComponentName").Value.ToString().PadRight(35)
+            Dim category As String = row.Cells("Category").Value.ToString().PadRight(15)
             Dim quantity As String = $"{row.Cells("Quantity").Value}".PadRight(10)
             Dim cost As String = CDec(row.Cells("TotalCost").Value).ToString("C2")
 
-            e.Graphics.DrawString($"{subRecipeName} {quantity} {cost}", font, Brushes.Black, 50, y)
-            y += 20
-        Next
-
-        y += 25
-        e.Graphics.DrawString("PACKAGING & DECORATIONS:", boldFont, Brushes.Black, 50, y)
-        y += 25
-
-        For Each row As DataGridViewRow In dgvPackaging.Rows
-            Dim packagingName As String = row.Cells("ComponentName").Value.ToString().PadRight(35)
-            Dim quantity As String = $"{row.Cells("Quantity").Value}".PadRight(10)
-            Dim cost As String = CDec(row.Cells("TotalCost").Value).ToString("C2")
-
-            e.Graphics.DrawString($"{packagingName} {quantity} {cost}", font, Brushes.Black, 50, y)
+            e.Graphics.DrawString($"{componentName} ({category}) {quantity} {cost}", font, Brushes.Black, 50, y)
             y += 20
         Next
 
@@ -668,10 +675,11 @@ Public Class CreateProductRecipeForm
         cboProduct.SelectedIndex = -1
         txtMethod.Clear()
         txtBatchQty.Text = "1"
-        dgvSubRecipes.Rows.Clear()
-        dgvPackaging.Rows.Clear()
+        dgvComponents.Rows.Clear()
         dgvConsolidatedBOM.Rows.Clear()
-        lblTotalCost.Text = "Total Cost Per Product: R0.00"
+        lblTotalCost.Text = "1 UNIT: Excl VAT: R0.00 | VAT (15%): R0.00 | Incl VAT: R0.00"
+        lblBatchCost.Text = "BATCH (1 units): Excl VAT: R0.00 | VAT (15%): R0.00 | Incl VAT: R0.00"
+        lblAdhocCost.Text = "WITH ADHOC (+15%): Excl VAT: R0.00 | VAT (15%): R0.00 | Incl VAT: R0.00"
         _selectedProductID = 0
     End Sub
 

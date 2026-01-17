@@ -61,25 +61,24 @@ Public Class ManufacturingStockReportForm
             Dim branchId As Integer = If(isSuperAdmin AndAlso cboBranch.SelectedValue IsNot Nothing, Convert.ToInt32(cboBranch.SelectedValue), currentBranchId)
 
             Using con As New SqlConnection(connectionString)
-                ' Query fulfilled BOM ingredients (materials sent to manufacturing)
+                ' Query actual manufacturing inventory (ingredients in WIP)
                 Dim sql = "SELECT " &
-                         "brf.FulfillmentID AS MaterialID, " &
-                         "brf.IngredientName AS MaterialCode, " &
-                         "brf.IngredientName AS MaterialName, " &
-                         "'Ingredient' AS MaterialType, " &
-                         "brf.UnitOfMeasure AS UnitOfMeasure, " &
-                         "SUM(brf.QuantityRequired - ISNULL(brf.QuantityFulfilled, 0)) AS QtyOnHand, " &
-                         "0 AS AverageCost, " &
-                         "0 AS StockValue, " &
-                         "MAX(brf.FulfilledDate) AS LastUpdated, " &
+                         "drp.ProductID AS MaterialID, " &
+                         "ISNULL(drp.Code, drp.SKU) AS MaterialCode, " &
+                         "drp.Name AS MaterialName, " &
+                         "drp.Category AS MaterialType, " &
+                         "'unit' AS UnitOfMeasure, " &
+                         "ISNULL(drp.CurrentStock, 0) AS QtyOnHand, " &
+                         "ISNULL(drp.AverageCost, 0) AS AverageCost, " &
+                         "ISNULL(drp.CurrentStock, 0) * ISNULL(drp.AverageCost, 0) AS StockValue, " &
+                         "drp.LastUpdated, " &
                          "b.BranchName " &
-                         "FROM BOMRequisitionFulfillment brf " &
-                         "INNER JOIN ReOrderBooks rob ON rob.ReOrderBookID = brf.ReOrderBookID " &
-                         "INNER JOIN Branches b ON b.BranchID = rob.BranchID " &
-                         "WHERE rob.BranchID = @BranchID " &
-                         "AND brf.QuantityRequired > ISNULL(brf.QuantityFulfilled, 0) " &
-                         "GROUP BY brf.FulfillmentID, brf.IngredientName, brf.UnitOfMeasure, b.BranchName " &
-                         "ORDER BY brf.IngredientName"
+                         "FROM Demo_Retail_Product drp " &
+                         "INNER JOIN Branches b ON b.BranchID = drp.BranchID " &
+                         "WHERE drp.BranchID = @BranchID " &
+                         "AND (drp.Category LIKE '%ingredient%' OR drp.Category LIKE '%consumable%' OR drp.Category LIKE '%pack%') " &
+                         "AND ISNULL(drp.CurrentStock, 0) > 0 " &
+                         "ORDER BY drp.Name"
 
                 Using ad As New SqlDataAdapter(sql, con)
                     ad.SelectCommand.Parameters.AddWithValue("@BranchID", branchId)

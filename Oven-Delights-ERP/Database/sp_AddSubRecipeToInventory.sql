@@ -96,6 +96,9 @@ BEGIN
         DEALLOCATE ingredient_cursor
         
         -- Add to sub-recipe inventory
+        -- Use GETDATE() which returns local server time
+        DECLARE @CurrentDateTime DATETIME = GETDATE()
+        
         INSERT INTO Demo_SubRecipe_Inventory (
             SubRecipeID,
             SubRecipeName,
@@ -115,8 +118,8 @@ BEGIN
             @BatchNumber,
             @Quantity,
             @UnitOfMeasure,
-            GETDATE(),
-            CONVERT(TIME, GETDATE()),
+            @CurrentDateTime,
+            CONVERT(TIME, @CurrentDateTime),
             @BranchID,
             @ManufacturedBy,
             'Available',

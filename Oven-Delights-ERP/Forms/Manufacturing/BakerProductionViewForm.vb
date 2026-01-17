@@ -102,6 +102,21 @@ Namespace Manufacturing
                     lblTotalProducts.Text = $"Products: {reader("TotalProducts")}"
                     lblTotalQuantity.Text = $"Total Qty: {reader("TotalQuantity")}"
                     
+                    ' Display BOM status
+                    Dim bomStatus As String = reader("BOMStatus").ToString()
+                    Dim bomStatusLabel As String = $"BOM: {bomStatus}"
+                    
+                    If bomStatus = "Requested" AndAlso Not IsDBNull(reader("BOMRequestedDate")) Then
+                        bomStatusLabel &= $" ({CDate(reader("BOMRequestedDate")):dd/MM/yyyy HH:mm})"
+                    ElseIf bomStatus = "Fulfilled" AndAlso Not IsDBNull(reader("BOMFulfilledDate")) Then
+                        bomStatusLabel &= $" ({CDate(reader("BOMFulfilledDate")):dd/MM/yyyy HH:mm})"
+                    End If
+                    
+                    ' Update or create BOM status label (you may need to add this label to the form)
+                    If Me.Controls.Find("lblBOMStatus", True).Length > 0 Then
+                        DirectCast(Me.Controls.Find("lblBOMStatus", True)(0), Label).Text = bomStatusLabel
+                    End If
+                    
                     ' ALWAYS ENABLE ALL BUTTONS
                     btnStartProduction.Enabled = True
                     btnCompleteProduct.Enabled = True
@@ -400,6 +415,23 @@ Namespace Manufacturing
                             If isSubRecipe Then
                                 hasSubRecipe = True
                                 
+                                ' Get recipe cost from Demo_SubRecipe_Master
+                                Dim cmdGetRecipeCost As New SqlCommand(
+                                    "SELECT ISNULL(TotalCost, 0), ISNULL(BatchQty, 1) FROM Demo_SubRecipe_Master WHERE SubRecipeID = @SubRecipeID", conn, transaction)
+                                cmdGetRecipeCost.Parameters.AddWithValue("@SubRecipeID", item.ProductID)
+                                Dim recipeReader = cmdGetRecipeCost.ExecuteReader()
+                                Dim recipeTotalCost As Decimal = 0
+                                Dim recipeBatchQty As Decimal = 1
+                                If recipeReader.Read() Then
+                                    recipeTotalCost = recipeReader.GetDecimal(0)
+                                    recipeBatchQty = recipeReader.GetDecimal(1)
+                                End If
+                                recipeReader.Close()
+                                
+                                ' Calculate cost for actual quantity produced
+                                Dim recipeUnitCost As Decimal = If(recipeBatchQty > 0, recipeTotalCost / recipeBatchQty, 0)
+                                Dim actualTotalCost As Decimal = recipeUnitCost * actualQty
+                                
                                 ' STEP 1: Consume ingredients from manufacturing stock for sub-recipe
                                 Dim cmdConsumeIngredients As New SqlCommand("sp_ConsumeIngredientsFromManufacturing", conn, transaction)
                                 cmdConsumeIngredients.CommandType = CommandType.StoredProcedure
@@ -410,17 +442,24 @@ Namespace Manufacturing
                                 cmdConsumeIngredients.Parameters.AddWithValue("@UserID", AppSession.CurrentUser.UserID)
                                 cmdConsumeIngredients.ExecuteNonQuery()
                                 
-                                ' STEP 2: Add to Sub-Recipe Inventory
+                                ' STEP 2: Add to Sub-Recipe Inventory WITH COST FROM RECIPE
+                                ' Use South African time (UTC+2)
+                                Dim saTime As DateTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("South Africa Standard Time"))
+                                
                                 Dim cmdAddSubRecipe As New SqlCommand(
                                     "INSERT INTO Demo_SubRecipe_Inventory " &
-                                    "(SubRecipeID, SubRecipeName, BatchNumber, Quantity, UnitOfMeasure, ManufacturedDate, ManufacturedTime, " &
+                                    "(SubRecipeID, SubRecipeName, BatchNumber, Quantity, UnitOfMeasure, UnitCost, TotalCost, ManufacturedDate, ManufacturedTime, " &
                                     "ExpiryDate, BranchID, ManufacturedBy, Status, Notes) " &
-                                    "VALUES (@SubRecipeID, @SubRecipeName, @BatchNumber, @Quantity, 'Each', CAST(GETDATE() AS DATE), " &
-                                    "CAST(GETDATE() AS TIME), DATEADD(DAY, 7, GETDATE()), @BranchID, @ManufacturedBy, 'Available', @Notes)", conn, transaction)
+                                    "VALUES (@SubRecipeID, @SubRecipeName, @BatchNumber, @Quantity, 'Each', @UnitCost, @TotalCost, @ManufacturedDate, " &
+                                    "@ManufacturedTime, DATEADD(DAY, 7, @ManufacturedDate), @BranchID, @ManufacturedBy, 'Available', @Notes)", conn, transaction)
                                 cmdAddSubRecipe.Parameters.AddWithValue("@SubRecipeID", item.ProductID)
                                 cmdAddSubRecipe.Parameters.AddWithValue("@SubRecipeName", item.ProductName)
-                                cmdAddSubRecipe.Parameters.AddWithValue("@BatchNumber", $"BATCH-{currentReOrderBookID}-{item.ProductID}-{DateTime.Now:yyyyMMddHHmmss}")
+                                cmdAddSubRecipe.Parameters.AddWithValue("@BatchNumber", $"BATCH-{currentReOrderBookID}-{item.ProductID}-{saTime:yyyyMMddHHmmss}")
                                 cmdAddSubRecipe.Parameters.AddWithValue("@Quantity", actualQty)
+                                cmdAddSubRecipe.Parameters.AddWithValue("@UnitCost", recipeUnitCost)
+                                cmdAddSubRecipe.Parameters.AddWithValue("@TotalCost", actualTotalCost)
+                                cmdAddSubRecipe.Parameters.AddWithValue("@ManufacturedDate", saTime.Date)
+                                cmdAddSubRecipe.Parameters.AddWithValue("@ManufacturedTime", saTime.TimeOfDay)
                                 cmdAddSubRecipe.Parameters.AddWithValue("@BranchID", branchId)
                                 cmdAddSubRecipe.Parameters.AddWithValue("@ManufacturedBy", AppSession.CurrentUser.UserID)
                                 cmdAddSubRecipe.Parameters.AddWithValue("@Notes", $"Manufactured from Re-Order Book {currentReOrderBookID}")
@@ -573,29 +612,102 @@ Namespace Manufacturing
     End Sub
 
     Private Sub btnPrint_Click(sender As Object, e As EventArgs) Handles btnPrint.Click
-        If currentReOrderBookID = 0 Then
-            MessageBox.Show("Please select a re-order book", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            Return
-        End If
-        
         Try
-            ' Load print data
+            ' Load ALL orders for this baker with their product lines
+            printData = New DataTable()
+            printData.Columns.Add("ReOrderNumber", GetType(String))
+            printData.Columns.Add("Status", GetType(String))
+            printData.Columns.Add("OrderDate", GetType(DateTime))
+            printData.Columns.Add("CreatedDate", GetType(DateTime))
+            printData.Columns.Add("PostedDate", GetType(DateTime))
+            printData.Columns.Add("CompletedDate", GetType(DateTime))
+            printData.Columns.Add("BOMStatus", GetType(String))
+            printData.Columns.Add("BOMRequestedDate", GetType(DateTime))
+            printData.Columns.Add("BOMFulfilledDate", GetType(DateTime))
+            printData.Columns.Add("TotalProducts", GetType(Integer))
+            printData.Columns.Add("TotalQuantity", GetType(Decimal))
+            printData.Columns.Add("LineNumber", GetType(Integer))
+            printData.Columns.Add("ProductName", GetType(String))
+            printData.Columns.Add("SKU", GetType(String))
+            printData.Columns.Add("QuantityOrdered", GetType(Decimal))
+            printData.Columns.Add("LineStatus", GetType(String))
+            printData.Columns.Add("LineCompletedDate", GetType(DateTime))
+            
             Using conn As New SqlConnection(connectionString)
-                Dim cmd As New SqlCommand("sp_GetReOrderBookDetails", conn)
-                cmd.CommandType = CommandType.StoredProcedure
-                cmd.Parameters.AddWithValue("@ReOrderBookID", currentReOrderBookID)
-                
-                conn.Open()
-                Dim reader As SqlDataReader = cmd.ExecuteReader()
-                
-                ' Skip header
-                reader.Read()
-                
-                ' Get product lines
-                reader.NextResult()
-                printData = New DataTable()
-                printData.Load(reader)
+                ' Get all orders from the grid
+                For Each orderRow As DataGridViewRow In dgvReOrderBooks.Rows
+                    Dim reOrderBookID As Integer = CInt(orderRow.Cells("ReOrderBookID").Value)
+                    
+                    ' Get details for each order
+                    Dim cmd As New SqlCommand("sp_GetReOrderBookDetails", conn)
+                    cmd.CommandType = CommandType.StoredProcedure
+                    cmd.Parameters.AddWithValue("@ReOrderBookID", reOrderBookID)
+                    
+                    If conn.State <> ConnectionState.Open Then conn.Open()
+                    Dim reader As SqlDataReader = cmd.ExecuteReader()
+                    
+                    ' Read header
+                    Dim reOrderNumber As String = ""
+                    Dim status As String = ""
+                    Dim orderDate As Object = DBNull.Value
+                    Dim createdDate As Object = DBNull.Value
+                    Dim postedDate As Object = DBNull.Value
+                    Dim completedDate As Object = DBNull.Value
+                    Dim bomStatus As String = ""
+                    Dim bomRequestedDate As Object = DBNull.Value
+                    Dim bomFulfilledDate As Object = DBNull.Value
+                    Dim totalProducts As Integer = 0
+                    Dim totalQuantity As Decimal = 0
+                    
+                    If reader.Read() Then
+                        reOrderNumber = reader("ReOrderNumber").ToString()
+                        status = reader("Status").ToString()
+                        orderDate = If(IsDBNull(reader("OrderDate")), DBNull.Value, reader("OrderDate"))
+                        createdDate = If(IsDBNull(reader("CreatedDate")), DBNull.Value, reader("CreatedDate"))
+                        postedDate = If(IsDBNull(reader("PostedDate")), DBNull.Value, reader("PostedDate"))
+                        completedDate = If(IsDBNull(reader("CompletedDate")), DBNull.Value, reader("CompletedDate"))
+                        bomStatus = reader("BOMStatus").ToString()
+                        bomRequestedDate = If(IsDBNull(reader("BOMRequestedDate")), DBNull.Value, reader("BOMRequestedDate"))
+                        bomFulfilledDate = If(IsDBNull(reader("BOMFulfilledDate")), DBNull.Value, reader("BOMFulfilledDate"))
+                        totalProducts = CInt(reader("TotalProducts"))
+                        totalQuantity = CDec(reader("TotalQuantity"))
+                    End If
+                    
+                    ' Read product lines
+                    reader.NextResult()
+                    While reader.Read()
+                        Dim lineStatus As String = If(IsDBNull(reader("LineStatus")), "Pending", reader("LineStatus").ToString())
+                        Dim lineCompletedDate As Object = If(IsDBNull(reader("CompletedDate")), DBNull.Value, reader("CompletedDate"))
+                        
+                        printData.Rows.Add(
+                            reOrderNumber,
+                            status,
+                            orderDate,
+                            createdDate,
+                            postedDate,
+                            completedDate,
+                            bomStatus,
+                            bomRequestedDate,
+                            bomFulfilledDate,
+                            totalProducts,
+                            totalQuantity,
+                            reader("LineNumber"),
+                            reader("ProductName"),
+                            reader("SKU"),
+                            reader("QuantityOrdered"),
+                            lineStatus,
+                            lineCompletedDate
+                        )
+                    End While
+                    
+                    reader.Close()
+                Next
             End Using
+            
+            If printData.Rows.Count = 0 Then
+                MessageBox.Show("No orders to print.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Return
+            End If
             
             ' Set page settings before preview
             printDocument.DefaultPageSettings.Landscape = False
@@ -617,10 +729,14 @@ Namespace Manufacturing
 
     Private Sub PrintDocument_PrintPage(sender As Object, e As PrintPageEventArgs)
         Try
-            Dim font As New Font("Segoe UI", 10)
-            Dim fontBold As New Font("Segoe UI", 12, FontStyle.Bold)
+            Dim font As New Font("Segoe UI", 9)
+            Dim fontSmall As New Font("Segoe UI", 8)
+            Dim fontBold As New Font("Segoe UI", 10, FontStyle.Bold)
             Dim fontTitle As New Font("Segoe UI", 16, FontStyle.Bold)
+            Dim fontOrderHeader As New Font("Segoe UI", 12, FontStyle.Bold)
+            Dim fontProductName As New Font("Segoe UI", 10, FontStyle.Bold)
             Dim brush As New SolidBrush(Color.Black)
+            Dim grayBrush As New SolidBrush(Color.FromArgb(100, 100, 100))
             
             Dim yPos As Integer = 50
             Dim leftMargin As Integer = 50
@@ -628,55 +744,119 @@ Namespace Manufacturing
             Dim rightMargin As Integer = pageWidth - 50
             
             ' Title
-            e.Graphics.DrawString("PRODUCTION SHEET", fontTitle, brush, leftMargin, yPos)
-            yPos += 40
+            e.Graphics.DrawString("PRODUCTION SHEET - ALL ORDERS", fontTitle, brush, leftMargin, yPos)
+            yPos += 35
             
-            ' Header info
-            e.Graphics.DrawString($"Re-Order #: {txtReOrderNumber.Text}", fontBold, brush, leftMargin, yPos)
+            ' Confectioner info
+            Dim fontConfectioner As New Font("Segoe UI", 12, FontStyle.Bold)
+            e.Graphics.DrawString($"Confectioner: {bakerName}", fontConfectioner, brush, leftMargin, yPos)
+            e.Graphics.DrawString($"Date: {DateTime.Now:dd/MM/yyyy HH:mm}", fontBold, brush, rightMargin - 200, yPos)
             yPos += 25
-            e.Graphics.DrawString($"Baker: {bakerName}", font, brush, leftMargin, yPos)
-            yPos += 20
-            e.Graphics.DrawString($"Date: {DateTime.Now:dd/MM/yyyy HH:mm}", font, brush, leftMargin, yPos)
-            yPos += 20
-            e.Graphics.DrawString($"{lblTotalProducts.Text} | {lblTotalQuantity.Text}", font, brush, leftMargin, yPos)
-            yPos += 40
+            e.Graphics.DrawString($"Total Orders: {dgvReOrderBooks.Rows.Count}", font, brush, leftMargin, yPos)
+            yPos += 30
             
-            ' Line
-            e.Graphics.DrawLine(Pens.Black, leftMargin, yPos, rightMargin, yPos)
-            yPos += 20
-            
-            ' Column headers
-            e.Graphics.DrawString("#", fontBold, brush, leftMargin, yPos)
-            e.Graphics.DrawString("Product", fontBold, brush, leftMargin + 40, yPos)
-            e.Graphics.DrawString("Barcode", fontBold, brush, leftMargin + 300, yPos)
-            e.Graphics.DrawString("Quantity", fontBold, brush, leftMargin + 500, yPos)
-            e.Graphics.DrawString("Status", fontBold, brush, leftMargin + 620, yPos)
+            ' Main separator
+            e.Graphics.DrawLine(New Pen(Color.Black, 2), leftMargin, yPos, rightMargin, yPos)
             yPos += 25
             
-            e.Graphics.DrawLine(Pens.Black, leftMargin, yPos, rightMargin, yPos)
-            yPos += 15
+            ' Group products by order
+            Dim currentOrder As String = ""
+            Dim orderCount As Integer = 0
             
-            ' Product lines
             For Each row As DataRow In printData.Rows
-                If yPos > e.PageBounds.Height - 100 Then Exit For ' Page limit
+                Dim reOrderNumber As String = row("ReOrderNumber").ToString()
                 
-                e.Graphics.DrawString(row("LineNumber").ToString(), font, brush, leftMargin, yPos)
-                e.Graphics.DrawString(row("ProductName").ToString(), font, brush, leftMargin + 40, yPos)
-                e.Graphics.DrawString(row("SKU").ToString(), font, brush, leftMargin + 300, yPos)
-                e.Graphics.DrawString(row("QuantityOrdered").ToString(), font, brush, leftMargin + 500, yPos)
+                ' New order section
+                If reOrderNumber <> currentOrder Then
+                    If currentOrder <> "" Then
+                        ' Separator line between orders
+                        yPos += 10
+                        e.Graphics.DrawLine(New Pen(Color.Black, 1), leftMargin, yPos, rightMargin, yPos)
+                        yPos += 25
+                    End If
+                    
+                    currentOrder = reOrderNumber
+                    orderCount += 1
+                    
+                    ' Check page break
+                    If yPos > e.PageBounds.Height - 200 Then
+                        e.HasMorePages = True
+                        Return
+                    End If
+                    
+                    ' ORDER NUMBER IN BOLD
+                    e.Graphics.DrawString($"ORDER #{orderCount}: {reOrderNumber}", fontOrderHeader, brush, leftMargin, yPos)
+                    yPos += 25
+                    
+                    ' LARGE STATUS INDICATOR - COMPLETED (Green) or NOT COMPLETED (Red)
+                    Dim orderStatus As String = row("Status").ToString()
+                    Dim isCompleted As Boolean = (orderStatus.ToUpper() = "COMPLETED")
+                    Dim statusDisplayText As String = If(isCompleted, "COMPLETED", "NOT COMPLETED")
+                    Dim statusColor As Brush = If(isCompleted, Brushes.Green, Brushes.Red)
+                    Dim statusFont As New Font("Arial", 14, FontStyle.Bold)
+                    
+                    e.Graphics.DrawString(statusDisplayText, statusFont, statusColor, leftMargin + 10, yPos)
+                    yPos += 25
+                    
+                    ' Order details
+                    e.Graphics.DrawString($"Products: {row("TotalProducts")} | Total Qty: {row("TotalQuantity")}", font, brush, leftMargin + 10, yPos)
+                    yPos += 18
+                    
+                    ' Dates row
+                    Dim orderDateStr As String = If(IsDBNull(row("OrderDate")), "N/A", CDate(row("OrderDate")).ToString("dd/MM/yy HH:mm"))
+                    e.Graphics.DrawString($"Order: {orderDateStr}", fontSmall, grayBrush, leftMargin + 10, yPos)
+                    
+                    If Not IsDBNull(row("PostedDate")) Then
+                        e.Graphics.DrawString($"Posted: {CDate(row("PostedDate")):dd/MM/yy HH:mm}", fontSmall, grayBrush, leftMargin + 180, yPos)
+                    End If
+                    
+                    If Not IsDBNull(row("CompletedDate")) Then
+                        e.Graphics.DrawString($"Completed: {CDate(row("CompletedDate")):dd/MM/yy HH:mm}", fontSmall, grayBrush, leftMargin + 350, yPos)
+                    End If
+                    yPos += 16
+                    
+                    ' BOM Status
+                    Dim bomStatusText As String = $"BOM: {row("BOMStatus")}"
+                    If row("BOMStatus").ToString() = "Requested" AndAlso Not IsDBNull(row("BOMRequestedDate")) Then
+                        bomStatusText &= $" ({CDate(row("BOMRequestedDate")):dd/MM/yy HH:mm})"
+                    ElseIf row("BOMStatus").ToString() = "Fulfilled" AndAlso Not IsDBNull(row("BOMFulfilledDate")) Then
+                        bomStatusText &= $" ({CDate(row("BOMFulfilledDate")):dd/MM/yy HH:mm})"
+                    End If
+                    e.Graphics.DrawString(bomStatusText, fontSmall, grayBrush, leftMargin + 10, yPos)
+                    yPos += 20
+                    
+                    ' Products header
+                    e.Graphics.DrawString("PRODUCTS:", fontBold, brush, leftMargin + 10, yPos)
+                    yPos += 20
+                End If
                 
-                Dim status As String = row("LineStatus").ToString()
-                Dim statusText As String = If(status = "Completed", "✓ Done", "☐ Pending")
-                e.Graphics.DrawString(statusText, font, brush, leftMargin + 620, yPos)
+                ' Product line - check page break
+                If yPos > e.PageBounds.Height - 100 Then
+                    e.HasMorePages = True
+                    Return
+                End If
+                
+                ' Product name in bold
+                Dim productName As String = row("ProductName").ToString()
+                If productName.Length > 45 Then productName = productName.Substring(0, 42) & "..."
+                e.Graphics.DrawString($"{row("LineNumber")}. {productName}", fontProductName, brush, leftMargin + 20, yPos)
+                yPos += 18
+                
+                ' Product details - only show SKU and Quantity
+                e.Graphics.DrawString($"SKU: {row("SKU")}", fontSmall, grayBrush, leftMargin + 30, yPos)
+                e.Graphics.DrawString($"Qty: {row("QuantityOrdered")}", fontSmall, brush, leftMargin + 250, yPos)
                 
                 yPos += 25
             Next
             
             ' Footer
-            yPos += 40
-            e.Graphics.DrawLine(Pens.Black, leftMargin, yPos, rightMargin, yPos)
             yPos += 20
-            e.Graphics.DrawString($"Printed: {DateTime.Now:dd/MM/yyyy HH:mm}", New Font("Segoe UI", 8), brush, leftMargin, yPos)
+            e.Graphics.DrawLine(New Pen(Color.Black, 2), leftMargin, yPos, rightMargin, yPos)
+            yPos += 15
+            e.Graphics.DrawString($"Printed: {DateTime.Now:dd/MM/yyyy HH:mm} | Page 1", fontSmall, grayBrush, leftMargin, yPos)
+            e.Graphics.DrawString("Oven Delights Manufacturing", fontSmall, grayBrush, rightMargin - 200, yPos)
+            
+            e.HasMorePages = False
             
         Catch ex As Exception
             MessageBox.Show("Error during print: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)

@@ -112,7 +112,8 @@ BEGIN
                 UPDATE Demo_SubRecipe_Inventory
                 SET Quantity = Quantity - @QtyToConsume,
                     Status = CASE WHEN (Quantity - @QtyToConsume) <= 0 THEN 'Consumed' ELSE 'Available' END,
-                    LastUpdated = GETDATE()
+                    ConsumedDate = GETDATE(),
+                    ConsumedBy = @UserID
                 WHERE InventoryID = @InventoryID;
                 
                 SET @QuantityConsumed = @QuantityConsumed + @QtyToConsume;
@@ -126,33 +127,15 @@ BEGIN
                 UPDATE Demo_SubRecipe_Inventory
                 SET Quantity = 0,
                     Status = 'Consumed',
-                    LastUpdated = GETDATE()
+                    ConsumedDate = GETDATE(),
+                    ConsumedBy = @UserID
                 WHERE InventoryID = @InventoryID;
                 
                 SET @QuantityConsumed = @QuantityConsumed + @QtyToConsume;
             END
             
-            -- Log the consumption
-            INSERT INTO Demo_SubRecipe_Movements (
-                SubRecipeID, 
-                BranchID, 
-                MovementType, 
-                Quantity, 
-                BatchNumber, 
-                ReOrderBookID, 
-                UserID, 
-                Notes
-            )
-            VALUES (
-                @CurrentSubRecipeID,
-                @BranchID,
-                'Consumed',
-                @QtyToConsume,
-                @BatchNumber,
-                @ReOrderBookID,
-                @UserID,
-                'Consumed for production - ' + @CurrentSubRecipeName
-            );
+            -- Log the consumption (optional - table may not exist yet)
+            -- Movement logging can be added later if needed
             
             FETCH NEXT FROM inventory_cursor INTO @InventoryID, @AvailableQty, @BatchNumber;
         END
@@ -164,8 +147,11 @@ BEGIN
         IF @QuantityConsumed < @CurrentQuantityNeeded
         BEGIN
             DECLARE @ShortageQty DECIMAL(18,2) = @CurrentQuantityNeeded - @QuantityConsumed;
-            RAISERROR('Insufficient sub-recipe inventory. Needed: %f, Available: %f, Shortage: %f', 16, 1, 
-                      @CurrentQuantityNeeded, @QuantityConsumed, @ShortageQty);
+            DECLARE @ErrorMsg NVARCHAR(500) = 
+                'Insufficient sub-recipe inventory. Needed: ' + CAST(@CurrentQuantityNeeded AS NVARCHAR(20)) + 
+                ', Available: ' + CAST(@QuantityConsumed AS NVARCHAR(20)) + 
+                ', Shortage: ' + CAST(@ShortageQty AS NVARCHAR(20));
+            RAISERROR(@ErrorMsg, 16, 1);
             RETURN;
         END
         

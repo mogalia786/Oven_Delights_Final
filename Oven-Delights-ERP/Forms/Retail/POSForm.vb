@@ -44,12 +44,16 @@ Public Partial Class POSForm
         _cartItems.Columns.Add("Quantity", GetType(Integer))
         _cartItems.Columns.Add("UnitPrice", GetType(Decimal))
         _cartItems.Columns.Add("LineTotal", GetType(Decimal))
+        _cartItems.Columns.Add("CostPerUnit", GetType(Decimal))
         _cartItems.Columns.Add("ProductID", GetType(Integer))
         dgvCart.DataSource = _cartItems
         
-        ' Hide ProductID column
+        ' Hide ProductID and CostPerUnit columns (internal use only)
         If dgvCart.Columns.Contains("ProductID") Then
             dgvCart.Columns("ProductID").Visible = False
+        End If
+        If dgvCart.Columns.Contains("CostPerUnit") Then
+            dgvCart.Columns("CostPerUnit").Visible = False
         End If
     End Sub
 
@@ -191,6 +195,9 @@ Public Partial Class POSForm
             Dim unitPrice As Decimal = Convert.ToDecimal(productRow("CurrentPrice"))
             Dim productId As Integer = Convert.ToInt32(productRow("ProductID"))
             
+            ' Get cost per unit from AverageCost or LastPaidPrice
+            Dim costPerUnit As Decimal = GetProductCostPerUnit(productId)
+            
             ' Check if item already in cart (by Code or SKU)
             Dim existingRows = _cartItems.Select($"Code = '{code.Replace("'", "''")}' OR SKU = '{sku.Replace("'", "''")}'")
             If existingRows.Length > 0 Then
@@ -207,6 +214,7 @@ Public Partial Class POSForm
                 newRow("Quantity") = 1
                 newRow("UnitPrice") = unitPrice
                 newRow("LineTotal") = unitPrice
+                newRow("CostPerUnit") = costPerUnit
                 newRow("ProductID") = productId
                 _cartItems.Rows.Add(newRow)
             End If
@@ -216,6 +224,29 @@ Public Partial Class POSForm
             MessageBox.Show("Error adding to cart: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
+    
+    Private Function GetProductCostPerUnit(productId As Integer) As Decimal
+        Dim cost As Decimal = 0
+        Try
+            Using conn As New SqlConnection(_connString)
+                Dim sql As String = "SELECT TOP 1 ISNULL(AverageCost, ISNULL(LastPaidPrice, 0)) " &
+                                   "FROM dbo.Demo_Retail_Product " &
+                                   "WHERE ProductID = @pid AND BranchID = @bid"
+                Using cmd As New SqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@pid", productId)
+                    cmd.Parameters.AddWithValue("@bid", _currentBranchId)
+                    conn.Open()
+                    Dim result = cmd.ExecuteScalar()
+                    If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                        cost = Convert.ToDecimal(result)
+                    End If
+                End Using
+            End Using
+        Catch ex As Exception
+            ' Log error but don't interrupt sale - cost will be 0
+        End Try
+        Return cost
+    End Function
 
     Private Sub dgvCart_CellValueChanged(sender As Object, e As DataGridViewCellEventArgs)
         If e.RowIndex >= 0 AndAlso e.ColumnIndex >= 0 Then
@@ -291,17 +322,14 @@ Public Partial Class POSForm
             conn.Open()
             Using trans = conn.BeginTransaction()
                 Try
-                    ' Create sale header
-                    Dim saleId As Integer = CreateSaleHeader(conn, trans, tenderAmount)
-                    
-                    ' Create sale lines and update stock
+                    ' Create sale records (one per line item in Demo_Sales)
                     For Each row As DataRow In _cartItems.Rows
-                        CreateSaleLine(conn, trans, saleId, row)
+                        CreateSaleRecord(conn, trans, tenderAmount, row)
                         UpdateStock(conn, trans, row)
                     Next
                     
                     ' Post to GL (simplified)
-                    PostSaleToGL(conn, trans, saleId)
+                    PostSaleToGL(conn, trans, 0)
                     
                     trans.Commit()
                     
@@ -318,36 +346,30 @@ Public Partial Class POSForm
         End Using
     End Sub
 
-    Private Function CreateSaleHeader(conn As SqlConnection, trans As SqlTransaction, tenderAmount As Decimal) As Integer
-        Dim sql As String = "INSERT INTO dbo.Retail_Sales (BranchID, SaleDate, Subtotal, VATAmount, Total, TenderType, TenderAmount, UserID) " &
-                           "VALUES (@bid, @date, @sub, @vat, @total, @tender, @amount, @uid); SELECT SCOPE_IDENTITY();"
+    Private Sub CreateSaleRecord(conn As SqlConnection, trans As SqlTransaction, tenderAmount As Decimal, cartRow As DataRow)
+        ' Demo_Sales stores each line item as a separate record
+        ' Amount should be EXCLUDING VAT (selling price × quantity)
+        Dim quantity As Decimal = Convert.ToDecimal(cartRow("Quantity"))
+        Dim unitPrice As Decimal = Convert.ToDecimal(cartRow("UnitPrice"))
+        Dim costPerUnit As Decimal = If(cartRow.Table.Columns.Contains("CostPerUnit"), Convert.ToDecimal(cartRow("CostPerUnit")), 0)
+        
+        ' Amount = Unit Price × Quantity (EXCLUDING VAT)
+        Dim amountExclVAT As Decimal = unitPrice * quantity
+        Dim costOfSales As Decimal = costPerUnit * quantity
+        
+        Dim sql As String = "INSERT INTO dbo.Demo_Sales " &
+                           "(ProductID, Quantity, Amount, CostPerUnit, CostOfSales, SaleDate, Status, BranchID) " &
+                           "VALUES (@pid, @qty, @amount, @costunit, @costsales, @date, @status, @bid)"
         
         Using cmd As New SqlCommand(sql, conn, trans)
-            cmd.Parameters.AddWithValue("@bid", _currentBranchId)
-            cmd.Parameters.AddWithValue("@date", DateTime.Now)
-            cmd.Parameters.AddWithValue("@sub", _currentSubtotal)
-            cmd.Parameters.AddWithValue("@vat", _currentVAT)
-            cmd.Parameters.AddWithValue("@total", _currentTotal)
-            cmd.Parameters.AddWithValue("@tender", _tenderType)
-            cmd.Parameters.AddWithValue("@amount", tenderAmount)
-            cmd.Parameters.AddWithValue("@uid", If(AppSession.CurrentUser?.UserID, 0))
-            Return Convert.ToInt32(cmd.ExecuteScalar())
-        End Using
-    End Function
-
-    Private Sub CreateSaleLine(conn As SqlConnection, trans As SqlTransaction, saleId As Integer, cartRow As DataRow)
-        Dim sql As String = "INSERT INTO dbo.Retail_SaleLines (SaleID, ProductID, Code, SKU, ProductName, Quantity, UnitPrice, LineTotal) " &
-                           "VALUES (@sid, @pid, @code, @sku, @name, @qty, @price, @total)"
-        
-        Using cmd As New SqlCommand(sql, conn, trans)
-            cmd.Parameters.AddWithValue("@sid", saleId)
             cmd.Parameters.AddWithValue("@pid", cartRow("ProductID"))
-            cmd.Parameters.AddWithValue("@code", If(cartRow.Table.Columns.Contains("Code"), cartRow("Code"), ""))
-            cmd.Parameters.AddWithValue("@sku", cartRow("SKU"))
-            cmd.Parameters.AddWithValue("@name", cartRow("ProductName"))
-            cmd.Parameters.AddWithValue("@qty", cartRow("Quantity"))
-            cmd.Parameters.AddWithValue("@price", cartRow("UnitPrice"))
-            cmd.Parameters.AddWithValue("@total", cartRow("LineTotal"))
+            cmd.Parameters.AddWithValue("@qty", quantity)
+            cmd.Parameters.AddWithValue("@amount", amountExclVAT)
+            cmd.Parameters.AddWithValue("@costunit", costPerUnit)
+            cmd.Parameters.AddWithValue("@costsales", costOfSales)
+            cmd.Parameters.AddWithValue("@date", DateTime.Now)
+            cmd.Parameters.AddWithValue("@status", "Completed")
+            cmd.Parameters.AddWithValue("@bid", _currentBranchId)
             cmd.ExecuteNonQuery()
         End Using
     End Sub

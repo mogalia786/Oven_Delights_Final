@@ -301,10 +301,26 @@ Public Class CreateSubRecipeForm
         End If
         
         Dim costPerUnit As Decimal = total / batchQty
+        Dim vatRate As Decimal = 0.15D ' 15% VAT
+        
+        ' Calculate VAT for single unit
+        Dim unitVAT As Decimal = costPerUnit * vatRate
+        Dim unitInclVAT As Decimal = costPerUnit + unitVAT
+        
+        ' Calculate VAT for full batch
+        Dim batchVAT As Decimal = total * vatRate
+        Dim batchInclVAT As Decimal = total + batchVAT
 
-        lblTotalCost.Text = $"Total Cost Per Sub-Recipe (1 unit): {costPerUnit.ToString("C2")} | Batch Qty: {batchQty} | Total: {total.ToString("C2")}"
-        lblTotalCost.Font = New Font("Segoe UI", 14, FontStyle.Bold)
-        lblTotalCost.ForeColor = Color.FromArgb(39, 174, 96)
+        ' Line 1: Single Unit Cost (Green)
+        lblTotalCost.Text = $"1 UNIT: Excl VAT: {costPerUnit.ToString("C2")} | VAT (15%): {unitVAT.ToString("C2")} | Incl VAT: {unitInclVAT.ToString("C2")}"
+        lblTotalCost.Font = New Font("Segoe UI", 12, FontStyle.Bold)
+        lblTotalCost.ForeColor = Color.FromArgb(39, 174, 96) ' Green
+        
+        ' Line 2: Full Batch Cost (Blue)
+        lblAdhocCost.Text = $"BATCH ({batchQty} units): Excl VAT: {total.ToString("C2")} | VAT (15%): {batchVAT.ToString("C2")} | Incl VAT: {batchInclVAT.ToString("C2")}"
+        lblAdhocCost.Font = New Font("Segoe UI", 12, FontStyle.Bold)
+        lblAdhocCost.ForeColor = Color.FromArgb(41, 128, 185) ' Blue
+        lblAdhocCost.Visible = True
     End Sub
 
     Private Sub btnSave_Click(sender As Object, e As EventArgs) Handles btnSave.Click
@@ -440,12 +456,35 @@ Public Class CreateSubRecipeForm
         txtMethod.Clear()
         txtBatchQty.Text = "1"
         dgvIngredients.Rows.Clear()
-        lblTotalCost.Text = "Total Cost Per Sub-Recipe: R0.00"
+        lblTotalCost.Text = "1 UNIT: Excl VAT: R0.00 | VAT (15%): R0.00 | Incl VAT: R0.00"
+        lblAdhocCost.Text = "BATCH (1 units): Excl VAT: R0.00 | VAT (15%): R0.00 | Incl VAT: R0.00"
+        lblAdhocCost.Visible = True
         _selectedSubRecipeID = 0
     End Sub
 
     Private Sub btnClose_Click(sender As Object, e As EventArgs) Handles btnClose.Click
         Me.Close()
+    End Sub
+
+    Public Sub LoadSubRecipeForEditing(subRecipeID As Integer)
+        ' Directly load the sub-recipe without requiring dropdown selection
+        _selectedSubRecipeID = subRecipeID
+        
+        ' Hide and disable the dropdown to prevent accidental changes
+        cboSubRecipe.Enabled = False
+        
+        ' Set the dropdown to the correct sub-recipe for display purposes
+        For i As Integer = 0 To cboSubRecipe.Items.Count - 1
+            cboSubRecipe.SelectedIndex = i
+            If cboSubRecipe.SelectedValue IsNot Nothing AndAlso IsNumeric(cboSubRecipe.SelectedValue) Then
+                If CInt(cboSubRecipe.SelectedValue) = subRecipeID Then
+                    Exit For
+                End If
+            End If
+        Next
+        
+        ' Load the sub-recipe data directly
+        LoadExistingSubRecipe(subRecipeID)
     End Sub
 
 End Class

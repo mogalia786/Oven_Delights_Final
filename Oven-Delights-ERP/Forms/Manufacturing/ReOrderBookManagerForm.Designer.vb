@@ -82,7 +82,7 @@ Namespace Manufacturing
         Me.Label1.Name = "Label1"
         Me.Label1.Size = New System.Drawing.Size(350, 32)
         Me.Label1.TabIndex = 0
-        Me.Label1.Text = "📋 Re-Order Book Manager"
+        Me.Label1.Text = "📋 Order Book Schedule Manager"
         
         ' btnClose
         Me.btnClose.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
@@ -162,7 +162,7 @@ Namespace Manufacturing
         Me.GroupBox3.Size = New System.Drawing.Size(1400, 150)
         Me.GroupBox3.TabIndex = 0
         Me.GroupBox3.TabStop = False
-        Me.GroupBox3.Text = "Create New Re-Order Book"
+        Me.GroupBox3.Text = "Create New Order Book"
         
         ' Label2
         Me.Label2.AutoSize = True
@@ -250,7 +250,7 @@ Namespace Manufacturing
         Me.btnNewReOrder.Name = "btnNewReOrder"
         Me.btnNewReOrder.Size = New System.Drawing.Size(150, 35)
         Me.btnNewReOrder.TabIndex = 9
-        Me.btnNewReOrder.Text = "Create Re-Order"
+        Me.btnNewReOrder.Text = "Create Order"
         Me.btnNewReOrder.UseVisualStyleBackColor = False
         
         ' GroupBox2
@@ -415,7 +415,7 @@ Namespace Manufacturing
         Me.Font = New System.Drawing.Font("Segoe UI", 9.0!)
         Me.Name = "ReOrderBookManagerForm"
         Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen
-        Me.Text = "Re-Order Book Manager"
+        Me.Text = "Order Book Schedule Manager"
         Me.WindowState = System.Windows.Forms.FormWindowState.Maximized
         Me.Panel1.ResumeLayout(False)
         Me.Panel1.PerformLayout()

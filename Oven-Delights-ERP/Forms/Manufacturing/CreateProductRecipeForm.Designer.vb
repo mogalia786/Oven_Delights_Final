@@ -23,20 +23,13 @@ Partial Class CreateProductRecipeForm
         Me.grpProduct = New System.Windows.Forms.GroupBox()
         Me.cboProduct = New System.Windows.Forms.ComboBox()
         Me.Label1 = New System.Windows.Forms.Label()
-        Me.grpSubRecipes = New System.Windows.Forms.GroupBox()
-        Me.dgvSubRecipes = New System.Windows.Forms.DataGridView()
-        Me.btnAddSubRecipe = New System.Windows.Forms.Button()
-        Me.txtSubRecipeQty = New System.Windows.Forms.TextBox()
+        Me.grpComponents = New System.Windows.Forms.GroupBox()
+        Me.dgvComponents = New System.Windows.Forms.DataGridView()
+        Me.btnAddComponent = New System.Windows.Forms.Button()
+        Me.txtComponentQty = New System.Windows.Forms.TextBox()
         Me.Label3 = New System.Windows.Forms.Label()
-        Me.cboSubRecipe = New System.Windows.Forms.ComboBox()
+        Me.cboComponent = New System.Windows.Forms.ComboBox()
         Me.Label2 = New System.Windows.Forms.Label()
-        Me.grpPackaging = New System.Windows.Forms.GroupBox()
-        Me.dgvPackaging = New System.Windows.Forms.DataGridView()
-        Me.btnAddPackaging = New System.Windows.Forms.Button()
-        Me.txtPackagingQty = New System.Windows.Forms.TextBox()
-        Me.Label5 = New System.Windows.Forms.Label()
-        Me.cboPackaging = New System.Windows.Forms.ComboBox()
-        Me.Label4 = New System.Windows.Forms.Label()
         Me.grpConsolidated = New System.Windows.Forms.GroupBox()
         Me.dgvConsolidatedBOM = New System.Windows.Forms.DataGridView()
         Me.grpMethod = New System.Windows.Forms.GroupBox()
@@ -45,6 +38,8 @@ Partial Class CreateProductRecipeForm
         Me.txtBatchQty = New System.Windows.Forms.TextBox()
         Me.Label6 = New System.Windows.Forms.Label()
         Me.pnlFooter = New System.Windows.Forms.Panel()
+        Me.lblAdhocCost = New System.Windows.Forms.Label()
+        Me.lblBatchCost = New System.Windows.Forms.Label()
         Me.lblTotalCost = New System.Windows.Forms.Label()
         Me.btnClose = New System.Windows.Forms.Button()
         Me.btnPrint = New System.Windows.Forms.Button()
@@ -53,10 +48,8 @@ Partial Class CreateProductRecipeForm
         Me.pnlHeader.SuspendLayout()
         Me.pnlMain.SuspendLayout()
         Me.grpProduct.SuspendLayout()
-        Me.grpSubRecipes.SuspendLayout()
-        CType(Me.dgvSubRecipes, System.ComponentModel.ISupportInitialize).BeginInit()
-        Me.grpPackaging.SuspendLayout()
-        CType(Me.dgvPackaging, System.ComponentModel.ISupportInitialize).BeginInit()
+        Me.grpComponents.SuspendLayout()
+        CType(Me.dgvComponents, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.grpConsolidated.SuspendLayout()
         CType(Me.dgvConsolidatedBOM, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.grpMethod.SuspendLayout()
@@ -90,8 +83,7 @@ Partial Class CreateProductRecipeForm
         Me.pnlMain.AutoScroll = True
         Me.pnlMain.Controls.Add(Me.grpMethod)
         Me.pnlMain.Controls.Add(Me.grpConsolidated)
-        Me.pnlMain.Controls.Add(Me.grpPackaging)
-        Me.pnlMain.Controls.Add(Me.grpSubRecipes)
+        Me.pnlMain.Controls.Add(Me.grpComponents)
         Me.pnlMain.Controls.Add(Me.grpBatch)
         Me.pnlMain.Controls.Add(Me.grpProduct)
         Me.pnlMain.Dock = System.Windows.Forms.DockStyle.Fill
@@ -134,52 +126,52 @@ Partial Class CreateProductRecipeForm
         Me.Label1.TabIndex = 0
         Me.Label1.Text = "Product:"
         '
-        'grpSubRecipes
+        'grpComponents
         '
-        Me.grpSubRecipes.Controls.Add(Me.dgvSubRecipes)
-        Me.grpSubRecipes.Controls.Add(Me.btnAddSubRecipe)
-        Me.grpSubRecipes.Controls.Add(Me.txtSubRecipeQty)
-        Me.grpSubRecipes.Controls.Add(Me.Label3)
-        Me.grpSubRecipes.Controls.Add(Me.cboSubRecipe)
-        Me.grpSubRecipes.Controls.Add(Me.Label2)
-        Me.grpSubRecipes.Dock = System.Windows.Forms.DockStyle.Top
-        Me.grpSubRecipes.Font = New System.Drawing.Font("Segoe UI", 10.0!, System.Drawing.FontStyle.Bold)
-        Me.grpSubRecipes.Location = New System.Drawing.Point(20, 100)
-        Me.grpSubRecipes.Name = "grpSubRecipes"
-        Me.grpSubRecipes.Size = New System.Drawing.Size(1560, 250)
-        Me.grpSubRecipes.TabIndex = 1
-        Me.grpSubRecipes.TabStop = False
-        Me.grpSubRecipes.Text = "Sub-Recipes"
+        Me.grpComponents.Controls.Add(Me.dgvComponents)
+        Me.grpComponents.Controls.Add(Me.btnAddComponent)
+        Me.grpComponents.Controls.Add(Me.txtComponentQty)
+        Me.grpComponents.Controls.Add(Me.Label3)
+        Me.grpComponents.Controls.Add(Me.cboComponent)
+        Me.grpComponents.Controls.Add(Me.Label2)
+        Me.grpComponents.Dock = System.Windows.Forms.DockStyle.Top
+        Me.grpComponents.Font = New System.Drawing.Font("Segoe UI", 10.0!, System.Drawing.FontStyle.Bold)
+        Me.grpComponents.Location = New System.Drawing.Point(20, 180)
+        Me.grpComponents.Name = "grpComponents"
+        Me.grpComponents.Size = New System.Drawing.Size(1560, 300)
+        Me.grpComponents.TabIndex = 2
+        Me.grpComponents.TabStop = False
+        Me.grpComponents.Text = "Components"
         '
-        'dgvSubRecipes
+        'dgvComponents
         '
-        Me.dgvSubRecipes.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize
-        Me.dgvSubRecipes.Location = New System.Drawing.Point(20, 80)
-        Me.dgvSubRecipes.Name = "dgvSubRecipes"
-        Me.dgvSubRecipes.Size = New System.Drawing.Size(1520, 150)
-        Me.dgvSubRecipes.TabIndex = 5
+        Me.dgvComponents.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize
+        Me.dgvComponents.Location = New System.Drawing.Point(20, 80)
+        Me.dgvComponents.Name = "dgvComponents"
+        Me.dgvComponents.Size = New System.Drawing.Size(1520, 200)
+        Me.dgvComponents.TabIndex = 5
         '
-        'btnAddSubRecipe
+        'btnAddComponent
         '
-        Me.btnAddSubRecipe.BackColor = System.Drawing.Color.FromArgb(CType(CType(39, Byte), Integer), CType(CType(174, Byte), Integer), CType(CType(96, Byte), Integer))
-        Me.btnAddSubRecipe.FlatStyle = System.Windows.Forms.FlatStyle.Flat
-        Me.btnAddSubRecipe.Font = New System.Drawing.Font("Segoe UI", 10.0!, System.Drawing.FontStyle.Bold)
-        Me.btnAddSubRecipe.ForeColor = System.Drawing.Color.White
-        Me.btnAddSubRecipe.Location = New System.Drawing.Point(750, 30)
-        Me.btnAddSubRecipe.Name = "btnAddSubRecipe"
-        Me.btnAddSubRecipe.Size = New System.Drawing.Size(150, 35)
-        Me.btnAddSubRecipe.TabIndex = 4
-        Me.btnAddSubRecipe.Text = "Add Sub-Recipe"
-        Me.btnAddSubRecipe.UseVisualStyleBackColor = False
+        Me.btnAddComponent.BackColor = System.Drawing.Color.FromArgb(CType(CType(39, Byte), Integer), CType(CType(174, Byte), Integer), CType(CType(96, Byte), Integer))
+        Me.btnAddComponent.FlatStyle = System.Windows.Forms.FlatStyle.Flat
+        Me.btnAddComponent.Font = New System.Drawing.Font("Segoe UI", 10.0!, System.Drawing.FontStyle.Bold)
+        Me.btnAddComponent.ForeColor = System.Drawing.Color.White
+        Me.btnAddComponent.Location = New System.Drawing.Point(750, 30)
+        Me.btnAddComponent.Name = "btnAddComponent"
+        Me.btnAddComponent.Size = New System.Drawing.Size(150, 35)
+        Me.btnAddComponent.TabIndex = 4
+        Me.btnAddComponent.Text = "Add Component"
+        Me.btnAddComponent.UseVisualStyleBackColor = False
         '
-        'txtSubRecipeQty
+        'txtComponentQty
         '
-        Me.txtSubRecipeQty.Font = New System.Drawing.Font("Segoe UI", 11.0!)
-        Me.txtSubRecipeQty.Location = New System.Drawing.Point(650, 33)
-        Me.txtSubRecipeQty.Name = "txtSubRecipeQty"
-        Me.txtSubRecipeQty.Size = New System.Drawing.Size(80, 27)
-        Me.txtSubRecipeQty.TabIndex = 3
-        Me.txtSubRecipeQty.Text = "1"
+        Me.txtComponentQty.Font = New System.Drawing.Font("Segoe UI", 11.0!)
+        Me.txtComponentQty.Location = New System.Drawing.Point(650, 33)
+        Me.txtComponentQty.Name = "txtComponentQty"
+        Me.txtComponentQty.Size = New System.Drawing.Size(80, 27)
+        Me.txtComponentQty.TabIndex = 3
+        Me.txtComponentQty.Text = "1"
         '
         'Label3
         '
@@ -191,15 +183,15 @@ Partial Class CreateProductRecipeForm
         Me.Label3.TabIndex = 2
         Me.Label3.Text = "Quantity:"
         '
-        'cboSubRecipe
+        'cboComponent
         '
-        Me.cboSubRecipe.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDown
-        Me.cboSubRecipe.Font = New System.Drawing.Font("Segoe UI", 11.0!)
-        Me.cboSubRecipe.FormattingEnabled = True
-        Me.cboSubRecipe.Location = New System.Drawing.Point(120, 33)
-        Me.cboSubRecipe.Name = "cboSubRecipe"
-        Me.cboSubRecipe.Size = New System.Drawing.Size(430, 28)
-        Me.cboSubRecipe.TabIndex = 1
+        Me.cboComponent.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDown
+        Me.cboComponent.Font = New System.Drawing.Font("Segoe UI", 11.0!)
+        Me.cboComponent.FormattingEnabled = True
+        Me.cboComponent.Location = New System.Drawing.Point(120, 33)
+        Me.cboComponent.Name = "cboComponent"
+        Me.cboComponent.Size = New System.Drawing.Size(430, 28)
+        Me.cboComponent.TabIndex = 1
         '
         'Label2
         '
@@ -207,93 +199,17 @@ Partial Class CreateProductRecipeForm
         Me.Label2.Font = New System.Drawing.Font("Segoe UI", 10.0!)
         Me.Label2.Location = New System.Drawing.Point(20, 36)
         Me.Label2.Name = "Label2"
-        Me.Label2.Size = New System.Drawing.Size(82, 19)
+        Me.Label2.Size = New System.Drawing.Size(90, 19)
         Me.Label2.TabIndex = 0
-        Me.Label2.Text = "Sub-Recipe:"
+        Me.Label2.Text = "Component:"
         '
-        'grpPackaging
-        '
-        Me.grpPackaging.Controls.Add(Me.dgvPackaging)
-        Me.grpPackaging.Controls.Add(Me.btnAddPackaging)
-        Me.grpPackaging.Controls.Add(Me.txtPackagingQty)
-        Me.grpPackaging.Controls.Add(Me.Label5)
-        Me.grpPackaging.Controls.Add(Me.cboPackaging)
-        Me.grpPackaging.Controls.Add(Me.Label4)
-        Me.grpPackaging.Dock = System.Windows.Forms.DockStyle.Top
-        Me.grpPackaging.Font = New System.Drawing.Font("Segoe UI", 10.0!, System.Drawing.FontStyle.Bold)
-        Me.grpPackaging.Location = New System.Drawing.Point(20, 350)
-        Me.grpPackaging.Name = "grpPackaging"
-        Me.grpPackaging.Size = New System.Drawing.Size(1560, 200)
-        Me.grpPackaging.TabIndex = 2
-        Me.grpPackaging.TabStop = False
-        Me.grpPackaging.Text = "Packaging & Decorations"
-        '
-        'dgvPackaging
-        '
-        Me.dgvPackaging.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize
-        Me.dgvPackaging.Location = New System.Drawing.Point(20, 80)
-        Me.dgvPackaging.Name = "dgvPackaging"
-        Me.dgvPackaging.Size = New System.Drawing.Size(1520, 100)
-        Me.dgvPackaging.TabIndex = 5
-        '
-        'btnAddPackaging
-        '
-        Me.btnAddPackaging.BackColor = System.Drawing.Color.FromArgb(CType(CType(230, Byte), Integer), CType(CType(126, Byte), Integer), CType(CType(34, Byte), Integer))
-        Me.btnAddPackaging.FlatStyle = System.Windows.Forms.FlatStyle.Flat
-        Me.btnAddPackaging.Font = New System.Drawing.Font("Segoe UI", 10.0!, System.Drawing.FontStyle.Bold)
-        Me.btnAddPackaging.ForeColor = System.Drawing.Color.White
-        Me.btnAddPackaging.Location = New System.Drawing.Point(750, 30)
-        Me.btnAddPackaging.Name = "btnAddPackaging"
-        Me.btnAddPackaging.Size = New System.Drawing.Size(150, 35)
-        Me.btnAddPackaging.TabIndex = 4
-        Me.btnAddPackaging.Text = "Add Item"
-        Me.btnAddPackaging.UseVisualStyleBackColor = False
-        '
-        'txtPackagingQty
-        '
-        Me.txtPackagingQty.Font = New System.Drawing.Font("Segoe UI", 11.0!)
-        Me.txtPackagingQty.Location = New System.Drawing.Point(650, 33)
-        Me.txtPackagingQty.Name = "txtPackagingQty"
-        Me.txtPackagingQty.Size = New System.Drawing.Size(80, 27)
-        Me.txtPackagingQty.TabIndex = 3
-        Me.txtPackagingQty.Text = "1"
-        '
-        'Label5
-        '
-        Me.Label5.AutoSize = True
-        Me.Label5.Font = New System.Drawing.Font("Segoe UI", 10.0!)
-        Me.Label5.Location = New System.Drawing.Point(570, 36)
-        Me.Label5.Name = "Label5"
-        Me.Label5.Size = New System.Drawing.Size(67, 19)
-        Me.Label5.TabIndex = 2
-        Me.Label5.Text = "Quantity:"
-        '
-        'cboPackaging
-        '
-        Me.cboPackaging.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDown
-        Me.cboPackaging.Font = New System.Drawing.Font("Segoe UI", 11.0!)
-        Me.cboPackaging.FormattingEnabled = True
-        Me.cboPackaging.Location = New System.Drawing.Point(120, 33)
-        Me.cboPackaging.Name = "cboPackaging"
-        Me.cboPackaging.Size = New System.Drawing.Size(430, 28)
-        Me.cboPackaging.TabIndex = 1
-        '
-        'Label4
-        '
-        Me.Label4.AutoSize = True
-        Me.Label4.Font = New System.Drawing.Font("Segoe UI", 10.0!)
-        Me.Label4.Location = New System.Drawing.Point(20, 36)
-        Me.Label4.Name = "Label4"
-        Me.Label4.Size = New System.Drawing.Size(74, 19)
-        Me.Label4.TabIndex = 0
-        Me.Label4.Text = "Packaging:"
         '
         'grpConsolidated
         '
         Me.grpConsolidated.Controls.Add(Me.dgvConsolidatedBOM)
         Me.grpConsolidated.Dock = System.Windows.Forms.DockStyle.Top
         Me.grpConsolidated.Font = New System.Drawing.Font("Segoe UI", 10.0!, System.Drawing.FontStyle.Bold)
-        Me.grpConsolidated.Location = New System.Drawing.Point(20, 550)
+        Me.grpConsolidated.Location = New System.Drawing.Point(20, 480)
         Me.grpConsolidated.Name = "grpConsolidated"
         Me.grpConsolidated.Size = New System.Drawing.Size(1560, 200)
         Me.grpConsolidated.TabIndex = 3
@@ -314,7 +230,7 @@ Partial Class CreateProductRecipeForm
         Me.grpMethod.Controls.Add(Me.txtMethod)
         Me.grpMethod.Dock = System.Windows.Forms.DockStyle.Top
         Me.grpMethod.Font = New System.Drawing.Font("Segoe UI", 10.0!, System.Drawing.FontStyle.Bold)
-        Me.grpMethod.Location = New System.Drawing.Point(20, 750)
+        Me.grpMethod.Location = New System.Drawing.Point(20, 680)
         Me.grpMethod.Name = "grpMethod"
         Me.grpMethod.Size = New System.Drawing.Size(1560, 150)
         Me.grpMethod.TabIndex = 4
@@ -338,10 +254,10 @@ Partial Class CreateProductRecipeForm
         Me.grpBatch.Controls.Add(Me.Label6)
         Me.grpBatch.Dock = System.Windows.Forms.DockStyle.Top
         Me.grpBatch.Font = New System.Drawing.Font("Segoe UI", 10.0!, System.Drawing.FontStyle.Bold)
-        Me.grpBatch.Location = New System.Drawing.Point(20, 900)
+        Me.grpBatch.Location = New System.Drawing.Point(20, 100)
         Me.grpBatch.Name = "grpBatch"
         Me.grpBatch.Size = New System.Drawing.Size(1560, 80)
-        Me.grpBatch.TabIndex = 5
+        Me.grpBatch.TabIndex = 1
         Me.grpBatch.TabStop = False
         Me.grpBatch.Text = "Batch Quantity"
         '
@@ -366,6 +282,8 @@ Partial Class CreateProductRecipeForm
         'pnlFooter
         '
         Me.pnlFooter.BackColor = System.Drawing.Color.White
+        Me.pnlFooter.Controls.Add(Me.lblAdhocCost)
+        Me.pnlFooter.Controls.Add(Me.lblBatchCost)
         Me.pnlFooter.Controls.Add(Me.lblTotalCost)
         Me.pnlFooter.Controls.Add(Me.btnClose)
         Me.pnlFooter.Controls.Add(Me.btnPrint)
@@ -380,13 +298,35 @@ Partial Class CreateProductRecipeForm
         'lblTotalCost
         '
         Me.lblTotalCost.AutoSize = True
-        Me.lblTotalCost.Font = New System.Drawing.Font("Segoe UI", 14.0!, System.Drawing.FontStyle.Bold)
+        Me.lblTotalCost.Font = New System.Drawing.Font("Segoe UI", 11.0!, System.Drawing.FontStyle.Bold)
         Me.lblTotalCost.ForeColor = System.Drawing.Color.FromArgb(CType(CType(39, Byte), Integer), CType(CType(174, Byte), Integer), CType(CType(96, Byte), Integer))
-        Me.lblTotalCost.Location = New System.Drawing.Point(20, 28)
+        Me.lblTotalCost.Location = New System.Drawing.Point(20, 10)
         Me.lblTotalCost.Name = "lblTotalCost"
-        Me.lblTotalCost.Size = New System.Drawing.Size(303, 25)
+        Me.lblTotalCost.Size = New System.Drawing.Size(400, 20)
         Me.lblTotalCost.TabIndex = 4
-        Me.lblTotalCost.Text = "Total Cost Per Product: R0.00"
+        Me.lblTotalCost.Text = "1 UNIT: Excl VAT: R0.00 | VAT (15%): R0.00 | Incl VAT: R0.00"
+        '
+        'lblBatchCost
+        '
+        Me.lblBatchCost.AutoSize = True
+        Me.lblBatchCost.Font = New System.Drawing.Font("Segoe UI", 11.0!, System.Drawing.FontStyle.Bold)
+        Me.lblBatchCost.ForeColor = System.Drawing.Color.FromArgb(CType(CType(41, Byte), Integer), CType(CType(128, Byte), Integer), CType(CType(185, Byte), Integer))
+        Me.lblBatchCost.Location = New System.Drawing.Point(20, 30)
+        Me.lblBatchCost.Name = "lblBatchCost"
+        Me.lblBatchCost.Size = New System.Drawing.Size(400, 20)
+        Me.lblBatchCost.TabIndex = 5
+        Me.lblBatchCost.Text = "BATCH: Excl VAT: R0.00 | VAT (15%): R0.00 | Incl VAT: R0.00"
+        '
+        'lblAdhocCost
+        '
+        Me.lblAdhocCost.AutoSize = True
+        Me.lblAdhocCost.Font = New System.Drawing.Font("Segoe UI", 11.0!, System.Drawing.FontStyle.Bold)
+        Me.lblAdhocCost.ForeColor = System.Drawing.Color.FromArgb(CType(CType(230, Byte), Integer), CType(CType(126, Byte), Integer), CType(CType(34, Byte), Integer))
+        Me.lblAdhocCost.Location = New System.Drawing.Point(20, 50)
+        Me.lblAdhocCost.Name = "lblAdhocCost"
+        Me.lblAdhocCost.Size = New System.Drawing.Size(500, 20)
+        Me.lblAdhocCost.TabIndex = 6
+        Me.lblAdhocCost.Text = "WITH ADHOC (+15%): Excl VAT: R0.00 | VAT (15%): R0.00 | Incl VAT: R0.00"
         '
         'btnClose
         '
@@ -456,12 +396,9 @@ Partial Class CreateProductRecipeForm
         Me.pnlMain.ResumeLayout(False)
         Me.grpProduct.ResumeLayout(False)
         Me.grpProduct.PerformLayout()
-        Me.grpSubRecipes.ResumeLayout(False)
-        Me.grpSubRecipes.PerformLayout()
-        CType(Me.dgvSubRecipes, System.ComponentModel.ISupportInitialize).EndInit()
-        Me.grpPackaging.ResumeLayout(False)
-        Me.grpPackaging.PerformLayout()
-        CType(Me.dgvPackaging, System.ComponentModel.ISupportInitialize).EndInit()
+        Me.grpComponents.ResumeLayout(False)
+        Me.grpComponents.PerformLayout()
+        CType(Me.dgvComponents, System.ComponentModel.ISupportInitialize).EndInit()
         Me.grpConsolidated.ResumeLayout(False)
         CType(Me.dgvConsolidatedBOM, System.ComponentModel.ISupportInitialize).EndInit()
         Me.grpMethod.ResumeLayout(False)
@@ -480,20 +417,13 @@ Partial Class CreateProductRecipeForm
     Friend WithEvents grpProduct As GroupBox
     Friend WithEvents cboProduct As ComboBox
     Friend WithEvents Label1 As Label
-    Friend WithEvents grpSubRecipes As GroupBox
-    Friend WithEvents dgvSubRecipes As DataGridView
-    Friend WithEvents btnAddSubRecipe As Button
-    Friend WithEvents txtSubRecipeQty As TextBox
+    Friend WithEvents grpComponents As GroupBox
+    Friend WithEvents dgvComponents As DataGridView
+    Friend WithEvents btnAddComponent As Button
+    Friend WithEvents txtComponentQty As TextBox
     Friend WithEvents Label3 As Label
-    Friend WithEvents cboSubRecipe As ComboBox
+    Friend WithEvents cboComponent As ComboBox
     Friend WithEvents Label2 As Label
-    Friend WithEvents grpPackaging As GroupBox
-    Friend WithEvents dgvPackaging As DataGridView
-    Friend WithEvents btnAddPackaging As Button
-    Friend WithEvents txtPackagingQty As TextBox
-    Friend WithEvents Label5 As Label
-    Friend WithEvents cboPackaging As ComboBox
-    Friend WithEvents Label4 As Label
     Friend WithEvents grpConsolidated As GroupBox
     Friend WithEvents dgvConsolidatedBOM As DataGridView
     Friend WithEvents grpMethod As GroupBox
@@ -503,6 +433,8 @@ Partial Class CreateProductRecipeForm
     Friend WithEvents Label6 As Label
     Friend WithEvents pnlFooter As Panel
     Friend WithEvents lblTotalCost As Label
+    Friend WithEvents lblBatchCost As Label
+    Friend WithEvents lblAdhocCost As Label
     Friend WithEvents btnClose As Button
     Friend WithEvents btnPrint As Button
     Friend WithEvents btnClear As Button
