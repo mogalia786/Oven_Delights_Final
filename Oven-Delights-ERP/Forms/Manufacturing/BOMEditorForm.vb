@@ -602,7 +602,60 @@ Namespace Manufacturing
                         End Using
                     End If
                     
-                    ' PRIORITY 2: Check Recipe system
+                    ' PRIORITY 2: Check new Product Recipe system (Demo_ProductRecipe_Master)
+                    Dim hasProductRecipe As Boolean = False
+                    Dim sqlCheckProductRecipe As String = "SELECT COUNT(*) FROM Demo_ProductRecipe_Master WHERE ProductID = @pid AND IsActive = 1"
+                    Using cmdCheck As New SqlCommand(sqlCheckProductRecipe, cn)
+                        cmdCheck.Parameters.AddWithValue("@pid", pid)
+                        hasProductRecipe = Convert.ToInt32(cmdCheck.ExecuteScalar()) > 0
+                    End Using
+                    
+                    If hasProductRecipe Then
+                        ' Load consolidated BOM using new stored procedure
+                        ' This includes product components AND expanded sub-recipe ingredients
+                        Dim productionQty As Decimal = Convert.ToDecimal(txtProductionQty.Value)
+                        Using cmdBOM As New SqlCommand("sp_GetConsolidatedProductBOM", cn)
+                            cmdBOM.CommandType = CommandType.StoredProcedure
+                            cmdBOM.Parameters.AddWithValue("@ProductID", pid)
+                            cmdBOM.Parameters.AddWithValue("@ProductionQty", productionQty)
+                            
+                            Using daBOM As New SqlDataAdapter(cmdBOM)
+                                Dim dtBOM As New DataTable()
+                                daBOM.Fill(dtBOM)
+                                System.Diagnostics.Debug.WriteLine($"LoadBOM: Found {dtBOM.Rows.Count} consolidated components for ProductID={pid}")
+                                
+                                If dtBOM.Rows.Count = 0 Then
+                                    lblStatus.Text = "No components found in product recipe."
+                                    MessageBox.Show("Product recipe exists but has no components. Please add components in 'Create Product Recipe'.", "Empty Recipe", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                                    Return
+                                End If
+                                
+                                ' Rename columns to match expected format
+                                If Not dtBOM.Columns.Contains("ComponentName") Then
+                                    If dtBOM.Columns.Contains("ComponentName") Then
+                                        dtBOM.Columns("ComponentName").ColumnName = "ComponentName"
+                                    End If
+                                End If
+                                If Not dtBOM.Columns.Contains("QuantityPerBatch") Then
+                                    dtBOM.Columns.Add("QuantityPerBatch", GetType(Decimal))
+                                    For Each row As DataRow In dtBOM.Rows
+                                        row("QuantityPerBatch") = row("Quantity")
+                                    Next
+                                End If
+                                If Not dtBOM.Columns.Contains("UoM") Then
+                                    If dtBOM.Columns.Contains("UnitOfMeasure") Then
+                                        dtBOM.Columns("UnitOfMeasure").ColumnName = "UoM"
+                                    End If
+                                End If
+                                
+                                PopulateList(dtBOM)
+                                CheckIngredientAvailability(dtBOM)
+                                Return
+                            End Using
+                        End Using
+                    End If
+                    
+                    ' PRIORITY 3: Check old Recipe system (fallback)
                     Dim hasRecipe As Boolean = False
                     Dim sqlCheckRecipe As String = "SELECT COUNT(*) FROM dbo.Recipe WHERE ProductID = @pid AND IsActive = 1"
                     Using cmdCheck As New SqlCommand(sqlCheckRecipe, cn)
@@ -746,40 +799,48 @@ Namespace Manufacturing
                                     cmd.ExecuteNonQuery()
                                 End Using
                                 
-                                ' FIX: Populate InternalOrderLines from Recipe (new system)
-                                Dim sqlRecipe = "SELECT RecipeID, BatchYield FROM dbo.Recipe WHERE ProductID = @pid AND IsActive = 1"
-                                Using cmdRecipe As New SqlCommand(sqlRecipe, cn)
-                                    cmdRecipe.Parameters.AddWithValue("@pid", pid)
-                                    Using reader = cmdRecipe.ExecuteReader()
-                                        If reader.Read() Then
-                                            Dim recipeID = reader.GetInt32(0)
-                                            Dim batchYield = reader.GetDecimal(1)
-                                            Dim batchesNeeded = Math.Ceiling(qty / batchYield)
-                                            reader.Close()
+                                ' Clear existing lines (from old BOM system)
+                                Dim sqlClear = "DELETE FROM dbo.InternalOrderLines WHERE InternalOrderID = @ioId"
+                                Using cmdClear As New SqlCommand(sqlClear, cn)
+                                    cmdClear.Parameters.AddWithValue("@ioId", ioId)
+                                    cmdClear.ExecuteNonQuery()
+                                End Using
+                                
+                                ' Use new consolidated BOM stored procedure
+                                ' This properly expands sub-recipes and excludes them from the final list
+                                Using cmdBOM As New SqlCommand("sp_GetConsolidatedProductBOM", cn)
+                                    cmdBOM.CommandType = CommandType.StoredProcedure
+                                    cmdBOM.Parameters.AddWithValue("@ProductID", pid)
+                                    cmdBOM.Parameters.AddWithValue("@ProductionQty", qty)
+                                    
+                                    Using reader = cmdBOM.ExecuteReader()
+                                        Dim lineNum As Integer = 1
+                                        While reader.Read()
+                                            Dim componentID As Integer = reader.GetInt32(reader.GetOrdinal("ComponentID"))
+                                            Dim componentQty As Decimal = reader.GetDecimal(reader.GetOrdinal("Quantity"))
+                                            Dim uom As String = reader.GetString(reader.GetOrdinal("UnitOfMeasure"))
                                             
-                                            ' Clear existing lines (from old BOM system)
-                                            Dim sqlClear = "DELETE FROM dbo.InternalOrderLines WHERE InternalOrderID = @ioId"
-                                            Using cmdClear As New SqlCommand(sqlClear, cn)
-                                                cmdClear.Parameters.AddWithValue("@ioId", ioId)
-                                                cmdClear.ExecuteNonQuery()
+                                            ' Insert into InternalOrderLines
+                                            ' Note: We're inserting as ProductID since these are from Demo_Retail_Product
+                                            Dim sqlInsertLine = "INSERT INTO dbo.InternalOrderLines (InternalOrderID, LineNumber, ItemType, ProductID, Quantity, UoM) " &
+                                                               "VALUES (@ioId, @lineNum, 'Product', @compId, @qty, @uom)"
+                                            Using cmdInsertLine As New SqlCommand(sqlInsertLine, cn)
+                                                cmdInsertLine.Parameters.AddWithValue("@ioId", ioId)
+                                                cmdInsertLine.Parameters.AddWithValue("@lineNum", lineNum)
+                                                cmdInsertLine.Parameters.AddWithValue("@compId", componentID)
+                                                cmdInsertLine.Parameters.AddWithValue("@qty", componentQty)
+                                                cmdInsertLine.Parameters.AddWithValue("@uom", uom)
+                                                
+                                                ' Execute in a separate connection since we're reading
+                                                Using cn2 As New SqlConnection(cs)
+                                                    cn2.Open()
+                                                    cmdInsertLine.Connection = cn2
+                                                    cmdInsertLine.ExecuteNonQuery()
+                                                End Using
                                             End Using
                                             
-                                            ' Insert ingredients from Recipe (all as RawMaterial - includes ingredients and sub-recipes)
-                                            Dim sqlInsert = "INSERT INTO dbo.InternalOrderLines (InternalOrderID, LineNumber, ItemType, RawMaterialID, ProductID, Quantity, UoM) " &
-                                                           "SELECT @ioId, ROW_NUMBER() OVER (ORDER BY ri.LineNumber), " &
-                                                           "'RawMaterial', " &
-                                                           "ri.MaterialID, NULL, ri.Quantity * @batches, ri.UoM " &
-                                                           "FROM dbo.RecipeIngredient ri " &
-                                                           "WHERE ri.RecipeID = @recipeID " &
-                                                           "AND ri.MaterialID IS NOT NULL " &
-                                                           "ORDER BY ri.LineNumber"
-                                            Using cmdInsert As New SqlCommand(sqlInsert, cn)
-                                                cmdInsert.Parameters.AddWithValue("@ioId", ioId)
-                                                cmdInsert.Parameters.AddWithValue("@recipeID", recipeID)
-                                                cmdInsert.Parameters.AddWithValue("@batches", batchesNeeded)
-                                                cmdInsert.ExecuteNonQuery()
-                                            End Using
-                                        End If
+                                            lineNum += 1
+                                        End While
                                     End Using
                                 End Using
                             End Using

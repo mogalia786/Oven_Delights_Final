@@ -614,7 +614,7 @@ Public Class CreateProductRecipeForm
         e.Graphics.DrawString("═══════════════════════════════════════════════════════════", boldFont, Brushes.Black, 50, y)
         y += 35
 
-        Dim productName As String = CType(cboProduct.SelectedItem, Object).Name
+        Dim productName As String = cboProduct.Text
         e.Graphics.DrawString($"Product: {productName}", boldFont, Brushes.Black, 50, y)
         y += 25
         e.Graphics.DrawString($"Batch Qty: {txtBatchQty.Text}", font, Brushes.Black, 50, y)

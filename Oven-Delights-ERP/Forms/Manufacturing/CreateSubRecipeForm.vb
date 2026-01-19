@@ -408,7 +408,7 @@ Public Class CreateSubRecipeForm
         e.Graphics.DrawString("═══════════════════════════════════════════════════════════", boldFont, Brushes.Black, 50, y)
         y += 40
 
-        Dim subRecipeName As String = CType(cboSubRecipe.SelectedItem, Object).Name
+        Dim subRecipeName As String = cboSubRecipe.Text
         e.Graphics.DrawString($"Sub-Recipe: {subRecipeName}", boldFont, Brushes.Black, 50, y)
         y += 30
         e.Graphics.DrawString($"Batch Qty: {txtBatchQty.Text}", font, Brushes.Black, 50, y)

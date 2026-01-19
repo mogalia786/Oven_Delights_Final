@@ -1,6 +1,7 @@
 -- =============================================
--- FIX: Modified sp_GetScaledBOMFromRecipe to include Sub-Recipes
--- Now returns sub-recipes as separate line items so BOM requisition can detect them
+-- FIX: Modified sp_GetScaledBOMFromRecipe to EXCLUDE Sub-Recipes
+-- Returns only expanded ingredients from sub-recipes + packaging
+-- Sub-recipes are NOT shown as line items in the BOM
 -- =============================================
 
 IF OBJECT_ID('sp_GetScaledBOMFromRecipe', 'P') IS NOT NULL
@@ -54,51 +55,37 @@ BEGIN
     );
     
     -- =============================================
-    -- PRODUCT RECIPE: Get SUB-RECIPES + ingredients + packaging
+    -- PRODUCT RECIPE: Get ingredients from sub-recipes + packaging
     -- =============================================
     IF @IsProduct = 1
     BEGIN
-        -- STEP 1: Get sub-recipes as line items (NEW - for stock checking)
-        INSERT INTO #ConsolidatedBOM (ItemID, ItemName, ItemType, Quantity, UnitOfMeasure, CostPerUnit, TotalCost)
-        SELECT 
-            pbl.ComponentID AS ItemID,
-            p.Name AS ItemName,
-            'Sub-Recipe' AS ItemType,  -- Mark as Sub-Recipe
-            pbl.Quantity * @ScalingFactor AS Quantity,
-            'Each' AS UnitOfMeasure,
-            pbl.CostPerUnit,
-            pbl.Quantity * @ScalingFactor * pbl.CostPerUnit AS TotalCost
-        FROM Demo_ProductRecipe_BOM pbl
-        INNER JOIN Demo_Retail_Product p ON pbl.ComponentID = p.ProductID
-        WHERE pbl.ProductID = @ProductID
-          AND pbl.ComponentType = 'SubRecipe'
-          AND pbl.IsActive = 1;
-        
-        -- STEP 2: Get ingredients from all sub-recipes (for fresh manufacturing)
+        -- STEP 1: Get ingredients from all sub-recipes (expanded)
+        -- Logic: (SubRecipe Ingredient Qty) * (SubRecipe Qty in Product) * (Product Scaling Factor) / (SubRecipe Batch Qty)
         INSERT INTO #ConsolidatedBOM (ItemID, ItemName, ItemType, Quantity, UnitOfMeasure, CostPerUnit, TotalCost)
         SELECT 
             sri.IngredientID AS ItemID,
             p.Name AS ItemName,
             'Ingredient' AS ItemType,
-            SUM(sri.Quantity * pbl.Quantity * @ScalingFactor) AS Quantity,
+            SUM(sri.Quantity * pbl.Quantity * @ScalingFactor / ISNULL(srm.BatchQty, 1)) AS Quantity,
             sri.UnitOfMeasure,
             sri.CostPerUnit,
-            SUM(sri.Quantity * pbl.Quantity * @ScalingFactor * sri.CostPerUnit) AS TotalCost
+            SUM(sri.Quantity * pbl.Quantity * @ScalingFactor / ISNULL(srm.BatchQty, 1) * sri.CostPerUnit) AS TotalCost
         FROM Demo_ProductRecipe_BOM pbl
         INNER JOIN Demo_SubRecipe_Ingredients sri ON pbl.ComponentID = sri.SubRecipeID
         INNER JOIN Demo_Retail_Product p ON sri.IngredientID = p.ProductID
+        LEFT JOIN Demo_SubRecipe_Master srm ON sri.SubRecipeID = srm.SubRecipeID
         WHERE pbl.ProductID = @ProductID
           AND pbl.ComponentType = 'SubRecipe'
           AND pbl.IsActive = 1
           AND sri.IsActive = 1
         GROUP BY sri.IngredientID, p.Name, sri.UnitOfMeasure, sri.CostPerUnit;
         
-        -- STEP 3: Get packaging items
+        -- STEP 2: Get other components (packaging, consumables, etc.)
         INSERT INTO #ConsolidatedBOM (ItemID, ItemName, ItemType, Quantity, UnitOfMeasure, CostPerUnit, TotalCost)
         SELECT 
             pbl.ComponentID AS ItemID,
             p.Name AS ItemName,
-            'Packaging' AS ItemType,
+            p.Category AS ItemType,
             pbl.Quantity * @ScalingFactor AS Quantity,
             'unit' AS UnitOfMeasure,
             pbl.CostPerUnit,
@@ -106,7 +93,7 @@ BEGIN
         FROM Demo_ProductRecipe_BOM pbl
         INNER JOIN Demo_Retail_Product p ON pbl.ComponentID = p.ProductID
         WHERE pbl.ProductID = @ProductID
-          AND pbl.ComponentType = 'Packaging'
+          AND pbl.ComponentType <> 'SubRecipe'
           AND pbl.IsActive = 1;
     END
     

@@ -488,7 +488,7 @@ Public Class RecipeCostCalculationService
                     pr.BatchQty,
                     pr.TotalCost,
                     pr.IsActive
-                FROM Demo_Product_Recipe_Master pr
+                FROM Demo_ProductRecipe_Master pr
                 INNER JOIN Demo_Retail_Product p ON pr.ProductID = p.ProductID
                 WHERE pr.ProductID = @ProductID"
 

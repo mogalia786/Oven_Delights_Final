@@ -41,19 +41,23 @@ BEGIN
             ELSE ''
         END AS Size,
         
-        -- Extract Layer: "DL" for Double, blank for Single
+        -- Extract Layer: Default to 'Double', only override if Special Request says 'Triple'
         CASE 
-            WHEN i.ProductName LIKE '%Double%' OR i.ProductName LIKE '%DL%' OR i.ProductName LIKE '%DBL%' THEN 'Double'
-            ELSE 'Single'
+            WHEN o.SpecialInstructions LIKE '%Triple%' OR o.SpecialInstructions LIKE '%triple%' THEN 'Triple'
+            WHEN i.ProductName LIKE '%Triple%' OR i.ProductName LIKE '%TL%' THEN 'Triple'
+            ELSE 'Double' -- Always default to Double
         END AS Layer,
         
-        -- Extract Shape: Square (default), Round, Figure, Heart, etc.
+        -- Extract Shape: Check Special Request for 'Heart' or 'Bible', then item name for 'round', else default to 'square'
         CASE 
+            WHEN o.SpecialInstructions LIKE '%Heart%' OR o.SpecialInstructions LIKE '%heart%' THEN 'Heart'
+            WHEN o.SpecialInstructions LIKE '%Bible%' OR o.SpecialInstructions LIKE '%bible%' THEN 'Bible'
             WHEN i.ProductName LIKE '%Figure%' THEN 'Figure'
-            WHEN i.ProductName LIKE '%Round%' THEN 'Round'
+            WHEN i.ProductName LIKE '%Round%' OR i.ProductName LIKE '%round%' THEN 'Round'
             WHEN i.ProductName LIKE '%Heart%' THEN 'Heart'
             WHEN i.ProductName LIKE '%Rectangle%' THEN 'Rectangle'
             WHEN i.ProductName LIKE '%Oval%' THEN 'Oval'
+            WHEN i.ProductName LIKE '%Bible%' THEN 'Bible'
             ELSE 'Square' -- Default shape
         END AS Shape,
         
@@ -112,16 +116,20 @@ BEGIN
         END,
         -- Layer
         CASE 
-            WHEN i.ProductName LIKE '%Double%' OR i.ProductName LIKE '%DL%' OR i.ProductName LIKE '%DBL%' THEN 'Double'
-            ELSE 'Single'
+            WHEN o.SpecialInstructions LIKE '%Triple%' OR o.SpecialInstructions LIKE '%triple%' THEN 'Triple'
+            WHEN i.ProductName LIKE '%Triple%' OR i.ProductName LIKE '%TL%' THEN 'Triple'
+            ELSE 'Double'
         END,
         -- Shape
         CASE 
+            WHEN o.SpecialInstructions LIKE '%Heart%' OR o.SpecialInstructions LIKE '%heart%' THEN 'Heart'
+            WHEN o.SpecialInstructions LIKE '%Bible%' OR o.SpecialInstructions LIKE '%bible%' THEN 'Bible'
             WHEN i.ProductName LIKE '%Figure%' THEN 'Figure'
-            WHEN i.ProductName LIKE '%Round%' THEN 'Round'
+            WHEN i.ProductName LIKE '%Round%' OR i.ProductName LIKE '%round%' THEN 'Round'
             WHEN i.ProductName LIKE '%Heart%' THEN 'Heart'
             WHEN i.ProductName LIKE '%Rectangle%' THEN 'Rectangle'
             WHEN i.ProductName LIKE '%Oval%' THEN 'Oval'
+            WHEN i.ProductName LIKE '%Bible%' THEN 'Bible'
             ELSE 'Square'
         END,
         -- Cream Type
