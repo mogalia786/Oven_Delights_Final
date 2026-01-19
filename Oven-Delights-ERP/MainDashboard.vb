@@ -4431,6 +4431,11 @@ Partial Class MainDashboard
         Dim mnuBatchPayment As New ToolStripMenuItem("Batch Invoice Payment")
         AddHandler mnuBatchPayment.Click, AddressOf OpenBatchPayment
         AccountingToolStripMenuItem.DropDownItems.Add(mnuBatchPayment)
+        
+        ' EFT Payments Management
+        Dim mnuEFTPayments As New ToolStripMenuItem("EFT Payments")
+        AddHandler mnuEFTPayments.Click, AddressOf OpenEFTPayments
+        AccountingToolStripMenuItem.DropDownItems.Add(mnuEFTPayments)
     End Sub
 
     Private Sub OpenBatchPayment(sender As Object, e As EventArgs)
@@ -4449,6 +4454,34 @@ Partial Class MainDashboard
             frm.WindowState = FormWindowState.Maximized
         Catch ex As Exception
             MessageBox.Show("Error opening Batch Payment: " & ex.Message, "Accounting", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenEFTPayments(sender As Object, e As EventArgs)
+        Try
+            For Each child As Form In Me.MdiChildren
+                If TypeOf child Is EFTPaymentsManagementForm Then
+                    child.Activate()
+                    child.WindowState = FormWindowState.Maximized
+                    Return
+                End If
+            Next
+
+            If currentUser Is Nothing Then
+                MessageBox.Show("User session not found. Please log in again.", "Authentication Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            Dim userId As Integer = If(currentUser IsNot Nothing, currentUser.UserID, _currentUserId)
+            Dim userName As String = If(currentUser IsNot Nothing, currentUser.Username, "Unknown")
+            Dim branchId As Integer = If(currentUser IsNot Nothing AndAlso currentUser.BranchID.HasValue, currentUser.BranchID.Value, 0)
+
+            Dim frm As New EFTPaymentsManagementForm(userId, userName, branchId)
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening EFT Payments: " & ex.Message & vbCrLf & vbCrLf & "Stack: " & ex.StackTrace, "Accounting", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
