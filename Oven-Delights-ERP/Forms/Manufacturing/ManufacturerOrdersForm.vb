@@ -41,42 +41,106 @@ Public Class ManufacturerOrdersForm
             Using conn As New SqlConnection(_connString)
                 conn.Open()
                 
-                Dim sql As String = "
-                    SELECT 
-                        o.OrderID,
-                        o.OrderNumber AS [Order #],
-                        b.BranchName AS Branch,
-                        o.CustomerName + ' ' + o.CustomerSurname AS Customer,
-                        o.CustomerPhone AS Phone,
-                        CONVERT(VARCHAR, o.OrderDate, 106) AS [Order Date],
-                        CONVERT(VARCHAR, o.ReadyDate, 106) + ' ' + CONVERT(VARCHAR, o.ReadyTime, 108) AS [Due Date/Time],
-                        o.TotalAmount AS Total,
-                        o.OrderStatus AS Status,
-                        CASE 
-                            WHEN o.ReadyDate < CAST(GETDATE() AS DATE) THEN 'OVERDUE'
-                            WHEN o.ReadyDate = CAST(GETDATE() AS DATE) THEN 'DUE TODAY'
-                            ELSE 'ON TIME'
-                        END AS Priority
-                    FROM POS_CustomOrders o
-                    INNER JOIN Branches b ON o.BranchID = b.BranchID
-                    WHERE 1=1"
+                Dim sql As String = ""
                 
-                ' Filter by order type (Cake or General)
+                ' Different queries for Cake Orders vs General Orders
                 If _orderType = "Cake" Then
-                    sql &= " AND OrderNumber LIKE '%-CAKE-%'"
+                    ' Cake Orders from POS_CustomOrders (cake orders from POS)
+                    sql = "
+                        SELECT 
+                            o.OrderID,
+                            o.OrderNumber AS [Order #],
+                            b.BranchName AS Branch,
+                            o.CustomerName + ' ' + ISNULL(o.CustomerSurname, '') AS Customer,
+                            o.CustomerPhone AS Phone,
+                            CONVERT(VARCHAR, o.OrderDate, 106) AS [Order Date],
+                            CONVERT(VARCHAR, o.ReadyDate, 106) + ' ' + CONVERT(VARCHAR, o.ReadyTime, 108) AS [Due Date/Time],
+                            o.TotalAmount AS Total,
+                            o.OrderStatus AS Status,
+                            CASE 
+                                WHEN o.ReadyDate < CAST(GETDATE() AS DATE) THEN 'OVERDUE'
+                                WHEN o.ReadyDate = CAST(GETDATE() AS DATE) THEN 'DUE TODAY'
+                                ELSE 'ON TIME'
+                            END AS Priority
+                        FROM POS_CustomOrders o
+                        INNER JOIN Branches b ON o.BranchID = b.BranchID
+                        WHERE 1=1"
+                    
+                    If _filterStatus <> "All" Then
+                        sql &= " AND o.OrderStatus = @status"
+                    End If
+                    
+                    sql &= " ORDER BY o.ReadyDate, o.ReadyTime"
+                    
                 ElseIf _orderType = "General" Then
-                    sql &= " AND OrderNumber NOT LIKE '%-CAKE-%'"
+                    ' General Orders from POS_UserDefinedOrders (user defined orders from POS)
+                    sql = "
+                        SELECT 
+                            o.UserDefinedOrderID AS OrderID,
+                            o.OrderNumber AS [Order #],
+                            b.BranchName AS Branch,
+                            o.CustomerName + ' ' + ISNULL(o.CustomerSurname, '') AS Customer,
+                            o.CustomerCellNumber AS Phone,
+                            CONVERT(VARCHAR, o.OrderDate, 106) AS [Order Date],
+                            CONVERT(VARCHAR, o.CollectionDate, 106) + ' ' + CONVERT(VARCHAR, o.CollectionTime, 108) AS [Due Date/Time],
+                            o.TotalAmount AS Total,
+                            o.Status AS Status,
+                            CASE 
+                                WHEN o.CollectionDate < CAST(GETDATE() AS DATE) THEN 'OVERDUE'
+                                WHEN o.CollectionDate = CAST(GETDATE() AS DATE) THEN 'DUE TODAY'
+                                ELSE 'ON TIME'
+                            END AS Priority
+                        FROM POS_UserDefinedOrders o
+                        INNER JOIN Branches b ON o.BranchID = b.BranchID
+                        WHERE 1=1"
+                    
+                    If _filterStatus <> "All" Then
+                        ' Map status names: New->Created, Ready->Completed
+                        Dim mappedStatus As String = _filterStatus
+                        If _filterStatus = "New" Then mappedStatus = "Created"
+                        If _filterStatus = "Ready" Then mappedStatus = "Completed"
+                        sql &= " AND o.Status = @status"
+                    End If
+                    
+                    sql &= " ORDER BY o.CollectionDate, o.CollectionTime"
+                Else
+                    ' All orders - combine both tables
+                    sql = "
+                        SELECT 
+                            o.OrderID,
+                            o.OrderNumber AS [Order #],
+                            b.BranchName AS Branch,
+                            o.CustomerName + ' ' + ISNULL(o.CustomerSurname, '') AS Customer,
+                            o.CustomerPhone AS Phone,
+                            CONVERT(VARCHAR, o.OrderDate, 106) AS [Order Date],
+                            CONVERT(VARCHAR, o.ReadyDate, 106) + ' ' + CONVERT(VARCHAR, o.ReadyTime, 108) AS [Due Date/Time],
+                            o.TotalAmount AS Total,
+                            o.OrderStatus AS Status,
+                            CASE 
+                                WHEN o.ReadyDate < CAST(GETDATE() AS DATE) THEN 'OVERDUE'
+                                WHEN o.ReadyDate = CAST(GETDATE() AS DATE) THEN 'DUE TODAY'
+                                ELSE 'ON TIME'
+                            END AS Priority
+                        FROM POS_CustomOrders o
+                        INNER JOIN Branches b ON o.BranchID = b.BranchID
+                        WHERE 1=1"
+                    
+                    If _filterStatus <> "All" Then
+                        sql &= " AND o.OrderStatus = @status"
+                    End If
+                    
+                    sql &= " ORDER BY o.ReadyDate, o.ReadyTime"
                 End If
-                
-                If _filterStatus <> "All" Then
-                    sql &= " AND OrderStatus = @status"
-                End If
-                
-                sql &= " ORDER BY ReadyDate, ReadyTime"
                 
                 Using da As New SqlDataAdapter(sql, conn)
                     If _filterStatus <> "All" Then
-                        da.SelectCommand.Parameters.AddWithValue("@status", _filterStatus)
+                        ' For General Orders, use mapped status
+                        Dim statusParam As String = _filterStatus
+                        If _orderType = "General" Then
+                            If _filterStatus = "New" Then statusParam = "Created"
+                            If _filterStatus = "Ready" Then statusParam = "Completed"
+                        End If
+                        da.SelectCommand.Parameters.AddWithValue("@status", statusParam)
                     End If
                     
                     Dim dt As New DataTable()
@@ -124,12 +188,25 @@ Public Class ManufacturerOrdersForm
             Using conn As New SqlConnection(_connString)
                 conn.Open()
                 
-                ' Get order details with branch info
-                Dim cmdOrder As New SqlCommand("
-                    SELECT o.*, b.BranchName
-                    FROM POS_CustomOrders o
-                    INNER JOIN Branches b ON o.BranchID = b.BranchID
-                    WHERE o.OrderID = @id", conn)
+                Dim cmdOrder As SqlCommand
+                
+                ' Different queries based on order type
+                If _orderType = "General" Then
+                    ' Get User Defined Order details
+                    cmdOrder = New SqlCommand("
+                        SELECT o.*, b.BranchName
+                        FROM POS_UserDefinedOrders o
+                        INNER JOIN Branches b ON o.BranchID = b.BranchID
+                        WHERE o.UserDefinedOrderID = @id", conn)
+                Else
+                    ' Get Cake Order details
+                    cmdOrder = New SqlCommand("
+                        SELECT o.*, b.BranchName
+                        FROM POS_CustomOrders o
+                        INNER JOIN Branches b ON o.BranchID = b.BranchID
+                        WHERE o.OrderID = @id", conn)
+                End If
+                
                 cmdOrder.Parameters.AddWithValue("@id", orderId)
                 
                 Dim details As New System.Text.StringBuilder()
@@ -139,49 +216,103 @@ Public Class ManufacturerOrdersForm
                 Using reader = cmdOrder.ExecuteReader()
                     If reader.Read() Then
                         orderNumber = reader("OrderNumber").ToString()
-                        isCakeOrder = orderNumber.Contains("-CAKE-")
                         
-                        details.AppendLine("═══════════════════════════════════════")
-                        details.AppendLine($"ORDER: {orderNumber}")
-                        details.AppendLine($"Type: {If(isCakeOrder, "CAKE ORDER", "GENERAL ORDER")}")
-                        details.AppendLine($"Status: {reader("OrderStatus")}")
-                        details.AppendLine("═══════════════════════════════════════")
-                        details.AppendLine()
-                        details.AppendLine("PICKUP BRANCH:")
-                        details.AppendLine($"  {reader("BranchName")}")
-                        details.AppendLine()
-                        details.AppendLine("CUSTOMER:")
-                        details.AppendLine($"  Name: {reader("CustomerName")} {reader("CustomerSurname")}")
-                        details.AppendLine($"  Phone: {reader("CustomerPhone")}")
-                        details.AppendLine()
-                        details.AppendLine("DUE DATE:")
-                        details.AppendLine($"  {Convert.ToDateTime(reader("ReadyDate")):dd MMM yyyy} at {CType(reader("ReadyTime"), TimeSpan):hh\:mm}")
-                        details.AppendLine()
-                        details.AppendLine("FINANCIAL:")
-                        details.AppendLine($"  Total: R{Convert.ToDecimal(reader("TotalAmount")):N2}")
-                        details.AppendLine($"  Deposit: R{Convert.ToDecimal(reader("DepositPaid")):N2}")
-                        details.AppendLine($"  Balance: R{Convert.ToDecimal(reader("BalanceDue")):N2}")
-                        details.AppendLine()
-                        
-                        ' Show manufacturing instructions if available (for cake orders)
-                        If Not IsDBNull(reader("ManufacturingInstructions")) Then
-                            Dim instructions As String = reader("ManufacturingInstructions").ToString()
-                            If Not String.IsNullOrWhiteSpace(instructions) Then
-                                details.AppendLine("───────────────────────────────────────")
-                                details.AppendLine(instructions)
-                                details.AppendLine("───────────────────────────────────────")
+                        If _orderType = "General" Then
+                            ' User Defined Order details
+                            details.AppendLine("═══════════════════════════════════════")
+                            details.AppendLine($"ORDER: {orderNumber}")
+                            details.AppendLine($"Type: USER DEFINED ORDER")
+                            details.AppendLine($"Status: {reader("Status")}")
+                            details.AppendLine("═══════════════════════════════════════")
+                            details.AppendLine()
+                            details.AppendLine("PICKUP BRANCH:")
+                            details.AppendLine($"  {reader("BranchName")}")
+                            details.AppendLine()
+                            details.AppendLine("CUSTOMER:")
+                            details.AppendLine($"  Name: {reader("CustomerName")} {If(IsDBNull(reader("CustomerSurname")), "", reader("CustomerSurname"))}")
+                            details.AppendLine($"  Phone: {reader("CustomerCellNumber")}")
+                            details.AppendLine()
+                            details.AppendLine("COLLECTION:")
+                            details.AppendLine($"  {Convert.ToDateTime(reader("CollectionDate")):dd MMM yyyy} at {CType(reader("CollectionTime"), TimeSpan):hh\:mm}")
+                            details.AppendLine()
+                            details.AppendLine("FINANCIAL:")
+                            details.AppendLine($"  Total: R{Convert.ToDecimal(reader("TotalAmount")):N2}")
+                            details.AppendLine($"  Paid: R{Convert.ToDecimal(reader("AmountPaid")):N2}")
+                            details.AppendLine()
+                            
+                            ' Show special requests if available
+                            If Not IsDBNull(reader("SpecialRequest")) Then
+                                Dim specialReq As String = reader("SpecialRequest").ToString()
+                                If Not String.IsNullOrWhiteSpace(specialReq) Then
+                                    details.AppendLine("SPECIAL REQUEST:")
+                                    details.AppendLine($"  {specialReq}")
+                                    details.AppendLine()
+                                End If
+                            End If
+                            
+                            ' Show cake details if available
+                            If Not IsDBNull(reader("CakeColour")) Then
+                                details.AppendLine("CAKE DETAILS:")
+                                details.AppendLine($"  Colour: {reader("CakeColour")}")
+                                If Not IsDBNull(reader("CakeImage")) Then
+                                    details.AppendLine($"  Image: {reader("CakeImage")}")
+                                End If
                                 details.AppendLine()
+                            End If
+                        Else
+                            ' Cake Order details
+                            isCakeOrder = True
+                            details.AppendLine("═══════════════════════════════════════")
+                            details.AppendLine($"ORDER: {orderNumber}")
+                            details.AppendLine($"Type: CAKE ORDER")
+                            details.AppendLine($"Status: {reader("OrderStatus")}")
+                            details.AppendLine("═══════════════════════════════════════")
+                            details.AppendLine()
+                            details.AppendLine("PICKUP BRANCH:")
+                            details.AppendLine($"  {reader("BranchName")}")
+                            details.AppendLine()
+                            details.AppendLine("CUSTOMER:")
+                            details.AppendLine($"  Name: {reader("CustomerName")} {reader("CustomerSurname")}")
+                            details.AppendLine($"  Phone: {reader("CustomerPhone")}")
+                            details.AppendLine()
+                            details.AppendLine("DUE DATE:")
+                            details.AppendLine($"  {Convert.ToDateTime(reader("ReadyDate")):dd MMM yyyy} at {CType(reader("ReadyTime"), TimeSpan):hh\:mm}")
+                            details.AppendLine()
+                            details.AppendLine("FINANCIAL:")
+                            details.AppendLine($"  Total: R{Convert.ToDecimal(reader("TotalAmount")):N2}")
+                            details.AppendLine($"  Deposit: R{Convert.ToDecimal(reader("DepositPaid")):N2}")
+                            details.AppendLine($"  Balance: R{Convert.ToDecimal(reader("BalanceDue")):N2}")
+                            details.AppendLine()
+                            
+                            ' Show manufacturing instructions if available (for cake orders)
+                            If Not IsDBNull(reader("ManufacturingInstructions")) Then
+                                Dim instructions As String = reader("ManufacturingInstructions").ToString()
+                                If Not String.IsNullOrWhiteSpace(instructions) Then
+                                    details.AppendLine("───────────────────────────────────────")
+                                    details.AppendLine(instructions)
+                                    details.AppendLine("───────────────────────────────────────")
+                                    details.AppendLine()
+                                End If
                             End If
                         End If
                     End If
                 End Using
                 
-                ' Get order items
-                Dim cmdItems As New SqlCommand("
-                    SELECT ProductName, Quantity, UnitPrice, LineTotal 
-                    FROM POS_CustomOrderItems 
-                    WHERE OrderID = @id
-                    ORDER BY ProductName", conn)
+                ' Get order items - different tables for different order types
+                Dim cmdItems As SqlCommand
+                If _orderType = "General" Then
+                    cmdItems = New SqlCommand("
+                        SELECT ProductName, Quantity, UnitPrice, LineTotal 
+                        FROM POS_UserDefinedOrderItems 
+                        WHERE UserDefinedOrderID = @id
+                        ORDER BY ProductName", conn)
+                Else
+                    cmdItems = New SqlCommand("
+                        SELECT ProductName, Quantity, UnitPrice, LineTotal 
+                        FROM POS_CustomOrderItems 
+                        WHERE OrderID = @id
+                        ORDER BY ProductName", conn)
+                End If
                 cmdItems.Parameters.AddWithValue("@id", orderId)
                 
                 details.AppendLine("ORDER ITEMS:")
@@ -214,8 +345,16 @@ Public Class ManufacturerOrdersForm
         Dim orderNumber As String = dgvOrders.SelectedRows(0).Cells("Order #").Value.ToString()
         Dim status As String = dgvOrders.SelectedRows(0).Cells("Status").Value.ToString()
         
-        If status <> "New" Then
-            MessageBox.Show("Only NEW orders can be marked as ready", "Invalid", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        ' Check status based on order type
+        Dim validStatus As Boolean = False
+        If _orderType = "General" Then
+            validStatus = (status = "Created")
+        Else
+            validStatus = (status = "New")
+        End If
+        
+        If Not validStatus Then
+            MessageBox.Show("Only NEW/CREATED orders can be marked as ready", "Invalid", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
         End If
         
@@ -223,7 +362,16 @@ Public Class ManufacturerOrdersForm
             Try
                 Using conn As New SqlConnection(_connString)
                     conn.Open()
-                    Dim cmd As New SqlCommand("UPDATE POS_CustomOrders SET OrderStatus = 'Ready' WHERE OrderID = @id", conn)
+                    
+                    Dim cmd As SqlCommand
+                    If _orderType = "General" Then
+                        ' Update User Defined Order
+                        cmd = New SqlCommand("UPDATE POS_UserDefinedOrders SET Status = 'Completed', CompletedDate = GETDATE() WHERE UserDefinedOrderID = @id", conn)
+                    Else
+                        ' Update Cake Order
+                        cmd = New SqlCommand("UPDATE POS_CustomOrders SET OrderStatus = 'Ready' WHERE OrderID = @id", conn)
+                    End If
+                    
                     cmd.Parameters.AddWithValue("@id", orderId)
                     cmd.ExecuteNonQuery()
                     

@@ -1595,7 +1595,20 @@ Partial Class MainDashboard
                                                   frm.ShowDialog()
                                               End Sub
             
-            miCakeOrders.DropDownItems.AddRange(New ToolStripItem() {miNewCakeOrders, miReadyCakeOrders, miAllCakeOrders})
+            Dim miCuttingList As New ToolStripMenuItem("📋 Cutting List")
+            AddHandler miCuttingList.Click, Sub(sender, e)
+                                                Try
+                                                    Dim branchId As Integer = If(currentUser IsNot Nothing AndAlso currentUser.BranchID.HasValue, currentUser.BranchID.Value, 0)
+                                                    Dim frm As New CakeCuttingListForm(branchId)
+                                                    frm.MdiParent = Me
+                                                    frm.Show()
+                                                    frm.WindowState = FormWindowState.Maximized
+                                                Catch ex As Exception
+                                                    MessageBox.Show("Error opening Cutting List: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                                                End Try
+                                            End Sub
+            
+            miCakeOrders.DropDownItems.AddRange(New ToolStripItem() {miNewCakeOrders, miReadyCakeOrders, miAllCakeOrders, New ToolStripSeparator(), miCuttingList})
             
             ' General Orders submenu
             Dim miGeneralOrders As New ToolStripMenuItem("General Orders")
