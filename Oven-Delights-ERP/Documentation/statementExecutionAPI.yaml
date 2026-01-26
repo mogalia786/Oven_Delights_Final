@@ -1,0 +1,317 @@
+openapi: 3.0.1
+info:
+  title: Realtime Statements Execution
+  description: |-
+    The BankToCustomerStatement message is sent by the account servicer to an account owner or to a party authorised by the account owner to receive the message. It is used to inform the account owner,or authorised party, of the entries booked to the account, and to provide the owner with balance information on the account at a given point in time.
+
+    Usage
+
+    The BankToCustomerStatement message can contain reports for more than one account. It provides information for cash management and or reconciliation.
+
+    It contains information on booked entries only.
+    It can include underlying details of transactions that have been included in the entry.
+
+    The message is exchanged as defined between the account servicer and the account owner. It provides information on items that have been booked to the account and also balance information. Depending on services and schedule agreed between banks and their customers, statements may be generated and exchanged accordingly, for example for intraday or prior day periods.
+
+    It is possible that the receiver of the message is not the account owner, but a party entitled through arrangement with the account owner to receive the account information also known as recipient.
+  contact:
+    name: First National Bank
+    url: https://www.fnb.co.za
+  version: 1.0.11
+servers:
+  - url: https://api.i.fnb.co.za/apigateway
+    description: integration
+  - url: https://api.p.fnb.co.za/apigateway
+    description: preprod
+  - url: https://api.fnb.co.za/apigateway
+    description: production
+
+paths:          
+  /statements/retrieveStatement/v1/:
+    post:
+      tags:
+        - Customer Statement Execution
+      summary: Retrieve realtime statement by accountId
+      description: For valid response try integer IDs with value <= 5 or > 10. Other values will generate exceptions.
+      operationId: getStatementByaccountId
+      parameters:
+        - name: X-Request-ID
+          in: header
+          description: Used to unique identify each interaction.
+          schema:
+            $ref: '#/components/schemas/UUIDv4Identifier'
+          required: true
+        - name: Authorization
+          in: header
+          description: Used for API Client Authentication credentials. Information on type and usage in Security & Access Control section.
+          schema:
+            type: string
+            format: jwt
+          required: true
+               
+      requestBody: 
+        required: true
+        content: 
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerStatementRequest'
+                                        
+      responses:
+        '200':
+          description: Successful Operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerStatement'
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+        "401":
+          description: "Unauthorized Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+        "403":
+          description: "Forbidden Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+
+components:
+  securitySchemes:
+    oauth:
+      type: oauth2
+      description: This API uses OAuth 2 with the Client Credentials grant flow.
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.fnb.co.za/apigateway/oauth2/token/v2
+          scopes:
+            i_can: provides scopes allowed based on partner permissions
+  
+  schemas:
+    CustomerStatement:
+      type: object
+      properties: 
+        groupHeader:
+          description: Common information for the message.
+          $ref: '#/components/schemas/GroupHeader'
+        statement:
+          description: Reports on booked entries and balances for a cash account.
+          $ref: '#/components/schemas/Statement'
+
+    CustomerStatementRequest:
+      type: object
+      properties:
+        accountId:
+          description: accountId of statement that needs to be fetched
+          type: string
+        fromDate:
+          description: A start date for which the account report is issued
+          $ref: '#/components/schemas/ISODate'
+        toDate:
+          description: An end date for which the account report is issued
+          $ref: '#/components/schemas/ISODate'
+
+    ISODate:
+      pattern: >-
+        /^\d{4}(-\d\d(-\d\d(T\d\d:\d\d(:\d\d)?(\.\d+)?(([+-]\d\d:\d\d)|Z)?)?)?)?$/i
+      type: string
+      description: >-
+        ISO 8601 Date spec
+        (YYYY-MM-DD)
+      
+    
+    GroupHeader:
+      type: object
+      properties:
+        messageId:
+          description: Unambiguous identification of the account to which credit and debit entries are made
+          type: string
+        creationDateTime:
+          description: Date and time at which the statement was created.
+          type: string
+          format: date
+        pageNumber:
+          type: number
+        lastPageIndicator:
+          type: boolean
+
+    Statement:
+      type: object
+      properties:
+        statementNumber:
+          type: number
+        sequenceNumber:
+          type: string
+        creationDateTime:
+          description: Date and time at which the statement was created.
+          type: string
+          format: date
+        fromDateTime:
+          description: Date and time at which the message was created.
+          type: string
+          format: date
+        toDateTime:
+          description: Date and time at which the message was created.
+          type: string
+          format: date
+        account:
+          description: Unambiguous identification of the account to which credit and debit entries are made.
+          $ref: '#/components/schemas/Account'
+        balance:
+          description: Set of elements used to define the balance as a numerical representation of the net increases and decreases in an account at a specific point in time
+          type: array
+          items:
+            $ref: '#/components/schemas/Balance'
+        entry:
+          description: Specify an entry in the statement. At least one reference must be provided to identify the entry and its underlying transactions.
+          type: array
+          items:           
+            $ref: '#/components/schemas/Entry'
+    
+    Account:
+      type: object
+      properties:
+        typeCode:
+          type: string
+        currency:
+            type: string
+        name:
+          description: Name of the account, as assigned by the account servicing institution, in agreement with the account owner in order to provide an additional means of identification of the account.
+          type: string
+        accountNumber:
+          description: Specifies the type of interest
+          type: string
+        ownerName: 
+          description: Party that legally owns the account
+          type: string
+        servicer: 
+          description: Party that manages the account on behalf of the account owner, that is manages the registration and booking of entries on the account, calculates balances on the account and provides information about the account.
+          $ref: '#/components/schemas/Servicer'
+    
+    Servicer:
+      type: object
+      properties:
+        institutionName:
+          type: string
+        institutionCountry:
+          type: string
+
+    Balance:
+      type: object
+      properties:
+        typeCode:
+          type: string
+        amountValue:
+          description: Amount of money resulting from the calculation of the tax
+          type: number
+          format: BigDecimal
+        amountCurrency:
+          type: string
+        creditDebitIndicator:
+          type: string
+        date:
+          type: string
+          format: date
+
+    Entry:
+      type: object
+      properties:
+        amountValue:
+          description: Minimum transaction amount to be reported in the requested message
+          type: number
+          format: BigDecimal
+        amountCurrency:
+          description: Identification of the currency in which the account is held
+          type: string
+        creditDebitIndicator:
+          description: Indicates whether the reporting request refers to credit or debit entries
+          type: string
+        statusCode:
+          description: Specifies the status on the books of the account servicer of the transactions to be reported
+          type: string
+        bookingDateTime:
+          type: string
+          format: date
+        valueDate:
+          type: string
+          format: date
+        servicerReference:
+          type: string
+        bankTransactionCode:
+          $ref: '#/components/schemas/BankTransactionCode'
+        transactionDetails:
+          $ref: '#/components/schemas/TransactionDetails'
+
+    BankTransactionCode:
+      type: object
+      properties:
+        domainCode:
+          type: string
+        domainFamilyCode:
+          type: string
+        domainSubFamilyCode:
+          type: string
+
+    TransactionDetails:
+      type: object
+      properties:
+        referenceEndToEndId:
+          type: string
+        amountValue:
+          type: number
+          format: BigDecimal
+        amountCurrency:
+          type: string
+        creditDebitIndicator:
+          type: string
+        relatedPartyDebitorName:
+          type: string
+        counterValueAmount:
+          $ref: '#/components/schemas/CounterValueAmount'
+
+    CounterValueAmount:
+      type: object
+      properties:
+        servicerCurrencyExchange: 
+          type: string
+        currencyExchangeRate:
+          type: string
+
+    ErrorMessage:
+      required:
+        - status
+        - message
+        - details
+      type: object
+      properties:
+        status:
+          type: string
+          enum: 
+            - FAILED
+          description: Specifies the custom status defined by the service provider.
+        message:
+          type: string
+          description: Specifies the custom error message as defined by the service provider.
+        details:
+          maxLength: 255
+          minLength: 1
+          type: string
+          description: Specifies the detailed error message identifying the cause of the error.
+
+    UUIDv4Identifier:
+      pattern: '^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$'
+      type: string
+      example: 97ed4827-7b6f-4491-a06f-b548d5a7512d

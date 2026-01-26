@@ -49,6 +49,8 @@ Partial Class BatchPaymentForm
         Me.lblBatchTotal = New System.Windows.Forms.Label()
         Me.btnProcessBatch = New System.Windows.Forms.Button()
         Me.btnPrintSchedule = New System.Windows.Forms.Button()
+        Me.btnSubmitFNB = New System.Windows.Forms.Button()
+        Me.btnViewTransactions = New System.Windows.Forms.Button()
         Me.btnLoadBatch = New System.Windows.Forms.Button()
         Me.btnClose = New System.Windows.Forms.Button()
         Me.pnlTop.SuspendLayout()
@@ -295,6 +297,8 @@ Partial Class BatchPaymentForm
         '
         Me.pnlBatch.BackColor = System.Drawing.Color.White
         Me.pnlBatch.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle
+        Me.pnlBatch.Controls.Add(Me.btnViewTransactions)
+        Me.pnlBatch.Controls.Add(Me.btnSubmitFNB)
         Me.pnlBatch.Controls.Add(Me.btnPrintSchedule)
         Me.pnlBatch.Controls.Add(Me.btnProcessBatch)
         Me.pnlBatch.Controls.Add(Me.lblBatchTotal)
@@ -374,6 +378,32 @@ Partial Class BatchPaymentForm
         Me.btnPrintSchedule.Text = "Print Payment Schedule"
         Me.btnPrintSchedule.UseVisualStyleBackColor = False
         '
+        'btnSubmitFNB
+        '
+        Me.btnSubmitFNB.BackColor = System.Drawing.Color.FromArgb(CType(CType(0, Byte), Integer), CType(CType(122, Byte), Integer), CType(CType(204, Byte), Integer))
+        Me.btnSubmitFNB.FlatStyle = System.Windows.Forms.FlatStyle.Flat
+        Me.btnSubmitFNB.Font = New System.Drawing.Font("Segoe UI", 9.0!, System.Drawing.FontStyle.Bold)
+        Me.btnSubmitFNB.ForeColor = System.Drawing.Color.White
+        Me.btnSubmitFNB.Location = New System.Drawing.Point(1050, 205)
+        Me.btnSubmitFNB.Name = "btnSubmitFNB"
+        Me.btnSubmitFNB.Size = New System.Drawing.Size(150, 30)
+        Me.btnSubmitFNB.TabIndex = 6
+        Me.btnSubmitFNB.Text = "Submit to FNB API"
+        Me.btnSubmitFNB.UseVisualStyleBackColor = False
+        '
+        'btnViewTransactions
+        '
+        Me.btnViewTransactions.BackColor = System.Drawing.Color.FromArgb(CType(CType(52, Byte), Integer), CType(CType(152, Byte), Integer), CType(CType(219, Byte), Integer))
+        Me.btnViewTransactions.FlatStyle = System.Windows.Forms.FlatStyle.Flat
+        Me.btnViewTransactions.Font = New System.Drawing.Font("Segoe UI", 9.0!, System.Drawing.FontStyle.Bold)
+        Me.btnViewTransactions.ForeColor = System.Drawing.Color.White
+        Me.btnViewTransactions.Location = New System.Drawing.Point(1210, 205)
+        Me.btnViewTransactions.Name = "btnViewTransactions"
+        Me.btnViewTransactions.Size = New System.Drawing.Size(150, 30)
+        Me.btnViewTransactions.TabIndex = 7
+        Me.btnViewTransactions.Text = "View Transactions"
+        Me.btnViewTransactions.UseVisualStyleBackColor = False
+        '
         'btnClose
         '
         Me.btnClose.BackColor = System.Drawing.Color.FromArgb(CType(CType(149, Byte), Integer), CType(CType(165, Byte), Integer), CType(CType(166, Byte), Integer))
@@ -445,5 +475,7 @@ Partial Class BatchPaymentForm
     Friend WithEvents lblBatchTotal As Label
     Friend WithEvents btnProcessBatch As Button
     Friend WithEvents btnPrintSchedule As Button
+    Friend WithEvents btnSubmitFNB As Button
+    Friend WithEvents btnViewTransactions As Button
     Friend WithEvents btnClose As Button
 End Class

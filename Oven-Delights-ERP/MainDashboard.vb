@@ -480,6 +480,68 @@ Partial Class MainDashboard
     Private Sub SetupAdminMenus()
         ' Removed old Role Access Control menu - now using RoleAccessManagementToolStripMenuItem in Designer
         ' The new Role Access Management menu is defined in MainDashboard.Designer.vb
+        
+        ' Add FNB Terminal Test Lab
+        Try
+            Dim utilitiesMenu = GetOrCreateTopMenu("Utilities")
+            Dim fnbTestMenu = GetOrCreateSubMenu(utilitiesMenu, "FNB Terminal Test Lab")
+            RemoveHandler fnbTestMenu.Click, AddressOf OpenFNBTerminalTest
+            AddHandler fnbTestMenu.Click, AddressOf OpenFNBTerminalTest
+        Catch
+        End Try
+        
+        ' Add Sales Analytics Dashboard (only for Super Admin at Head Office)
+        RefreshSalesDashboardMenu()
+    End Sub
+    
+    Private Sub RefreshSalesDashboardMenu()
+        Try
+            Dim adminMenu = GetOrCreateTopMenu("Administration")
+            
+            ' Find and remove existing Sales Analytics Dashboard menu if it exists
+            Dim existingMenu As ToolStripMenuItem = Nothing
+            For Each item As ToolStripItem In adminMenu.DropDownItems
+                If TypeOf item Is ToolStripMenuItem AndAlso item.Text = "Sales Analytics Dashboard" Then
+                    existingMenu = DirectCast(item, ToolStripMenuItem)
+                    Exit For
+                End If
+            Next
+            
+            If existingMenu IsNot Nothing Then
+                adminMenu.DropDownItems.Remove(existingMenu)
+            End If
+            
+            ' Add menu only if Super Admin at Head Office (BranchID = 1)
+            If AppSession.CurrentRoleName = "Super Administrator" AndAlso AppSession.CurrentBranchID = 1 Then
+                Dim salesDashMenu = GetOrCreateSubMenu(adminMenu, "Sales Analytics Dashboard")
+                RemoveHandler salesDashMenu.Click, AddressOf OpenSalesDashboard
+                AddHandler salesDashMenu.Click, AddressOf OpenSalesDashboard
+            End If
+        Catch ex As Exception
+            System.Diagnostics.Debug.WriteLine($"RefreshSalesDashboardMenu error: {ex.Message}")
+        End Try
+    End Sub
+    
+    Private Sub OpenFNBTerminalTest(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New FNBTerminalTestForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show($"Error opening FNB Terminal Test: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    
+    Private Sub OpenSalesDashboard(sender As Object, e As EventArgs)
+        Try
+            ' Show full JARVIS Executive Dashboard in borderless fullscreen
+            Dim frm As New Admin.ExecutiveDashboard()
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show($"Error opening Sales Dashboard: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     ' Helper method for user notifications
@@ -811,8 +873,16 @@ Partial Class MainDashboard
         _branchRuleTimer.Start()
     End Sub
 
+    Private lastBranchID As Integer = -1
+    
     Private Sub BranchRuleTick(sender As Object, e As EventArgs)
         Try
+            ' Check if branch changed and refresh dashboard menu
+            If AppSession.CurrentBranchID <> lastBranchID Then
+                lastBranchID = AppSession.CurrentBranchID
+                RefreshSalesDashboardMenu()
+            End If
+            
             For Each f As Form In Application.OpenForms
                 If f Is Nothing OrElse f.IsDisposed Then Continue For
                 ' Hide typical branch selector controls for non–Super Admins
@@ -2416,6 +2486,13 @@ Partial Class MainDashboard
                 End If
             Catch ex As Exception
                 System.Diagnostics.Debug.WriteLine($"Error setting up accounting menu: {ex.Message}")
+            End Try
+            
+            ' Setup Sales Analytics Dashboard menu (for Super Admin at Head Office)
+            Try
+                RefreshSalesDashboardMenu()
+            Catch ex As Exception
+                System.Diagnostics.Debug.WriteLine($"Error setting up sales dashboard menu: {ex.Message}")
             End Try
             
             ' Setup Stock Report Menus
@@ -4449,6 +4526,11 @@ Partial Class MainDashboard
         Dim mnuEFTPayments As New ToolStripMenuItem("EFT Payments")
         AddHandler mnuEFTPayments.Click, AddressOf OpenEFTPayments
         AccountingToolStripMenuItem.DropDownItems.Add(mnuEFTPayments)
+        
+        ' FNB Transaction Viewer
+        Dim mnuFNBTransactions As New ToolStripMenuItem("FNB Payment Transactions")
+        AddHandler mnuFNBTransactions.Click, AddressOf OpenFNBTransactions
+        AccountingToolStripMenuItem.DropDownItems.Add(mnuFNBTransactions)
     End Sub
 
     Private Sub OpenBatchPayment(sender As Object, e As EventArgs)
@@ -4466,7 +4548,19 @@ Partial Class MainDashboard
             frm.Show()
             frm.WindowState = FormWindowState.Maximized
         Catch ex As Exception
-            MessageBox.Show("Error opening Batch Payment: " & ex.Message, "Accounting", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Dim errorMsg As String = $"Error opening Batch Payment:{Environment.NewLine}{Environment.NewLine}" &
+                                    $"Message: {ex.Message}{Environment.NewLine}{Environment.NewLine}" &
+                                    $"Type: {ex.GetType().Name}{Environment.NewLine}{Environment.NewLine}" &
+                                    $"Stack Trace:{Environment.NewLine}{ex.StackTrace}"
+            
+            If ex.InnerException IsNot Nothing Then
+                errorMsg &= $"{Environment.NewLine}{Environment.NewLine}Inner Exception:{Environment.NewLine}{ex.InnerException.Message}"
+            End If
+            
+            MessageBox.Show(errorMsg, "Accounting Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            
+            ' Also write to debug output
+            System.Diagnostics.Debug.WriteLine($"BatchPaymentForm Error: {errorMsg}")
         End Try
     End Sub
 
@@ -4495,6 +4589,25 @@ Partial Class MainDashboard
             frm.WindowState = FormWindowState.Maximized
         Catch ex As Exception
             MessageBox.Show("Error opening EFT Payments: " & ex.Message & vbCrLf & vbCrLf & "Stack: " & ex.StackTrace, "Accounting", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenFNBTransactions(sender As Object, e As EventArgs)
+        Try
+            For Each child As Form In Me.MdiChildren
+                If TypeOf child Is FNBTransactionViewerForm Then
+                    child.Activate()
+                    child.WindowState = FormWindowState.Maximized
+                    Return
+                End If
+            Next
+
+            Dim frm As New FNBTransactionViewerForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening FNB Transactions: " & ex.Message, "Accounting", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 

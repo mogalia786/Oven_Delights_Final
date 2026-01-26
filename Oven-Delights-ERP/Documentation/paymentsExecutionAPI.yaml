@@ -1,0 +1,640 @@
+openapi: 3.0.1
+info:
+  title: Payment Execution API
+  description: >
+    This service works by processing payment transactions by clients and allows clients to view reports of their current payment transactions.
+
+
+    `The API supports following functionalities:`
+
+       * EFT Payment Initiation
+       * EFT Payment Unpaids
+
+     ### Usage
+
+
+     The payment initiation instruction contains customer credit transfer
+     instructions. The API is used to exchange:
+
+     * A single instance of a credit transfer initiation
+
+     * Payment instructions that result in book transfers at the debtor agent or
+     payments to another financial institution
+
+     * Payment instructions that result in an electronic cash transfer to the
+     creditor account
+
+
+     `Error Responses`
+
+
+     The API uses common HTTP status codes in the response header to indicate
+     success or failure. Specific error code and description will be returned in
+     the custom error schema.
+  contact:
+    name: First National Bank
+    url: https://www.fnb.co.za
+  version: "1.0"
+servers:
+  - url: https://api.i.fnb.co.za/apigateway
+    description: integration
+  - url: https://api.p.fnb.co.za/apigateway
+    description: preprod
+  - url: https://api.fnb.co.za/apigateway
+    description: production
+security:
+  - oauth:
+      - i_can
+paths:
+  /paymentExecution/initiate/v1:
+    post:
+      tags:
+        - Payment Initiation
+      summary: Create Payment Initiation Instruction.
+      description: >
+        Create a payment initiation instruction.
+        The request accept an instruction which will be
+        validated and created.
+      security:
+        - oauth: []
+
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerCreditTransferInitiation"
+
+      responses:
+        "200":
+          description: "Accepted"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerCreditTransferInitiationResponse'
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+        "403":
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+
+  /paymentExecution/retrieveReport/v1/{instructionId}:
+    get:
+      tags:
+        - PaymentExecution - Retrieve Report
+      parameters:
+        - in: path
+          name: instructionId
+          schema:
+            type: string
+          required: true
+      security:
+        - oauth: []
+      summary: Retrieve payment execution result
+      description: This service is used to retrieve the current status of payment transactions.
+      responses:
+        "200":
+          description: "Accepted"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerPaymentStatusReport'
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+        "403":
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+
+  /paymentExecution/retrieveFilteredUnpaids/v1:
+    post:
+      tags:
+        - View Unpaid Payments
+      summary: Create Unpaids Payment Status Report Request.
+      description: >
+        This service is used to retrieve customer status report for EFT Payments Unpaids.
+      security:
+        - oauth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnpaidsFilter"
+
+      responses:
+        "200":
+          description: "Accepted"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerUnpaidsPaymentStatusReportList'
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+        "403":
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+
+components:
+
+  securitySchemes:
+    oauth:
+      type: oauth2
+      description: This API uses OAuth 2 with the Client Credentials grant flow.
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.p.fnb.co.za/apigateway/oauth2/token/v2
+          scopes:
+            i_can: provides scopes allowed based on partner permissions
+
+  schemas:
+
+    CustomerPaymentStatusReport:
+      type: object
+      properties:
+        instructionId:
+          type: string
+        groupHeader:
+          $ref: '#/components/schemas/GroupHeader'
+        originalGroupHeader:
+          $ref: '#/components/schemas/OriginalGroupHeader'
+        groupStatus:
+          description: Specifies the status of the payment information group
+          type: string
+          example: RJCT
+        statusReasonInformation:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatusReasonInformation'
+        originalPaymentInformation:
+          description: Information concerning the original payment information, to which
+            the status report message refers
+          type: array
+          items:
+            $ref: '#/components/schemas/OriginalPaymentInformation'
+
+    StatusReasonInformation:
+      type: object
+      properties:
+        reason:
+          type: string
+          example: UN20
+        additionalInformation:
+          type: string
+          example: CREDITOR CONSOLIDATED OR ITEMIZED REFERENCE IS MANDATORY AND CANNOT BE NULL OR SPACES.
+
+    GroupHeader:
+      type: object
+      properties:
+        messageId:
+          description: Point to point reference, as assigned by the instructing party
+          type: string
+          example: Public_Rec_09v5retes
+        creationDateTime:
+          $ref: '#/components/schemas/ISODateTime'
+
+        initiatingPartyName:
+          description: Party that initiates the payment. Name by which a party is known and which is usually used to identify that party.
+          type: string
+          example: ESKOM
+        initiatingPartyBIC:
+          description: Set to the SWIFT BIC registered for FirstRand Bank Ltd. in country
+          type: string
+          example: ESKOZAJJXXX
+        totalNumberOfTransactions:
+          description: Number of individual transactions contained in the message. It is the number of all the credit transactions included in ALL the PaymentInformation groups combined.
+          type: integer
+          example: 1
+        totalControlSum:
+          description: Total of all individual amounts included in the message, irrespective of currencies. Must not contain more than 2 decimal places.
+          type: number
+          format: float
+          example: 24
+
+    OriginalGroupHeader:
+      type: object
+      properties:
+        originalMessageId:
+          description: part of the initiate payment reference, Point to point reference, as assigned by the instructing party
+          type: string
+          example: Public_Rec_09v5retest
+        originalCreationDateTime:
+          $ref: '#/components/schemas/ISODateTime'
+        originalInitiatingPartyName:
+          description: Party that initiates the payment. Name by which a party is known and which is usually used to identify that party.
+          type: string
+          example: ESKOM
+        originalInitiatingPartyBIC:
+          description: Set to the SWIFT BIC registered for FirstRand Bank Ltd. in country
+          type: string
+          example: ESKOZAJJXXX
+        originalTotalNumberOfTransactions:
+          description: Number of individual transactions contained in the message. It is the number of all the credit transactions included in ALL the PaymentInformation groups combined.
+          type: integer
+          example: 1
+        originalTotalControlSum:
+          description: Total of all individual amounts included in the message, irrespective of currencies. Must not contain more than 2 decimal places.
+          type: number
+          format: float
+          example: 24
+
+    OriginalPaymentInformation:
+      type: object
+      properties:
+        originalPaymentInformationId:
+          description: Unique identification, as assigned by the original sending party
+          type: string
+          example: Public_Rec_09v5retest
+        paymentInformationStatus:
+          description: Specifies the status of the payment information group
+          type: string
+          example: RJCT
+        statusReasonInformation:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatusReasonInformation'
+        transactionInfoAndStatus:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentTransactionInformation'
+
+    PaymentTransactionInformation:
+      type: object
+      properties:
+        originalEndToEndId:
+          description: This End to End Identifer must be used to correlate this response to that of the original Direct Debit Transaction in the original request.
+          type: string
+          example: defect1173 retest
+        transactionStatus:
+          description: Specifies the status of a transaction, in a coded form
+          type: string
+          example: RJCT
+        statusReasonInformation:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatusReasonInformation'
+
+    CustomerCreditTransferInitiation:
+      type: object
+      properties:
+        groupHeader:
+          $ref: '#/components/schemas/GroupHeader'
+        paymentInformation:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentInformation'
+
+    PaymentInformation:
+      type: object
+      properties:
+        paymentInformationId:
+          description: Unique identification, as assigned by a sending party, to identify the payment information group within the message.
+          type: string
+          example: Public_Rec_09v5retest
+        paymentInformationMethod:
+          description: Code to identify the payment method requested.
+            The only accepted code is TRF
+          type: string
+          example: TRF
+        batchBooking:
+          description: KN  moved it from instruction level ZAQAZ????
+          type: boolean
+        numberOfTransactions:
+          description: Number of individual transactions contained in the payment information group. This is the number of credit transactions applicable to the Payment Information group.
+          type: integer
+          example: 1
+        controlSum:
+          description: Total amount of all individual transactions' Instructed Amounts included in this PaymentInformation group, irrespective of currency.
+          type: number
+          format: float
+          example: 24
+        paymentTypeInformationServiceLevelCode:
+          description: Specifies a pre-agreed service or level of service between the parties, as published in the ISO service level code list.
+            Refer to -Service Level Codes- tab for relevant codes.
+          type: string
+          example: SDVA
+        requestedExecutionDate:
+          $ref: '#/components/schemas/ISODate'
+        debtor:
+          $ref: '#/components/schemas/Debtor'
+        debtorAccount:
+          $ref: '#/components/schemas/DebtorAccount'
+        debtorAgent:
+          $ref: '#/components/schemas/DebtorAgent'
+        creditTransferTransactionInformation:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreditTransferTransactionInformation"
+
+    CreditTransferTransactionInformation:
+      description: >-
+        Set of elements used to provide information on the individual debit
+        transaction(s) included in the message. Repeated for all debit
+        transactions within a payment information group or batch. Debits are
+        batched together where they have the same credit details, i.e. same
+        creditor account and same reference used for the batch (if different
+        credit references required for a batch of collections, then these can be
+        grouped as a different batch). Also, itemised processing allows an
+        individual reference per debit transaction.
+      type: object
+      properties:
+        endToEndId:
+          description: Unique identification assigned by the initiating party to unambiguously identify the transaction. This identification is passed on throughout the entire end-to-end chain
+          type: string
+          example: BWSAA111-2
+        amount:
+          $ref: '#/components/schemas/Amount'
+        creditor:
+          $ref: '#/components/schemas/Creditor'
+        creditorAccount:
+          $ref: '#/components/schemas/CreditorAccount'
+        creditorAgent:
+          $ref: '#/components/schemas/CreditorAgent'
+        remittanceInformationUnstructured:
+          description: This is the reference that will appear on the beneficiary's account statement. Payments to LOAN, TRNS, SBSH and GRCP FNB accounts will only process the first 20 characters of this field.
+          type: string
+          example: Inv 1347893
+        remittanceLocationMethod:
+          description: Reference used to determine to read an EMAIL property
+          type: string
+          enum: [EMAL]
+        remittanceLocationElectronicAddress:
+          description: Recipient's email address to send a proof of payment.
+          type: string
+
+    Amount:
+      description: >-
+        Amount Value contains one or two or no decimal values. Decimal separator
+        is a period. Values greater than 2 decimals will result in a failure.
+        The set of permutations include
+      type: object
+      properties:
+        currency:
+          description: describes the currency for the transaction amount
+          type: string
+          example: ZAR
+        value:
+          description: >-
+            Amount of money to be moved between the debtor and creditor, before
+            deduction of charges, expressed in the currency
+          type: number
+          format: float
+          example: 400000
+
+    Debtor:
+      type: object
+      properties:
+        name:
+          description: Party that owes an amount of money to the (ultimate) creditor
+          type: string
+          example: Debtor Inc
+        bicOrBEI:
+          description: Set to the SWIFT BIC registered for FirstRand Bank Ltd. in country
+          type: string
+          example: FIRNZAJJ
+
+    DebtorAgent:
+      type: object
+      properties:
+        branchId:
+          type: string
+          example: 250655
+
+    DebtorAccount:
+      type: object
+      properties:
+        accountNumber:
+          description: Unique and unambiguous identification for the account between the account owner and the account servicer
+          type: string
+          example: 62844045455
+        accountType:
+          description: Specifies the nature, type or use of the account. Debtor account can only be cheque/cash or savings. Therefore, proprietary cannot be used.
+          type: string
+          example: CACC
+
+    Creditor:
+      type: object
+      properties:
+        name:
+          description: Party that owes an amount of money to the (ultimate) creditor
+          type: string
+          example: Creditor One Pty Ltd
+        bicOrBEI:
+          description: Set to the SWIFT BIC registered for FirstRand Bank Ltd. in country
+          type: string
+          example: ABSAZAJJ
+
+    CreditorAgent:
+      type: object
+      properties:
+        branchId:
+          type: string
+          example: 250655
+
+    CreditorAccount:
+      type: object
+      properties:
+        accountNumber:
+          description: Unique and unambiguous identification for the account between the account owner and the account servicer
+          type: string
+          example: 123456789
+        accountType:
+          description: Specifies the nature, type or use of the account. Creditor account can only be cheque/cash or savings. Therefore, proprietary cannot be used.
+          type: string
+          example: CACC
+
+    ErrorMessage:
+      required:
+        - code
+        - text
+      type: object
+      properties:
+        code:
+          type: string
+          description: Specifies the custom error code as defined by the service provider.
+        text:
+          maxLength: 255
+          minLength: 1
+          type: string
+          description: >-
+            Specifies the detail error message identifying the cause of the
+            error.
+
+    CustomerCreditTransferInitiationResponse:
+      description: response with client instruction ID for a sucessful payment request which is used for retrieval of payment report.
+      type: object
+      properties:
+        instructionId:
+          type: string
+          example: XYZXYZ-XYZXYZ-payments-initiatepayment-ID:GTS-EMS-QA.5A88634D42437C8CEA1:96020
+
+    UnpaidsFilter:
+      type: object
+      properties:
+        pageSize:
+          description: specifies the limit on the number of data set object retrieved
+          type: integer
+          example: 20
+        page:
+          description: specifies the page number
+          type: integer
+          example: 3
+        accountNumberList:
+          description: if account number specified then only those unpaids of that account will be returned. if no account is specified return all unpaids for all accounts.
+          type: array
+          items:
+            type: string
+        startDate:
+          $ref: '#/components/schemas/ISODate'
+        endDate:
+          $ref: '#/components/schemas/ISODate'
+
+    CustomerUnpaidsPaymentStatusReportList:
+      type: object
+      properties:
+        groupHeader:
+          type: object
+          properties:
+            instructionId:
+              description: The point-to-point reference is created by the bank to unambiguously identify the message.
+              type: string
+              example: NT05401CR001
+            creationDateTime:
+              $ref: '#/components/schemas/ISODateTime'
+            messagePagination:
+              $ref: '#/components/schemas/MessagePagination'
+        customerUnpaidsPaymentStatusReportList:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerUnpaidsPaymentStatusReport'
+
+
+    CustomerUnpaidsPaymentStatusReport:
+      type: object
+      properties:
+        instructionId:
+          type: string
+        groupHeader:
+          $ref: '#/components/schemas/GroupHeader'
+        originalGroupHeader:
+          $ref: '#/components/schemas/OriginalGroupHeader'
+        groupStatus:
+          description: Specifies the status of the payment information group
+          type: string
+          example: RJCT
+        originalPaymentInformation:
+          description: Information concerning the original payment information, to which
+            the status report message refers
+          type: array
+          items:
+            $ref: '#/components/schemas/UnpaidsOriginalPaymentInformation'
+
+    MessagePagination:
+      type: object
+      properties:
+        lastPageIndicator:
+          description: specificies if the current payload is the last page. false if not.
+          type: boolean
+          example: true
+        currentPageNumber:
+          description: specificies current page user is on.
+          type: integer
+          example: 2
+        totalNumberOfPages:
+          description: specificies the total number of notification pages.
+          type: integer
+          example: 10
+
+    UnpaidsOriginalPaymentInformation:
+      type: object
+      properties:
+        debtorAccount:
+          description: Debtor account number returned at Batch Level.
+          type: string
+        originalPaymentInformationId:
+          description: Unique identification, as assigned by the original sending party
+          type: string
+          example: Public_Rec_09v5retest
+        paymentInformationStatus:
+          description: Specifies the status of the payment information group
+          type: string
+          example: RJCT
+        transactionInfoAndStatus:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnpaidsPaymentTransactionInformation'
+
+    UnpaidsPaymentTransactionInformation:
+      type: object
+      properties:
+        creditorAccount:
+          description: Creditor account at transaction level
+          type: string
+        amount:
+          $ref: '#/components/schemas/Amount'
+        originalEndToEndId:
+          description: This End to End Identifer must be used to correlate this response to that of the original Direct Debit Transaction in the original request.
+          type: string
+          example: defect1173 retest
+        transactionStatus:
+          description: Specifies the status of a transaction, in a coded form
+          type: string
+          example: RJCT
+        statusReasonInformation:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatusReasonInformation'
+
+    ISODate:
+      pattern: >-
+        /^\d{4}(-\d\d(-\d\d(T\d\d:\d\d(:\d\d)?(\.\d+)?(([+-]\d\d:\d\d)|Z)?)?)?)?$/i
+      type: string
+      description: >-
+        ISO 8601 Date spec
+        (YYYY-MM-DD)
+      example: 2023-10-30
+
+    ISODateTime:
+      pattern: >-
+        ^(?:[1-9]\\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.[0-9]+)?(?:Z|[+-][01]\\d:[0-5]\\d)?$
+      type: string
+      description: >-
+        ISO Date-time spec
+        (YYYY-MM-DDThh:mm:ss.sssZ)
+      example: 2015-03-24T11:25:00

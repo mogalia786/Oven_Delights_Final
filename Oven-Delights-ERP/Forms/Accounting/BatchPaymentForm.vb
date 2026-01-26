@@ -8,6 +8,10 @@ Public Class BatchPaymentForm
     Private selectedInvoices As New List(Of Integer)
     Private WithEvents _printDocument As New PrintDocument()
     Private _printData As DataTable
+    Private tabControl As TabControl
+    Private txtTestResults As TextBox
+    Private txtResponseLog As TextBox
+    Private btnClearLog As Button
 
     Public Sub New()
         InitializeComponent()
@@ -16,6 +20,9 @@ Public Class BatchPaymentForm
 
     Private Sub BatchPaymentForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Try
+            ' Enable form scrolling
+            Me.AutoScroll = True
+            
             ' Set default dates
             dtpPaymentDate.Value = DateTime.Now
             
@@ -24,10 +31,18 @@ Public Class BatchPaymentForm
             cmbPaymentMethod.SelectedIndex = 0
             
             ' Load bank accounts
-            LoadBankAccounts()
+            Try
+                LoadBankAccounts()
+            Catch ex As Exception
+                MessageBox.Show($"Error loading bank accounts: {ex.Message}", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            End Try
             
             ' Load unpaid invoices
-            LoadUnpaidInvoices()
+            Try
+                LoadUnpaidInvoices()
+            Catch ex As Exception
+                MessageBox.Show($"Error loading invoices: {ex.Message}{Environment.NewLine}{Environment.NewLine}The form will continue to load.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            End Try
             
             ' Setup grid
             SetupInvoiceGrid()
@@ -36,9 +51,98 @@ Public Class BatchPaymentForm
             ' Initial state
             UpdateUIState()
             
+            ' Create status log control
+            CreateStatusLogControl()
+            
         Catch ex As Exception
-            MessageBox.Show($"Error loading form: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show($"Error loading form: {ex.Message}{Environment.NewLine}{Environment.NewLine}Stack Trace:{Environment.NewLine}{ex.StackTrace}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+    End Sub
+
+    Private Sub CreateStatusLogControl()
+        Try
+            ' Create TabControl below all grids - form will scroll
+            tabControl = New TabControl With {
+                .Location = New Point(12, 850),
+                .Size = New Size(Me.ClientSize.Width - 24, 150),
+                .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right,
+                .Visible = True
+            }
+            
+            ' Test Results Tab
+            Dim tabTestResults As New TabPage("Test Results")
+            txtTestResults = New TextBox With {
+                .Multiline = True,
+                .ScrollBars = ScrollBars.Vertical,
+                .ReadOnly = True,
+                .Font = New Font("Consolas", 9),
+                .BackColor = Color.Black,
+                .ForeColor = Color.Lime,
+                .Dock = DockStyle.Fill
+            }
+            tabTestResults.Controls.Add(txtTestResults)
+            
+            ' Response Log Tab
+            Dim tabResponseLog As New TabPage("Response Log")
+            txtResponseLog = New TextBox With {
+                .Multiline = True,
+                .ScrollBars = ScrollBars.Vertical,
+                .ReadOnly = True,
+                .Font = New Font("Consolas", 9),
+                .BackColor = Color.Black,
+                .ForeColor = Color.Lime,
+                .Dock = DockStyle.Fill
+            }
+            tabResponseLog.Controls.Add(txtResponseLog)
+            
+            tabControl.TabPages.Add(tabTestResults)
+            tabControl.TabPages.Add(tabResponseLog)
+            Me.Controls.Add(tabControl)
+            tabControl.BringToFront()
+            
+            ' Clear Log button
+            btnClearLog = New Button With {
+                .Text = "Clear Log",
+                .Location = New Point(Me.ClientSize.Width - 112, Me.ClientSize.Height - 82),
+                .Size = New Size(100, 25),
+                .Anchor = AnchorStyles.Bottom Or AnchorStyles.Right,
+                .Visible = True
+            }
+            AddHandler btnClearLog.Click, AddressOf ClearLog_Click
+            Me.Controls.Add(btnClearLog)
+            btnClearLog.BringToFront()
+        Catch ex As Exception
+            MessageBox.Show($"Error creating status log: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub ClearLog_Click(sender As Object, e As EventArgs)
+        If txtTestResults IsNot Nothing Then txtTestResults.Clear()
+        If txtResponseLog IsNot Nothing Then txtResponseLog.Clear()
+    End Sub
+
+    Private Sub LogMessage(message As String)
+        If txtTestResults Is Nothing Then Return
+        If txtTestResults.InvokeRequired Then
+            txtTestResults.Invoke(Sub() LogMessage(message))
+        Else
+            Dim timestamp = DateTime.Now.ToString("HH:mm:ss")
+            txtTestResults.AppendText($"[{timestamp}] {message}" & Environment.NewLine)
+            txtTestResults.SelectionStart = txtTestResults.Text.Length
+            txtTestResults.ScrollToCaret()
+        End If
+    End Sub
+    
+    Private Sub LogResponse(message As String)
+        If txtResponseLog Is Nothing Then Return
+        If txtResponseLog.InvokeRequired Then
+            txtResponseLog.Invoke(Sub() LogResponse(message))
+        Else
+            Dim timestamp = DateTime.Now.ToString("HH:mm:ss")
+            txtResponseLog.AppendText($"[{timestamp}] {message}" & Environment.NewLine)
+            txtResponseLog.SelectionStart = txtResponseLog.Text.Length
+            txtResponseLog.ScrollToCaret()
+        End If
     End Sub
 
     Private Sub LoadBankAccounts()
@@ -171,7 +275,7 @@ Public Class BatchPaymentForm
                     cmd.Parameters.AddWithValue("@PaymentMethod", cmbPaymentMethod.SelectedItem.ToString())
                     cmd.Parameters.AddWithValue("@BankAccountID", CType(cmbBankAccount.SelectedItem, Object).BankAccountID)
                     cmd.Parameters.AddWithValue("@Notes", txtNotes.Text)
-                    cmd.Parameters.AddWithValue("@CreatedBy", AppSession.CurrentUsername)
+                    cmd.Parameters.AddWithValue("@CreatedBy", If(AppSession.CurrentUsername, "System"))
                     
                     Dim batchID As New SqlParameter("@BatchID", SqlDbType.Int)
                     batchID.Direction = ParameterDirection.Output
@@ -291,7 +395,7 @@ Public Class BatchPaymentForm
                         cmd.CommandType = CommandType.StoredProcedure
                         cmd.CommandTimeout = 120
                         cmd.Parameters.AddWithValue("@BatchID", currentBatchID)
-                        cmd.Parameters.AddWithValue("@ProcessedBy", AppSession.CurrentUsername)
+                        cmd.Parameters.AddWithValue("@ProcessedBy", If(AppSession.CurrentUsername, "System"))
                         
                         cmd.ExecuteNonQuery()
                         
@@ -513,7 +617,7 @@ Public Class BatchPaymentForm
             
             sb.AppendLine("═══════════════════════════════════════════════════════════════════════")
             sb.AppendLine($"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}")
-            sb.AppendLine($"Generated By: {AppSession.CurrentUsername}")
+            sb.AppendLine($"Generated By: {If(AppSession.CurrentUsername, "System")}")
             sb.AppendLine("═══════════════════════════════════════════════════════════════════════")
             
         Catch ex As Exception
@@ -571,9 +675,9 @@ Public Class BatchPaymentForm
             yPos += 50
             
             ' Branch info
-            g.DrawString(AppSession.CurrentBranchName, boldFont, Brushes.Black, leftMargin, yPos)
+            g.DrawString(If(AppSession.CurrentBranchName, "Oven Delights"), boldFont, Brushes.Black, leftMargin, yPos)
             yPos += 22
-            g.DrawString(AppSession.CurrentBranchAddress, normalFont, Brushes.Black, leftMargin, yPos)
+            g.DrawString($"Generated By: {If(AppSession.CurrentUsername, "System")}", normalFont, Brushes.Black, leftMargin, yPos)
             yPos += 20
             g.DrawString($"Batch: {txtBatchNumber.Text}", normalFont, Brushes.Black, leftMargin, yPos)
             yPos += 35
@@ -638,6 +742,155 @@ Public Class BatchPaymentForm
             
         Catch ex As Exception
             MessageBox.Show($"Error during print: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub btnSubmitFNB_Click(sender As Object, e As EventArgs) Handles btnSubmitFNB.Click
+        Try
+            If currentBatchID = 0 Then
+                MessageBox.Show("Please create a batch first", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            If dgvBatchItems.Rows.Count = 0 Then
+                MessageBox.Show("No items in batch to submit", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' Confirm submission
+            Dim result = MessageBox.Show(
+                $"Submit batch {txtBatchNumber.Text} to FNB Payment Execution API?" & Environment.NewLine & Environment.NewLine &
+                "*** SANDBOX TESTING MODE ***" & Environment.NewLine &
+                "Using test beneficiary accounts." & Environment.NewLine & Environment.NewLine &
+                $"Total Amount: {lblBatchTotal.Text}" & Environment.NewLine &
+                $"Payment Date: {dtpPaymentDate.Value:yyyy-MM-dd}" & Environment.NewLine & Environment.NewLine &
+                "Continue?",
+                "FNB API Submission",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question
+            )
+
+            If result <> DialogResult.Yes Then Return
+
+            ' Build payment lines from batch
+            Dim paymentLines As New List(Of PaymentLineInfo)()
+
+            Using conn As New SqlConnection(connectionString)
+                conn.Open()
+                
+                ' First, get the batch items with supplier info
+                Dim sql As String = "
+                    SELECT DISTINCT
+                        s.SupplierID,
+                        s.CompanyName,
+                        s.BankAccountNumber,
+                        s.BankBranchCode,
+                        s.ProofOfPaymentEmail,
+                        SUM(pbi.AmountPaid) as TotalAmount,
+                        MIN(pbi.InvoiceNumber) as InvoiceNumber
+                    FROM PaymentBatchItems pbi
+                    INNER JOIN Suppliers s ON pbi.SupplierID = s.SupplierID
+                    WHERE pbi.BatchID = @BatchID
+                    GROUP BY s.SupplierID, s.CompanyName, s.BankAccountNumber, s.BankBranchCode, s.ProofOfPaymentEmail"
+                
+                Using cmd As New SqlCommand(sql, conn)
+
+                    cmd.Parameters.AddWithValue("@BatchID", currentBatchID)
+
+                    Using reader As SqlDataReader = cmd.ExecuteReader()
+                        While reader.Read()
+                            Dim invoiceNum As String = If(reader("InvoiceNumber") Is DBNull.Value, "PAYMENT", reader.GetString(reader.GetOrdinal("InvoiceNumber")))
+                            
+                            Dim line As New PaymentLineInfo() With {
+                                .SupplierID = reader.GetInt32(reader.GetOrdinal("SupplierID")),
+                                .PaymentType = "Supplier",
+                                .CreditorName = reader.GetString(reader.GetOrdinal("CompanyName")),
+                                .CreditorAccountNumber = If(reader("BankAccountNumber") Is DBNull.Value, "", reader.GetString(reader.GetOrdinal("BankAccountNumber"))),
+                                .CreditorAccountType = "CACC",
+                                .CreditorBranchCode = If(reader("BankBranchCode") Is DBNull.Value, "250655", reader.GetString(reader.GetOrdinal("BankBranchCode"))),
+                                .CreditorBIC = "FIRNZAJJ",
+                                .Amount = reader.GetDecimal(reader.GetOrdinal("TotalAmount")),
+                                .Reference = invoiceNum.Substring(0, Math.Min(20, invoiceNum.Length)),
+                                .ProofOfPaymentEmail = If(reader("ProofOfPaymentEmail") Is DBNull.Value, Nothing, reader.GetString(reader.GetOrdinal("ProofOfPaymentEmail")))
+                            }
+
+                            ' Validate bank details
+                            If String.IsNullOrEmpty(line.CreditorAccountNumber) Then
+                                MessageBox.Show($"Supplier '{line.CreditorName}' has no bank account number configured.", "Missing Bank Details", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                                Return
+                            End If
+
+                            paymentLines.Add(line)
+                        End While
+                    End Using
+                End Using
+            End Using
+
+            If paymentLines.Count = 0 Then
+                MessageBox.Show("No valid payment lines found", "No Data", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' Submit to FNB API
+            Cursor = Cursors.WaitCursor
+            btnSubmitFNB.Enabled = False
+            
+            ' Clear and show status log
+            If txtTestResults IsNot Nothing Then
+                txtTestResults.Clear()
+                LogMessage("Preparing FNB batch payment submission...")
+            End If
+            
+            Dim paymentService As New FNBPaymentExecutionService(connectionString, "Sandbox")
+            
+            ' Wire up status event handler
+            AddHandler paymentService.StatusUpdate, AddressOf LogMessage
+            
+            Dim executionDate = dtpPaymentDate.Value.Date
+            Dim branchId = If(AppSession.CurrentBranchID > 0, AppSession.CurrentBranchID, 1)
+            Dim createdBy = If(AppSession.CurrentUser IsNot Nothing, AppSession.CurrentUser.UserID, 1)
+
+            Dim submitResult = paymentService.CreateAndSubmitPaymentBatch(paymentLines, executionDate, branchId, createdBy)
+            
+            ' Remove event handler
+            RemoveHandler paymentService.StatusUpdate, AddressOf LogMessage
+
+            Cursor = Cursors.Default
+            btnSubmitFNB.Enabled = True
+
+            If submitResult.Item1 Then
+                MessageBox.Show(
+                    $"Payment batch submitted successfully to FNB!" & Environment.NewLine & Environment.NewLine &
+                    submitResult.Item2 & Environment.NewLine & Environment.NewLine &
+                    $"FNB Batch ID: {submitResult.Item3}" & Environment.NewLine & Environment.NewLine &
+                    "Click 'View Transactions' to monitor payment status.",
+                    "Success",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                )
+            Else
+                MessageBox.Show(
+                    $"Failed to submit payment batch to FNB:" & Environment.NewLine & Environment.NewLine &
+                    submitResult.Item2,
+                    "Submission Failed",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                )
+            End If
+
+        Catch ex As Exception
+            Cursor = Cursors.Default
+            btnSubmitFNB.Enabled = True
+            MessageBox.Show($"Error submitting to FNB API: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub btnViewTransactions_Click(sender As Object, e As EventArgs) Handles btnViewTransactions.Click
+        Try
+            Dim viewForm As New FNBTransactionViewerForm()
+            viewForm.ShowDialog()
+        Catch ex As Exception
+            MessageBox.Show($"Error opening transaction viewer: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 End Class

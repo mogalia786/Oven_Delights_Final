@@ -584,6 +584,106 @@ Status: Completed comprehensive POS touchscreen research - 4 UI options, FNB int
 - TEST_DATA_5_PRODUCTS.sql - creates 5 products ready for POS
 - GOOD_MORNING.md - welcome message for user
 - QUICK_START_GUIDE.md - 5-minute setup guide
+
+### 2026-01-25 23:28 - FNB POS TERMINAL SANDBOX TEST IMPLEMENTATION
+- Created FNBTerminalTestService.vb with OAuth2 authentication and transaction processing
+- Implemented test transaction sending to FNB sandbox (https://test.figment.co.za:49410/api/)
+- Created FNBTerminalTestForm.vb with comprehensive UI for testing terminal integration
+- Features: API connection test, send transaction, check status, cancel transaction
+- Using sandbox credentials: Client ID MP7BQIe0TMxgxzhpGghkNF303zhmYnjA, Site UT02, POS 7
+- Wired form into ERP Utilities menu as "FNB Terminal Test Lab"
+- Ready to test transactions with Marcel's physical terminal at test lab
+
+### 2026-01-25 23:40 - FIXED TIMEOUT HANDLING
+- Increased HttpClient timeout from 120 to 180 seconds for terminal response
+- Added specific exception handling for TaskCanceledException (timeout)
+- Added specific exception handling for HttpRequestException (connection errors)
+- Enhanced error messages with troubleshooting steps
+- Added reconIndicator tracking for status checking
+- Timeout now shows helpful diagnostic information
+
+### 2026-01-26 00:10 - SALES ANALYTICS DASHBOARD FOR SUPER ADMIN
+- Extended DashboardChartsService.vb with comprehensive sales analytics methods
+- Added GetDailySalesChartData() - 7-day sales trend
+- Added GetMonthlySalesChartData() - 12-month sales trend
+- Added GetSalesByBranchChartData() - branch performance comparison
+- Added GetTopProductsChartData() - top 10 products by quantity
+- Added GetSalesVsCostChartData() - profitability analysis
+- Added GetTodaysSalesTotal(), GetMonthSalesTotal(), GetYearSalesTotal()
+- Added GetTotalTransactionsCount() for transaction metrics
+- Created SalesDashboardForm.vb with 4 tabbed chart views
+- Tab 1: Daily & Monthly Sales Trends (column + line charts)
+- Tab 2: Branch Performance (bar chart comparing all branches)
+- Tab 3: Top Products (doughnut chart with top 10 products)
+- Tab 4: Sales vs Cost Analysis (dual-line chart for profitability)
+- Stats panel showing Today/Month/Year sales totals + transaction count
+- All charts support branch filtering (Super Admin sees all, others see own branch)
+- Wired into Administration > Sales Analytics Dashboard menu
+- Professional UI with brand colors and maximized view
+
+### 2026-01-26 00:30 - DYNAMIC SALES DASHBOARD WITH ADVANCED FILTERING
+- Created DynamicSalesDashboard.vb - fully interactive dashboard with real-time filtering
+- Branch Filter: ComboBox with "All Branches" + individual branch selection
+- Time Range Filter: Predefined periods (Today, Last 7/30 Days, This/Last Month, This Year, Custom Range)
+- Custom Date Range: DateTimePicker controls for start/end date selection
+- Dynamic chart updates on filter change with Refresh button
+- 3 tabbed chart views: Sales Trends (Column), Top Products (Bar), Branch Performance (Doughnut)
+- Real-time stats display for selected period
+- **Auto-refresh**: Updates every 30 seconds automatically for live monitoring
+- **Scrollable Layout**: 3500px height with 12 KPIs and 9 dynamic charts
+- **Time Period Filter**: Today, This Week, This Month, This Year (top-right dropdown)
+- **JARVIS Color Scheme**: Cyan (#00FFFF), Turquoise (#40E0D0), Gold (#FFD700), Black (#000000) background
+
+**12 KPI Cards (3 Rows):**
+Row 1:
+- Total Sales (Cyan) - Real-time sales amount with 32px bold font
+- Transactions (Turquoise) - Transaction count
+- Avg Order Value (Green) - Average per transaction
+- Profit Margin (Gold) - Current profit percentage
+
+Row 2:
+- VS Last Month (Green/Red) - Growth percentage with dynamic color indicator
+- VS Last Year (Orange/Red) - Year-over-year growth with dynamic color indicator
+
+Row 3:
+- Invoices Paid (Green) - Total paid invoices (last 90 days)
+- Invoices Due (Red-Orange) - Outstanding invoices requiring payment
+- Total Orders (Turquoise) - All orders count
+- Cake Orders (Gold) - Specialized cake orders count
+
+**9 Dynamic Charts:**
+1. **Live Sales by Branch** (1220x400) - Multi-color column chart showing real-time branch performance
+2. **Top 10 Best Selling Products** (600x400) - Horizontal bar chart with turquoise bars
+3. **Hourly Sales Pattern** (920x350) - Cyan spline area chart showing sales by hour
+4. **Sales by Category** (900x350) - Multi-color doughnut chart with top 5 categories
+5. **Sales Trend - Last 30 Days** (1220x400) - Cyan column chart showing daily progression
+6. **Branch Performance - Current vs Prior** (600x400) - Cyan vs Gold grouped columns
+7. **Outstanding Invoices by Branch** (600x400) - Multi-color pie chart showing invoice distribution
+8. **Order Types Breakdown** (600x400) - Doughnut chart (Cakes, Pastries, Bread, Other)
+9. **Invoices: Paid vs Outstanding** (610x400) - Stacked column chart (Green vs Red-Orange)
+
+**Visual Enhancements:**
+- 24px bold title with diamond symbols "◆ JARVIS EXECUTIVE DASHBOARD ◆"
+- 32px bold KPI values for maximum impact
+- 14px bold chart titles with left alignment
+- Pure black background (#000000) with cyan glowing text
+- Borderless fullscreen mode for immersive viewing
+- ESC key handler to restore window controls
+
+**Data Intelligence:**
+- Broadened date filters (90 days default) for better data capture
+- Fixed SQL queries with proper table aliases
+- Invoice tracking (Paid vs Due) across all branches
+- Order type analysis (Cakes, Pastries, Bread, Other)
+- Real-time growth calculations vs prior periods
+- Comprehensive business metrics for executive decision-making
+
+**Technical:**
+- System.Data.SqlClient 4.8.6 NuGet package installed
+- Microsoft.Data.SqlClient 5.2.0 for database operations
+- Partial class split (ExecutiveDashboard_ChartMethods.vb) for chart loading methods
+- Auto-refresh timer (30 seconds)
+- Wired into Administration > Sales Analytics Dashboard menu
 - READY_FOR_POS.md - comprehensive overview
 - OVERNIGHT_COMPLETE_SUMMARY.md - full audit report
 - OVERNIGHT_AUDIT_PROGRESS.md - timeline tracker

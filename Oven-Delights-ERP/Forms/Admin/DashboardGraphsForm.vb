@@ -1,8 +1,6 @@
 Imports System.Windows.Forms
 Imports System.Windows.Forms.DataVisualization.Charting
 Imports System.Configuration
-Imports Microsoft.Data.SqlClient
-Imports System.Data
 
 Namespace Admin
     Public Class DashboardGraphsForm
@@ -74,12 +72,12 @@ Namespace Admin
                                     " AND ExpenseDate >= DATEADD(day, -13, CAST(GETDATE() AS date)) " & _
                                     "GROUP BY CAST(ExpenseDate AS date) " & _
                                     "ORDER BY D"
-                Using con As New SqlConnection(connectionString)
+                Using con As New Microsoft.Data.SqlClient.SqlConnection(connectionString)
                     con.Open()
-                    Using cmd As New SqlCommand(sql, con)
+                    Using cmd As New Microsoft.Data.SqlClient.SqlCommand(sql, con)
                         If addParam Then cmd.Parameters.AddWithValue("@bid", bid)
                         Dim dt As New DataTable()
-                        Using da As New SqlDataAdapter(cmd)
+                        Using da As New Microsoft.Data.SqlClient.SqlDataAdapter(cmd)
                             da.Fill(dt)
                         End Using
                         BindChart(chartExpenses, dt, "D", "Total", "#,0.00")
@@ -100,12 +98,12 @@ Namespace Admin
                                     " AND JournalDate >= DATEADD(day, -13, CAST(GETDATE() AS date)) " & _
                                     "GROUP BY CAST(JournalDate AS date) " & _
                                     "ORDER BY D"
-                Using con As New SqlConnection(connectionString)
+                Using con As New Microsoft.Data.SqlClient.SqlConnection(connectionString)
                     con.Open()
-                    Using cmd As New SqlCommand(sql, con)
+                    Using cmd As New Microsoft.Data.SqlClient.SqlCommand(sql, con)
                         If addParam Then cmd.Parameters.AddWithValue("@bid", bid)
                         Dim dt As New DataTable()
-                        Using da As New SqlDataAdapter(cmd)
+                        Using da As New Microsoft.Data.SqlClient.SqlDataAdapter(cmd)
                             da.Fill(dt)
                         End Using
                         BindChart(chartJournals, dt, "D", "Cnt", "#,0")
