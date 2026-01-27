@@ -3285,15 +3285,24 @@ Partial Class MainDashboard
         Dim accounting As ToolStripMenuItem = EnsureTopMenu("Accounting")
         If accounting Is Nothing Then Exit Sub
 
-        ' Accounts Payable
+        ' Accounts Payable - New AP System
         Dim ap As ToolStripMenuItem = EnsureSubMenu(accounting, "Accounts Payable")
-        Dim miPaymentSchedule As ToolStripMenuItem = EnsureSubMenu(ap, "Payment Schedule")
-        RemoveHandler miPaymentSchedule.Click, AddressOf OpenPaymentSchedule
-        AddHandler miPaymentSchedule.Click, AddressOf OpenPaymentSchedule
-
-        Dim miBankImport As ToolStripMenuItem = EnsureSubMenu(ap, "Bank Statement Import")
-        RemoveHandler miBankImport.Click, AddressOf OnOpenBankStatementImport
-        AddHandler miBankImport.Click, AddressOf OnOpenBankStatementImport
+        
+        Dim miBankStatement As ToolStripMenuItem = EnsureSubMenu(ap, "Bank Statement Viewer")
+        RemoveHandler miBankStatement.Click, AddressOf OnOpenBankStatementViewer
+        AddHandler miBankStatement.Click, AddressOf OnOpenBankStatementViewer
+        
+        Dim miAdhocInvoice As ToolStripMenuItem = EnsureSubMenu(ap, "Adhoc Invoice Capture")
+        RemoveHandler miAdhocInvoice.Click, AddressOf OnOpenAdhocInvoiceCapture
+        AddHandler miAdhocInvoice.Click, AddressOf OnOpenAdhocInvoiceCapture
+        
+        Dim miBeneficiaries As ToolStripMenuItem = EnsureSubMenu(ap, "Beneficiary Management")
+        RemoveHandler miBeneficiaries.Click, AddressOf OnOpenBeneficiaryManagement
+        AddHandler miBeneficiaries.Click, AddressOf OnOpenBeneficiaryManagement
+        
+        Dim miAPPayments As ToolStripMenuItem = EnsureSubMenu(ap, "Process Payments")
+        RemoveHandler miAPPayments.Click, AddressOf OnOpenAPPaymentProcessing
+        AddHandler miAPPayments.Click, AddressOf OnOpenAPPaymentProcessing
 
         ' SARS Compliance
         Dim sars As ToolStripMenuItem = EnsureSubMenu(accounting, "SARS Compliance")
@@ -3303,13 +3312,6 @@ Partial Class MainDashboard
 
         ' Reports
         Dim reports As ToolStripMenuItem = EnsureSubMenu(accounting, "Reports")
-        Dim miAP As ToolStripMenuItem = EnsureSubMenu(accounting, "Accounts Payable")
-        RemoveHandler miAP.Click, AddressOf OnOpenAccountsPayable
-        AddHandler miAP.Click, AddressOf OnOpenAccountsPayable
-        
-        Dim miInvoices As ToolStripMenuItem = EnsureSubMenu(ap, "Invoice Capture")
-        RemoveHandler miInvoices.Click, AddressOf OnOpenInvoiceCapture
-        AddHandler miInvoices.Click, AddressOf OnOpenInvoiceCapture
 
         Dim miBS As ToolStripMenuItem = EnsureSubMenu(reports, "Balance Sheet")
         RemoveHandler miBS.Click, AddressOf OnOpenBalanceSheet
@@ -4878,6 +4880,53 @@ Partial Class MainDashboard
             ' frm.WindowState = FormWindowState.Maximized
         Catch ex As Exception
             MessageBox.Show("Error opening Continuous Printer Setup: " & ex.Message, "Utilities", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    ' =============================
+    ' Accounts Payable - New AP System Event Handlers
+    ' =============================
+    Private Sub OnOpenBankStatementViewer(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New Accounting.BankStatementViewerForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show($"Error opening Bank Statement Viewer: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OnOpenAdhocInvoiceCapture(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New Accounting.AdhocInvoiceCaptureForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show($"Error opening Adhoc Invoice Capture: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OnOpenBeneficiaryManagement(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New Accounting.BeneficiaryManagementForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show($"Error opening Beneficiary Management: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OnOpenAPPaymentProcessing(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New Accounting.APPaymentProcessingForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show($"Error opening AP Payment Processing: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 End Class
