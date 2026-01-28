@@ -55,6 +55,7 @@ CREATE OR ALTER PROCEDURE sp_AP_CreateInvoice
     @TaxAmount DECIMAL(18,2) = 0,
     @Description NVARCHAR(500) = NULL,
     @Reference NVARCHAR(100) = NULL,
+    @BranchID INT = 1,
     @CreatedBy NVARCHAR(100),
     @InvoiceID INT OUTPUT
 AS
@@ -63,11 +64,11 @@ BEGIN
     
     INSERT INTO AP_Invoices (
         InvoiceNumber, BeneficiaryID, CategoryID, InvoiceDate, DueDate,
-        Amount, TaxAmount, Description, Reference, Status, CreatedBy, CreatedDate
+        Amount, TaxAmount, Description, Reference, BranchID, Status, CreatedBy, CreatedDate
     )
     VALUES (
         @InvoiceNumber, @BeneficiaryID, @CategoryID, @InvoiceDate, @DueDate,
-        @Amount, @TaxAmount, @Description, @Reference, 'Pending', @CreatedBy, GETDATE()
+        @Amount, @TaxAmount, @Description, @Reference, @BranchID, 'Pending', @CreatedBy, GETDATE()
     )
     
     SET @InvoiceID = SCOPE_IDENTITY()
@@ -239,7 +240,7 @@ BEGIN
         -- Create Journal Header
         INSERT INTO JournalHeaders (
             JournalNumber, BranchID, JournalDate, Reference, Description, 
-            FiscalPeriodID, IsPosted, CreatedBy, CreatedDate
+            FiscalPeriodID, IsPosted, CreatedBy
         )
         VALUES (
             @JournalNumber,
@@ -249,8 +250,7 @@ BEGIN
             'AP Payment - ' + @BeneficiaryName + ' - ' + ISNULL(@Description, ''),
             NULL, -- FiscalPeriodID can be NULL
             1, -- IsPosted = 1 (already posted)
-            @CreatedBy,
-            GETDATE()
+            @CreatedBy
         )
         
         SET @JournalID = SCOPE_IDENTITY()
@@ -258,7 +258,7 @@ BEGIN
         -- Create Journal Detail - Debit Expense Account
         INSERT INTO JournalDetails (
             JournalID, LineNumber, AccountID, Debit, Credit, 
-            Reference1, Reference2, Description, CreatedDate
+            Reference1, Reference2, Description
         )
         VALUES (
             @JournalID,
@@ -268,14 +268,13 @@ BEGIN
             0,
             @InvoiceNumber,
             @BeneficiaryName,
-            'Expense - ' + @BeneficiaryName,
-            GETDATE()
+            'Expense - ' + @BeneficiaryName
         )
         
         -- Create Journal Detail - Credit Bank Account
         INSERT INTO JournalDetails (
             JournalID, LineNumber, AccountID, Debit, Credit, 
-            Reference1, Reference2, Description, CreatedDate
+            Reference1, Reference2, Description
         )
         VALUES (
             @JournalID,
@@ -285,8 +284,7 @@ BEGIN
             @Amount,
             @InvoiceNumber,
             @BeneficiaryName,
-            'Payment - ' + @BeneficiaryName,
-            GETDATE()
+            'Payment - ' + @BeneficiaryName
         )
         
         -- Also create AP_GLPostings record for AP tracking
@@ -412,7 +410,10 @@ BEGIN
                 @InvoiceDate = @TransactionDate,
                 @DueDate = @TransactionDate,
                 @Amount = @Amount,
+                @TaxAmount = 0,
                 @Description = @Description,
+                @Reference = NULL,
+                @BranchID = 1,
                 @CreatedBy = @CreatedBy,
                 @InvoiceID = @InvoiceID OUTPUT
             

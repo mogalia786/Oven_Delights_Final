@@ -220,6 +220,10 @@ Partial Class MainDashboard
             SetupAccountingReportsMenus()
         Catch
         End Try
+        Try
+            SetupAccountingFixedAssetsMenus()
+        Catch
+        End Try
         ' Administration menu handlers are now wired in ConsolidateAdministrationMenus
         ' Accounting viewers (grids)
         Try
@@ -619,6 +623,18 @@ Partial Class MainDashboard
         Dim accountingTop = EnsureTopMenu("Accounting")
         If accountingTop Is Nothing Then Exit Sub
         Dim reports = EnsureSubMenu(accountingTop, "Reports")
+        
+        ' Financial Statements (NEW)
+        Dim miFS = EnsureSubMenu(reports, "Financial Statements")
+        RemoveHandler miFS.Click, AddressOf OnOpenFinancialStatements
+        AddHandler miFS.Click, AddressOf OnOpenFinancialStatements
+        
+        ' Daily Posting Report (NEW)
+        Dim miDPR = EnsureSubMenu(reports, "Daily Posting Report")
+        RemoveHandler miDPR.Click, AddressOf OnOpenDailyPostingReport
+        AddHandler miDPR.Click, AddressOf OnOpenDailyPostingReport
+        
+        ' Income Statement (existing)
         Dim miIS = EnsureSubMenu(reports, "Income Statement")
         RemoveHandler miIS.Click, AddressOf OnOpenIncomeStatement
         AddHandler miIS.Click, AddressOf OnOpenIncomeStatement
@@ -630,9 +646,85 @@ Partial Class MainDashboard
         Dim acct As ToolStripMenuItem = EnsureTopMenu("Accounting")
         If acct Is Nothing Then Exit Sub
         Dim banking As ToolStripMenuItem = EnsureSubMenu(acct, "Banking")
+        
+        ' Bank Statement Import
         Dim miImport As ToolStripMenuItem = EnsureSubMenu(banking, "Bank Statement Import…")
         RemoveHandler miImport.Click, AddressOf OnOpenBankStatementImport
         AddHandler miImport.Click, AddressOf OnOpenBankStatementImport
+        
+        ' EFT Clearing (NEW)
+        Dim miEFT As ToolStripMenuItem = EnsureSubMenu(banking, "EFT Clearing")
+        RemoveHandler miEFT.Click, AddressOf OnOpenEFTClearing
+        AddHandler miEFT.Click, AddressOf OnOpenEFTClearing
+    End Sub
+    
+    ' Accounting > Fixed Assets menu
+    Private Sub SetupAccountingFixedAssetsMenus()
+        If Me.MenuStrip1 Is Nothing Then Exit Sub
+        Dim acct As ToolStripMenuItem = EnsureTopMenu("Accounting")
+        If acct Is Nothing Then Exit Sub
+        
+        ' Fixed Assets Register
+        Dim miFA As ToolStripMenuItem = EnsureSubMenu(acct, "Fixed Assets Register")
+        RemoveHandler miFA.Click, AddressOf OnOpenFixedAssets
+        AddHandler miFA.Click, AddressOf OnOpenFixedAssets
+    End Sub
+
+    Private Sub OnOpenFinancialStatements(sender As Object, e As EventArgs)
+        Try
+            For Each child As Form In Me.MdiChildren
+                If TypeOf child Is Accounting.FinancialStatementsForm Then
+                    child.Activate()
+                    child.WindowState = FormWindowState.Maximized
+                    Return
+                End If
+            Next
+            Dim frm As New Accounting.FinancialStatementsForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            System.Diagnostics.Debug.WriteLine($"Financial Statements error: {ex.Message}")
+            ShowUserNotification("Financial Statements report is temporarily unavailable. Please try again later.", "Accounting")
+        End Try
+    End Sub
+
+    Private Sub OnOpenDailyPostingReport(sender As Object, e As EventArgs)
+        Try
+            For Each child As Form In Me.MdiChildren
+                If TypeOf child Is Accounting.DailyPostingReportForm Then
+                    child.Activate()
+                    child.WindowState = FormWindowState.Maximized
+                    Return
+                End If
+            Next
+            Dim frm As New Accounting.DailyPostingReportForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            System.Diagnostics.Debug.WriteLine($"Daily Posting Report error: {ex.Message}")
+            ShowUserNotification("Daily Posting Report is temporarily unavailable. Please try again later.", "Accounting")
+        End Try
+    End Sub
+
+    Private Sub OnOpenEFTClearing(sender As Object, e As EventArgs)
+        Try
+            For Each child As Form In Me.MdiChildren
+                If TypeOf child Is Accounting.EFTClearingForm Then
+                    child.Activate()
+                    child.WindowState = FormWindowState.Maximized
+                    Return
+                End If
+            Next
+            Dim frm As New Accounting.EFTClearingForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            System.Diagnostics.Debug.WriteLine($"EFT Clearing error: {ex.Message}")
+            ShowUserNotification("EFT Clearing is temporarily unavailable. Please try again later.", "Accounting")
+        End Try
     End Sub
 
     Private Sub OnOpenIncomeStatement(sender As Object, e As EventArgs)
@@ -644,6 +736,25 @@ Partial Class MainDashboard
         Catch ex As Exception
             System.Diagnostics.Debug.WriteLine($"Income Statement error: {ex.Message}")
             ShowUserNotification("Income Statement report is temporarily unavailable. Please try again later.", "Accounting")
+        End Try
+    End Sub
+    
+    Private Sub OnOpenFixedAssets(sender As Object, e As EventArgs)
+        Try
+            For Each child As Form In Me.MdiChildren
+                If TypeOf child Is Accounting.FixedAssetsForm Then
+                    child.Activate()
+                    child.WindowState = FormWindowState.Maximized
+                    Return
+                End If
+            Next
+            Dim frm As New Accounting.FixedAssetsForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            System.Diagnostics.Debug.WriteLine($"Fixed Assets error: {ex.Message}")
+            ShowUserNotification("Fixed Assets register is temporarily unavailable. Please try again later.", "Accounting")
         End Try
     End Sub
 
@@ -3310,12 +3421,8 @@ Partial Class MainDashboard
         RemoveHandler miSARSReporting.Click, AddressOf OpenSARSReporting
         AddHandler miSARSReporting.Click, AddressOf OpenSARSReporting
 
-        ' Reports
+        ' Reports - Note: Balance Sheet is now part of Financial Statements form
         Dim reports As ToolStripMenuItem = EnsureSubMenu(accounting, "Reports")
-
-        Dim miBS As ToolStripMenuItem = EnsureSubMenu(reports, "Balance Sheet")
-        RemoveHandler miBS.Click, AddressOf OnOpenBalanceSheet
-        AddHandler miBS.Click, AddressOf OnOpenBalanceSheet
     End Sub
 
     Private Sub ShowComingSoonMessage(sender As Object, e As EventArgs)
@@ -4046,6 +4153,17 @@ Partial Class MainDashboard
         RemoveHandler miSupp.Click, AddressOf OpenSupplierLedgerGrid
         AddHandler miSupp.Click, AddressOf OpenSupplierLedgerGrid
         
+        ' General Ledger Inquiry (New)
+        Dim miGLInquiry As ToolStripMenuItem = EnsureSubMenu(viewers, "General Ledger Inquiry")
+        RemoveHandler miGLInquiry.Click, AddressOf OpenGeneralLedgerInquiry
+        AddHandler miGLInquiry.Click, AddressOf OpenGeneralLedgerInquiry
+        
+        ' Opening Balances
+        Dim setup As ToolStripMenuItem = EnsureSubMenu(acct, "Setup")
+        Dim miOpeningBalances As ToolStripMenuItem = EnsureSubMenu(setup, "Opening Balances")
+        RemoveHandler miOpeningBalances.Click, AddressOf OpenOpeningBalances
+        AddHandler miOpeningBalances.Click, AddressOf OpenOpeningBalances
+        
         ' Supplier Payments
         Dim payments As ToolStripMenuItem = EnsureSubMenu(acct, "Payments")
         Dim miPaySupplier As ToolStripMenuItem = EnsureSubMenu(payments, "Pay Supplier Invoice")
@@ -4146,6 +4264,42 @@ Partial Class MainDashboard
             frm.WindowState = FormWindowState.Maximized
         Catch ex As Exception
             MessageBox.Show("Error opening Supplier Ledger: " & ex.Message, "Accounting", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenGeneralLedgerInquiry(sender As Object, e As EventArgs)
+        Try
+            For Each child As Form In Me.MdiChildren
+                If TypeOf child Is GeneralLedgerInquiryForm Then
+                    child.Activate()
+                    child.WindowState = FormWindowState.Maximized
+                    Return
+                End If
+            Next
+            Dim frm As New GeneralLedgerInquiryForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening General Ledger Inquiry: " & ex.Message, "Accounting", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenOpeningBalances(sender As Object, e As EventArgs)
+        Try
+            For Each child As Form In Me.MdiChildren
+                If TypeOf child Is OpeningBalancesForm Then
+                    child.Activate()
+                    child.WindowState = FormWindowState.Maximized
+                    Return
+                End If
+            Next
+            Dim frm As New OpeningBalancesForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Opening Balances: " & ex.Message, "Accounting", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 

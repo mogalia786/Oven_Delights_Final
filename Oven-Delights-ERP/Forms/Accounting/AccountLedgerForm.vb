@@ -20,6 +20,12 @@ Namespace Accounting
         Me.Text = "Account Ledger"
         Me.WindowState = FormWindowState.Maximized
         
+        ' Initialize date pickers with default values
+        dtpFromDate.Value = New Date(DateTime.Now.Year, 1, 1) ' Start of current year
+        dtpFromDate.Checked = True
+        dtpToDate.Value = DateTime.Now
+        dtpToDate.Checked = True
+        
         LoadAccounts()
         LoadBranches()
     End Sub

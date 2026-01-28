@@ -299,40 +299,92 @@ Public Class BankStatementMappingService
         Dim amount As Decimal = Convert.ToDecimal(row("Amount"))
         Dim accountCode As String = row("AccountCode").ToString()
         Dim description As String = row("Description").ToString()
+        Dim transDate As Date = Convert.ToDateTime(row("TransactionDate"))
         
-        ' Bank account entry (opposite of transaction amount)
-        Dim bankSql As String = "
-            INSERT INTO dbo.JournalEntries 
-            (TransactionDate, AccountCode, AccountName, Description, DebitAmount, CreditAmount, CreatedBy, CreatedDate)
-            VALUES 
-            (@date, '1100', 'Bank Account', @desc, @debit, @credit, @user, GETDATE())"
+        ' Get account IDs
+        Dim bankAccountID As Integer
+        Dim expenseAccountID As Integer
         
-        Using cmd As New SqlCommand(bankSql, conn, trans)
-            cmd.Parameters.AddWithValue("@date", Convert.ToDateTime(row("TransactionDate")))
-            cmd.Parameters.AddWithValue("@desc", description)
-            cmd.Parameters.AddWithValue("@debit", If(amount > 0, amount, 0))
-            cmd.Parameters.AddWithValue("@credit", If(amount < 0, Math.Abs(amount), 0))
-            cmd.Parameters.AddWithValue("@user", userId)
-            cmd.ExecuteNonQuery()
+        Using cmd As New SqlCommand("SELECT AccountID FROM ChartOfAccounts WHERE AccountCode = '1010' AND IsActive = 1", conn, trans)
+            Dim result = cmd.ExecuteScalar()
+            If result Is Nothing Then Throw New Exception("Bank account 1010 not found")
+            bankAccountID = Convert.ToInt32(result)
         End Using
         
-        ' Expense/Revenue account entry
-        Dim expenseSql As String = "
-            INSERT INTO dbo.JournalEntries 
-            (TransactionDate, AccountCode, AccountName, Description, DebitAmount, CreditAmount, CreatedBy, CreatedDate)
-            VALUES 
-            (@date, @code, @account, @desc, @debit, @credit, @user, GETDATE())"
-        
-        Using cmd As New SqlCommand(expenseSql, conn, trans)
-            cmd.Parameters.AddWithValue("@date", Convert.ToDateTime(row("TransactionDate")))
+        Using cmd As New SqlCommand("SELECT AccountID FROM ChartOfAccounts WHERE AccountCode = @code AND IsActive = 1", conn, trans)
             cmd.Parameters.AddWithValue("@code", accountCode)
-            cmd.Parameters.AddWithValue("@account", row("SuggestedAccount").ToString())
-            cmd.Parameters.AddWithValue("@desc", description)
-            cmd.Parameters.AddWithValue("@debit", If(amount < 0, Math.Abs(amount), 0))
-            cmd.Parameters.AddWithValue("@credit", If(amount > 0, amount, 0))
-            cmd.Parameters.AddWithValue("@user", userId)
-            cmd.ExecuteNonQuery()
+            Dim result = cmd.ExecuteScalar()
+            If result Is Nothing Then Throw New Exception($"Account {accountCode} not found")
+            expenseAccountID = Convert.ToInt32(result)
         End Using
+        
+        ' Get fiscal period
+        Dim fiscalPeriodID As Integer
+        Using cmd As New SqlCommand("SELECT dbo.fn_GetCurrentFiscalPeriodID(@date)", conn, trans)
+            cmd.Parameters.AddWithValue("@date", transDate)
+            fiscalPeriodID = Convert.ToInt32(cmd.ExecuteScalar())
+        End Using
+        
+        ' Create journal header
+        Dim journalNumber As String = "BANK-" & DateTime.Now.Ticks.ToString().Substring(8)
+        Dim journalID As Integer
+        
+        Using cmd As New SqlCommand("INSERT INTO JournalHeaders (JournalNumber, BranchID, JournalDate, Reference, Description, FiscalPeriodID, IsPosted, CreatedBy) VALUES (@num, 1, @date, @ref, @desc, @period, 1, @user); SELECT CAST(SCOPE_IDENTITY() AS INT)", conn, trans)
+            cmd.Parameters.AddWithValue("@num", journalNumber)
+            cmd.Parameters.AddWithValue("@date", transDate)
+            cmd.Parameters.AddWithValue("@ref", "Bank Statement")
+            cmd.Parameters.AddWithValue("@desc", "Bank: " & description)
+            cmd.Parameters.AddWithValue("@period", fiscalPeriodID)
+            cmd.Parameters.AddWithValue("@user", userId)
+            journalID = Convert.ToInt32(cmd.ExecuteScalar())
+        End Using
+        
+        ' Create journal details based on transaction type
+        If amount > 0 Then
+            ' Money IN (Credit to bank = Revenue)
+            ' DR Bank Account
+            Using cmd As New SqlCommand("INSERT INTO JournalDetails (JournalID, LineNumber, AccountID, Debit, Credit, Description, Reference1) VALUES (@jid, 1, @aid, @debit, 0, @desc, @ref)", conn, trans)
+                cmd.Parameters.AddWithValue("@jid", journalID)
+                cmd.Parameters.AddWithValue("@aid", bankAccountID)
+                cmd.Parameters.AddWithValue("@debit", amount)
+                cmd.Parameters.AddWithValue("@desc", "Bank receipt")
+                cmd.Parameters.AddWithValue("@ref", "Bank Statement")
+                cmd.ExecuteNonQuery()
+            End Using
+            
+            ' CR Revenue Account
+            Using cmd As New SqlCommand("INSERT INTO JournalDetails (JournalID, LineNumber, AccountID, Debit, Credit, Description, Reference1) VALUES (@jid, 2, @aid, 0, @credit, @desc, @ref)", conn, trans)
+                cmd.Parameters.AddWithValue("@jid", journalID)
+                cmd.Parameters.AddWithValue("@aid", expenseAccountID)
+                cmd.Parameters.AddWithValue("@credit", amount)
+                cmd.Parameters.AddWithValue("@desc", description)
+                cmd.Parameters.AddWithValue("@ref", "Bank Statement")
+                cmd.ExecuteNonQuery()
+            End Using
+        Else
+            ' Money OUT (Debit to bank = Expense)
+            Dim absAmount As Decimal = Math.Abs(amount)
+            
+            ' DR Expense Account
+            Using cmd As New SqlCommand("INSERT INTO JournalDetails (JournalID, LineNumber, AccountID, Debit, Credit, Description, Reference1) VALUES (@jid, 1, @aid, @debit, 0, @desc, @ref)", conn, trans)
+                cmd.Parameters.AddWithValue("@jid", journalID)
+                cmd.Parameters.AddWithValue("@aid", expenseAccountID)
+                cmd.Parameters.AddWithValue("@debit", absAmount)
+                cmd.Parameters.AddWithValue("@desc", description)
+                cmd.Parameters.AddWithValue("@ref", "Bank Statement")
+                cmd.ExecuteNonQuery()
+            End Using
+            
+            ' CR Bank Account
+            Using cmd As New SqlCommand("INSERT INTO JournalDetails (JournalID, LineNumber, AccountID, Debit, Credit, Description, Reference1) VALUES (@jid, 2, @aid, 0, @credit, @desc, @ref)", conn, trans)
+                cmd.Parameters.AddWithValue("@jid", journalID)
+                cmd.Parameters.AddWithValue("@aid", bankAccountID)
+                cmd.Parameters.AddWithValue("@credit", absAmount)
+                cmd.Parameters.AddWithValue("@desc", "Bank payment")
+                cmd.Parameters.AddWithValue("@ref", "Bank Statement")
+                cmd.ExecuteNonQuery()
+            End Using
+        End If
     End Sub
 
 End Class

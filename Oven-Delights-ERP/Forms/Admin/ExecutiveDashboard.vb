@@ -89,16 +89,16 @@ Namespace Admin
             ' Header with title and time filter
             Dim pnlHeader As New Panel() With {
                 .Dock = DockStyle.Top,
-                .Height = 120,
+                .Height = 60,
                 .BackColor = JarvisBlack,
-                .Padding = New Padding(20, 20, 20, 10)
+                .Padding = New Padding(20, 5, 20, 5)
             }
 
             Dim lblTitle As New Label() With {
                 .Text = "◆ JARVIS EXECUTIVE DASHBOARD ◆",
                 .Font = New Font("Segoe UI", 24, FontStyle.Bold),
                 .ForeColor = BranchRed,
-                .Location = New Point(20, 40),
+                .Location = New Point(20, 15),
                 .AutoSize = True
             }
             ' Add glossy effect with shadow using AddHandler
@@ -120,13 +120,13 @@ Namespace Admin
                 .Text = "Branch:",
                 .Font = New Font("Segoe UI", 11, FontStyle.Bold),
                 .ForeColor = JarvisCyan,
-                .Location = New Point(1200, 45),
+                .Location = New Point(1200, 20),
                 .AutoSize = True
             }
             pnlHeader.Controls.Add(lblBranch)
 
             cboBranch = New ComboBox() With {
-                .Location = New Point(1280, 42),
+                .Location = New Point(1280, 17),
                 .Size = New Size(180, 30),
                 .Font = New Font("Segoe UI", 10),
                 .DropDownStyle = ComboBoxStyle.DropDownList,
@@ -142,13 +142,13 @@ Namespace Admin
                 .Text = "Month:",
                 .Font = New Font("Segoe UI", 11, FontStyle.Bold),
                 .ForeColor = JarvisCyan,
-                .Location = New Point(1480, 45),
+                .Location = New Point(1480, 20),
                 .AutoSize = True
             }
             pnlHeader.Controls.Add(lblMonth)
 
             cboMonth = New ComboBox() With {
-                .Location = New Point(1560, 42),
+                .Location = New Point(1560, 17),
                 .Size = New Size(150, 30),
                 .Font = New Font("Segoe UI", 10),
                 .DropDownStyle = ComboBoxStyle.DropDownList,
@@ -164,13 +164,13 @@ Namespace Admin
                 .Text = "Period:",
                 .Font = New Font("Segoe UI", 11, FontStyle.Bold),
                 .ForeColor = JarvisCyan,
-                .Location = New Point(1730, 45),
+                .Location = New Point(1730, 20),
                 .AutoSize = True
             }
             pnlHeader.Controls.Add(lblFilter)
 
             cboTimePeriod = New ComboBox() With {
-                .Location = New Point(1800, 42),
+                .Location = New Point(1800, 17),
                 .Size = New Size(100, 30),
                 .Font = New Font("Segoe UI", 10),
                 .DropDownStyle = ComboBoxStyle.DropDownList,
@@ -220,7 +220,7 @@ Namespace Admin
             ' KPI Cards Row 3 - Invoice & Order Metrics
             pnlInvoicesPaid = CreateKPICard("INVOICES PAID", "R 0", "", BranchGreen, 10, yPos, 450)
             pnlInvoicesDue = CreateKPICard("INVOICES DUE", "R 0", "", BranchRed, 470, yPos, 450)
-            pnlTotalOrders = CreateKPICard("TOTAL ORDERS", "0", "", JarvisCyan, 930, yPos, 450)
+            pnlTotalOrders = CreateKPICard("TOTAL TRANSACTIONS", "0", "", JarvisCyan, 930, yPos, 450)
             pnlCakeOrders = CreateKPICard("CAKE ORDERS", "0", "", BranchGold, 1390, yPos, 450)
 
             contentPanel.Controls.AddRange({pnlInvoicesPaid, pnlInvoicesDue, pnlTotalOrders, pnlCakeOrders})

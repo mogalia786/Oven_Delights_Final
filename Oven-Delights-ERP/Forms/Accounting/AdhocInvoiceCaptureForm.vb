@@ -383,6 +383,7 @@ Namespace Accounting
                 End If
 
                 ' Save invoice
+                Dim branchId As Integer = If(AppSession.CurrentUser IsNot Nothing, AppSession.CurrentUser.BranchID, 1)
                 Dim invoiceId = _invoiceService.CreateInvoice(
                     txtInvoiceNumber.Text.Trim(),
                     CInt(cboBeneficiary.SelectedValue),
@@ -393,10 +394,34 @@ Namespace Accounting
                     taxAmount,
                     txtDescription.Text.Trim(),
                     txtReference.Text.Trim(),
-                    AppSession.CurrentUser.Username
+                    AppSession.CurrentUser.Username,
+                    branchId
                 )
 
-                MessageBox.Show($"Invoice {txtInvoiceNumber.Text} created successfully", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                ' Post to General Ledger
+                Try
+                    Dim beneficiaryName As String = cboBeneficiary.Text
+                    Dim categoryRow = CType(cboCategory.SelectedItem, DataRowView)
+                    Dim glAccountCode As String = categoryRow("GLAccountCode").ToString()
+                    
+                    Dim journalId = _invoiceService.PostAdhocInvoiceToGL(
+                        invoiceId,
+                        txtInvoiceNumber.Text.Trim(),
+                        dtpInvoiceDate.Value.Date,
+                        beneficiaryName,
+                        branchId,
+                        amount,
+                        taxAmount,
+                        amount + taxAmount,
+                        glAccountCode,
+                        AppSession.CurrentUser.Username
+                    )
+                    
+                    MessageBox.Show($"Invoice {txtInvoiceNumber.Text} created and posted to GL successfully (Journal ID: {journalId})", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Catch glEx As Exception
+                    MessageBox.Show($"Invoice created but GL posting failed: {glEx.Message}{vbCrLf}Invoice ID: {invoiceId}", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                End Try
+                
                 Me.DialogResult = DialogResult.OK
                 Me.Close()
             Catch ex As Exception

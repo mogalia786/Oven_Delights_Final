@@ -63,7 +63,8 @@ Public Class APInvoiceService
                                  taxAmount As Decimal,
                                  description As String,
                                  reference As String,
-                                 createdBy As String) As Integer
+                                 createdBy As String,
+                                 Optional branchId As Integer = 1) As Integer
         Dim invoiceId As Integer = 0
 
         Using conn As New SqlConnection(_connectionString)
@@ -79,6 +80,7 @@ Public Class APInvoiceService
                 cmd.Parameters.AddWithValue("@TaxAmount", taxAmount)
                 cmd.Parameters.AddWithValue("@Description", If(description, DBNull.Value))
                 cmd.Parameters.AddWithValue("@Reference", If(reference, DBNull.Value))
+                cmd.Parameters.AddWithValue("@BranchID", branchId)
                 cmd.Parameters.AddWithValue("@CreatedBy", createdBy)
 
                 Dim outputParam As New SqlParameter("@InvoiceID", SqlDbType.Int) With {
@@ -209,5 +211,142 @@ Public Class APInvoiceService
 
     Public Function GenerateInvoiceNumber() As String
         Return "INV-" & DateTime.Now.ToString("yyyyMMddHHmmss")
+    End Function
+
+    ''' <summary>
+    ''' Post ADHOC invoice to General Ledger
+    ''' </summary>
+    Public Function PostAdhocInvoiceToGL(invoiceId As Integer,
+                                        invoiceNumber As String,
+                                        invoiceDate As Date,
+                                        supplierName As String,
+                                        branchId As Integer,
+                                        subtotalAmount As Decimal,
+                                        vatAmount As Decimal,
+                                        totalAmount As Decimal,
+                                        expenseAccountCode As String,
+                                        createdBy As String) As Integer
+        Dim journalId As Integer = 0
+
+        Using conn As New SqlConnection(_connectionString)
+            conn.Open()
+            Using cmd As New SqlCommand("sp_AP_PostAdhocInvoiceToGL", conn)
+                cmd.CommandType = CommandType.StoredProcedure
+                cmd.Parameters.AddWithValue("@InvoiceID", invoiceId)
+                cmd.Parameters.AddWithValue("@InvoiceNumber", invoiceNumber)
+                cmd.Parameters.AddWithValue("@InvoiceDate", invoiceDate)
+                cmd.Parameters.AddWithValue("@SupplierName", supplierName)
+                cmd.Parameters.AddWithValue("@BranchID", branchId)
+                cmd.Parameters.AddWithValue("@SubtotalAmount", subtotalAmount)
+                cmd.Parameters.AddWithValue("@VATAmount", vatAmount)
+                cmd.Parameters.AddWithValue("@TotalAmount", totalAmount)
+                cmd.Parameters.AddWithValue("@ExpenseAccountCode", expenseAccountCode)
+                cmd.Parameters.AddWithValue("@CreatedBy", createdBy)
+
+                Using reader As SqlDataReader = cmd.ExecuteReader()
+                    If reader.Read() Then
+                        journalId = reader.GetInt32(reader.GetOrdinal("JournalID"))
+                    End If
+                End Using
+            End Using
+        End Using
+
+        Return journalId
+    End Function
+
+    ''' <summary>
+    ''' Post single supplier payment to General Ledger
+    ''' </summary>
+    Public Function PostSinglePaymentToGL(invoiceId As Integer,
+                                         paymentNumber As String,
+                                         paymentDate As Date,
+                                         supplierName As String,
+                                         amount As Decimal,
+                                         paymentMethod As String,
+                                         branchId As Integer,
+                                         createdBy As String) As Integer
+        Dim journalId As Integer = 0
+
+        Using conn As New SqlConnection(_connectionString)
+            conn.Open()
+            Using cmd As New SqlCommand("sp_AP_PostSinglePaymentToGL", conn)
+                cmd.CommandType = CommandType.StoredProcedure
+                cmd.Parameters.AddWithValue("@InvoiceID", invoiceId)
+                cmd.Parameters.AddWithValue("@PaymentNumber", paymentNumber)
+                cmd.Parameters.AddWithValue("@PaymentDate", paymentDate)
+                cmd.Parameters.AddWithValue("@SupplierName", supplierName)
+                cmd.Parameters.AddWithValue("@Amount", amount)
+                cmd.Parameters.AddWithValue("@PaymentMethod", paymentMethod)
+                cmd.Parameters.AddWithValue("@BranchID", branchId)
+                cmd.Parameters.AddWithValue("@CreatedBy", createdBy)
+
+                Using reader As SqlDataReader = cmd.ExecuteReader()
+                    If reader.Read() Then
+                        journalId = reader.GetInt32(reader.GetOrdinal("JournalID"))
+                    End If
+                End Using
+            End Using
+        End Using
+
+        Return journalId
+    End Function
+
+    ''' <summary>
+    ''' Post batch payment to General Ledger (called when FNB confirms success)
+    ''' </summary>
+    Public Sub PostBatchPaymentToGL(batchId As Integer,
+                                    paymentDate As Date,
+                                    createdBy As String)
+        Using conn As New SqlConnection(_connectionString)
+            conn.Open()
+            Using cmd As New SqlCommand("sp_AP_PostBatchPaymentToGL", conn)
+                cmd.CommandType = CommandType.StoredProcedure
+                cmd.Parameters.AddWithValue("@BatchID", batchId)
+                cmd.Parameters.AddWithValue("@PaymentDate", paymentDate)
+                cmd.Parameters.AddWithValue("@CreatedBy", createdBy)
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+    End Sub
+
+    ''' <summary>
+    ''' Post credit note to General Ledger
+    ''' </summary>
+    Public Function PostCreditNoteToGL(creditNoteId As Integer,
+                                      creditNoteNumber As String,
+                                      creditNoteDate As Date,
+                                      supplierName As String,
+                                      branchId As Integer,
+                                      subtotalAmount As Decimal,
+                                      vatAmount As Decimal,
+                                      totalAmount As Decimal,
+                                      expenseAccountCode As String,
+                                      createdBy As String) As Integer
+        Dim journalId As Integer = 0
+
+        Using conn As New SqlConnection(_connectionString)
+            conn.Open()
+            Using cmd As New SqlCommand("sp_AP_PostCreditNoteToGL", conn)
+                cmd.CommandType = CommandType.StoredProcedure
+                cmd.Parameters.AddWithValue("@CreditNoteID", creditNoteId)
+                cmd.Parameters.AddWithValue("@CreditNoteNumber", creditNoteNumber)
+                cmd.Parameters.AddWithValue("@CreditNoteDate", creditNoteDate)
+                cmd.Parameters.AddWithValue("@SupplierName", supplierName)
+                cmd.Parameters.AddWithValue("@BranchID", branchId)
+                cmd.Parameters.AddWithValue("@SubtotalAmount", subtotalAmount)
+                cmd.Parameters.AddWithValue("@VATAmount", vatAmount)
+                cmd.Parameters.AddWithValue("@TotalAmount", totalAmount)
+                cmd.Parameters.AddWithValue("@ExpenseAccountCode", expenseAccountCode)
+                cmd.Parameters.AddWithValue("@CreatedBy", createdBy)
+
+                Using reader As SqlDataReader = cmd.ExecuteReader()
+                    If reader.Read() Then
+                        journalId = reader.GetInt32(reader.GetOrdinal("JournalID"))
+                    End If
+                End Using
+            End Using
+        End Using
+
+        Return journalId
     End Function
 End Class
