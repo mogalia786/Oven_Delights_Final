@@ -152,10 +152,24 @@ Public Class GRVCreateForm
                 Return
             End If
             
+            If String.IsNullOrWhiteSpace(txtDeliveryNote.Text) Then
+                MessageBox.Show("Please enter an Invoice Number.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                txtDeliveryNote.Focus()
+                Return
+            End If
+            
             Dim poId As Integer = Convert.ToInt32(cboPurchaseOrder.SelectedValue)
             Dim row As DataRowView = DirectCast(cboPurchaseOrder.SelectedItem, DataRowView)
             Dim supplierId As Integer = Convert.ToInt32(row("SupplierID"))
             Dim branchId As Integer = Convert.ToInt32(cboBranch.SelectedValue)
+            
+            ' Check for duplicate invoice number
+            If CheckDuplicateInvoiceNumber(txtDeliveryNote.Text.Trim(), supplierId) Then
+                MessageBox.Show($"Invoice Number '{txtDeliveryNote.Text.Trim()}' already exists for this supplier. Please enter a unique invoice number.", "Duplicate Invoice", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                txtDeliveryNote.Focus()
+                txtDeliveryNote.SelectAll()
+                Return
+            End If
             
             Dim deliveryDate As Date? = Nothing
             If dtpDeliveryDate.Checked Then
@@ -180,4 +194,22 @@ Public Class GRVCreateForm
             MessageBox.Show($"Error creating GRV: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
+    
+    Private Function CheckDuplicateInvoiceNumber(invoiceNumber As String, supplierId As Integer) As Boolean
+        Try
+            Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                conn.Open()
+                Dim sql As String = "SELECT COUNT(*) FROM SupplierInvoices WHERE InvoiceNumber = @InvoiceNumber AND SupplierID = @SupplierID"
+                Using cmd As New SqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@InvoiceNumber", invoiceNumber)
+                    cmd.Parameters.AddWithValue("@SupplierID", supplierId)
+                    Dim count As Integer = CInt(cmd.ExecuteScalar())
+                    Return count > 0
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show($"Error checking duplicate invoice: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return False
+        End Try
+    End Function
 End Class

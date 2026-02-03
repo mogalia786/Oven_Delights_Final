@@ -297,6 +297,7 @@ Partial Class BatchPaymentForm
         '
         Me.pnlBatch.BackColor = System.Drawing.Color.White
         Me.pnlBatch.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle
+        Me.pnlBatch.Controls.Add(Me.btnRemoveFromBatch)
         Me.pnlBatch.Controls.Add(Me.btnViewTransactions)
         Me.pnlBatch.Controls.Add(Me.btnSubmitFNB)
         Me.pnlBatch.Controls.Add(Me.btnPrintSchedule)
@@ -404,6 +405,19 @@ Partial Class BatchPaymentForm
         Me.btnViewTransactions.Text = "View Transactions"
         Me.btnViewTransactions.UseVisualStyleBackColor = False
         '
+        'btnRemoveFromBatch
+        '
+        Me.btnRemoveFromBatch.BackColor = System.Drawing.Color.FromArgb(CType(CType(231, Byte), Integer), CType(CType(76, Byte), Integer), CType(CType(60, Byte), Integer))
+        Me.btnRemoveFromBatch.FlatStyle = System.Windows.Forms.FlatStyle.Flat
+        Me.btnRemoveFromBatch.Font = New System.Drawing.Font("Segoe UI", 9.0!, System.Drawing.FontStyle.Bold)
+        Me.btnRemoveFromBatch.ForeColor = System.Drawing.Color.White
+        Me.btnRemoveFromBatch.Location = New System.Drawing.Point(540, 205)
+        Me.btnRemoveFromBatch.Name = "btnRemoveFromBatch"
+        Me.btnRemoveFromBatch.Size = New System.Drawing.Size(160, 30)
+        Me.btnRemoveFromBatch.TabIndex = 8
+        Me.btnRemoveFromBatch.Text = "Remove from Batch"
+        Me.btnRemoveFromBatch.UseVisualStyleBackColor = False
+        '
         'btnClose
         '
         Me.btnClose.BackColor = System.Drawing.Color.FromArgb(CType(CType(149, Byte), Integer), CType(CType(165, Byte), Integer), CType(CType(166, Byte), Integer))
@@ -477,5 +491,6 @@ Partial Class BatchPaymentForm
     Friend WithEvents btnPrintSchedule As Button
     Friend WithEvents btnSubmitFNB As Button
     Friend WithEvents btnViewTransactions As Button
+    Friend WithEvents btnRemoveFromBatch As Button
     Friend WithEvents btnClose As Button
 End Class

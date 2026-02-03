@@ -225,7 +225,7 @@ Public Class APInvoiceService
                                         vatAmount As Decimal,
                                         totalAmount As Decimal,
                                         expenseAccountCode As String,
-                                        createdBy As String) As Integer
+                                        createdBy As Integer) As Integer
         Dim journalId As Integer = 0
 
         Using conn As New SqlConnection(_connectionString)

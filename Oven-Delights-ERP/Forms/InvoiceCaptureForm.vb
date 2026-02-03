@@ -365,7 +365,16 @@ Public Class InvoiceCaptureForm
             End If
 
             If String.IsNullOrWhiteSpace(txtDeliveryNote.Text) Then
-                MessageBox.Show("Please enter a delivery note number.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                MessageBox.Show("Please enter an Invoice Number.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                txtDeliveryNote.Focus()
+                Return
+            End If
+            
+            ' Check for duplicate invoice number
+            If CheckDuplicateInvoiceNumber(txtDeliveryNote.Text.Trim(), selectedSupplierId) Then
+                MessageBox.Show($"Invoice Number '{txtDeliveryNote.Text.Trim()}' already exists for this supplier. Please enter a unique invoice number.", "Duplicate Invoice", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                txtDeliveryNote.Focus()
+                txtDeliveryNote.SelectAll()
                 Return
             End If
 
@@ -825,6 +834,24 @@ Public Class InvoiceCaptureForm
     Private Sub UpdateLastPaidPrice(materialId As Integer, unitCost As Decimal, itemType As String)
         ' IGNORE materialId - update by product name from grid instead
     End Sub
+    
+    Private Function CheckDuplicateInvoiceNumber(invoiceNumber As String, supplierId As Integer) As Boolean
+        Try
+            Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                conn.Open()
+                Dim sql As String = "SELECT COUNT(*) FROM SupplierInvoices WHERE InvoiceNumber = @InvoiceNumber AND SupplierID = @SupplierID"
+                Using cmd As New SqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@InvoiceNumber", invoiceNumber)
+                    cmd.Parameters.AddWithValue("@SupplierID", supplierId)
+                    Dim count As Integer = CInt(cmd.ExecuteScalar())
+                    Return count > 0
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show($"Error checking duplicate invoice: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return False
+        End Try
+    End Function
     
     Private Sub UpdateLastPaidPriceByName(productName As String, unitCost As Decimal)
         Try

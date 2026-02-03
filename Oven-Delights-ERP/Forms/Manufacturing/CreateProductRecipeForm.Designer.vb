@@ -32,6 +32,7 @@ Partial Class CreateProductRecipeForm
         Me.Label2 = New System.Windows.Forms.Label()
         Me.grpConsolidated = New System.Windows.Forms.GroupBox()
         Me.dgvConsolidatedBOM = New System.Windows.Forms.DataGridView()
+        Me.chkShowConsolidated = New System.Windows.Forms.CheckBox()
         Me.grpMethod = New System.Windows.Forms.GroupBox()
         Me.txtMethod = New System.Windows.Forms.TextBox()
         Me.grpBatch = New System.Windows.Forms.GroupBox()
@@ -134,6 +135,7 @@ Partial Class CreateProductRecipeForm
         Me.grpComponents.Controls.Add(Me.Label3)
         Me.grpComponents.Controls.Add(Me.cboComponent)
         Me.grpComponents.Controls.Add(Me.Label2)
+        Me.grpComponents.Controls.Add(Me.chkShowConsolidated)
         Me.grpComponents.Dock = System.Windows.Forms.DockStyle.Top
         Me.grpComponents.Font = New System.Drawing.Font("Segoe UI", 10.0!, System.Drawing.FontStyle.Bold)
         Me.grpComponents.Location = New System.Drawing.Point(20, 180)
@@ -203,6 +205,16 @@ Partial Class CreateProductRecipeForm
         Me.Label2.TabIndex = 0
         Me.Label2.Text = "Component:"
         '
+        'chkShowConsolidated
+        '
+        Me.chkShowConsolidated.AutoSize = True
+        Me.chkShowConsolidated.Font = New System.Drawing.Font("Segoe UI", 9.0!)
+        Me.chkShowConsolidated.Location = New System.Drawing.Point(900, 36)
+        Me.chkShowConsolidated.Name = "chkShowConsolidated"
+        Me.chkShowConsolidated.Size = New System.Drawing.Size(150, 19)
+        Me.chkShowConsolidated.TabIndex = 6
+        Me.chkShowConsolidated.Text = "Show Consolidated BOM"
+        Me.chkShowConsolidated.UseVisualStyleBackColor = True
         '
         'grpConsolidated
         '
@@ -215,6 +227,7 @@ Partial Class CreateProductRecipeForm
         Me.grpConsolidated.TabIndex = 3
         Me.grpConsolidated.TabStop = False
         Me.grpConsolidated.Text = "Consolidated BOM (Auto-Generated)"
+        Me.grpConsolidated.Visible = False
         '
         'dgvConsolidatedBOM
         '
@@ -439,4 +452,5 @@ Partial Class CreateProductRecipeForm
     Friend WithEvents btnPrint As Button
     Friend WithEvents btnClear As Button
     Friend WithEvents btnSave As Button
+    Friend WithEvents chkShowConsolidated As CheckBox
 End Class

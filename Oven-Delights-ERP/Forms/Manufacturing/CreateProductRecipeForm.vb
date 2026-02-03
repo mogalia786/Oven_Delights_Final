@@ -27,7 +27,12 @@ Public Class CreateProductRecipeForm
         LoadProducts()
         LoadComponents()
         AddHandler txtBatchQty.TextChanged, AddressOf txtBatchQty_TextChanged
+        AddHandler chkShowConsolidated.CheckedChanged, AddressOf chkShowConsolidated_CheckedChanged
         _isLoading = False
+    End Sub
+    
+    Private Sub chkShowConsolidated_CheckedChanged(sender As Object, e As EventArgs)
+        grpConsolidated.Visible = chkShowConsolidated.Checked
     End Sub
     
     Private Sub SetupGridColumns()

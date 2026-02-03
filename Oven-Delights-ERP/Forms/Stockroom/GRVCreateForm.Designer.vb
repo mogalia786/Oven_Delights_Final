@@ -163,9 +163,9 @@ Partial Class GRVCreateForm
         Me.lblDeliveryNote.AutoSize = True
         Me.lblDeliveryNote.Location = New System.Drawing.Point(350, 53)
         Me.lblDeliveryNote.Name = "lblDeliveryNote"
-        Me.lblDeliveryNote.Size = New System.Drawing.Size(75, 13)
+        Me.lblDeliveryNote.Size = New System.Drawing.Size(90, 13)
         Me.lblDeliveryNote.TabIndex = 12
-        Me.lblDeliveryNote.Text = "Delivery Note:"
+        Me.lblDeliveryNote.Text = "Invoice Number:"
         '
         'lblDeliveryDate
         '

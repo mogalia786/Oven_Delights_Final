@@ -414,7 +414,7 @@ Namespace Accounting
                         taxAmount,
                         amount + taxAmount,
                         glAccountCode,
-                        AppSession.CurrentUser.Username
+                        AppSession.CurrentUser.UserID
                     )
                     
                     MessageBox.Show($"Invoice {txtInvoiceNumber.Text} created and posted to GL successfully (Journal ID: {journalId})", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)

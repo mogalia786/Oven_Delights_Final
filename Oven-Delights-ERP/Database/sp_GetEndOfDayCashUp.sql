@@ -77,8 +77,8 @@ BEGIN
         SUM(CASE WHEN ds.SaleType = 'OrderCollection' THEN ds.TotalAmount ELSE 0 END) AS OrderCollections,
         COUNT(CASE WHEN ds.SaleType = 'OrderCollection' THEN 1 END) AS OrderCollectionCount,
         
-        -- Opening Float (from TillFloatConfig table)
-        COALESCE((
+        -- Opening Float (from TillFloatConfig table or default 1000)
+        ISNULL((
             SELECT TOP 1 tfc.FloatAmount 
             FROM TillFloatConfig tfc
             INNER JOIN TillPoints tp ON tfc.TillPointID = tp.TillPointID
@@ -88,7 +88,7 @@ BEGIN
         ), 1000.00) AS OpeningFloat,
         
         -- Expected Cash (Opening Float + Cash payments - Cash returns)
-        COALESCE((
+        ISNULL((
             SELECT TOP 1 tfc.FloatAmount 
             FROM TillFloatConfig tfc
             INNER JOIN TillPoints tp ON tfc.TillPointID = tp.TillPointID
@@ -97,7 +97,7 @@ BEGIN
                 AND tfc.IsActive = 1
         ), 1000.00) + 
         SUM(CASE WHEN ds.PaymentMethod = 'Cash' THEN ds.TotalAmount ELSE 0 END) - 
-        COALESCE((
+        ISNULL((
             SELECT SUM(r.CashAmount)
             FROM POS_Returns r
             INNER JOIN TillPoints tp ON r.TillPointID = tp.TillPointID

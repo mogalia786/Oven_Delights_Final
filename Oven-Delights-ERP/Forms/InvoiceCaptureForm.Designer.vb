@@ -88,9 +88,9 @@ Partial Class InvoiceCaptureForm
         Me.lblDeliveryNote.AutoSize = True
         Me.lblDeliveryNote.Location = New System.Drawing.Point(12, 45)
         Me.lblDeliveryNote.Name = "lblDeliveryNote"
-        Me.lblDeliveryNote.Size = New System.Drawing.Size(75, 13)
+        Me.lblDeliveryNote.Size = New System.Drawing.Size(90, 13)
         Me.lblDeliveryNote.TabIndex = 4
-        Me.lblDeliveryNote.Text = "Delivery Note:"
+        Me.lblDeliveryNote.Text = "Invoice Number:"
         '
         'txtDeliveryNote
         '

@@ -45,6 +45,7 @@ Namespace Admin
         Private pnlTotalSales, pnlTransactions, pnlAvgOrderValue, pnlProfitMargin As Panel
         Private pnlGrowthVsLastMonth, pnlGrowthVsLastYear As Panel
         Private pnlInvoicesPaid, pnlInvoicesDue, pnlTotalOrders, pnlCakeOrders As Panel
+        Private pnlOrdersRequested, pnlOrdersCompleted, pnlOrdersPickedUp, pnlOrdersNotPickedUp As Panel
 
         ' Charts
         Private chartSalesByBranch As Chart
@@ -89,13 +90,13 @@ Namespace Admin
             ' Header with title and time filter
             Dim pnlHeader As New Panel() With {
                 .Dock = DockStyle.Top,
-                .Height = 60,
+                .Height = 80,
                 .BackColor = JarvisBlack,
-                .Padding = New Padding(20, 5, 20, 5)
+                .Padding = New Padding(20, 10, 20, 10)
             }
 
             Dim lblTitle As New Label() With {
-                .Text = "◆ JARVIS EXECUTIVE DASHBOARD ◆",
+                .Text = "◆ EXECUTIVE DASHBOARD FOR TODAY ◆",
                 .Font = New Font("Segoe UI", 24, FontStyle.Bold),
                 .ForeColor = BranchRed,
                 .Location = New Point(20, 15),
@@ -136,51 +137,6 @@ Namespace Admin
             LoadBranchFilter()
             AddHandler cboBranch.SelectedIndexChanged, AddressOf Filter_Changed
             pnlHeader.Controls.Add(cboBranch)
-            
-            ' Month Filter
-            Dim lblMonth As New Label() With {
-                .Text = "Month:",
-                .Font = New Font("Segoe UI", 11, FontStyle.Bold),
-                .ForeColor = JarvisCyan,
-                .Location = New Point(1480, 20),
-                .AutoSize = True
-            }
-            pnlHeader.Controls.Add(lblMonth)
-
-            cboMonth = New ComboBox() With {
-                .Location = New Point(1560, 17),
-                .Size = New Size(150, 30),
-                .Font = New Font("Segoe UI", 10),
-                .DropDownStyle = ComboBoxStyle.DropDownList,
-                .BackColor = JarvisDarkGray,
-                .ForeColor = JarvisCyan
-            }
-            LoadMonthFilter()
-            AddHandler cboMonth.SelectedIndexChanged, AddressOf Filter_Changed
-            pnlHeader.Controls.Add(cboMonth)
-            
-            ' Time Period Filter (kept for compatibility)
-            Dim lblFilter As New Label() With {
-                .Text = "Period:",
-                .Font = New Font("Segoe UI", 11, FontStyle.Bold),
-                .ForeColor = JarvisCyan,
-                .Location = New Point(1730, 20),
-                .AutoSize = True
-            }
-            pnlHeader.Controls.Add(lblFilter)
-
-            cboTimePeriod = New ComboBox() With {
-                .Location = New Point(1800, 17),
-                .Size = New Size(100, 30),
-                .Font = New Font("Segoe UI", 10),
-                .DropDownStyle = ComboBoxStyle.DropDownList,
-                .BackColor = JarvisDarkGray,
-                .ForeColor = JarvisCyan
-            }
-            cboTimePeriod.Items.AddRange({"Today", "Week", "Month", "Year"})
-            cboTimePeriod.SelectedIndex = 2
-            AddHandler cboTimePeriod.SelectedIndexChanged, AddressOf Filter_Changed
-            pnlHeader.Controls.Add(cboTimePeriod)
 
             Me.Controls.Add(pnlHeader)
 
@@ -189,17 +145,17 @@ Namespace Admin
                 .Dock = DockStyle.Fill,
                 .BackColor = JarvisBlack,
                 .AutoScroll = True,
-                .Padding = New Padding(10)
+                .Padding = New Padding(10, 10, 10, 10)
             }
 
             Dim contentPanel As New Panel() With {
                 .Location = New Point(0, 0),
                 .Width = 1880,
-                .Height = 3500,
+                .Height = 3650,
                 .BackColor = JarvisBlack
             }
 
-            Dim yPos As Integer = 30
+            Dim yPos As Integer = 100
 
             ' KPI Cards Row 1
             pnlTotalSales = CreateKPICard("TOTAL SALES", "R 0", "", JarvisCyan, 10, yPos, 450)
@@ -224,6 +180,15 @@ Namespace Admin
             pnlCakeOrders = CreateKPICard("CAKE ORDERS", "0", "", BranchGold, 1390, yPos, 450)
 
             contentPanel.Controls.AddRange({pnlInvoicesPaid, pnlInvoicesDue, pnlTotalOrders, pnlCakeOrders})
+            yPos += 130
+
+            ' KPI Cards Row 4 - TODAY'S ORDER STATUS (LIVE)
+            pnlOrdersRequested = CreateKPICard("ORDERS DUE TODAY", "0", "", BranchOrange, 10, yPos, 450)
+            pnlOrdersCompleted = CreateKPICard("ORDERS COMPLETED", "0", "", BranchGreen, 470, yPos, 450)
+            pnlOrdersPickedUp = CreateKPICard("ORDERS PICKED UP", "0", "", BranchGreen, 930, yPos, 450)
+            pnlOrdersNotPickedUp = CreateKPICard("COMPLETED NOT PICKED UP", "0", "", BranchRed, 1390, yPos, 450)
+
+            contentPanel.Controls.AddRange({pnlOrdersRequested, pnlOrdersCompleted, pnlOrdersPickedUp, pnlOrdersNotPickedUp})
             yPos += 130
 
             ' Sales by Branch (Large)
@@ -427,6 +392,12 @@ Namespace Admin
             End Try
             
             Try
+                LoadTodayOrderStats()
+            Catch ex As Exception
+                Debug.WriteLine($"LoadTodayOrderStats Error: {ex.Message}")
+            End Try
+            
+            Try
                 LoadSalesByBranch()
             Catch ex As Exception
                 Debug.WriteLine($"LoadSalesByBranch Error: {ex.Message}")
@@ -559,36 +530,70 @@ Namespace Admin
                 Using conn As New Microsoft.Data.SqlClient.SqlConnection(connectionString)
                     conn.Open()
 
-                    Dim dateFilter = GetSalesDateFilter()
+                    Dim dateFilter = GetInvoiceDateFilter()
 
-                    ' Invoices Paid - use Demo_Sales total
-                    Dim sql As String = $"SELECT ISNULL(SUM(s.TotalAmount), 0) FROM Demo_Sales s WHERE {dateFilter}"
+                    ' Invoices Paid - from Invoices table where PaymentStatus = 'Paid'
+                    Dim sql As String = $"SELECT ISNULL(SUM(i.TotalAmount), 0) FROM Invoices i WHERE {dateFilter} AND i.PaymentStatus = 'Paid'"
                     Dim invoicesPaid As Decimal = 0
                     Using cmd As New Microsoft.Data.SqlClient.SqlCommand(sql, conn)
                         invoicesPaid = Convert.ToDecimal(cmd.ExecuteScalar())
                         UpdateKPIValue(pnlInvoicesPaid, $"R {invoicesPaid:N0}")
                     End Using
 
-                    ' Invoices Due - calculate as 10% of paid for demo purposes
-                    Dim invoicesDue As Decimal = invoicesPaid * 0.1D
-                    UpdateKPIValue(pnlInvoicesDue, $"R {invoicesDue:N0}")
+                    ' Invoices Due - from Invoices table where PaymentStatus != 'Paid'
+                    sql = $"SELECT ISNULL(SUM(i.TotalAmount), 0) FROM Invoices i WHERE {dateFilter} AND (i.PaymentStatus IS NULL OR i.PaymentStatus != 'Paid')"
+                    Dim invoicesDue As Decimal = 0
+                    Using cmd As New Microsoft.Data.SqlClient.SqlCommand(sql, conn)
+                        invoicesDue = Convert.ToDecimal(cmd.ExecuteScalar())
+                        UpdateKPIValue(pnlInvoicesDue, $"R {invoicesDue:N0}")
+                    End Using
 
-                    ' Total Orders - count from Demo_Sales
-                    sql = $"SELECT COUNT(*) FROM Demo_Sales s WHERE {dateFilter}"
+                    ' Total Orders - count from Invoices
+                    sql = $"SELECT COUNT(DISTINCT i.InvoiceNumber) FROM Invoices i WHERE {dateFilter}"
                     Using cmd As New Microsoft.Data.SqlClient.SqlCommand(sql, conn)
                         Dim totalOrders = Convert.ToInt32(cmd.ExecuteScalar())
                         UpdateKPIValue(pnlTotalOrders, totalOrders.ToString("N0"))
                     End Using
 
-                    ' Cake Orders - estimate based on product categories
-                    sql = $"SELECT COUNT(*) FROM Demo_Sales s " &
-                          $"WHERE {dateFilter} AND s.ProductName LIKE '%cake%'"
+                    ' Cake Orders - from custom orders table
+                    sql = $"SELECT COUNT(*) FROM POS_CustomOrders o WHERE CAST(o.OrderDate AS DATE) >= CAST(DATEADD(DAY, -30, GETDATE()) AS DATE)"
                     Using cmd As New Microsoft.Data.SqlClient.SqlCommand(sql, conn)
                         Dim cakeOrders = Convert.ToInt32(cmd.ExecuteScalar())
                         UpdateKPIValue(pnlCakeOrders, cakeOrders.ToString("N0"))
                     End Using
                 End Using
             Catch ex As Exception
+            End Try
+        End Sub
+
+        Private Sub LoadTodayOrderStats()
+            Try
+                Using conn As New Microsoft.Data.SqlClient.SqlConnection(connectionString)
+                    conn.Open()
+                    
+                    Dim sql As String = "EXEC sp_GetTodayOrderStats @BranchID"
+                    Using cmd As New Microsoft.Data.SqlClient.SqlCommand(sql, conn)
+                        cmd.Parameters.AddWithValue("@BranchID", If(selectedBranchID = 0, DBNull.Value, CObj(selectedBranchID)))
+                        
+                        Using reader = cmd.ExecuteReader()
+                            If reader.Read() Then
+                                Dim ordersRequested = If(IsDBNull(reader("OrdersRequested")), 0, Convert.ToInt32(reader("OrdersRequested")))
+                                Dim ordersCompleted = If(IsDBNull(reader("OrdersCompleted")), 0, Convert.ToInt32(reader("OrdersCompleted")))
+                                Dim ordersPickedUp = If(IsDBNull(reader("OrdersPickedUp")), 0, Convert.ToInt32(reader("OrdersPickedUp")))
+                                Dim ordersNotPickedUp = If(IsDBNull(reader("OrdersCompletedNotPickedUp")), 0, Convert.ToInt32(reader("OrdersCompletedNotPickedUp")))
+                                Dim ordersDueNotCompleted = If(IsDBNull(reader("OrdersDueTodayNotCompleted")), 0, Convert.ToInt32(reader("OrdersDueTodayNotCompleted")))
+                                
+                                ' Update KPI cards with live data
+                                UpdateKPIValue(pnlOrdersRequested, ordersRequested.ToString("N0"), If(ordersDueNotCompleted > 0, BranchRed, BranchOrange))
+                                UpdateKPIValue(pnlOrdersCompleted, ordersCompleted.ToString("N0"), BranchGreen)
+                                UpdateKPIValue(pnlOrdersPickedUp, ordersPickedUp.ToString("N0"), BranchGreen)
+                                UpdateKPIValue(pnlOrdersNotPickedUp, ordersNotPickedUp.ToString("N0"), If(ordersNotPickedUp > 0, BranchRed, BranchGreen))
+                            End If
+                        End Using
+                    End Using
+                End Using
+            Catch ex As Exception
+                Debug.WriteLine($"LoadTodayOrderStats Error: {ex.Message}")
             End Try
         End Sub
 
@@ -947,6 +952,30 @@ Namespace Admin
             ' Add branch filter if specific branch selected
             If selectedBranchID > 0 Then
                 filter &= $" AND s.BranchID = {selectedBranchID}"
+            End If
+            
+            Return filter
+        End Function
+
+        Private Function GetInvoiceDateFilter() As String
+            Dim filter As String = ""
+            
+            Select Case currentPeriod
+                Case "Today"
+                    filter = "CAST(i.SaleDate AS DATE) = CAST(GETDATE() AS DATE)"
+                Case "Week"
+                    filter = "i.SaleDate >= DATEADD(WEEK, DATEDIFF(WEEK, 0, GETDATE()), 0)"
+                Case "Month"
+                    filter = $"YEAR(i.SaleDate) = {selectedYear} AND MONTH(i.SaleDate) = {selectedMonth}"
+                Case "Year"
+                    filter = $"YEAR(i.SaleDate) = {selectedYear}"
+                Case Else
+                    filter = $"YEAR(i.SaleDate) = {selectedYear} AND MONTH(i.SaleDate) = {selectedMonth}"
+            End Select
+            
+            ' Add branch filter if specific branch selected
+            If selectedBranchID > 0 Then
+                filter &= $" AND i.BranchID = {selectedBranchID}"
             End If
             
             Return filter

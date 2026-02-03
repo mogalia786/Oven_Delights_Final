@@ -96,17 +96,26 @@ Public Class FNBPaymentExecutionService
             Dim apiResponse = _fnbApi.InitiatePayment(apiRequest)
             
             instructionId = apiResponse.instructionId
-            LogStatus("✓✓✓ BATCH SUBMITTED SUCCESSFULLY ✓✓✓")
-            LogStatus($"Message: Payment batch accepted by FNB")
-            LogStatus($"Instruction ID: {If(instructionId, "(null)")}")
-            LogStatus($"Message ID: {If(apiResponse.messageId, "(null)")}")
-            LogStatus($"Status: {If(apiResponse.status, "(null)")}")
-            LogStatus("--- Full Response ---")
+            LogStatus("✓ Payment initiation submitted")
+            LogStatus($"Instruction ID: {instructionId}")
+            LogStatus("--- Initial Response ---")
             LogStatus(JsonConvert.SerializeObject(apiResponse, Formatting.Indented))
+            
+            ' Get actual payment status
+            LogStatus("")
+            LogStatus("Retrieving payment status...")
+            Dim statusReport = _fnbApi.GetPaymentStatus(instructionId)
+            
+            Dim actualStatus As String = If(statusReport?.groupStatus, "PDNG")
+            LogStatus("✓✓✓ PAYMENT STATUS RETRIEVED ✓✓✓")
+            LogStatus($"Batch Status: {actualStatus}")
+            LogStatus($"Instruction ID: {If(statusReport?.instructionId, "(null)")}")
+            LogStatus("--- Full Status Report ---")
+            LogStatus(JsonConvert.SerializeObject(statusReport, Formatting.Indented))
 
-            UpdateBatchWithInstructionId(batchId, instructionId, "ACCP", JsonConvert.SerializeObject(apiResponse))
+            UpdateBatchWithInstructionId(batchId, instructionId, actualStatus, JsonConvert.SerializeObject(statusReport))
 
-            Return New Tuple(Of Boolean, String, Integer?)(True, $"Payment batch submitted successfully. Instruction ID: {instructionId}", batchId)
+            Return New Tuple(Of Boolean, String, Integer?)(True, $"Payment batch submitted. Status: {actualStatus}, Instruction ID: {instructionId}", batchId)
 
         Catch ex As Exception
             Return New Tuple(Of Boolean, String, Integer?)(False, $"Failed to submit payment batch: {ex.Message}", Nothing)
@@ -165,7 +174,7 @@ Public Class FNBPaymentExecutionService
         Dim paymentInfo As New PaymentInformation() With {
             .paymentInformationId = messageId,
             .paymentInformationMethod = "TRF",
-            .batchBooking = True,
+            .batchBooking = False,
             .numberOfTransactions = paymentLines.Count,
             .controlSum = paymentLines.Sum(Function(p) p.Amount),
             .paymentTypeInformationServiceLevelCode = "SDVA",

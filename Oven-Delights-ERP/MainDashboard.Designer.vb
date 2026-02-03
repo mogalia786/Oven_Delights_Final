@@ -64,7 +64,8 @@ Partial Class MainDashboard
         ' 
         ' MenuStrip1
         ' 
-        MenuStrip1.Items.AddRange(New ToolStripItem() {AdministratorToolStripMenuItem, StockroomToolStripMenuItem, ManufacturingToolStripMenuItem, RetailToolStripMenuItem, AccountingToolStripMenuItem, ReportingToolStripMenuItem, ExitToolStripMenuItem})
+        LogoutToolStripMenuItem = New ToolStripMenuItem()
+        MenuStrip1.Items.AddRange(New ToolStripItem() {AdministratorToolStripMenuItem, StockroomToolStripMenuItem, ManufacturingToolStripMenuItem, RetailToolStripMenuItem, AccountingToolStripMenuItem, ReportingToolStripMenuItem, LogoutToolStripMenuItem, ExitToolStripMenuItem})
         MenuStrip1.Location = New Point(0, 0)
         MenuStrip1.Name = "MenuStrip1"
         MenuStrip1.Padding = New Padding(7, 2, 0, 2)
@@ -233,6 +234,12 @@ Partial Class MainDashboard
         ReportingToolStripMenuItem.Size = New Size(71, 20)
         ReportingToolStripMenuItem.Text = "Reporting"
         ' 
+        ' LogoutToolStripMenuItem
+        ' 
+        LogoutToolStripMenuItem.Name = "LogoutToolStripMenuItem"
+        LogoutToolStripMenuItem.Size = New Size(57, 20)
+        LogoutToolStripMenuItem.Text = "Logout"
+        ' 
         ' ExitToolStripMenuItem
         ' 
         ExitToolStripMenuItem.Name = "ExitToolStripMenuItem"
@@ -333,6 +340,7 @@ Partial Class MainDashboard
     Friend WithEvents RetailToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents AccountingToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents ReportingToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents LogoutToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents ExitToolStripMenuItem As ToolStripMenuItem
 
     ' Accounting Submenus

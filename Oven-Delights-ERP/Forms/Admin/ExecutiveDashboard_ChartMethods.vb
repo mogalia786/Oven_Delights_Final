@@ -60,11 +60,11 @@ Namespace Admin
                 chartOrderTypes.Series.Clear()
                 chartOrderTypes.Legends.Clear()
 
-                ' Create pie chart series for product categories
-                Dim series As New Series("Categories") With {
-                    .ChartType = SeriesChartType.Pie,
+                ' Create bar chart series showing top products ordered with quantities
+                Dim series As New Series("Products") With {
+                    .ChartType = SeriesChartType.Bar,
                     .IsValueShownAsLabel = True,
-                    .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+                    .Font = New Font("Segoe UI", 9, FontStyle.Bold),
                     .LabelForeColor = JarvisCyan
                 }
 
@@ -73,39 +73,29 @@ Namespace Admin
                     
                     Dim dateFilter = GetSalesDateFilter()
                     
-                    ' Get sales by product category
-                    Dim sql As String = $"SELECT " &
-                                       $"SUM(CASE WHEN s.ProductName LIKE '%cake%' THEN 1 ELSE 0 END) AS Cakes, " &
-                                       $"SUM(CASE WHEN s.ProductName LIKE '%pastry%' OR s.ProductName LIKE '%tart%' THEN 1 ELSE 0 END) AS Pastries, " &
-                                       $"SUM(CASE WHEN s.ProductName LIKE '%bread%' OR s.ProductName LIKE '%loaf%' THEN 1 ELSE 0 END) AS Bread, " &
-                                       $"SUM(CASE WHEN s.ProductName NOT LIKE '%cake%' AND s.ProductName NOT LIKE '%pastry%' AND s.ProductName NOT LIKE '%tart%' AND s.ProductName NOT LIKE '%bread%' AND s.ProductName NOT LIKE '%loaf%' THEN 1 ELSE 0 END) AS Other " &
-                                       $"FROM Demo_Sales s WHERE {dateFilter}"
+                    ' Get top 10 products ordered with quantities for selected period
+                    Dim sql As String = $"SELECT TOP 10 s.ProductName, SUM(s.Quantity) AS TotalQty " &
+                                       $"FROM Demo_Sales s " &
+                                       $"WHERE {dateFilter} " &
+                                       If(selectedBranchID > 0, $"AND s.BranchID = {selectedBranchID} ", "") &
+                                       $"GROUP BY s.ProductName " &
+                                       $"ORDER BY TotalQty DESC"
 
+                    Dim colorIndex As Integer = 0
+                    Dim colors() As Color = {BranchGold, BranchOrange, BranchGreen, JarvisCyan, BranchRed}
+                    
                     Using cmd As New Microsoft.Data.SqlClient.SqlCommand(sql, conn)
                         Using reader = cmd.ExecuteReader()
-                            If reader.Read() Then
-                                Dim cakes = Convert.ToInt32(reader("Cakes"))
-                                Dim pastries = Convert.ToInt32(reader("Pastries"))
-                                Dim bread = Convert.ToInt32(reader("Bread"))
-                                Dim other = Convert.ToInt32(reader("Other"))
+                            While reader.Read()
+                                Dim productName = reader("ProductName").ToString()
+                                If productName.Length > 30 Then productName = productName.Substring(0, 27) & "..."
                                 
-                                If cakes > 0 Then
-                                    Dim pt = series.Points.AddXY("Cakes", cakes)
-                                    series.Points(pt).Color = BranchGold
-                                End If
-                                If pastries > 0 Then
-                                    Dim pt = series.Points.AddXY("Pastries", pastries)
-                                    series.Points(pt).Color = BranchOrange
-                                End If
-                                If bread > 0 Then
-                                    Dim pt = series.Points.AddXY("Bread", bread)
-                                    series.Points(pt).Color = BranchGreen
-                                End If
-                                If other > 0 Then
-                                    Dim pt = series.Points.AddXY("Other", other)
-                                    series.Points(pt).Color = JarvisCyan
-                                End If
-                            End If
+                                Dim qty = Convert.ToInt32(reader("TotalQty"))
+                                Dim pt = series.Points.AddXY(productName, qty)
+                                series.Points(pt).Color = colors(colorIndex Mod colors.Length)
+                                series.Points(pt).Label = qty.ToString("N0")
+                                colorIndex += 1
+                            End While
                         End Using
                     End Using
                 End Using
@@ -115,10 +105,12 @@ Namespace Admin
                 Dim legend As New Legend("Legend1") With {
                     .Docking = Docking.Bottom,
                     .ForeColor = JarvisCyan,
-                    .BackColor = JarvisDarkGray
+                    .BackColor = JarvisDarkGray,
+                    .Enabled = False
                 }
                 chartOrderTypes.Legends.Add(legend)
             Catch ex As Exception
+                Debug.WriteLine($"LoadOrderTypes Error: {ex.Message}")
             End Try
         End Sub
 

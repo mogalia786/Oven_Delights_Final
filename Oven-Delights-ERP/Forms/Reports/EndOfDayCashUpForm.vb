@@ -18,6 +18,8 @@ Public Class EndOfDayCashUpForm
     Private _currentPrintRow As Integer = 0
     Private _printYPos As Integer = 0
     Private _tillPanels As New List(Of Panel)
+    Private _isFinalized As Boolean = False
+    Private _tillDenominationControls As New Dictionary(Of String, Dictionary(Of String, TextBox))
     
     ' Color scheme
     Private _primaryColor As Color = Color.FromArgb(183, 58, 46)
@@ -78,7 +80,7 @@ Public Class EndOfDayCashUpForm
         ' Filter panel
         Dim pnlFilters As New Panel With {
             .Dock = DockStyle.Top,
-            .Height = 100,
+            .Height = 140,
             .BackColor = Color.White,
             .Padding = New Padding(20)
         }
@@ -160,7 +162,56 @@ Public Class EndOfDayCashUpForm
         btnPrint.FlatAppearance.BorderSize = 0
         AddHandler btnPrint.Click, AddressOf PrintReport
         
-        pnlFilters.Controls.AddRange({lblBranch, cboBranch, lblDate, dtpDate, lblTill, cboTill, btnGenerate, btnPrint})
+        Dim btnFinalize As New Button With {
+            .Text = "Finalize Day",
+            .Location = New Point(1070, 40),
+            .Size = New Size(150, 35),
+            .BackColor = _errorColor,
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat,
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .Cursor = Cursors.Hand,
+            .Name = "btnFinalize",
+            .Enabled = False
+        }
+        btnFinalize.FlatAppearance.BorderSize = 0
+        AddHandler btnFinalize.Click, AddressOf FinalizeDay
+        
+        Dim chkViewFinalized As New CheckBox With {
+            .Text = "View Finalized Reports Only",
+            .Name = "chkViewFinalized",
+            .Location = New Point(1240, 48),
+            .AutoSize = True,
+            .Font = New Font("Segoe UI", 9, FontStyle.Bold),
+            .ForeColor = _primaryColor
+        }
+        AddHandler chkViewFinalized.CheckedChanged, AddressOf OnViewFinalizedChanged
+        
+        Dim btnSave As New Button With {
+            .Text = "Save Progress",
+            .Location = New Point(20, 85),
+            .Size = New Size(150, 30),
+            .BackColor = _successColor,
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat,
+            .Font = New Font("Segoe UI", 9, FontStyle.Bold),
+            .Cursor = Cursors.Hand,
+            .Name = "btnSave",
+            .Enabled = False
+        }
+        btnSave.FlatAppearance.BorderSize = 0
+        AddHandler btnSave.Click, AddressOf SaveProgress
+        
+        Dim lblSaveStatus As New Label With {
+            .Name = "lblSaveStatus",
+            .Location = New Point(190, 92),
+            .Width = 300,
+            .Font = New Font("Segoe UI", 9, FontStyle.Italic),
+            .ForeColor = Color.Gray,
+            .Text = ""
+        }
+        
+        pnlFilters.Controls.AddRange({lblBranch, cboBranch, lblDate, dtpDate, lblTill, cboTill, btnGenerate, btnPrint, btnFinalize, chkViewFinalized, btnSave, lblSaveStatus})
         
         ' Report panel with scroll
         Dim pnlReport As New Panel With {
@@ -245,6 +296,16 @@ Public Class EndOfDayCashUpForm
         LoadTills()
     End Sub
     
+    Private Sub OnViewFinalizedChanged(sender As Object, e As EventArgs)
+        ' When checkbox changes, clear the report to force regeneration
+        Dim pnlReport = TryCast(Me.Controls.Find("pnlReport", True).FirstOrDefault(), Panel)
+        If pnlReport IsNot Nothing Then
+            pnlReport.Controls.Clear()
+            _tillPanels.Clear()
+            _tillDenominationControls.Clear()
+        End If
+    End Sub
+    
     Private Sub GenerateReport(sender As Object, e As EventArgs)
         Try
             Dim cboBranch = TryCast(Me.Controls.Find("cboBranch", True).FirstOrDefault(), ComboBox)
@@ -264,9 +325,22 @@ Public Class EndOfDayCashUpForm
             ' Display report
             DisplayReport()
             
-            ' Enable print button
+            ' Load saved cash-up data if exists
+            LoadSavedCashUpData(branchID, _selectedDate)
+            
+            ' Enable print, save, and finalize buttons
             If btnPrint IsNot Nothing Then
                 btnPrint.Enabled = True
+            End If
+            
+            Dim btnFinalize = TryCast(Me.Controls.Find("btnFinalize", True).FirstOrDefault(), Button)
+            If btnFinalize IsNot Nothing Then
+                btnFinalize.Enabled = True
+            End If
+            
+            Dim btnSave = TryCast(Me.Controls.Find("btnSave", True).FirstOrDefault(), Button)
+            If btnSave IsNot Nothing Then
+                btnSave.Enabled = True
             End If
             
         Catch ex As Exception
@@ -576,6 +650,14 @@ Public Class EndOfDayCashUpForm
                 .Tag = denomValue
             }
             AddHandler txtQty.TextChanged, AddressOf OnDenominationChanged
+            AddHandler txtQty.KeyPress, AddressOf OnNumericKeyPress
+            
+            ' Store reference to textbox for this till
+            Dim tillNumber As String = tillRow("TillNumber").ToString()
+            If Not _tillDenominationControls.ContainsKey(tillNumber) Then
+                _tillDenominationControls(tillNumber) = New Dictionary(Of String, TextBox)
+            End If
+            _tillDenominationControls(tillNumber)(txtQty.Name) = txtQty
             
             Dim lblEquals As New Label With {
                 .Text = "=",
@@ -702,10 +784,22 @@ Public Class EndOfDayCashUpForm
         Return yPos + 30
     End Function
     
+    Private Sub OnNumericKeyPress(sender As Object, e As KeyPressEventArgs)
+        ' Only allow numbers and control keys (backspace, delete, etc.)
+        If Not Char.IsControl(e.KeyChar) AndAlso Not Char.IsDigit(e.KeyChar) Then
+            e.Handled = True
+        End If
+    End Sub
+    
     Private Sub OnDenominationChanged(sender As Object, e As EventArgs)
         Try
             Dim txt = TryCast(sender, TextBox)
             If txt Is Nothing Then Return
+            
+            ' Don't allow changes if finalized
+            If _isFinalized Then
+                Return
+            End If
             
             Dim denomValue As Decimal = Convert.ToDecimal(txt.Tag)
             Dim qty As Integer = 0
@@ -755,9 +849,250 @@ Public Class EndOfDayCashUpForm
                 lblVarianceAmount.Text = $"R {variance:N2}"
                 lblVarianceAmount.ForeColor = If(variance >= 0, _successColor, _errorColor)
             End If
+            
+            ' Auto-save when denomination changes
+            SaveCashUpDataAsync()
         Catch ex As Exception
             ' Silently handle calculation errors
         End Try
+    End Sub
+    
+    Private Sub SaveProgress(sender As Object, e As EventArgs)
+        Try
+            SaveCashUpDataAsync(showMessage:=True)
+        Catch ex As Exception
+            MessageBox.Show($"Error saving cash-up data: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    
+    Private Sub SaveCashUpDataAsync(Optional showMessage As Boolean = False)
+        ' Save denomination counts to database
+        Try
+            If _isFinalized Then Return
+            
+            Dim cboBranch = TryCast(Me.Controls.Find("cboBranch", True).FirstOrDefault(), ComboBox)
+            Dim dtpDate = TryCast(Me.Controls.Find("dtpDate", True).FirstOrDefault(), DateTimePicker)
+            
+            If cboBranch Is Nothing OrElse dtpDate Is Nothing OrElse _reportData Is Nothing Then Return
+            
+            Dim branchID As Integer = CInt(cboBranch.SelectedValue)
+            Dim reportDate As Date = dtpDate.Value.Date
+            
+            For Each tillRow As DataRow In _reportData.Rows
+                Dim tillNumber As String = tillRow("TillNumber").ToString()
+                Dim cashierName As String = tillRow("CashierName").ToString()
+                Dim expectedCash As Decimal = Convert.ToDecimal(tillRow("ExpectedCash"))
+                
+                ' Get denomination counts for this till
+                If Not _tillDenominationControls.ContainsKey(tillNumber) Then Continue For
+                
+                Dim controls = _tillDenominationControls(tillNumber)
+                
+                Using conn As New SqlConnection(_connectionString)
+                    conn.Open()
+                    Using cmd As New SqlCommand("sp_SaveCashUpData", conn)
+                        cmd.CommandType = CommandType.StoredProcedure
+                        cmd.Parameters.AddWithValue("@BranchID", branchID)
+                        cmd.Parameters.AddWithValue("@TillNumber", tillNumber)
+                        cmd.Parameters.AddWithValue("@CashUpDate", reportDate)
+                        cmd.Parameters.AddWithValue("@CashierName", cashierName)
+                        cmd.Parameters.AddWithValue("@Count_R200", GetTextBoxValue(controls, "txtR200"))
+                        cmd.Parameters.AddWithValue("@Count_R100", GetTextBoxValue(controls, "txtR100"))
+                        cmd.Parameters.AddWithValue("@Count_R50", GetTextBoxValue(controls, "txtR50"))
+                        cmd.Parameters.AddWithValue("@Count_R20", GetTextBoxValue(controls, "txtR20"))
+                        cmd.Parameters.AddWithValue("@Count_R10", GetTextBoxValue(controls, "txtR10"))
+                        cmd.Parameters.AddWithValue("@Count_R5", GetTextBoxValue(controls, "txtR5"))
+                        cmd.Parameters.AddWithValue("@Count_R2", GetTextBoxValue(controls, "txtR2"))
+                        cmd.Parameters.AddWithValue("@Count_R1", GetTextBoxValue(controls, "txtR1"))
+                        cmd.Parameters.AddWithValue("@Count_50c", GetTextBoxValue(controls, "txt50c"))
+                        cmd.Parameters.AddWithValue("@Count_20c", GetTextBoxValue(controls, "txt20c"))
+                        cmd.Parameters.AddWithValue("@Count_10c", GetTextBoxValue(controls, "txt10c"))
+                        cmd.Parameters.AddWithValue("@Count_5c", GetTextBoxValue(controls, "txt5c"))
+                        cmd.Parameters.AddWithValue("@ExpectedCash", expectedCash)
+                        cmd.Parameters.AddWithValue("@UserName", AppSession.CurrentUserName)
+                        cmd.ExecuteNonQuery()
+                    End Using
+                End Using
+            Next
+            
+            ' Update save status label
+            Dim lblSaveStatus = TryCast(Me.Controls.Find("lblSaveStatus", True).FirstOrDefault(), Label)
+            If lblSaveStatus IsNot Nothing Then
+                lblSaveStatus.Text = $"Last saved: {DateTime.Now:HH:mm:ss}"
+                lblSaveStatus.ForeColor = _successColor
+            End If
+            
+            If showMessage Then
+                MessageBox.Show("Cash-up data saved successfully.", "Saved", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+        Catch ex As Exception
+            ' Update save status with error
+            Dim lblSaveStatus = TryCast(Me.Controls.Find("lblSaveStatus", True).FirstOrDefault(), Label)
+            If lblSaveStatus IsNot Nothing Then
+                lblSaveStatus.Text = "Save failed"
+                lblSaveStatus.ForeColor = _errorColor
+            End If
+            
+            If showMessage Then
+                Throw
+            End If
+        End Try
+    End Sub
+    
+    Private Function GetTextBoxValue(controls As Dictionary(Of String, TextBox), key As String) As Integer
+        If controls.ContainsKey(key) AndAlso controls(key) IsNot Nothing Then
+            Dim value As Integer
+            If Integer.TryParse(controls(key).Text, value) Then
+                Return value
+            End If
+        End If
+        Return 0
+    End Function
+    
+    Private Sub LoadSavedCashUpData(branchID As Integer, reportDate As Date)
+        Try
+            ' Check if viewing finalized reports only
+            Dim chkViewFinalized = TryCast(Me.Controls.Find("chkViewFinalized", True).FirstOrDefault(), CheckBox)
+            Dim viewFinalizedOnly As Boolean = chkViewFinalized IsNot Nothing AndAlso chkViewFinalized.Checked
+            
+            Using conn As New SqlConnection(_connectionString)
+                conn.Open()
+                Using cmd As New SqlCommand("sp_LoadCashUpData", conn)
+                    cmd.CommandType = CommandType.StoredProcedure
+                    cmd.Parameters.AddWithValue("@BranchID", branchID)
+                    cmd.Parameters.AddWithValue("@CashUpDate", reportDate)
+                    
+                    Using reader As SqlDataReader = cmd.ExecuteReader()
+                        While reader.Read()
+                            Dim tillNumber As String = reader.GetString(reader.GetOrdinal("TillNumber"))
+                            Dim isFinalized As Boolean = reader.GetBoolean(reader.GetOrdinal("IsFinalized"))
+                            
+                            ' Skip if viewing finalized only and this record is not finalized
+                            If viewFinalizedOnly AndAlso Not isFinalized Then
+                                Continue While
+                            End If
+                            
+                            ' Set finalized flag if any till is finalized
+                            If isFinalized Then
+                                _isFinalized = True
+                            End If
+                            
+                            ' Load denomination counts
+                            If _tillDenominationControls.ContainsKey(tillNumber) Then
+                                Dim controls = _tillDenominationControls(tillNumber)
+                                SetTextBoxValue(controls, "txtR200", reader.GetInt32(reader.GetOrdinal("Count_R200")))
+                                SetTextBoxValue(controls, "txtR100", reader.GetInt32(reader.GetOrdinal("Count_R100")))
+                                SetTextBoxValue(controls, "txtR50", reader.GetInt32(reader.GetOrdinal("Count_R50")))
+                                SetTextBoxValue(controls, "txtR20", reader.GetInt32(reader.GetOrdinal("Count_R20")))
+                                SetTextBoxValue(controls, "txtR10", reader.GetInt32(reader.GetOrdinal("Count_R10")))
+                                SetTextBoxValue(controls, "txtR5", reader.GetInt32(reader.GetOrdinal("Count_R5")))
+                                SetTextBoxValue(controls, "txtR2", reader.GetInt32(reader.GetOrdinal("Count_R2")))
+                                SetTextBoxValue(controls, "txtR1", reader.GetInt32(reader.GetOrdinal("Count_R1")))
+                                SetTextBoxValue(controls, "txt50c", reader.GetInt32(reader.GetOrdinal("Count_50c")))
+                                SetTextBoxValue(controls, "txt20c", reader.GetInt32(reader.GetOrdinal("Count_20c")))
+                                SetTextBoxValue(controls, "txt10c", reader.GetInt32(reader.GetOrdinal("Count_10c")))
+                                SetTextBoxValue(controls, "txt5c", reader.GetInt32(reader.GetOrdinal("Count_5c")))
+                            End If
+                        End While
+                    End Using
+                End Using
+            End Using
+            
+            ' If finalized, disable all inputs
+            If _isFinalized Then
+                DisableReportInputs()
+                Dim btnFinalize = TryCast(Me.Controls.Find("btnFinalize", True).FirstOrDefault(), Button)
+                If btnFinalize IsNot Nothing Then
+                    btnFinalize.Enabled = False
+                    btnFinalize.Text = "Day Finalized"
+                End If
+            End If
+        Catch ex As Exception
+            ' Silently handle load errors - no saved data exists
+        End Try
+    End Sub
+    
+    Private Sub SetTextBoxValue(controls As Dictionary(Of String, TextBox), key As String, value As Integer)
+        If controls.ContainsKey(key) AndAlso controls(key) IsNot Nothing Then
+            controls(key).Text = value.ToString()
+        End If
+    End Sub
+    
+    Private Sub FinalizeDay(sender As Object, e As EventArgs)
+        Try
+            Dim cboBranch = TryCast(Me.Controls.Find("cboBranch", True).FirstOrDefault(), ComboBox)
+            Dim dtpDate = TryCast(Me.Controls.Find("dtpDate", True).FirstOrDefault(), DateTimePicker)
+            
+            If cboBranch Is Nothing OrElse dtpDate Is Nothing Then Return
+            
+            Dim branchID As Integer = CInt(cboBranch.SelectedValue)
+            Dim reportDate As Date = dtpDate.Value.Date
+            
+            ' Confirm finalization
+            Dim result = MessageBox.Show(
+                "Are you sure you want to finalize the End of Day?" & vbCrLf & vbCrLf &
+                "This will:" & vbCrLf &
+                "- Lock all tills for the day" & vbCrLf &
+                "- Make this report read-only" & vbCrLf &
+                "- Require supervisor approval to reopen tills" & vbCrLf & vbCrLf &
+                "This action cannot be undone without supervisor access.",
+                "Finalize End of Day",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning)
+            
+            If result <> DialogResult.Yes Then Return
+            
+            ' Set EndOfDay flag for all tills
+            Using conn As New SqlConnection(_connectionString)
+                conn.Open()
+                Using cmd As New SqlCommand("sp_FinalizeEndOfDay", conn)
+                    cmd.CommandType = CommandType.StoredProcedure
+                    cmd.Parameters.AddWithValue("@BranchID", branchID)
+                    cmd.Parameters.AddWithValue("@ReportDate", reportDate)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+            
+            MessageBox.Show(
+                "End of Day has been finalized." & vbCrLf & vbCrLf &
+                "All tills are now locked. A supervisor must reset the End of Day flag to allow operations.",
+                "Success",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information)
+            
+            ' Set finalized flag and disable all input fields
+            _isFinalized = True
+            DisableReportInputs()
+            
+            Dim btnFinalize = TryCast(Me.Controls.Find("btnFinalize", True).FirstOrDefault(), Button)
+            If btnFinalize IsNot Nothing Then
+                btnFinalize.Enabled = False
+                btnFinalize.Text = "Day Finalized"
+            End If
+            
+        Catch ex As Exception
+            MessageBox.Show($"Error finalizing day: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    
+    Private Sub DisableReportInputs()
+        ' Disable all textboxes in till panels (denomination inputs)
+        For Each pnl In _tillPanels
+            DisableControlsRecursive(pnl)
+        Next
+    End Sub
+    
+    Private Sub DisableControlsRecursive(parent As Control)
+        ' Recursively disable all textboxes in the control tree
+        For Each ctrl In parent.Controls
+            If TypeOf ctrl Is TextBox Then
+                DirectCast(ctrl, TextBox).ReadOnly = True
+                DirectCast(ctrl, TextBox).BackColor = Color.LightGray
+                DirectCast(ctrl, TextBox).Enabled = False
+            ElseIf ctrl.HasChildren Then
+                DisableControlsRecursive(ctrl)
+            End If
+        Next
     End Sub
     
     Private Sub PrintReport(sender As Object, e As EventArgs)

@@ -21,32 +21,78 @@ Public Class FNBTerminalTestForm
         Dim grpConfig As New GroupBox With {
             .Text = "Sandbox Configuration",
             .Location = New Point(10, 10),
-            .Size = New Size(860, 120)
+            .Size = New Size(860, 180)
         }
 
         Dim lblInfo As New Label With {
             .Text = "Environment: FNB Test Lab (https://test.figment.co.za:49410/api/)" & vbCrLf &
-                    "Site ID: UT02 | POS Identifier: 10 | Terminal: Automated Test (No Physical Card Required)" & vbCrLf &
+                    "Site ID: UT02 | Terminal 10: Virtual (Auto-Approved) | Terminal 7: Real PED (Requires Card Swipe)" & vbCrLf &
                     "OAuth Client ID: MP7BQIe0TMxgxzhpGghkNF303zhmYnjA",
             .Location = New Point(10, 20),
-            .Size = New Size(840, 60),
+            .Size = New Size(840, 50),
             .Font = New Font("Segoe UI", 9, FontStyle.Regular)
         }
 
+        ' Terminal Mode Selection
+        Dim lblMode As New Label With {
+            .Text = "Terminal Mode:",
+            .Location = New Point(10, 75),
+            .Size = New Size(100, 20),
+            .Font = New Font("Segoe UI", 9, FontStyle.Bold)
+        }
+
+        rdoUnattended = New RadioButton With {
+            .Text = "Unattended (Terminal 10 - Virtual Auto-Approved)",
+            .Location = New Point(120, 75),
+            .Size = New Size(320, 20),
+            .Checked = True,
+            .Font = New Font("Segoe UI", 9)
+        }
+
+        rdoAttended = New RadioButton With {
+            .Text = "Attended (Terminal 7 - Real PED Requires Card Swipe)",
+            .Location = New Point(450, 75),
+            .Size = New Size(380, 20),
+            .ForeColor = Color.FromArgb(255, 140, 0),
+            .Font = New Font("Segoe UI", 9, FontStyle.Bold)
+        }
+
+        lblModeInfo = New Label With {
+            .Text = "Mode: Unattended - Terminal 10 (Virtual) - Auto-approved, no physical card required",
+            .Location = New Point(120, 100),
+            .Size = New Size(720, 35),
+            .Font = New Font("Segoe UI", 8, FontStyle.Italic),
+            .ForeColor = Color.Blue
+        }
+
+        AddHandler rdoUnattended.CheckedChanged, Sub()
+            If rdoUnattended.Checked Then
+                lblModeInfo.Text = "Mode: Unattended - Terminal 10 (Virtual) - Auto-approved, no physical card required"
+                lblModeInfo.ForeColor = Color.Blue
+            End If
+        End Sub
+
+        AddHandler rdoAttended.CheckedChanged, Sub()
+            If rdoAttended.Checked Then
+                lblModeInfo.Text = "Mode: Attended - Terminal 7 (Real PED) - FNB agent must swipe actual card at physical terminal"
+                lblModeInfo.ForeColor = Color.FromArgb(255, 140, 0)
+            End If
+        End Sub
+
         btnTestConnection = New Button With {
             .Text = "Test API Connection",
-            .Location = New Point(10, 85),
+            .Location = New Point(10, 145),
             .Size = New Size(150, 30),
             .BackColor = Color.FromArgb(0, 122, 204),
             .ForeColor = Color.White,
             .FlatStyle = FlatStyle.Flat
         }
 
-        grpConfig.Controls.AddRange({lblInfo, btnTestConnection})
+        grpConfig.Controls.AddRange({lblInfo, lblMode, rdoUnattended, rdoAttended, lblModeInfo, btnTestConnection})
 
         Dim grpTransaction As New GroupBox With {
             .Text = "Test Transaction",
-            .Location = New Point(10, 140),
+            .Location = New Point(10, 200),
             .Size = New Size(860, 140)
         }
 
@@ -86,6 +132,30 @@ Public Class FNBTerminalTestForm
             .Text = "1"
         }
 
+        ' Transaction Type Selection
+        Dim lblTransType As New Label With {
+            .Text = "Type:",
+            .Location = New Point(630, 25),
+            .Size = New Size(40, 20),
+            .Font = New Font("Segoe UI", 9, FontStyle.Bold)
+        }
+
+        rdoSale = New RadioButton With {
+            .Text = "Sale",
+            .Location = New Point(680, 23),
+            .Size = New Size(60, 20),
+            .Checked = True,
+            .Font = New Font("Segoe UI", 9)
+        }
+
+        rdoRefund = New RadioButton With {
+            .Text = "Refund",
+            .Location = New Point(750, 23),
+            .Size = New Size(80, 20),
+            .ForeColor = Color.FromArgb(192, 0, 0),
+            .Font = New Font("Segoe UI", 9, FontStyle.Bold)
+        }
+
         btnSendTransaction = New Button With {
             .Text = "Send Transaction to Terminal",
             .Location = New Point(10, 60),
@@ -123,18 +193,18 @@ Public Class FNBTerminalTestForm
         }
 
         grpTransaction.Controls.AddRange({lblAmount, txtAmount, lblOperator, txtOperator,
-                                          lblSlip, txtSlipNo, btnSendTransaction,
-                                          btnCheckStatus, btnCancelTransaction, lblStatus})
+                                          lblSlip, txtSlipNo, lblTransType, rdoSale, rdoRefund,
+                                          btnSendTransaction, btnCheckStatus, btnCancelTransaction, lblStatus})
 
         Dim grpResults As New GroupBox With {
             .Text = "Test Results & Response Log",
-            .Location = New Point(10, 290),
-            .Size = New Size(860, 350)
+            .Location = New Point(10, 350),
+            .Size = New Size(860, 290)
         }
 
         txtLog = New TextBox With {
             .Location = New Point(10, 25),
-            .Size = New Size(840, 280),
+            .Size = New Size(840, 220),
             .Multiline = True,
             .ScrollBars = ScrollBars.Vertical,
             .Font = New Font("Consolas", 9),
@@ -145,7 +215,7 @@ Public Class FNBTerminalTestForm
 
         btnClearLog = New Button With {
             .Text = "Clear Log",
-            .Location = New Point(10, 310),
+            .Location = New Point(10, 250),
             .Size = New Size(100, 30)
         }
 
@@ -164,6 +234,11 @@ Public Class FNBTerminalTestForm
     Private txtSlipNo As TextBox
     Private txtLog As TextBox
     Private lblStatus As Label
+    Private rdoUnattended As RadioButton
+    Private rdoAttended As RadioButton
+    Private lblModeInfo As Label
+    Private rdoSale As RadioButton
+    Private rdoRefund As RadioButton
 
     Private Async Sub TestConnection(sender As Object, e As EventArgs)
         Try
@@ -212,18 +287,28 @@ Public Class FNBTerminalTestForm
             lblStatus.Text = "Status: Sending transaction to terminal..."
             lblStatus.ForeColor = Color.Blue
 
-            LogMessage("=== Sending Transaction to FNB Terminal ===")
-            LogMessage($"Amount: R{amount:F2} ({CInt(amount * 100)} cents)")
-            LogMessage($"Operator: {txtOperator.Text}")
-            LogMessage($"Slip No: {slipNo}")
+            ' Determine terminal ID based on selected mode
+            Dim terminalId As Integer = If(rdoAttended.Checked, 7, 10)
+            Dim terminalMode = If(rdoAttended.Checked, "ATTENDED (Real PED - Terminal 7)", "UNATTENDED (Virtual - Terminal 10)")
             
-            ' Generate and store reconIndicator (must not start with 0 per FNB requirement)
-            Dim timestamp As Long = DateTimeOffset.Now.ToUnixTimeMilliseconds()
-            lastReconIndicator = (timestamp Mod 1000000).ToString() & "7"
-            LogMessage($"Recon Indicator: {lastReconIndicator}")
-            LogMessage("Waiting for terminal response (timeout: 180 seconds)...")
+            ' Determine transaction type based on selected radio button
+            Dim transactionType As String = If(rdoRefund.Checked, "Refund", "Settlement")
+            
+            ' Set the terminal ID in the service
+            testService.SetTerminalId(terminalId)
+            
+            LogMessage("=== Sending Transaction to FNB Terminal ===")
+            LogMessage($"Transaction Type: {transactionType}")
+            LogMessage($"Terminal Mode: {terminalMode}")
+            LogMessage($"Terminal ID: {terminalId}")
+            If rdoAttended.Checked Then
+                LogMessage("⚠️ ATTENDED MODE: FNB agent must swipe actual card at physical terminal 7", Color.Yellow)
+            Else
+                LogMessage("✓ UNATTENDED MODE: Virtual terminal 10 will auto-approve", Color.Lime)
+            End If
+            LogMessage("")
 
-            Dim result = Await testService.ProcessTestTransaction(amount, txtOperator.Text, 1, slipNo)
+            Dim result = Await testService.ProcessTestTransaction(amount, txtOperator.Text, 1, slipNo, transactionType, AddressOf LogMessage)
 
             If result.Success Then
                 lblStatus.Text = "Status: Transaction APPROVED ✓"

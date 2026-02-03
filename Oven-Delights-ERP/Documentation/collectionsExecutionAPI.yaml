@@ -1,0 +1,903 @@
+openapi: 3.0.1
+info:
+  title: Collections Execution
+  description: >
+    The direct debit instruction is used by a creditor to request movement of
+    funds from the debtor account to creditor account.
+
+
+    `The API supports following functionalities:`
+
+       * Collections Execution
+       * Dispute
+       * Unpaids
+
+     ### Usage
+
+
+     The collections execution instruction contains customer direct debit initiation 
+     instructions. The API is used to exchange:
+
+     * Multiple instances of direct debit transactional information 
+
+     * Collection instructions that result in an electronic transfer to the
+     debitor account
+
+
+     `Error Responses`
+
+
+     The API uses common HTTP status codes in the response header to indicate
+     success or failure. Specific error code and description will be returned in
+     the custom error schema.
+  contact:
+    name: First National Bank
+    url: https://www.fnb.co.za
+  version: '1.0.1'
+servers:
+  - url: https://api.i.fnb.co.za/apigateway
+    description: integration
+  - url: https://api.p.fnb.co.za/apigateway
+    description: preprod
+  - url: https://api.fnb.co.za/apigateway
+    description: production
+security:
+  - oauth:
+      - i_can
+paths:
+  /collectionsExecution/initiate/v1:
+    post:
+      tags:
+        - Collections Execution - Initiate
+      summary: Create Direct Debit Initiation Instruction
+      description: >
+        Payment, initiated by the creditor, to debit a debtor's account in
+        favour of the creditor. The  Direct Debit Initiation Instruction is sent
+        by the Creditor sending party to the Debtor receiving party, directly or
+        through agents. It is used by a Creditor to request funds from the
+        debtor account to a creditor.
+      security:
+        - oauth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerDirectDebitInitiation"
+
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerDirectDebitInitiationResponse'
+
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+
+        "403":
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+
+        "500":
+          description: "InternalServerError"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+
+  /collectionsExecution/retrieveReport/v1/{instructionId}:
+    get:
+      tags:
+        - Collections Execution - Reports
+      parameters:
+        - in: path
+          name: instructionId
+          description: A UID used as a unique Collections instruction identifier.
+          schema:
+            type: string
+          required: true
+      security:
+        - oauth: []
+      summary: Retrieve Collections Report
+      description: >-
+        This service is used to retrieve the current status report of
+        collections transactions.
+      responses:
+        "200":
+          description: "Accepted"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerPaymentStatusReport'
+
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+
+        "403":
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+
+  /collectionsExecution/retrieveFilteredDisputes/v1:
+    post:
+      tags:
+        - Collections Execution - Disputes filtered
+      security:
+        - oauth: []
+      summary: Retrieve Dispute Report by date range
+      description: >-
+        This service is used to retrieve the disputes by date range.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisputeFilter"
+
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisputesCustomerPaymentStatusReportList'
+
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+
+        "403":
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+
+        "500":
+          description: "InternalServerError"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+
+  /collectionsExecution/retrieveFilteredUnpaids/v1:
+    post:
+      tags:
+        - Collections Execution - Unpaid Status Report List
+      security:
+        - oauth: []
+      summary: Retrieve Collections Unpaids Status Report
+      description: >-
+        This service is used to retrieve customer status report for Collections Unpaids.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnpaidsFilter"
+
+      responses:
+        "200":
+          description: "Accepted"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerUnpaidsPaymentStatusReportList'
+
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+
+        "403":
+          description: "Forbidden"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+
+components:
+
+  securitySchemes:
+    oauth:
+      type: oauth2
+      description: This API uses OAuth 2 with the Client Credentials grant flow.
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.fnb.co.za/apigateway/oauth2/token/v2
+          scopes:
+            i_can: provides scopes allowed based on partner permissions
+
+  schemas:
+    CustomerPaymentStatusReportList:
+      type: object
+      properties:
+        groupHeader:
+          type: object
+          properties:
+            instructionId:
+              description: The point-to-point reference is created by the bank to unambiguously identify the message.
+              type: string
+              example: NT05401CR001
+            creationDateTime:
+              $ref: '#/components/schemas/ISODateTime'
+            messagePagination:
+              $ref: '#/components/schemas/MessagePagination'
+        customerPaymentStatusReport:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerPaymentStatusReport'
+
+    DisputesCustomerPaymentStatusReportList:
+      type: object
+      properties:
+        groupHeader:
+          type: object
+          properties:
+            instructionId:
+              description: The point-to-point reference is created by the bank to unambiguously identify the message.
+              type: string
+              example: NT05401CR001
+            creationDateTime:
+              $ref: '#/components/schemas/ISODateTime'
+            messagePagination:
+              $ref: '#/components/schemas/MessagePagination'
+        customerPaymentStatusReport:
+          type: array
+          items:
+            $ref: '#/components/schemas/DisputesCustomerPaymentStatusReport'
+
+    CustomerUnpaidsPaymentStatusReportList:
+      type: object
+      properties:
+        groupHeader:
+          type: object
+          properties:
+            instructionId:
+              description: The point-to-point reference is created by the bank to unambiguously identify the message.
+              type: string
+              example: NT05401CR001
+            creationDateTime:
+              $ref: '#/components/schemas/ISODateTime'
+            messagePagination:
+              $ref: '#/components/schemas/MessagePagination'
+        customerUnpaidsPaymentStatusReportList:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerUnpaidsPaymentStatusReport'
+
+    CustomerUnpaidsPaymentStatusReport:
+      type: object
+      properties:
+        instructionId:
+          type: string
+        groupHeader:
+          $ref: '#/components/schemas/GroupHeader'
+        originalGroupHeader:
+          $ref: '#/components/schemas/OriginalGroupHeader'
+        groupStatus:
+          description: Specifies the status of the payment information group
+          type: string
+        originalPaymentInformation:
+          description: Information concerning the original payment information, to which the status report message refers
+          type: array
+          items:
+            $ref: '#/components/schemas/UnpaidOriginalPaymentInformation'
+
+    MessagePagination:
+      type: object
+      properties:
+        lastPageIndicator:
+          description: specificies if the current payload is the last page. false if not.
+          type: boolean
+          example: true
+        currentPageNumber:
+          description: specificies current page user is on.
+          type: integer
+          example: 2
+        totalNumberOfPages:
+          description: specificies the total number of notification pages.
+          type: integer
+          example: 10
+
+    CustomerPaymentStatusReport:
+      type: object
+      properties:
+        instructionId:
+          type: string
+        groupHeader:
+          $ref: '#/components/schemas/GroupHeader'
+        originalGroupHeader:
+          $ref: '#/components/schemas/OriginalGroupHeader'
+        groupStatus:
+          description: Specifies the status of the payment information group
+          type: string
+        statusReasonInformation:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatusReasonInformation'
+        originalPaymentInformation:
+          description: Information concerning the original payment information, to which
+            the status report message refers
+          type: array
+          items:
+            $ref: '#/components/schemas/OriginalPaymentInformation'
+
+    DisputesCustomerPaymentStatusReport:
+      type: object
+      properties:
+        instructionId:
+          type: string
+        groupHeader:
+          $ref: '#/components/schemas/GroupHeader'
+        originalGroupHeader:
+          $ref: '#/components/schemas/OriginalGroupHeader'
+        groupStatus:
+          description: Specifies the status of the payment information group
+          type: string
+        statusReasonInformation:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatusReasonInformation'
+        originalPaymentInformation:
+          description: Information concerning the original payment information, to which
+            the status report message refers
+          type: array
+          items:
+            $ref: '#/components/schemas/DisputesOriginalPaymentInformation'
+
+    StatusReasonInformation:
+      type: object
+      properties:
+        reason:
+          type: string
+        additionalInformation:
+          type: string
+
+    GroupHeader:
+      type: object
+      properties:
+        messageId:
+          description: Point to point reference, as assigned by the instructing party
+          type: string
+        creationDateTime:
+          $ref: '#/components/schemas/ISODateTime'
+        initiatingPartyName:
+          description: Party that initiates the payment. Name by which a party is known and which is usually used to identify that party.
+          type: string
+        initiatingPartyBIC:
+          description: Set to the SWIFT BIC registered for FirstRand Bank Ltd. in country
+          type: string
+        totalNumberOfTransactions:
+          description: Number of individual transactions contained in the message. It is the number of all the credit transactions included in ALL the PaymentInformation groups combined.
+          type: integer
+        totalControlSum:
+          description: Total of all individual amounts included in the message, irrespective of currencies. Must not contain more than 2 decimal places.
+          type: number
+          format: float
+
+    OriginalGroupHeader:
+      type: object
+      properties:
+        originalMessageId:
+          description: part of the initiate payment reference, Point to point reference, as assigned by the instructing party
+          type: string
+        originalCreationDateTime:
+          $ref: '#/components/schemas/ISODateTime'
+        originalInitiatingPartyName:
+          description: Party that initiates the payment. Name by which a party is known and which is usually used to identify that party.
+          type: string
+        originalInitiatingPartyBIC:
+          description: Set to the SWIFT BIC registered for FirstRand Bank Ltd. in country
+          type: string
+        originalTotalNumberOfTransactions:
+          description: Number of individual transactions contained in the message. It is the number of all the credit transactions included in ALL the PaymentInformation groups combined.
+          type: integer
+        originalTotalControlSum:
+          description: Total of all individual amounts included in the message, irrespective of currencies. Must not contain more than 2 decimal places.
+          type: number
+          format: float
+
+    OriginalPaymentInformation:
+      type: object
+      properties:
+        originalPaymentInformationId:
+          description: Unique identification, as assigned by the original sending party
+          type: string
+        paymentInformationStatus:
+          description: Specifies the status of the payment information group
+          type: string
+        statusReasonInformation:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatusReasonInformation'
+        transactionInfoAndStatus:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentTransactionInformation'
+
+    DisputesOriginalPaymentInformation:
+      type: object
+      properties:
+        creditorAccount:
+          description: Creditor account number returned at Batch level.
+          type: string
+        originalPaymentInformationId:
+          description: Unique identification, as assigned by the original sending party
+          type: string
+        paymentInformationStatus:
+          description: Specifies the status of the payment information group
+          type: string
+        statusReasonInformation:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatusReasonInformation'
+        transactionInfoAndStatus:
+          type: array
+          items:
+            $ref: '#/components/schemas/DisputesPaymentTransactionInformation'
+
+    UnpaidOriginalPaymentInformation:
+      type: object
+      properties:
+        creditorAccount:
+          description: Creditor account number returned at Batch level.
+          type: string
+        originalPaymentInformationId:
+          description: Unique identification, as assigned by the original sending party
+          type: string
+        paymentInformationStatus:
+          description: Specifies the status of the payment information group
+          type: string
+        transactionInfoAndStatus:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnpaidsPaymentTransactionInformation'
+
+    UnpaidsPaymentTransactionInformation:
+      type: object
+      properties:
+        debtorAccount:
+          description: Debtor account number returned at transaction level.
+          type: string
+        amount:
+          $ref: '#/components/schemas/Amount'
+        originalEndToEndId:
+          description: This End to End Identifer must be used to correlate this response to that of the original Direct Debit Transaction in the original request.
+          type: string
+        transactionStatus:
+          description: Specifies the status of a transaction, in a coded form
+          type: string
+        statusReasonInformation:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatusReasonInformation'
+        clearingSystemReference:
+          description: Unique reference, as assigned by a clearing system, to unambiguously identify the instruction.
+          type: string
+        originalTransactionReference:
+          type: array
+          items:
+            $ref: '#/components/schemas/OriginalTransactionReference'
+
+    PaymentTransactionInformation:
+      type: object
+      properties:
+        originalEndToEndId:
+          description: This End to End Identifer must be used to correlate this response to that of the original Direct Debit Transaction in the original request.
+          type: string
+        transactionStatus:
+          description: Specifies the status of a transaction, in a coded form
+          type: string
+        statusReasonInformation:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatusReasonInformation'
+        clearingSystemReference:
+          description: Unique reference, as assigned by a clearing system, to unambiguously identify the instruction.
+          type: string
+        originalTransactionReference:
+          type: array
+          items:
+            $ref: '#/components/schemas/OriginalTransactionReference'
+
+    DisputesPaymentTransactionInformation:
+      type: object
+      properties:
+        debtorAccount:
+          description: Debtor account number returned at transaction level.
+          type: string
+        originalEndToEndId:
+          description: This End to End Identifer must be used to correlate this response to that of the original Direct Debit Transaction in the original request.
+          type: string
+        transactionStatus:
+          description: Specifies the status of a transaction, in a coded form
+          type: string
+        amount:
+          $ref: '#/components/schemas/Amount'
+        statusReasonInformation:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatusReasonInformation'
+        clearingSystemReference:
+          description: Unique reference, as assigned by a clearing system, to unambiguously identify the instruction.
+          type: string
+        originalTransactionReference:
+          type: array
+          items:
+            $ref: '#/components/schemas/OriginalTransactionReference'
+
+    OriginalTransactionReference:
+      description: Set of key elements used to identify the original transaction that is being referred to.
+      type: object
+      properties:
+        interbankSettlementDate:
+          $ref: '#/components/schemas/ISODate'
+        requestedCollectionDate:
+          $ref: '#/components/schemas/ISODate'
+        mandateId:
+          description: Unique identification, as assigned by the debtor bank, to unambiguously identify the mandate.
+          type: string
+
+    CustomerDirectDebitInitiation:
+      type: object
+      properties:
+        groupHeader:
+          $ref: '#/components/schemas/GroupHeader'
+        paymentInformation:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentInformation'
+
+    PaymentInformation:
+      description: >-
+        Set of characteristics that applies to the credit side of the payment
+        transactions included in the direct debit transaction initiation, also
+        referred to as a batch. Repeated for all Payment Information groups in a
+        message (i.e. multiple collection batches could be submitted in the
+        message, each batch containing a credit and one or more debits). Where
+        entire batches are submitted for processing and all the transactions
+        relate to the same credit account, these should be part of the same
+        payment information group. If batching of transactions with different
+        credit references is required, then different payment information groups
+        can be used.If every individual transaction requires a credit with an
+        unique reference then the itemisation feature can be requested.
+      type: object
+      properties:
+        paymentInformationId:
+          description: >-
+            Unique identification, as assigned by a sending party, to identify
+            the payment information group within the message. When processing
+            the transactions in a consolidated manner, this value will be used
+            as the bulk reference on the creditor's account, and will appear on
+            the account statement. This reference must not be only spaces.
+            Spaces after (at the end of the) text is trimmed. It must also be
+            unique across all payment information groups contained in the
+            message. Please note, All references are converted to upper case
+            when processed, but will appear in title case on FNB Online Banking.
+          type: string
+        paymentInformationMethod:
+          description: >-
+            Can only be DD (Direct Debit)
+          type: string
+        batchBooking:
+          description: >-
+            Indicator to state whether the transactions should be processed in a
+            consolidated manner. True Transactions will be posted to the
+            creditor account in a consolidated manner.  A single transaction
+            entry will be posted to the creditor account, for the full value of
+            all transactions. Any transactions that fail will result in a
+            reversal entry being posted on the creditor account. False
+            Transactions will be posted to the creditor account in an itemised
+            manner. An entry will be posted into the creditor account for each
+            successful transaction.
+          type: string
+        numberOfTransactions:
+          description: >-
+            Number of individual transactions contained in the payment
+            information group. This is the number of credit transactions
+            applicable to the Payment Information group.
+          type: number
+        controlSum:
+          description: >-
+            Total amount of all individual transactions' Instructed Amounts
+            included in this PaymentInformation group, irrespective of currency.
+          type: number
+          format: float
+        paymentTypeInformationServiceLevelCode:
+          description: >-
+            Specifies a pre-agreed service or level of service between the
+            parties, as published in an external service level code set, in this
+            case the ISO code list.
+          type: string
+        requestedCollectionDate:
+          description: >-
+            Date on which the creditor requests that the amount of money is to
+            be collected from the debtor and credited to their account.
+          type: string
+          format: date
+        creditor:
+          $ref: '#/components/schemas/Creditor'
+        creditorAccount:
+          $ref: '#/components/schemas/CreditorAccount'
+        creditorAgent:
+          $ref: '#/components/schemas/CreditorAgent'
+        directDebitTransactionInformation:
+          type: array
+          items:
+            $ref: '#/components/schemas/DirectDebitTransactionInformation'
+
+    DirectDebitTransactionInformation:
+      description: >-
+        Set of elements used to provide information on the individual debit
+        transaction(s) included in the message. Repeated for all debit
+        transactions within a payment information group or batch. Debits are
+        batched together where they have the same credit details, i.e. same
+        creditor account and same reference used for the batch (if different
+        credit references required for a batch of collections, then these can be
+        grouped as a different batch). Also, itemised processing allows an
+        individual reference per debit transaction.
+      type: object
+      properties:
+        endToEndId:
+          description: >-
+            Unique identification assigned by the initiating party to
+            unambiguously identify the transaction. This identification is
+            passed on throughout the entire end-to-end chain
+          type: string
+        amount:
+          $ref: '#/components/schemas/Amount'
+        debtorAgent:
+          $ref: '#/components/schemas/DebtorAgent'
+        debtor:
+          $ref: '#/components/schemas/Debtor'
+        debtorAccount:
+          $ref: '#/components/schemas/DebtorAccount'
+        serviceLevel:
+          description: "Specifies a pre-agreed service or level of service between the parties, and isued for service types where there is no predefined option in the external code set. Options: ONED: DebiCheck Collection in RSA must be submitted ONE (banking) DAY prior to requested collection date."
+          type: string
+        localInstrument:
+          type: string
+        sequenceType:
+          type: string
+        catergoryPurpose:
+          type: string
+          description: Specifies the high level purpose of the instruction based on a set of pre-defined categories.
+          enum: ["0021", "0022", "0023", "0026", "0028", "0031", "0032", "0033", "0034", "0035", "0036", "0037", "0041", "0042", "0044", "0046"]
+        mandateId:
+          type: string
+        remittanceInformationUnstructured:
+          description: >-
+            Information supplied to enable the matching/reconciliation of an
+            entry with the items that the payment is intended to settle, such as
+            commercial invoices in an accounts' receivable system, in an
+            unstructured form. This is the reference that will appear on the
+            debtor's account statement.
+          type: string
+    Amount:
+      description: >-
+        Amount Value contains one or two or no decimal values. Decimal separator is a period. Values greater than 2 decimals will result in a failure. The set of permutations include
+      type: object
+      properties:
+        currency:
+          description: describes the currency for the transaction amount
+          type: string
+        value:
+          description: >-
+            Amount of money to be moved between the debtor and creditor, before
+            deduction of charges, expressed in the currency
+          type: number
+          format: float
+
+    Debtor:
+      type: object
+      properties:
+        name:
+          description: Party that owes an amount of money to the (ultimate) creditor
+          type: string
+        bicOrBEI:
+          description: Set to the SWIFT BIC registered for FirstRand Bank Ltd. in country
+          type: string
+
+    DebtorAgent:
+      type: object
+      properties:
+        branchId:
+          type: string
+
+    DebtorAccount:
+      type: object
+      properties:
+        accountNumber:
+          description: Unique and unambiguous identification for the account between the account owner and the account servicer
+          type: string
+        accountType:
+          description: Specifies the nature, type or use of the account. Debtor account can only be cheque/cash or savings. Therefore, proprietary cannot be used.
+          type: string
+
+    Creditor:
+      type: object
+      properties:
+        name:
+          description: Party that owes an amount of money to the (ultimate) creditor
+          type: string
+        abbreviatedName:
+          type: string
+        bicOrBEI:
+          description: Set to the SWIFT BIC registered for FirstRand Bank Ltd. in country
+          type: string
+        mobileNumber:
+          pattern: '\+[0-9]{1,3}-[0-9()+\-]{1,30}'
+          example: +27-873116573
+          type: string
+        emailAddress:
+          type: string
+
+    CreditorAgent:
+      type: object
+      properties:
+        branchId:
+          type: string
+
+    CreditorAccount:
+      type: object
+      properties:
+        accountNumber:
+          description: Unique and unambiguous identification for the account between the account owner and the account servicer
+          type: string
+        accountType:
+          description: Specifies the nature, type or use of the account. Creditor account can only be cheque/cash or savings. Therefore, proprietary cannot be used.
+          type: string
+
+    ErrorMessage:
+      required:
+        - code
+        - text
+      type: object
+      properties:
+        code:
+          type: string
+          description: Specifies the custom error code as defined by the service provider.
+        text:
+          type: string
+          description: >-
+            Specifies the detail error message identifying the cause of the
+            error.
+
+    CustomerDirectDebitInitiationResponse:
+      description: response with client instruction ID for a sucessful payment request which is used for retrieval of payment report.
+      type: object
+      properties:
+        instructionId:
+          type: string
+
+    UnpaidsFilter:
+      type: object
+      properties:
+        pageSize:
+          description: specifies the limit on the number of data set object retrieved
+          type: integer
+          example: 20
+        page:
+          description: specifies the page number
+          type: integer
+          example: 3
+        accountNumberList:
+          description: if account number specified then only those unpaids of that account will be returned. if no account is specified return all unpaids for all accounts.
+          type: array
+          items:
+            type: string
+        startDate:
+          $ref: '#/components/schemas/ISODate'
+        endDate:
+          $ref: '#/components/schemas/ISODate'
+
+    DisputeFilter:
+      type: object
+      properties:
+        pageSize:
+          description: specifies the limit on the number of disputes retrieved
+          type: integer
+          example: 20
+        page:
+          description: specifies the page number
+          type: integer
+          example: 3
+        accountNumberList:
+          description: if account number specified then only those unpaids of that account will be returned. if no account is specified return all unpaids for all accounts.
+          type: array
+          items:
+            type: string
+        startDate:
+          $ref: '#/components/schemas/ISODate'
+        endDate:
+          $ref: '#/components/schemas/ISODate'
+
+    ISODate:
+      pattern: >-
+        /^\d{4}(-\d\d(-\d\d(T\d\d:\d\d(:\d\d)?(\.\d+)?(([+-]\d\d:\d\d)|Z)?)?)?)?$/i
+      type: string
+      description: >-
+        ISO 8601 Date spec
+        (YYYY-MM-DD)
+      example: 2023-10-30
+
+    ISODateTime:
+      pattern: >-
+        ^(?:[1-9]\\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.[0-9]+)?(?:Z|[+-][01]\\d:[0-5]\\d)?$
+      type: string
+      description: >-
+        ISO Date-time spec
+        (YYYY-MM-DDThh:mm:ss.sssZ)
+      example: 2015-03-24T11:25:00
+
+  examples:
+
+    Dispute:
+      summary: Example-1 - Identifier Type - Dispute
+      value:
+        groupHeader:
+          instructionId: "string"
+          creationDateTime: '2023-10-12T13:50:49.146Z'
+          messagePagination:
+            currentPageNumber: '2'
+            totalNumberOfPages: '10'
+            lastPageIndicator: false
+        customerPaymentStatusReport:
+          - instructionId:
+            groupHeader:
+              messageId: test
+              creationDateTime: '2023-10-12T13:50:49.145Z'
+              initiatingPartyBIC:
+            originalGroupHeader:
+              originalMessageId: test
+              originalCreationDateTime: '2023-10-12T13:50:49.146Z'
+            originalPaymentInformation:
+              - originalPaymentInformationId: 'test'
+                creditorAccount: 'string'
+                transactionInfoAndStatus:
+                  - transactionStatus: 'string'
+                    debtorAccount: 'string'
+                    originalEndToEndId: 'string'
+                    amount:
+                      currency: 'ZAR'
+                      value: 100
+                    statusReasonInformation:
+                      - statusReason : 'string'
+                        additionalInformation: 'string'
+                    clearingSystemReference: 'string'
+                    originalTransactionReference:
+                      - interbankSettlementDate: 'string'
+                        requestedCollectionDate: 'string'
+                        mandateId: 'string'

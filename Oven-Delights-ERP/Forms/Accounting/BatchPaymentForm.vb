@@ -4,7 +4,7 @@ Imports System.Drawing.Printing
 
 Public Class BatchPaymentForm
     Private connectionString As String
-    Private currentBatchID As Integer = 0
+    Private currentFNBBatchID As Integer = 0
     Private selectedInvoices As New List(Of Integer)
     Private WithEvents _printDocument As New PrintDocument()
     Private _printData As DataTable
@@ -245,7 +245,65 @@ Public Class BatchPaymentForm
             .AllowUserToAddRows = False
             .AllowUserToDeleteRows = False
             .ReadOnly = True
+            .MultiSelect = True
         End With
+    End Sub
+    
+    Private Sub btnRemoveFromBatch_Click(sender As Object, e As EventArgs) Handles btnRemoveFromBatch.Click
+        Try
+            If dgvBatchItems.SelectedRows.Count = 0 Then
+                MessageBox.Show("Please select invoice(s) to remove from batch.", "No Selection", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Return
+            End If
+            
+            If currentFNBBatchID = 0 Then
+                MessageBox.Show("No active batch. Please create or load a batch first.", "No Batch", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+            
+            Dim result = MessageBox.Show($"Remove {dgvBatchItems.SelectedRows.Count} invoice(s) from batch?", "Confirm Removal", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+            If result <> DialogResult.Yes Then
+                Return
+            End If
+            
+            Using conn As New SqlConnection(connectionString)
+                conn.Open()
+                Using trans = conn.BeginTransaction()
+                    Try
+                        For Each row As DataGridViewRow In dgvBatchItems.SelectedRows
+                            Dim invoiceID As Integer = Convert.ToInt32(row.Cells("InvoiceID").Value)
+                            
+                            ' Remove from AP_InvoiceBatchMapping
+                            Dim cmdDelete As New SqlCommand("DELETE FROM AP_InvoiceBatchMapping WHERE BatchID = @BatchID AND InvoiceID = @InvoiceID", conn, trans)
+                            cmdDelete.Parameters.AddWithValue("@BatchID", currentFNBBatchID)
+                            cmdDelete.Parameters.AddWithValue("@InvoiceID", invoiceID)
+                            cmdDelete.ExecuteNonQuery()
+                            
+                            ' Remove from selectedInvoices list
+                            If selectedInvoices.Contains(invoiceID) Then
+                                selectedInvoices.Remove(invoiceID)
+                            End If
+                        Next
+                        
+                        trans.Commit()
+                        
+                        MessageBox.Show($"{dgvBatchItems.SelectedRows.Count} invoice(s) removed from batch.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                        
+                        ' Refresh grids
+                        LoadBatchItems()
+                        LoadUnpaidInvoices()
+                        UpdateUIState()
+                        
+                    Catch ex As Exception
+                        trans.Rollback()
+                        Throw
+                    End Try
+                End Using
+            End Using
+            
+        Catch ex As Exception
+            MessageBox.Show($"Error removing invoice(s) from batch: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub btnCreateBatch_Click(sender As Object, e As EventArgs) Handles btnCreateBatch.Click
@@ -283,7 +341,7 @@ Public Class BatchPaymentForm
                     
                     cmd.ExecuteNonQuery()
                     
-                    currentBatchID = CInt(batchID.Value)
+                    currentFNBBatchID = CInt(batchID.Value)
                     txtBatchNumber.Text = batchNumber.Value.ToString()
                     
                     MessageBox.Show($"Batch {txtBatchNumber.Text} created successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
@@ -297,58 +355,58 @@ Public Class BatchPaymentForm
 
     Private Sub btnAddSelected_Click(sender As Object, e As EventArgs) Handles btnAddSelected.Click
         Try
-            If currentBatchID = 0 Then
-                MessageBox.Show("Please create a batch first", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                Return
-            End If
-            
-            Dim addedCount As Integer = 0
+            ' Collect selected invoices
+            selectedInvoices.Clear()
             
             For Each row As DataGridViewRow In dgvUnpaidInvoices.Rows
                 If row.Cells("Select").Value IsNot Nothing AndAlso CBool(row.Cells("Select").Value) = True Then
                     Dim invoiceID As Integer = CInt(row.Cells("InvoiceID").Value)
-                    Dim amountDue As Decimal = CDec(row.Cells("AmountDue").Value)
-                    
-                    ' Add to batch
-                    Using conn As New SqlConnection(connectionString)
-                        conn.Open()
-                        Using cmd As New SqlCommand("sp_AddInvoiceToBatch", conn)
-                            cmd.CommandType = CommandType.StoredProcedure
-                            cmd.Parameters.AddWithValue("@BatchID", currentBatchID)
-                            cmd.Parameters.AddWithValue("@InvoiceID", invoiceID)
-                            cmd.Parameters.AddWithValue("@AmountToPay", amountDue)
-                            cmd.Parameters.AddWithValue("@DiscountTaken", 0)
-                            
-                            cmd.ExecuteNonQuery()
-                            addedCount += 1
-                        End Using
-                    End Using
+                    selectedInvoices.Add(invoiceID)
                 End If
             Next
             
-            If addedCount > 0 Then
-                MessageBox.Show($"{addedCount} invoice(s) added to batch", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                LoadBatchItems()
-                LoadUnpaidInvoices() ' Refresh
-            Else
-                MessageBox.Show("No invoices selected", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            If selectedInvoices.Count = 0 Then
+                MessageBox.Show("Please select at least one invoice", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
             End If
             
+            MessageBox.Show($"{selectedInvoices.Count} invoice(s) selected. Click 'Submit to FNB' to process payment.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            LoadBatchItems()
         Catch ex As Exception
-            MessageBox.Show($"Error adding invoices: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show($"Error selecting invoices: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
     Private Sub LoadBatchItems()
         Try
-            If currentBatchID = 0 Then Return
+            If selectedInvoices.Count = 0 Then
+                dgvBatchItems.DataSource = Nothing
+                lblBatchTotal.Text = "Batch Total: R0.00"
+                lblBatchCount.Text = "Invoices: 0"
+                Return
+            End If
+            
+            ' Get details of selected invoices
+            Dim invoiceIds As String = String.Join(",", selectedInvoices)
             
             Using conn As New SqlConnection(connectionString)
                 conn.Open()
-                Using cmd As New SqlCommand("sp_GetBatchDetails", conn)
-                    cmd.CommandType = CommandType.StoredProcedure
-                    cmd.Parameters.AddWithValue("@BatchID", currentBatchID)
-                    
+                Dim sql As String = $"
+                    SELECT 
+                        i.InvoiceID,
+                        i.InvoiceNumber,
+                        b.BeneficiaryName AS SupplierName,
+                        i.InvoiceDate,
+                        i.DueDate,
+                        i.TotalAmount AS InvoiceAmount,
+                        i.TotalAmount AS AmountPaid,
+                        0 AS DiscountTaken,
+                        i.Description AS Notes
+                    FROM AP_Invoices i
+                    INNER JOIN AP_Beneficiaries b ON i.BeneficiaryID = b.BeneficiaryID
+                    WHERE i.InvoiceID IN ({invoiceIds})"
+                
+                Using cmd As New SqlCommand(sql, conn)
                     Dim dt As New DataTable()
                     Using adapter As New SqlDataAdapter(cmd)
                         adapter.Fill(dt)
@@ -377,7 +435,7 @@ Public Class BatchPaymentForm
                 Return
             End If
             
-            If currentBatchID = 0 Then
+            If currentFNBBatchID = 0 Then
                 MessageBox.Show("No batch to process", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
             End If
@@ -394,7 +452,7 @@ Public Class BatchPaymentForm
                     Using cmd As New SqlCommand("sp_ProcessPaymentBatch", conn)
                         cmd.CommandType = CommandType.StoredProcedure
                         cmd.CommandTimeout = 120
-                        cmd.Parameters.AddWithValue("@BatchID", currentBatchID)
+                        cmd.Parameters.AddWithValue("@BatchID", currentFNBBatchID)
                         cmd.Parameters.AddWithValue("@ProcessedBy", If(AppSession.CurrentUsername, "System"))
                         
                         cmd.ExecuteNonQuery()
@@ -402,7 +460,7 @@ Public Class BatchPaymentForm
                         MessageBox.Show("Batch processed successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
                         
                         ' Reset form
-                        currentBatchID = 0
+                        currentFNBBatchID = 0
                         txtBatchNumber.Text = ""
                         dgvBatchItems.DataSource = Nothing
                         LoadUnpaidInvoices()
@@ -417,7 +475,7 @@ Public Class BatchPaymentForm
     End Sub
 
     Private Sub UpdateUIState()
-        Dim hasBatch As Boolean = currentBatchID > 0
+        Dim hasBatch As Boolean = currentFNBBatchID > 0
         
         btnCreateBatch.Enabled = Not hasBatch
         btnAddSelected.Enabled = hasBatch
@@ -502,7 +560,7 @@ Public Class BatchPaymentForm
                     Dim selectedBatchNumber As String = dgvBatches.SelectedRows(0).Cells("BatchNumber").ToString()
                     
                     ' Load the batch
-                    currentBatchID = selectedBatchID
+                    currentFNBBatchID = selectedBatchID
                     txtBatchNumber.Text = selectedBatchNumber
                     LoadBatchItems()
                     UpdateUIState()
@@ -521,7 +579,7 @@ Public Class BatchPaymentForm
 
     Private Sub btnPrintSchedule_Click(sender As Object, e As EventArgs) Handles btnPrintSchedule.Click
         Try
-            If currentBatchID = 0 Then
+            If currentFNBBatchID = 0 Then
                 MessageBox.Show("Please create a batch first", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
             End If
@@ -555,7 +613,7 @@ Public Class BatchPaymentForm
                 conn.Open()
                 Using cmd As New SqlCommand("sp_GetPaymentSchedule", conn)
                     cmd.CommandType = CommandType.StoredProcedure
-                    cmd.Parameters.AddWithValue("@BatchID", currentBatchID)
+                    cmd.Parameters.AddWithValue("@BatchID", currentFNBBatchID)
                     cmd.Parameters.AddWithValue("@DateFrom", DBNull.Value)
                     cmd.Parameters.AddWithValue("@DateTo", DBNull.Value)
                     cmd.Parameters.AddWithValue("@SupplierID", 0)
@@ -635,7 +693,7 @@ Public Class BatchPaymentForm
                 ' Use the same stored procedure that loads the grid
                 Using cmd As New SqlCommand("sp_GetBatchDetails", conn)
                     cmd.CommandType = CommandType.StoredProcedure
-                    cmd.Parameters.AddWithValue("@BatchID", currentBatchID)
+                    cmd.Parameters.AddWithValue("@BatchID", currentFNBBatchID)
                     
                     Dim adapter As New SqlDataAdapter(cmd)
                     adapter.Fill(_printData)
@@ -747,13 +805,74 @@ Public Class BatchPaymentForm
 
     Private Sub btnSubmitFNB_Click(sender As Object, e As EventArgs) Handles btnSubmitFNB.Click
         Try
-            If currentBatchID = 0 Then
+            If currentFNBBatchID = 0 Then
                 MessageBox.Show("Please create a batch first", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Return
             End If
 
             If dgvBatchItems.Rows.Count = 0 Then
                 MessageBox.Show("No items in batch to submit", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' Supervisor password prompt
+            Dim passwordForm As New Form With {
+                .Text = "Supervisor Authorization Required",
+                .Size = New Size(400, 200),
+                .StartPosition = FormStartPosition.CenterParent,
+                .FormBorderStyle = FormBorderStyle.FixedDialog,
+                .MaximizeBox = False,
+                .MinimizeBox = False
+            }
+
+            Dim lblPrompt As New Label With {
+                .Text = "Enter Supervisor Password to authorize batch payment:",
+                .Location = New Point(20, 20),
+                .Size = New Size(350, 40),
+                .Font = New Font("Segoe UI", 10)
+            }
+
+            Dim txtPassword As New TextBox With {
+                .Location = New Point(20, 70),
+                .Size = New Size(340, 25),
+                .UseSystemPasswordChar = True,
+                .Font = New Font("Segoe UI", 10)
+            }
+
+            Dim btnOK As New Button With {
+                .Text = "Authorize",
+                .Location = New Point(180, 110),
+                .Size = New Size(90, 30),
+                .DialogResult = DialogResult.OK
+            }
+
+            Dim btnCancel As New Button With {
+                .Text = "Cancel",
+                .Location = New Point(280, 110),
+                .Size = New Size(80, 30),
+                .DialogResult = DialogResult.Cancel
+            }
+
+            passwordForm.Controls.AddRange({lblPrompt, txtPassword, btnOK, btnCancel})
+            passwordForm.AcceptButton = btnOK
+            passwordForm.CancelButton = btnCancel
+
+            If passwordForm.ShowDialog() <> DialogResult.OK Then Return
+
+            ' Validate supervisor password
+            Dim supervisorPassword As String = txtPassword.Text
+            Dim isAuthorized As Boolean = False
+
+            Using conn As New SqlConnection(connectionString)
+                conn.Open()
+                Using cmd As New SqlCommand("SELECT COUNT(*) FROM Users u INNER JOIN Roles r ON u.RoleID = r.RoleID WHERE u.Password = @Password AND r.RoleName IN ('Administrator', 'Super Administrator') AND u.IsActive = 1", conn)
+                    cmd.Parameters.AddWithValue("@Password", supervisorPassword)
+                    isAuthorized = CInt(cmd.ExecuteScalar()) > 0
+                End Using
+            End Using
+
+            If Not isAuthorized Then
+                MessageBox.Show("Invalid supervisor password. Batch submission cancelled.", "Authorization Failed", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 Return
             End If
 
@@ -778,45 +897,50 @@ Public Class BatchPaymentForm
             Using conn As New SqlConnection(connectionString)
                 conn.Open()
                 
-                ' First, get the batch items with supplier info
-                Dim sql As String = "
-                    SELECT DISTINCT
-                        s.SupplierID,
-                        s.CompanyName,
-                        s.BankAccountNumber,
-                        s.BankBranchCode,
-                        s.ProofOfPaymentEmail,
-                        SUM(pbi.AmountPaid) as TotalAmount,
-                        MIN(pbi.InvoiceNumber) as InvoiceNumber
-                    FROM PaymentBatchItems pbi
-                    INNER JOIN Suppliers s ON pbi.SupplierID = s.SupplierID
-                    WHERE pbi.BatchID = @BatchID
-                    GROUP BY s.SupplierID, s.CompanyName, s.BankAccountNumber, s.BankBranchCode, s.ProofOfPaymentEmail"
+                ' Get selected invoices with beneficiary info
+                If selectedInvoices.Count = 0 Then
+                    MessageBox.Show("No invoices selected", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    Return
+                End If
+                
+                Dim invoiceIds As String = String.Join(",", selectedInvoices)
+                Dim sql As String = $"
+                    SELECT 
+                        i.InvoiceID,
+                        i.InvoiceNumber,
+                        i.TotalAmount,
+                        b.BeneficiaryID,
+                        b.BeneficiaryName,
+                        b.AccountNumber,
+                        b.BranchCode,
+                        b.Email
+                    FROM AP_Invoices i
+                    INNER JOIN AP_Beneficiaries b ON i.BeneficiaryID = b.BeneficiaryID
+                    WHERE i.InvoiceID IN ({invoiceIds})"
                 
                 Using cmd As New SqlCommand(sql, conn)
-
-                    cmd.Parameters.AddWithValue("@BatchID", currentBatchID)
-
                     Using reader As SqlDataReader = cmd.ExecuteReader()
                         While reader.Read()
                             Dim invoiceNum As String = If(reader("InvoiceNumber") Is DBNull.Value, "PAYMENT", reader.GetString(reader.GetOrdinal("InvoiceNumber")))
+                            Dim invoiceID As Integer = reader.GetInt32(reader.GetOrdinal("InvoiceID"))
+                            Dim amount As Decimal = reader.GetDecimal(reader.GetOrdinal("TotalAmount"))
                             
                             Dim line As New PaymentLineInfo() With {
-                                .SupplierID = reader.GetInt32(reader.GetOrdinal("SupplierID")),
-                                .PaymentType = "Supplier",
-                                .CreditorName = reader.GetString(reader.GetOrdinal("CompanyName")),
-                                .CreditorAccountNumber = If(reader("BankAccountNumber") Is DBNull.Value, "", reader.GetString(reader.GetOrdinal("BankAccountNumber"))),
+                                .SupplierID = invoiceID,
+                                .PaymentType = "Beneficiary",
+                                .CreditorName = reader.GetString(reader.GetOrdinal("BeneficiaryName")),
+                                .CreditorAccountNumber = If(reader("AccountNumber") Is DBNull.Value, "", reader.GetString(reader.GetOrdinal("AccountNumber"))),
                                 .CreditorAccountType = "CACC",
-                                .CreditorBranchCode = If(reader("BankBranchCode") Is DBNull.Value, "250655", reader.GetString(reader.GetOrdinal("BankBranchCode"))),
+                                .CreditorBranchCode = If(reader("BranchCode") Is DBNull.Value, "250655", reader.GetString(reader.GetOrdinal("BranchCode"))),
                                 .CreditorBIC = "FIRNZAJJ",
-                                .Amount = reader.GetDecimal(reader.GetOrdinal("TotalAmount")),
+                                .Amount = amount,
                                 .Reference = invoiceNum.Substring(0, Math.Min(20, invoiceNum.Length)),
-                                .ProofOfPaymentEmail = If(reader("ProofOfPaymentEmail") Is DBNull.Value, Nothing, reader.GetString(reader.GetOrdinal("ProofOfPaymentEmail")))
+                                .ProofOfPaymentEmail = If(reader("Email") Is DBNull.Value, Nothing, reader.GetString(reader.GetOrdinal("Email")))
                             }
 
                             ' Validate bank details
                             If String.IsNullOrEmpty(line.CreditorAccountNumber) Then
-                                MessageBox.Show($"Supplier '{line.CreditorName}' has no bank account number configured.", "Missing Bank Details", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                                MessageBox.Show($"Beneficiary '{line.CreditorName}' has no bank account number configured.", "Missing Bank Details", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                                 Return
                             End If
 
@@ -859,6 +983,40 @@ Public Class BatchPaymentForm
             btnSubmitFNB.Enabled = True
 
             If submitResult.Item1 Then
+                ' Save invoice-to-batch mappings
+                Dim fnbBatchID As Integer = submitResult.Item3
+                Try
+                    Using conn As New SqlConnection(connectionString)
+                        conn.Open()
+                        For Each invoiceID In selectedInvoices
+                            ' Get invoice amount
+                            Dim amount As Decimal = 0
+                            Using cmdAmount As New SqlCommand("SELECT TotalAmount FROM AP_Invoices WHERE InvoiceID = @InvoiceID", conn)
+                                cmdAmount.Parameters.AddWithValue("@InvoiceID", invoiceID)
+                                Dim amountResult = cmdAmount.ExecuteScalar()
+                                If amountResult IsNot Nothing Then amount = CDec(amountResult)
+                            End Using
+                            
+                            ' Insert mapping
+                            Using cmdInsert As New SqlCommand("INSERT INTO AP_InvoiceBatchMapping (InvoiceID, FNB_BatchID, AmountPaid, AddedBy, AddedDate) VALUES (@InvoiceID, @FNB_BatchID, @AmountPaid, @AddedBy, GETDATE())", conn)
+                                cmdInsert.Parameters.AddWithValue("@InvoiceID", invoiceID)
+                                cmdInsert.Parameters.AddWithValue("@FNB_BatchID", fnbBatchID)
+                                cmdInsert.Parameters.AddWithValue("@AmountPaid", amount)
+                                cmdInsert.Parameters.AddWithValue("@AddedBy", createdBy)
+                                cmdInsert.ExecuteNonQuery()
+                            End Using
+                        Next
+                    End Using
+                    
+                    ' Clear selected invoices and refresh
+                    selectedInvoices.Clear()
+                    LoadUnpaidInvoices()
+                    LoadBatchItems()
+                    
+                Catch ex As Exception
+                    LogMessage($"Warning: Failed to save invoice mappings: {ex.Message}")
+                End Try
+                
                 MessageBox.Show(
                     $"Payment batch submitted successfully to FNB!" & Environment.NewLine & Environment.NewLine &
                     submitResult.Item2 & Environment.NewLine & Environment.NewLine &

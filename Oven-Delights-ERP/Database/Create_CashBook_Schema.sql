@@ -261,9 +261,9 @@ BEGIN
 END
 
 -- Get account IDs
-DECLARE @MainCashAcctID INT = (SELECT AccountID FROM ChartOfAccounts WHERE AccountCode = '1020' OR AccountName = 'Cash on Hand');
-DECLARE @PettyCashAcctID INT = (SELECT AccountID FROM ChartOfAccounts WHERE AccountCode = '1025' OR AccountName = 'Petty Cash');
-DECLARE @SundriesAcctID INT = (SELECT AccountID FROM ChartOfAccounts WHERE AccountCode = '1028' OR AccountName = 'Sundries Cash');
+DECLARE @MainCashAcctID INT = (SELECT TOP 1 AccountID FROM ChartOfAccounts WHERE AccountCode = '1020' ORDER BY AccountID);
+DECLARE @PettyCashAcctID INT = (SELECT TOP 1 AccountID FROM ChartOfAccounts WHERE AccountCode = '1025' ORDER BY AccountID);
+DECLARE @SundriesAcctID INT = (SELECT TOP 1 AccountID FROM ChartOfAccounts WHERE AccountCode = '1028' ORDER BY AccountID);
 
 -- Create accounts if they don't exist
 IF @MainCashAcctID IS NULL
@@ -290,8 +290,14 @@ BEGIN
     PRINT 'Created account: Sundries Cash';
 END
 
+GO
+
 -- Create default cash books for each branch
 DECLARE @BranchID INT;
+DECLARE @MainCashAcctID INT = (SELECT TOP 1 AccountID FROM ChartOfAccounts WHERE AccountCode = '1020' ORDER BY AccountID);
+DECLARE @PettyCashAcctID INT = (SELECT TOP 1 AccountID FROM ChartOfAccounts WHERE AccountCode = '1025' ORDER BY AccountID);
+DECLARE @SundriesAcctID INT = (SELECT TOP 1 AccountID FROM ChartOfAccounts WHERE AccountCode = '1028' ORDER BY AccountID);
+
 DECLARE branch_cursor CURSOR FOR 
     SELECT BranchID FROM Branches WHERE IsActive = 1;
 

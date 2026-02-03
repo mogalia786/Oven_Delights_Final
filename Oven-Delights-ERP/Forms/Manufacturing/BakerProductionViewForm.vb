@@ -842,9 +842,13 @@ Namespace Manufacturing
                 e.Graphics.DrawString($"{row("LineNumber")}. {productName}", fontProductName, brush, leftMargin + 20, yPos)
                 yPos += 18
                 
-                ' Product details - only show SKU and Quantity
+                ' Product details - SKU, Amount Requested, Amount Yielded
                 e.Graphics.DrawString($"SKU: {row("SKU")}", fontSmall, grayBrush, leftMargin + 30, yPos)
-                e.Graphics.DrawString($"Qty: {row("QuantityOrdered")}", fontSmall, brush, leftMargin + 250, yPos)
+                e.Graphics.DrawString($"Requested: {row("QuantityOrdered")}", fontSmall, brush, leftMargin + 200, yPos)
+                
+                ' Show Amount Yielded if product is completed
+                Dim qtyYielded As String = If(IsDBNull(row("QuantityCompleted")), "0", row("QuantityCompleted").ToString())
+                e.Graphics.DrawString($"Yielded: {qtyYielded}", fontSmall, brush, leftMargin + 350, yPos)
                 
                 yPos += 25
             Next

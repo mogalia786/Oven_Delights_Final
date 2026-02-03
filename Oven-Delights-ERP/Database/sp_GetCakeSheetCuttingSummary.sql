@@ -40,10 +40,32 @@ BEGIN
             ELSE 'Double' -- Always default to Double
         END AS Layer,
         
-        -- Extract Shape: Check Special Request for 'Heart' or 'Bible', then item name for 'round', else default to 'square'
+        -- Extract Shape: Check SpecialRequest for special cake types that override shape
         CASE 
-            WHEN o.SpecialInstructions LIKE '%Heart%' OR o.SpecialInstructions LIKE '%heart%' THEN 'Heart'
+            -- Special cake types that override shape to 'Special'
+            WHEN o.SpecialInstructions LIKE '%Doll cake%' OR o.SpecialInstructions LIKE '%doll cake%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Figure%' OR o.SpecialInstructions LIKE '%figure%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Figure on base%' OR o.SpecialInstructions LIKE '%figure on base%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Eggless Figure%' OR o.SpecialInstructions LIKE '%eggless figure%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Eggless Figure on base%' OR o.SpecialInstructions LIKE '%eggless figure on base%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%1mx 500%' OR o.SpecialInstructions LIKE '%1mx500%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%1mx 500 eggless%' OR o.SpecialInstructions LIKE '%1mx500 eggless%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Bar one%' OR o.SpecialInstructions LIKE '%bar one%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Ferrero%' OR o.SpecialInstructions LIKE '%ferrero%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Milky bar%' OR o.SpecialInstructions LIKE '%milky bar%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Blackforest%' OR o.SpecialInstructions LIKE '%blackforest%' OR o.SpecialInstructions LIKE '%Black forest%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Red velvet%' OR o.SpecialInstructions LIKE '%red velvet%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Carrot cake%' OR o.SpecialInstructions LIKE '%carrot cake%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Soccerfield%' OR o.SpecialInstructions LIKE '%soccerfield%' OR o.SpecialInstructions LIKE '%Soccer field%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Mould%' OR o.SpecialInstructions LIKE '%mould%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Novelty%' OR o.SpecialInstructions LIKE '%novelty%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Tiered sponge%' OR o.SpecialInstructions LIKE '%tiered sponge%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Tiered fruit%' OR o.SpecialInstructions LIKE '%tiered fruit%' THEN 'Special'
+            -- Regular shape overrides from SpecialInstructions
+            WHEN o.SpecialInstructions LIKE '%Heart shape%' OR o.SpecialInstructions LIKE '%heart shape%' OR o.SpecialInstructions LIKE '%Heart%' OR o.SpecialInstructions LIKE '%heart%' THEN 'Heart'
             WHEN o.SpecialInstructions LIKE '%Bible%' OR o.SpecialInstructions LIKE '%bible%' THEN 'Bible'
+            WHEN o.SpecialInstructions LIKE '%Round cake%' OR o.SpecialInstructions LIKE '%round cake%' THEN 'Round'
+            -- Check product name for shape keywords
             WHEN i.ProductName LIKE '%Figure%' THEN 'Figure'
             WHEN i.ProductName LIKE '%Round%' OR i.ProductName LIKE '%round%' THEN 'Round'
             WHEN i.ProductName LIKE '%Heart%' THEN 'Heart'
@@ -98,8 +120,30 @@ BEGIN
         END,
         -- Shape
         CASE 
-            WHEN o.SpecialInstructions LIKE '%Heart%' OR o.SpecialInstructions LIKE '%heart%' THEN 'Heart'
+            -- Special cake types that override shape to 'Special'
+            WHEN o.SpecialInstructions LIKE '%Doll cake%' OR o.SpecialInstructions LIKE '%doll cake%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Figure%' OR o.SpecialInstructions LIKE '%figure%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Figure on base%' OR o.SpecialInstructions LIKE '%figure on base%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Eggless Figure%' OR o.SpecialInstructions LIKE '%eggless figure%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Eggless Figure on base%' OR o.SpecialInstructions LIKE '%eggless figure on base%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%1mx 500%' OR o.SpecialInstructions LIKE '%1mx500%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%1mx 500 eggless%' OR o.SpecialInstructions LIKE '%1mx500 eggless%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Bar one%' OR o.SpecialInstructions LIKE '%bar one%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Ferrero%' OR o.SpecialInstructions LIKE '%ferrero%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Milky bar%' OR o.SpecialInstructions LIKE '%milky bar%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Blackforest%' OR o.SpecialInstructions LIKE '%blackforest%' OR o.SpecialInstructions LIKE '%Black forest%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Red velvet%' OR o.SpecialInstructions LIKE '%red velvet%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Carrot cake%' OR o.SpecialInstructions LIKE '%carrot cake%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Soccerfield%' OR o.SpecialInstructions LIKE '%soccerfield%' OR o.SpecialInstructions LIKE '%Soccer field%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Mould%' OR o.SpecialInstructions LIKE '%mould%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Novelty%' OR o.SpecialInstructions LIKE '%novelty%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Tiered sponge%' OR o.SpecialInstructions LIKE '%tiered sponge%' THEN 'Special'
+            WHEN o.SpecialInstructions LIKE '%Tiered fruit%' OR o.SpecialInstructions LIKE '%tiered fruit%' THEN 'Special'
+            -- Regular shape overrides from SpecialInstructions
+            WHEN o.SpecialInstructions LIKE '%Heart shape%' OR o.SpecialInstructions LIKE '%heart shape%' OR o.SpecialInstructions LIKE '%Heart%' OR o.SpecialInstructions LIKE '%heart%' THEN 'Heart'
             WHEN o.SpecialInstructions LIKE '%Bible%' OR o.SpecialInstructions LIKE '%bible%' THEN 'Bible'
+            WHEN o.SpecialInstructions LIKE '%Round cake%' OR o.SpecialInstructions LIKE '%round cake%' THEN 'Round'
+            -- Check product name for shape keywords
             WHEN i.ProductName LIKE '%Figure%' THEN 'Figure'
             WHEN i.ProductName LIKE '%Round%' OR i.ProductName LIKE '%round%' THEN 'Round'
             WHEN i.ProductName LIKE '%Heart%' THEN 'Heart'

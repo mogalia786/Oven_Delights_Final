@@ -61,10 +61,26 @@ Namespace Accounting
             }
             pnlFilter.Controls.Add(lblAccount)
 
+            ' Load business account number from credentials
+            Dim businessAccount As String = "63001723469" ' Default
+            Try
+                Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                    conn.Open()
+                    Using cmd As New SqlCommand("SELECT TOP 1 DebtorAccountNumber FROM FNB_APICredentials WHERE IsActive = 1 AND Environment = 'Sandbox'", conn)
+                        Dim result = cmd.ExecuteScalar()
+                        If result IsNot Nothing Then
+                            businessAccount = result.ToString()
+                        End If
+                    End Using
+                End Using
+            Catch ex As Exception
+                ' Use default if query fails
+            End Try
+
             txtAccountId = New TextBox() With {
                 .Location = New Point(100, 22),
                 .Width = 150,
-                .Text = "63001723469"
+                .Text = businessAccount
             }
             pnlFilter.Controls.Add(txtAccountId)
 

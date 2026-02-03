@@ -272,7 +272,21 @@ Public Class InvoiceGRVForm
     Private Sub btnSave_Click(sender As Object, e As EventArgs) Handles btnSave.Click
         Try
             If selectedSupplierId <= 0 OrElse selectedPOId <= 0 Then
-                MessageBox.Show("Please select a supplier and purchase orderssss.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                MessageBox.Show("Please select a supplier and purchase order.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+            
+            If String.IsNullOrWhiteSpace(txtDeliveryNote.Text) Then
+                MessageBox.Show("Please enter an Invoice Number.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                txtDeliveryNote.Focus()
+                Return
+            End If
+            
+            ' Check for duplicate invoice number
+            If CheckDuplicateInvoiceNumber(txtDeliveryNote.Text.Trim(), selectedSupplierId) Then
+                MessageBox.Show($"Invoice Number '{txtDeliveryNote.Text.Trim()}' already exists for this supplier. Please enter a unique invoice number.", "Duplicate Invoice", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                txtDeliveryNote.Focus()
+                txtDeliveryNote.SelectAll()
                 Return
             End If
             
@@ -287,6 +301,24 @@ Public Class InvoiceGRVForm
             MessageBox.Show($"Error saving: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
+    
+    Private Function CheckDuplicateInvoiceNumber(invoiceNumber As String, supplierId As Integer) As Boolean
+        Try
+            Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                conn.Open()
+                Dim sql As String = "SELECT COUNT(*) FROM SupplierInvoices WHERE InvoiceNumber = @InvoiceNumber AND SupplierID = @SupplierID"
+                Using cmd As New SqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@InvoiceNumber", invoiceNumber)
+                    cmd.Parameters.AddWithValue("@SupplierID", supplierId)
+                    Dim count As Integer = CInt(cmd.ExecuteScalar())
+                    Return count > 0
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show($"Error checking duplicate invoice: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return False
+        End Try
+    End Function
 
     Private Sub ProcessGRVAndInvoice()
         Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
@@ -469,9 +501,57 @@ Public Class InvoiceGRVForm
             balCmd.Parameters.AddWithValue("@Amount", Convert.ToDecimal(txtTotal.Text))
             balCmd.Parameters.AddWithValue("@SupplierID", selectedSupplierId)
             balCmd.ExecuteNonQuery()
+            
+            ' Post to General Ledger - Inventory received (not paid yet)
+            ' DR Inventory (Asset) - Stock value (SubTotal only, no VAT)
+            ' CR Accounts Payable - Supplier (Liability) - Total including VAT
+            PostInventoryToGL(conn, trans, invoiceId)
         Catch ex As Exception
             ' Log error but don't fail transaction
             System.Diagnostics.Debug.WriteLine($"Supplier ledger update error: {ex.Message}")
+        End Try
+    End Sub
+    
+    Private Sub PostInventoryToGL(conn As SqlConnection, trans As SqlTransaction, invoiceId As Integer)
+        Try
+            Dim subTotal As Decimal = Convert.ToDecimal(txtSubTotal.Text)
+            Dim vatAmount As Decimal = Convert.ToDecimal(txtVAT.Text)
+            Dim totalAmount As Decimal = Convert.ToDecimal(txtTotal.Text)
+            Dim transactionDate As Date = dtpReceived.Value
+            Dim reference As String = txtDeliveryNote.Text
+            Dim description As String = $"GRV - {cboSupplier.Text} - {reference}"
+            
+            ' DR Inventory (Asset) - Stock value only
+            Dim cmdDebitInventory As New SqlCommand(
+                "INSERT INTO GeneralLedger (AccountCode, TransactionDate, Description, Reference, Debit, Credit, BranchID, CreatedBy, CreatedDate) " &
+                "VALUES (@AccountCode, @TransactionDate, @Description, @Reference, @Debit, 0, @BranchID, @CreatedBy, @CreatedDate)", conn, trans)
+            cmdDebitInventory.Parameters.AddWithValue("@AccountCode", "1300") ' Inventory Asset
+            cmdDebitInventory.Parameters.AddWithValue("@TransactionDate", transactionDate)
+            cmdDebitInventory.Parameters.AddWithValue("@Description", description)
+            cmdDebitInventory.Parameters.AddWithValue("@Reference", reference)
+            cmdDebitInventory.Parameters.AddWithValue("@Debit", subTotal)
+            cmdDebitInventory.Parameters.AddWithValue("@BranchID", currentBranchId)
+            cmdDebitInventory.Parameters.AddWithValue("@CreatedBy", AppSession.CurrentUserID)
+            cmdDebitInventory.Parameters.AddWithValue("@CreatedDate", DateTime.Now)
+            cmdDebitInventory.ExecuteNonQuery()
+            
+            ' CR Accounts Payable - Supplier (Liability) - Total including VAT
+            Dim cmdCreditAP As New SqlCommand(
+                "INSERT INTO GeneralLedger (AccountCode, TransactionDate, Description, Reference, Debit, Credit, BranchID, CreatedBy, CreatedDate) " &
+                "VALUES (@AccountCode, @TransactionDate, @Description, @Reference, 0, @Credit, @BranchID, @CreatedBy, @CreatedDate)", conn, trans)
+            cmdCreditAP.Parameters.AddWithValue("@AccountCode", "2100") ' Accounts Payable
+            cmdCreditAP.Parameters.AddWithValue("@TransactionDate", transactionDate)
+            cmdCreditAP.Parameters.AddWithValue("@Description", description)
+            cmdCreditAP.Parameters.AddWithValue("@Reference", reference)
+            cmdCreditAP.Parameters.AddWithValue("@Credit", totalAmount)
+            cmdCreditAP.Parameters.AddWithValue("@BranchID", currentBranchId)
+            cmdCreditAP.Parameters.AddWithValue("@CreatedBy", AppSession.CurrentUserID)
+            cmdCreditAP.Parameters.AddWithValue("@CreatedDate", DateTime.Now)
+            cmdCreditAP.ExecuteNonQuery()
+            
+        Catch ex As Exception
+            System.Diagnostics.Debug.WriteLine($"GL posting error: {ex.Message}")
+            ' Don't fail the transaction - GL posting is supplementary
         End Try
     End Sub
 

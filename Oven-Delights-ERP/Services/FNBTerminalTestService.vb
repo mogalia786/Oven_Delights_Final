@@ -8,10 +8,14 @@ Public Class FNBTerminalTestService
     Private ReadOnly clientId As String = "MP7BQIe0TMxgxzhpGghkNF303zhmYnjA"
     Private ReadOnly clientSecret As String = "Tf3ac4dLR9DGmBfwipmjy6tjUmLv6tma"
     Private ReadOnly siteId As String = "UT02"
-    Private ReadOnly posIdentifier As Integer = 10
+    Private posIdentifier As Integer = 10
 
     Private currentToken As String
     Private tokenExpiry As DateTime
+
+    Public Sub SetTerminalId(terminalId As Integer)
+        posIdentifier = terminalId
+    End Sub
 
     Public Class TokenResponse
         Public Property access_token As String
@@ -154,11 +158,17 @@ Public Class FNBTerminalTestService
         amount As Decimal,
         operatorName As String,
         Optional operatorId As Integer = 1,
-        Optional slipNo As Integer = 1
+        Optional slipNo As Integer = 1,
+        Optional requestType As String = "Settlement",
+        Optional logCallback As Action(Of String) = Nothing
     ) As Task(Of TestResult)
 
         Try
+            logCallback?.Invoke("🔌 Connecting to FNB API...")
+            logCallback?.Invoke($"   Endpoint: {apiBaseUrl}")
+            
             Dim token = Await GetValidToken()
+            logCallback?.Invoke("✓ Connected to FNB API - OAuth token obtained")
 
             ' Generate Recon Indicator - max 7 characters, never starts with 0 (FNB requirement)
             Dim timestamp As Long = DateTimeOffset.Now.ToUnixTimeMilliseconds()
@@ -171,29 +181,44 @@ Public Class FNBTerminalTestService
                     .category = 255,
                     .amount = totalAmountCents,
                     .barCode = "TEST001",
-                    .description = "Test Transaction",
+                    .description = "Oven Delights",
                     .quantity = 1,
                     .unitPrice = totalAmountCents,
                     .rebate = 0
                 }
             }
 
+            Dim supervisorCode As String = If(requestType = "Refund", "R", "S")
+            
             Dim request = New TransactionRequest With {
                 .siteId = siteId,
-                .requestType = "Settlement",
+                .requestType = requestType,
                 .reconIndicator = reconIndicator,
                 .posIdentifier = posIdentifier,
-                .posVersion = "1.0.0",
+                .posVersion = "1.8.5.3",
                 .totalAmount = totalAmountCents,
                 .operatorId = operatorId,
                 .operatorName = operatorName,
                 .shiftNo = 1,
                 .slipNo = slipNo,
-                .supervisor = New String() {"S"},
+                .supervisor = New String() {supervisorCode},
                 .cashBackAmount = 0,
                 .budgetPeriod = 0,
                 .productItems = productItems
             }
+
+            logCallback?.Invoke("")
+            logCallback?.Invoke($"📡 Connecting to POS Terminal {posIdentifier} for {requestType}...")
+            logCallback?.Invoke("--- Request Details ---")
+            logCallback?.Invoke($"   Site ID: {siteId}")
+            logCallback?.Invoke($"   Terminal: {posIdentifier}")
+            logCallback?.Invoke($"   Request Type: {requestType}")
+            logCallback?.Invoke($"   Amount: R{amount:F2} ({totalAmountCents} cents)")
+            logCallback?.Invoke($"   Recon Indicator: {reconIndicator}")
+            logCallback?.Invoke($"   Operator: {operatorName} (ID: {operatorId})")
+            logCallback?.Invoke($"   Slip No: {slipNo}")
+            logCallback?.Invoke("")
+            logCallback?.Invoke("⏳ Awaiting terminal connection...")
 
             Using client As New HttpClient()
                 client.Timeout = TimeSpan.FromSeconds(180)
@@ -203,7 +228,14 @@ Public Class FNBTerminalTestService
                 Dim content = New StringContent(json, Encoding.UTF8, "application/json")
 
                 Dim response = Await client.PostAsync($"{apiBaseUrl}transactions/transaction", content)
+                
+                logCallback?.Invoke("✓ Connected to terminal - Processing transaction...")
+                logCallback?.Invoke("⏳ Waiting for card tap/insert and customer action...")
+                
                 Dim responseJson = Await response.Content.ReadAsStringAsync()
+                
+                logCallback?.Invoke("")
+                logCallback?.Invoke("📨 Terminal Response Received")
 
                 If response.IsSuccessStatusCode Then
                     Dim transResponse = JsonConvert.DeserializeObject(Of TransactionResponse)(responseJson)
@@ -291,6 +323,7 @@ Public Class FNBTerminalTestService
             Using client As New HttpClient()
                 client.Timeout = TimeSpan.FromSeconds(30)
                 client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}")
+                client.DefaultRequestHeaders.Add("apiKey", "Q7w30FOnntfiLzJuKKJrKqVqXg9BHPCq")
 
                 Dim response = Await client.GetAsync($"{apiBaseUrl}transactions/status?reconIndicator={reconIndicator}")
                 Dim responseJson = Await response.Content.ReadAsStringAsync()
@@ -317,6 +350,7 @@ Public Class FNBTerminalTestService
             Using client As New HttpClient()
                 client.Timeout = TimeSpan.FromSeconds(30)
                 client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}")
+                client.DefaultRequestHeaders.Add("apiKey", "Q7w30FOnntfiLzJuKKJrKqVqXg9BHPCq")
 
                 Dim response = Await client.DeleteAsync($"{apiBaseUrl}transactions/cancel?reconIndicator={reconIndicator}")
                 Dim responseJson = Await response.Content.ReadAsStringAsync()

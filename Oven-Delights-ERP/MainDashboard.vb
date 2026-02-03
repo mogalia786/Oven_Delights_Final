@@ -515,8 +515,8 @@ Partial Class MainDashboard
                 adminMenu.DropDownItems.Remove(existingMenu)
             End If
             
-            ' Add menu only if Super Admin at Head Office (BranchID = 1)
-            If AppSession.CurrentRoleName = "Super Administrator" AndAlso AppSession.CurrentBranchID = 1 Then
+            ' Add menu only if Super Admin (any branch)
+            If AppSession.CurrentRoleName = "Super Administrator" Then
                 Dim salesDashMenu = GetOrCreateSubMenu(adminMenu, "Sales Analytics Dashboard")
                 RemoveHandler salesDashMenu.Click, AddressOf OpenSalesDashboard
                 AddHandler salesDashMenu.Click, AddressOf OpenSalesDashboard
@@ -539,7 +539,7 @@ Partial Class MainDashboard
     
     Private Sub OpenSalesDashboard(sender As Object, e As EventArgs)
         Try
-            ' Show full JARVIS Executive Dashboard in borderless fullscreen
+            ' Show JARVIS Executive Dashboard
             Dim frm As New Admin.ExecutiveDashboard()
             frm.Show()
             frm.WindowState = FormWindowState.Maximized
@@ -1789,7 +1789,20 @@ Partial Class MainDashboard
                                                 End Try
                                             End Sub
             
-            miCakeOrders.DropDownItems.AddRange(New ToolStripItem() {miNewCakeOrders, miReadyCakeOrders, miAllCakeOrders, New ToolStripSeparator(), miCuttingList})
+            Dim miOrderStatusReport As New ToolStripMenuItem("📊 Order Status Report")
+            AddHandler miOrderStatusReport.Click, Sub(sender, e)
+                                                      Try
+                                                          Dim branchId As Integer = If(currentUser IsNot Nothing AndAlso currentUser.BranchID.HasValue, currentUser.BranchID.Value, 0)
+                                                          Dim frm As New OrderStatusReportForm(branchId)
+                                                          frm.MdiParent = Me
+                                                          frm.Show()
+                                                          frm.WindowState = FormWindowState.Maximized
+                                                      Catch ex As Exception
+                                                          MessageBox.Show("Error opening Order Status Report: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                                                      End Try
+                                                  End Sub
+            
+            miCakeOrders.DropDownItems.AddRange(New ToolStripItem() {miNewCakeOrders, miReadyCakeOrders, miAllCakeOrders, New ToolStripSeparator(), miCuttingList, miOrderStatusReport})
             
             ' General Orders submenu
             Dim miGeneralOrders As New ToolStripMenuItem("General Orders")
@@ -2613,6 +2626,13 @@ Partial Class MainDashboard
                 System.Diagnostics.Debug.WriteLine($"Error setting up stock report menus: {ex.Message}")
             End Try
             
+            ' Setup Inventory Menu
+            Try
+                SetupInventoryMenu()
+            Catch ex As Exception
+                System.Diagnostics.Debug.WriteLine($"Error setting up inventory menu: {ex.Message}")
+            End Try
+            
             ' Sync menus to MenuRegistry automatically
             Try
                 SyncMenusToRegistry()
@@ -2862,6 +2882,11 @@ Partial Class MainDashboard
         Dim miGRVMgmt As ToolStripMenuItem = EnsureSubMenu(stockroom, "GRV Management")
         RemoveHandler miGRVMgmt.Click, AddressOf OpenGRVManagement
         AddHandler miGRVMgmt.Click, AddressOf OpenGRVManagement
+        
+        ' Supplier History
+        Dim miSupplierHistory As ToolStripMenuItem = EnsureSubMenu(stockroom, "Supplier Payment History")
+        RemoveHandler miSupplierHistory.Click, AddressOf OnOpenSupplierHistory
+        AddHandler miSupplierHistory.Click, AddressOf OnOpenSupplierHistory
     End Sub
 
     Private Sub OpenCreatePurchaseOrder(sender As Object, e As EventArgs)
@@ -2936,6 +2961,17 @@ Partial Class MainDashboard
         End Try
     End Sub
 
+    Private Sub OnOpenSupplierHistory(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New Stockroom.SupplierHistoryForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show($"Error opening Supplier Payment History: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
     Private Sub OpenInvoiceCapture(sender As Object, e As EventArgs)
         Try
             For Each child As Form In Me.MdiChildren
@@ -2986,6 +3022,11 @@ Partial Class MainDashboard
         Dim miResetDayEnd As ToolStripMenuItem = EnsureSubMenu(admin, "Reset Day End")
         RemoveHandler miResetDayEnd.Click, AddressOf OpenResetDayEnd
         AddHandler miResetDayEnd.Click, AddressOf OpenResetDayEnd
+        
+        ' Open All Tills
+        Dim miOpenAllTills As ToolStripMenuItem = EnsureSubMenu(admin, "Open All Tills")
+        RemoveHandler miOpenAllTills.Click, AddressOf OpenAllTills
+        AddHandler miOpenAllTills.Click, AddressOf OpenAllTills
     End Sub
     
     Private Sub OpenMenuRegistryScanner(sender As Object, e As EventArgs)
@@ -3033,6 +3074,106 @@ Partial Class MainDashboard
             frm.StartPosition = FormStartPosition.CenterScreen
         Catch ex As Exception
             MessageBox.Show($"Error opening Reset Day End: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    
+    Private Sub LogoutToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles LogoutToolStripMenuItem.Click
+        Try
+            ' Confirm logout
+            Dim result = MessageBox.Show("Are you sure you want to logout?", "Confirm Logout", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+            
+            If result = DialogResult.Yes Then
+                ' Clear session
+                AppSession.Reset()
+                
+                ' Close all child forms
+                For Each frm As Form In Me.MdiChildren
+                    frm.Close()
+                Next
+                
+                ' Allow form to close
+                logoutAllowed = True
+                
+                ' Show login form
+                Dim loginForm As New LoginForm()
+                loginForm.Show()
+                
+                ' Close dashboard
+                Me.Close()
+            End If
+        Catch ex As Exception
+            MessageBox.Show($"Error during logout: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    
+    Private Sub OpenAllTills(sender As Object, e As EventArgs)
+        Try
+            ' Check if user is Administrator or Super Administrator
+            If currentUser Is Nothing Then
+                MessageBox.Show("Access Denied. Please log in.", "Access Denied", MessageBoxButtons.OK, MessageBoxIcon.Stop)
+                Return
+            End If
+            
+            ' Get role name from database
+            Dim roleName As String = ""
+            Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                conn.Open()
+                Dim sql = "SELECT RoleName FROM Roles WHERE RoleID = @RoleID"
+                Using cmd As New SqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@RoleID", currentUser.RoleID)
+                    Dim result = cmd.ExecuteScalar()
+                    If result IsNot Nothing Then
+                        roleName = result.ToString()
+                    End If
+                End Using
+            End Using
+            
+            If Not (roleName.Equals("Administrator", StringComparison.OrdinalIgnoreCase) OrElse 
+                    roleName.Equals("Super Administrator", StringComparison.OrdinalIgnoreCase)) Then
+                MessageBox.Show("Access Denied. Only Administrators can open tills.", "Access Denied", MessageBoxButtons.OK, MessageBoxIcon.Stop)
+                Return
+            End If
+            
+            ' Confirm action
+            Dim confirmMsg = "⚠️ OPEN ALL TILLS ⚠️" & vbCrLf & vbCrLf &
+                           "This will unlock all tills that are currently locked by day-end finalization." & vbCrLf & vbCrLf &
+                           "This action will:" & vbCrLf &
+                           "1. Delete all locked TillDayEnd records for today" & vbCrLf &
+                           "2. Allow all POS tills to log in immediately" & vbCrLf & vbCrLf &
+                           "Administrator: " & currentUser.Username & vbCrLf & vbCrLf &
+                           "Are you sure you want to proceed?"
+            
+            Dim confirmResult = MessageBox.Show(confirmMsg, "Confirm Open All Tills", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
+            
+            If confirmResult <> DialogResult.Yes Then
+                Return
+            End If
+            
+            ' Open all tills
+            Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                conn.Open()
+                
+                Dim sql = "
+                    DELETE FROM TillDayEnd 
+                    WHERE BusinessDate = @Today 
+                    AND LockedByFinalize = 1"
+                
+                Using cmd As New SqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@Today", DateTime.Today)
+                    
+                    Dim rowsAffected = cmd.ExecuteNonQuery()
+                    
+                    MessageBox.Show($"✅ All tills opened successfully!" & vbCrLf & vbCrLf &
+                                  $"{rowsAffected} till(s) unlocked." & vbCrLf & vbCrLf &
+                                  "All POS tills can now log in.",
+                                  "Tills Opened",
+                                  MessageBoxButtons.OK,
+                                  MessageBoxIcon.Information)
+                End Using
+            End Using
+            
+        Catch ex As Exception
+            MessageBox.Show($"Error opening tills: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -3410,6 +3551,10 @@ Partial Class MainDashboard
         Dim miBeneficiaries As ToolStripMenuItem = EnsureSubMenu(ap, "Beneficiary Management")
         RemoveHandler miBeneficiaries.Click, AddressOf OnOpenBeneficiaryManagement
         AddHandler miBeneficiaries.Click, AddressOf OnOpenBeneficiaryManagement
+        
+        Dim miBeneficiaryHistory As ToolStripMenuItem = EnsureSubMenu(ap, "Beneficiary Payment History")
+        RemoveHandler miBeneficiaryHistory.Click, AddressOf OnOpenBeneficiaryHistory
+        AddHandler miBeneficiaryHistory.Click, AddressOf OnOpenBeneficiaryHistory
         
         Dim miAPPayments As ToolStripMenuItem = EnsureSubMenu(ap, "Process Payments")
         RemoveHandler miAPPayments.Click, AddressOf OnOpenAPPaymentProcessing
@@ -4767,6 +4912,199 @@ Partial Class MainDashboard
         End Try
     End Sub
 
+    Private Function AuthenticateForStockTake() As (IsAuthenticated As Boolean, BranchID As Integer, RoleName As String)
+        Dim frmAuth As New Form With {
+            .Text = "Administrator Verification",
+            .Size = New Size(450, 260),
+            .StartPosition = FormStartPosition.CenterParent,
+            .FormBorderStyle = FormBorderStyle.FixedDialog,
+            .MaximizeBox = False,
+            .MinimizeBox = False,
+            .BackColor = Color.White
+        }
+        
+        Dim pnlHeader As New Panel With {
+            .Dock = DockStyle.Top,
+            .Height = 60,
+            .BackColor = Color.FromArgb(44, 62, 80)
+        }
+        
+        Dim lblTitle As New Label With {
+            .Text = "🔐 Administrator Verification Required",
+            .Font = New Font("Segoe UI", 12, FontStyle.Bold),
+            .ForeColor = Color.White,
+            .AutoSize = True,
+            .Location = New Point(15, 20)
+        }
+        pnlHeader.Controls.Add(lblTitle)
+        
+        Dim lblUsername As New Label With {
+            .Text = "Username:",
+            .Location = New Point(30, 80),
+            .AutoSize = True,
+            .Font = New Font("Segoe UI", 10)
+        }
+        
+        Dim txtUsername As New TextBox With {
+            .Location = New Point(130, 77),
+            .Size = New Size(280, 25),
+            .Font = New Font("Segoe UI", 10)
+        }
+        
+        Dim lblPassword As New Label With {
+            .Text = "Password:",
+            .Location = New Point(30, 120),
+            .AutoSize = True,
+            .Font = New Font("Segoe UI", 10)
+        }
+        
+        Dim txtPassword As New TextBox With {
+            .Location = New Point(130, 117),
+            .Size = New Size(280, 25),
+            .UseSystemPasswordChar = True,
+            .Font = New Font("Segoe UI", 10)
+        }
+        
+        Dim btnVerify As New Button With {
+            .Text = "Verify",
+            .DialogResult = DialogResult.OK,
+            .Location = New Point(240, 170),
+            .Size = New Size(80, 35),
+            .BackColor = Color.FromArgb(39, 174, 96),
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat,
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .Cursor = Cursors.Hand
+        }
+        btnVerify.FlatAppearance.BorderSize = 0
+        
+        Dim btnCancel As New Button With {
+            .Text = "Cancel",
+            .DialogResult = DialogResult.Cancel,
+            .Location = New Point(330, 170),
+            .Size = New Size(80, 35),
+            .BackColor = Color.FromArgb(231, 76, 60),
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat,
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .Cursor = Cursors.Hand
+        }
+        btnCancel.FlatAppearance.BorderSize = 0
+        
+        frmAuth.Controls.AddRange({pnlHeader, lblUsername, txtUsername, lblPassword, txtPassword, btnVerify, btnCancel})
+        frmAuth.AcceptButton = btnVerify
+        frmAuth.CancelButton = btnCancel
+        
+        If frmAuth.ShowDialog() = DialogResult.OK Then
+            Try
+                Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                    conn.Open()
+                    Dim sql = "SELECT u.UserID, u.BranchID, r.RoleName FROM Users u INNER JOIN Roles r ON u.RoleID = r.RoleID WHERE u.Username = @Username AND u.Password = @Password AND u.IsActive = 1 AND (r.RoleName = 'Administrator' OR r.RoleName = 'Super Administrator')"
+                    Using cmd As New SqlCommand(sql, conn)
+                        cmd.Parameters.AddWithValue("@Username", txtUsername.Text.Trim())
+                        cmd.Parameters.AddWithValue("@Password", txtPassword.Text)
+                        
+                        Using reader = cmd.ExecuteReader()
+                            If reader.Read() Then
+                                Dim branchID = If(IsDBNull(reader("BranchID")), 0, Convert.ToInt32(reader("BranchID")))
+                                Dim roleName = reader("RoleName").ToString()
+                                Return (True, branchID, roleName)
+                            Else
+                                MessageBox.Show("Invalid credentials or insufficient permissions. Only Administrators can access Stock Take Management.", "Access Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                                Return (False, 0, "")
+                            End If
+                        End Using
+                    End Using
+                End Using
+            Catch ex As Exception
+                MessageBox.Show($"Verification error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return (False, 0, "")
+            End Try
+        End If
+        
+        Return (False, 0, "")
+    End Function
+    
+    Private Sub SetupInventoryMenu()
+        ' Create Inventory top-level menu
+        Dim mnuInventory As New ToolStripMenuItem("Inventory") With {
+            .Font = New Font("Segoe UI", 10),
+            .ForeColor = Color.FromArgb(44, 62, 80)
+        }
+        
+        ' Stock Take Management
+        Dim mnuStockTake As New ToolStripMenuItem("📦 Stock Take Management")
+        AddHandler mnuStockTake.Click, Sub(sender, e)
+            Try
+                ' Authenticate user first
+                Dim authResult = AuthenticateForStockTake()
+                If Not authResult.IsAuthenticated Then
+                    Return
+                End If
+                
+                Dim frm As New StockTakeForm(authResult.BranchID, authResult.RoleName)
+                frm.MdiParent = Me
+                frm.Show()
+                frm.WindowState = FormWindowState.Maximized
+            Catch ex As Exception
+                MessageBox.Show($"Error opening Stock Take Management: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
+        End Sub
+        
+        ' Price Management
+        Dim mnuPriceManagement As New ToolStripMenuItem("💰 Price Management")
+        AddHandler mnuPriceManagement.Click, Sub(sender, e)
+            Try
+                ' Authenticate user first
+                Dim authResult = AuthenticateForStockTake()
+                If Not authResult.IsAuthenticated Then
+                    Return
+                End If
+                
+                ' Get branch name for display
+                Dim branchName As String = "Unknown Branch"
+                Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                    conn.Open()
+                    Dim sql = "SELECT BranchName FROM Branches WHERE BranchID = @BranchID"
+                    Using cmd As New SqlCommand(sql, conn)
+                        cmd.Parameters.AddWithValue("@BranchID", authResult.BranchID)
+                        Dim result = cmd.ExecuteScalar()
+                        If result IsNot Nothing Then
+                            branchName = result.ToString()
+                        End If
+                    End Using
+                End Using
+                
+                Dim frm As New BatchPriceUpdateForm(authResult.BranchID, branchName)
+                frm.MdiParent = Me
+                frm.Show()
+                frm.WindowState = FormWindowState.Maximized
+            Catch ex As Exception
+                MessageBox.Show($"Error opening Price Management: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
+        End Sub
+        
+        mnuInventory.DropDownItems.Add(mnuStockTake)
+        mnuInventory.DropDownItems.Add(mnuPriceManagement)
+        
+        ' Add to main menu strip after Manufacturing
+        If MenuStrip1 IsNot Nothing Then
+            Dim manufacturingIndex As Integer = -1
+            For i As Integer = 0 To MenuStrip1.Items.Count - 1
+                If MenuStrip1.Items(i).Text.Contains("Manufacturing") Then
+                    manufacturingIndex = i
+                    Exit For
+                End If
+            Next
+            
+            If manufacturingIndex >= 0 Then
+                MenuStrip1.Items.Insert(manufacturingIndex + 1, mnuInventory)
+            Else
+                MenuStrip1.Items.Add(mnuInventory)
+            End If
+        End If
+    End Sub
+    
     Private Sub SetupStockReportMenus()
         ' Add Stock Reports to Stockroom Menu
         If StockroomToolStripMenuItem IsNot Nothing Then
@@ -5070,6 +5408,17 @@ Partial Class MainDashboard
             frm.WindowState = FormWindowState.Maximized
         Catch ex As Exception
             MessageBox.Show($"Error opening Beneficiary Management: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OnOpenBeneficiaryHistory(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New Accounting.BeneficiaryHistoryForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show($"Error opening Beneficiary Payment History: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
