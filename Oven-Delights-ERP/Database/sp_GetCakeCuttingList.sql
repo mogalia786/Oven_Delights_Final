@@ -117,7 +117,7 @@ BEGIN
     INNER JOIN Branches b ON o.BranchID = b.BranchID
     
     WHERE o.ReadyDate = @ReadyDate
-        AND o.OrderStatus IN ('New', 'InProgress') -- Only pending orders
+        AND o.OrderStatus IN ('New', 'InProgress', 'Ready') -- Include Ready status for manufacturing
         AND (@BranchID IS NULL OR o.BranchID = @BranchID)
     
     GROUP BY 

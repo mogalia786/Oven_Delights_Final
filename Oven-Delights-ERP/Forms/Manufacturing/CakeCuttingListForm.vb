@@ -97,7 +97,7 @@ Public Class CakeCuttingListForm
         pnlFilters.Controls.Add(cmbBranch)
         
         btnGenerate = New Button With {
-            .Text = "📊 CUTTING LIST",
+            .Text = "� SHEET SUMMARY",
             .Font = New Font("Segoe UI", 10, FontStyle.Bold),
             .Location = New Point(700, 18),
             .Size = New Size(150, 35),
@@ -111,7 +111,7 @@ Public Class CakeCuttingListForm
         pnlFilters.Controls.Add(btnGenerate)
         
         btnShowSheetSummary = New Button With {
-            .Text = "📋 SHEET SUMMARY",
+            .Text = "� CUTTING LIST",
             .Font = New Font("Segoe UI", 10, FontStyle.Bold),
             .Location = New Point(870, 18),
             .Size = New Size(170, 35),
@@ -342,6 +342,7 @@ Public Class CakeCuttingListForm
         If dgvCuttingList.Columns.Contains("CollectionPoint") Then
             dgvCuttingList.Columns("CollectionPoint").HeaderText = "Coll Point"
             dgvCuttingList.Columns("CollectionPoint").Width = 120
+            dgvCuttingList.Columns("CollectionPoint").DefaultCellStyle.Font = New Font("Segoe UI", 10, FontStyle.Bold)
         End If
         
         If dgvCuttingList.Columns.Contains("ReadyTime") Then
@@ -526,8 +527,91 @@ Public Class CakeCuttingListForm
         End If
     End Sub
     
+    Private printBitmap As Bitmap = Nothing
+    
     Private Sub btnPrint_Click(sender As Object, e As EventArgs)
-        MessageBox.Show("Print functionality to be implemented", "Print", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Try
+            ' Determine which grid to print based on visibility
+            Dim gridToPrint As DataGridView = If(dgvCuttingList.Visible, dgvCuttingList, dgvSheetSummary)
+            Dim title As String = If(dgvCuttingList.Visible, "CAKE CUTTING LIST", "SHEET CUTTING SUMMARY")
+            
+            ' Check if grid has data
+            If gridToPrint.Rows.Count = 0 OrElse (gridToPrint.Rows.Count = 1 AndAlso gridToPrint.Rows(0).IsNewRow) Then
+                MessageBox.Show("No data to print. Please generate the cutting list or sheet summary first.", "No Data", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Return
+            End If
+            
+            ' Get selected branch name
+            Dim branchName As String = "All Branches"
+            If cmbBranch.SelectedItem IsNot Nothing Then
+                branchName = cmbBranch.SelectedItem.GetType().GetProperty("BranchName").GetValue(cmbBranch.SelectedItem, Nothing).ToString()
+            End If
+            
+            ' Capture grid as bitmap
+            Dim width As Integer = gridToPrint.Width
+            Dim height As Integer = gridToPrint.Height
+            printBitmap = New Bitmap(width, height)
+            gridToPrint.DrawToBitmap(printBitmap, New Rectangle(0, 0, width, height))
+            
+            ' Create print document
+            Dim printDoc As New Printing.PrintDocument()
+            printDoc.DefaultPageSettings.Landscape = True
+            
+            AddHandler printDoc.PrintPage, Sub(sender2 As Object, e2 As Printing.PrintPageEventArgs)
+                Dim g As Graphics = e2.Graphics
+                Dim titleFont As New Font("Arial", 14, FontStyle.Bold)
+                Dim dateFont As New Font("Arial", 9)
+                Dim branchFont As New Font("Arial", 10, FontStyle.Bold)
+                
+                Dim leftMargin As Single = e2.MarginBounds.Left
+                Dim topMargin As Single = e2.MarginBounds.Top
+                Dim pageWidth As Single = e2.MarginBounds.Width
+                Dim yPos As Single = topMargin
+                
+                ' Print title
+                g.DrawString(title, titleFont, Brushes.Black, leftMargin, yPos)
+                yPos += 30
+                
+                ' Print branch name
+                g.DrawString($"Branch: {branchName}", branchFont, Brushes.Black, leftMargin, yPos)
+                yPos += 22
+                
+                ' Print date and time
+                Dim printDateTime As DateTime = DateTime.Now
+                g.DrawString($"Ready Date: {dtpReadyDate.Value:dddd, dd MMM yyyy}", dateFont, Brushes.Black, leftMargin, yPos)
+                yPos += 20
+                g.DrawString($"Printed: {printDateTime:dddd, dd MMM yyyy} at {printDateTime:HH:mm:ss}", dateFont, Brushes.Gray, leftMargin, yPos)
+                yPos += 30
+                
+                ' Scale to fit full page width
+                Dim availableHeight As Single = e2.MarginBounds.Height - (yPos - topMargin) - 30
+                Dim scaleWidth As Single = pageWidth / printBitmap.Width
+                
+                ' Use full width, calculate height proportionally
+                Dim printWidth As Integer = CInt(pageWidth)
+                Dim printHeight As Integer = CInt(printBitmap.Height * scaleWidth)
+                
+                ' Draw the grid bitmap
+                g.DrawImage(printBitmap, leftMargin, yPos, printWidth, printHeight)
+                
+                ' No more pages
+                e2.HasMorePages = False
+            End Sub
+            
+            ' Show print preview
+            Dim printPreview As New PrintPreviewDialog()
+            printPreview.Document = printDoc
+            printPreview.ShowDialog()
+            
+            ' Clean up bitmap
+            If printBitmap IsNot Nothing Then
+                printBitmap.Dispose()
+                printBitmap = Nothing
+            End If
+            
+        Catch ex As Exception
+            MessageBox.Show($"Error printing: {ex.Message}", "Print Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
     
     Private Sub btnExport_Click(sender As Object, e As EventArgs)

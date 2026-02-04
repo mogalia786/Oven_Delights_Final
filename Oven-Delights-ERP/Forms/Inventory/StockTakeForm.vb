@@ -339,12 +339,11 @@ Public Class StockTakeForm
                     ws.Cell(4, 3).Value = "Category"
                     ws.Cell(4, 4).Value = "Branch"
                     ws.Cell(4, 5).Value = "Current Stock"
-                    ws.Cell(4, 6).Value = "New Stock Qty"
-                    ws.Cell(4, 7).Value = "Selling Price"
-                    ws.Cell(4, 8).Value = "Cost Price"
+                    ws.Cell(4, 6).Value = "Selling Price"
+                    ws.Cell(4, 7).Value = "Cost Price"
                     
                     ' Style headers
-                    Dim headerRange = ws.Range(4, 1, 4, 8)
+                    Dim headerRange = ws.Range(4, 1, 4, 7)
                     headerRange.Style.Font.Bold = True
                     headerRange.Style.Fill.BackgroundColor = XLColor.FromArgb(44, 62, 80)
                     headerRange.Style.Font.FontColor = XLColor.White
@@ -359,19 +358,17 @@ Public Class StockTakeForm
                             ws.Cell(row, 3).Value = dr.Cells("Category").Value?.ToString()
                             ws.Cell(row, 4).Value = dr.Cells("BranchName").Value?.ToString()
                             ws.Cell(row, 5).Value = CDbl(dr.Cells("CurrentStock").Value)
-                            ws.Cell(row, 6).Value = "" ' Empty for user to fill
-                            ws.Cell(row, 7).Value = CDbl(dr.Cells("SellingPrice").Value)
-                            ws.Cell(row, 8).Value = CDbl(dr.Cells("CostPrice").Value)
+                            ws.Cell(row, 6).Value = CDbl(dr.Cells("SellingPrice").Value)
+                            ws.Cell(row, 7).Value = CDbl(dr.Cells("CostPrice").Value)
                             row += 1
                         End If
                     Next
                     
                     ' Format columns
                     ws.Column(5).Style.NumberFormat.Format = "#,##0.00"
-                    ws.Column(6).Style.NumberFormat.Format = "#,##0.00"
-                    ws.Column(6).Style.Fill.BackgroundColor = XLColor.FromArgb(255, 255, 200)
+                    ws.Column(5).Style.Fill.BackgroundColor = XLColor.FromArgb(255, 255, 200)
+                    ws.Column(6).Style.NumberFormat.Format = "R #,##0.00"
                     ws.Column(7).Style.NumberFormat.Format = "R #,##0.00"
-                    ws.Column(8).Style.NumberFormat.Format = "R #,##0.00"
                     
                     ws.Columns().AdjustToContents()
                     
@@ -407,7 +404,7 @@ Public Class StockTakeForm
         Application.DoEvents()
         
         Dim imported As Integer = 0
-        Dim errors As Integer = 0
+        Dim skipped As Integer = 0
         
         Using wb As New XLWorkbook(filePath)
             Dim ws = wb.Worksheet(1)
@@ -423,113 +420,172 @@ Public Class StockTakeForm
             Using conn As New SqlConnection(connString)
                 conn.Open()
                 
-                Dim errorLog As New System.Text.StringBuilder()
+                ' Build batch update commands
+                Dim stockUpdates As New List(Of Tuple(Of String, Decimal))
+                Dim priceUpdates As New List(Of Tuple(Of String, Decimal?, Decimal?))
                 
+                ' Read all updates from Excel
                 For row As Integer = 5 To lastRow
                     Try
                         Dim sku = ws.Cell(row, 1).GetString()
-                        Dim newStockQty = ws.Cell(row, 6).GetValue(Of String)()
-                        Dim sellingPrice = ws.Cell(row, 7).GetValue(Of String)()
-                        Dim costPrice = ws.Cell(row, 8).GetValue(Of String)()
-                        
                         If String.IsNullOrWhiteSpace(sku) Then Continue For
                         
-                        ' Update stock if provided
+                        Dim newStockQty = ws.Cell(row, 5).GetValue(Of String)()
+                        Dim sellingPrice = ws.Cell(row, 6).GetValue(Of String)()
+                        Dim costPrice = ws.Cell(row, 7).GetValue(Of String)()
+                        
+                        ' Queue stock update if provided
                         If Not String.IsNullOrWhiteSpace(newStockQty) Then
-                            Dim qty As Decimal = CDec(newStockQty)
-                            UpdateStock(conn, sku, qty)
+                            stockUpdates.Add(Tuple.Create(sku, CDec(newStockQty)))
                         End If
                         
-                        ' Update prices if provided
+                        ' Queue price update if provided
                         If Not String.IsNullOrWhiteSpace(sellingPrice) OrElse Not String.IsNullOrWhiteSpace(costPrice) Then
                             Dim sp As Decimal? = If(String.IsNullOrWhiteSpace(sellingPrice), Nothing, CDec(sellingPrice))
                             Dim cp As Decimal? = If(String.IsNullOrWhiteSpace(costPrice), Nothing, CDec(costPrice))
-                            UpdatePrices(conn, sku, sp, cp)
+                            priceUpdates.Add(Tuple.Create(sku, sp, cp))
                         End If
-                        
-                        imported += 1
                     Catch ex As Exception
-                        errors += 1
-                        errorLog.AppendLine($"Row {row}: {ex.Message}")
+                        skipped += 1
                     End Try
                 Next
                 
-                ' Show error details if there are errors
-                If errors > 0 Then
-                    Dim errorFile = IO.Path.Combine(IO.Path.GetTempPath(), "StockTakeImportErrors.txt")
-                    IO.File.WriteAllText(errorFile, errorLog.ToString())
-                    lblStatus.Text = $"Import complete: {imported} updated, {errors} errors"
-                    MessageBox.Show($"Import completed with errors.{vbCrLf}{vbCrLf}Updated: {imported}{vbCrLf}Errors: {errors}{vbCrLf}{vbCrLf}Error log saved to:{vbCrLf}{errorFile}", "Import Complete", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                    Process.Start(New ProcessStartInfo(errorFile) With {.UseShellExecute = True})
-                Else
-                    lblStatus.Text = $"Import complete: {imported} updated"
-                    MessageBox.Show($"Import complete!{vbCrLf}{vbCrLf}Updated: {imported}{vbCrLf}Errors: {errors}", "Import Complete", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                End If
+                ' Execute batch updates in transaction
+                Dim errorLog As New System.Text.StringBuilder()
+                
+                Using transaction As SqlTransaction = conn.BeginTransaction()
+                    Try
+                        ' Batch update stock quantities
+                        Dim stockSuccess As Integer = 0
+                        Dim stockFailed As Integer = 0
+                        For Each update As Tuple(Of String, Decimal) In stockUpdates
+                            Try
+                                UpdateStock(conn, transaction, update.Item1, update.Item2)
+                                stockSuccess += 1
+                            Catch stockEx As Exception
+                                stockFailed += 1
+                                errorLog.AppendLine($"Stock update failed for SKU {update.Item1}: {stockEx.Message}")
+                            End Try
+                        Next
+                        
+                        ' Batch update prices
+                        Dim priceSuccess As Integer = 0
+                        Dim priceFailed As Integer = 0
+                        For Each update As Tuple(Of String, Decimal?, Decimal?) In priceUpdates
+                            Try
+                                UpdatePrices(conn, transaction, update.Item1, update.Item2, update.Item3)
+                                priceSuccess += 1
+                            Catch priceEx As Exception
+                                priceFailed += 1
+                                errorLog.AppendLine($"Price update failed for SKU {update.Item1}: {priceEx.Message}")
+                            End Try
+                        Next
+                        
+                        transaction.Commit()
+                        imported = stockSuccess
+                        lblStatus.Text = $"Import complete: {imported} updated"
+                        
+                        Dim msg As String = $"Import complete!{vbCrLf}{vbCrLf}" &
+                                          $"Stock: {stockSuccess} success, {stockFailed} failed{vbCrLf}" &
+                                          $"Price: {priceSuccess} success, {priceFailed} failed{vbCrLf}" &
+                                          $"Skipped: {skipped}"
+                        
+                        If stockFailed > 0 Or priceFailed > 0 Then
+                            Dim errorFile = IO.Path.Combine(IO.Path.GetTempPath(), "StockImportErrors.txt")
+                            IO.File.WriteAllText(errorFile, errorLog.ToString())
+                            msg &= $"{vbCrLf}{vbCrLf}Error log: {errorFile}"
+                            MessageBox.Show(msg, "Import Complete with Errors", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                            Process.Start(New ProcessStartInfo(errorFile) With {.UseShellExecute = True})
+                        Else
+                            MessageBox.Show(msg, "Import Complete", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                        End If
+                    Catch ex As Exception
+                        transaction.Rollback()
+                        MessageBox.Show($"Import failed: {ex.Message}{vbCrLf}{vbCrLf}All changes have been rolled back.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                    End Try
+                End Using
             End Using
         End Using
         
         LoadStockData()
     End Sub
     
-    Private Sub UpdateStock(conn As SqlConnection, sku As String, newQty As Decimal)
+    Private Sub UpdateStock(conn As SqlConnection, transaction As SqlTransaction, sku As String, newQty As Decimal)
         Dim sql = "
             DECLARE @ProductID INT, @VariantID INT, @OldQty DECIMAL(18,3), @QtyDelta DECIMAL(18,3), @ProductName NVARCHAR(200), @CostPrice DECIMAL(18,2)
+            DECLARE @DebugMsg NVARCHAR(500)
             
-            SELECT @ProductID = ProductID, @ProductName = Name FROM Demo_Retail_Product WHERE SKU = @SKU
+            -- Get ProductID and VariantID
+            SELECT @ProductID = ProductID, @ProductName = Name FROM Demo_Retail_Product WHERE SKU = @SKU AND BranchID = @BranchID
             SELECT @VariantID = VariantID FROM Demo_Retail_Variant WHERE ProductID = @ProductID AND IsActive = 1
             
-            SELECT @OldQty = ISNULL(QtyOnHand, 0) FROM Demo_Retail_Stock WHERE VariantID = @VariantID AND BranchID = @BranchID
-            SELECT @CostPrice = ISNULL(CostPrice, 0) FROM Demo_Retail_Price WHERE ProductID = @ProductID AND BranchID = @BranchID AND (EffectiveTo IS NULL OR EffectiveTo >= GETDATE())
+            -- Debug: Check what we found
+            IF @ProductID IS NULL
+                RAISERROR('ProductID is NULL for SKU: %s, BranchID: %d', 16, 1, @SKU, @BranchID)
             
-            SET @QtyDelta = @NewQty - ISNULL(@OldQty, 0)
+            IF @VariantID IS NULL AND @ProductID IS NOT NULL
+                RAISERROR('VariantID is NULL for ProductID: %d, SKU: %s', 16, 1, @ProductID, @SKU)
             
-            IF EXISTS (SELECT 1 FROM Demo_Retail_Stock WHERE VariantID = @VariantID AND BranchID = @BranchID)
-                UPDATE Demo_Retail_Stock SET QtyOnHand = @NewQty, UpdatedAt = GETDATE() WHERE VariantID = @VariantID AND BranchID = @BranchID
-            ELSE
-                INSERT INTO Demo_Retail_Stock (VariantID, BranchID, QtyOnHand) VALUES (@VariantID, @BranchID, @NewQty)
-            
-            INSERT INTO Demo_Retail_StockMovements (VariantID, BranchID, QtyDelta, Reason, Ref1)
-            VALUES (@VariantID, @BranchID, @QtyDelta, 'Stock Take', 'Excel Import')
-            
-            -- Create ledger entry for stock adjustment
-            DECLARE @Amount DECIMAL(18,2) = ABS(@QtyDelta * @CostPrice)
-            DECLARE @Description NVARCHAR(500) = 'Stock Take Adjustment: ' + @ProductName + ' (' + @SKU + ') - Qty: ' + CAST(@QtyDelta AS NVARCHAR(20))
-            
-            IF @QtyDelta <> 0 AND @Amount > 0
+            -- Only proceed if we have valid IDs
+            IF @ProductID IS NOT NULL AND @VariantID IS NOT NULL
             BEGIN
-                -- Insert journal entry
-                DECLARE @JournalID INT
-                INSERT INTO Journals (BranchID, JournalDate, Description, Reference, CreatedAt, CreatedBy)
-                VALUES (@BranchID, GETDATE(), @Description, 'STOCK-TAKE-' + CONVERT(VARCHAR, GETDATE(), 112), GETDATE(), 1)
+                SELECT @OldQty = ISNULL(QtyOnHand, 0) FROM Demo_Retail_Stock WHERE VariantID = @VariantID AND BranchID = @BranchID
+                SELECT @CostPrice = ISNULL(CostPrice, 0) FROM Demo_Retail_Price WHERE ProductID = @ProductID AND BranchID = @BranchID AND (EffectiveTo IS NULL OR EffectiveTo >= GETDATE())
                 
-                SET @JournalID = SCOPE_IDENTITY()
+                SET @QtyDelta = @NewQty - ISNULL(@OldQty, 0)
                 
-                DECLARE @InventoryAccountID INT, @IncomeAccountID INT, @ExpenseAccountID INT
-                SELECT @InventoryAccountID = AccountID FROM Accounts WHERE AccountCode = '1300'
-                SELECT @IncomeAccountID = AccountID FROM Accounts WHERE AccountCode = '4900'
-                SELECT @ExpenseAccountID = AccountID FROM Accounts WHERE AccountCode = '5900'
-                
-                IF @QtyDelta > 0
-                BEGIN
-                    -- Stock increase: DR Inventory, CR Stock Adjustment Income
-                    INSERT INTO JournalLines (JournalID, LineNumber, AccountID, Debit, Credit, LineDescription)
-                    VALUES (@JournalID, 1, @InventoryAccountID, @Amount, 0, @Description)
-                    
-                    INSERT INTO JournalLines (JournalID, LineNumber, AccountID, Debit, Credit, LineDescription)
-                    VALUES (@JournalID, 2, @IncomeAccountID, 0, @Amount, @Description)
-                END
+                IF EXISTS (SELECT 1 FROM Demo_Retail_Stock WHERE VariantID = @VariantID AND BranchID = @BranchID)
+                    UPDATE Demo_Retail_Stock SET QtyOnHand = @NewQty, UpdatedAt = GETDATE() WHERE VariantID = @VariantID AND BranchID = @BranchID
                 ELSE
+                    INSERT INTO Demo_Retail_Stock (VariantID, BranchID, QtyOnHand) VALUES (@VariantID, @BranchID, @NewQty)
+                
+                INSERT INTO Demo_Retail_StockMovements (VariantID, BranchID, QtyDelta, Reason, Ref1)
+                VALUES (@VariantID, @BranchID, @QtyDelta, 'Stock Take', 'Excel Import')
+                
+                -- Create ledger entry for stock adjustment
+                DECLARE @Amount DECIMAL(18,2) = ABS(@QtyDelta * @CostPrice)
+                DECLARE @Description NVARCHAR(500) = 'Stock Take Adjustment: ' + @ProductName + ' (' + @SKU + ') - Qty: ' + CAST(@QtyDelta AS NVARCHAR(20))
+                
+                IF @QtyDelta <> 0 AND @Amount > 0
                 BEGIN
-                    -- Stock decrease: DR Stock Adjustment Expense, CR Inventory
-                    INSERT INTO JournalLines (JournalID, LineNumber, AccountID, Debit, Credit, LineDescription)
-                    VALUES (@JournalID, 1, @ExpenseAccountID, @Amount, 0, @Description)
+                    -- Insert journal entry
+                    DECLARE @JournalID INT
+                    INSERT INTO Journals (BranchID, JournalDate, Description, Reference, CreatedAt, CreatedBy)
+                    VALUES (@BranchID, GETDATE(), @Description, 'STOCK-TAKE-' + CONVERT(VARCHAR, GETDATE(), 112), GETDATE(), 1)
                     
-                    INSERT INTO JournalLines (JournalID, LineNumber, AccountID, Debit, Credit, LineDescription)
-                    VALUES (@JournalID, 2, @InventoryAccountID, 0, @Amount, @Description)
+                    SET @JournalID = SCOPE_IDENTITY()
+                    
+                    DECLARE @InventoryAccountID INT, @IncomeAccountID INT, @ExpenseAccountID INT
+                    SELECT @InventoryAccountID = AccountID FROM Accounts WHERE AccountCode = '1300'
+                    SELECT @IncomeAccountID = AccountID FROM Accounts WHERE AccountCode = '4900'
+                    SELECT @ExpenseAccountID = AccountID FROM Accounts WHERE AccountCode = '5900'
+                    
+                    -- Only create journal entries if accounts exist
+                    IF @InventoryAccountID IS NOT NULL AND @IncomeAccountID IS NOT NULL AND @ExpenseAccountID IS NOT NULL
+                    BEGIN
+                        IF @QtyDelta > 0
+                        BEGIN
+                            -- Stock increase: DR Inventory, CR Stock Adjustment Income
+                            INSERT INTO JournalLines (JournalID, LineNumber, AccountID, Debit, Credit, LineDescription)
+                            VALUES (@JournalID, 1, @InventoryAccountID, @Amount, 0, @Description)
+                            
+                            INSERT INTO JournalLines (JournalID, LineNumber, AccountID, Debit, Credit, LineDescription)
+                            VALUES (@JournalID, 2, @IncomeAccountID, 0, @Amount, @Description)
+                        END
+                        ELSE
+                        BEGIN
+                            -- Stock decrease: DR Stock Adjustment Expense, CR Inventory
+                            INSERT INTO JournalLines (JournalID, LineNumber, AccountID, Debit, Credit, LineDescription)
+                            VALUES (@JournalID, 1, @ExpenseAccountID, @Amount, 0, @Description)
+                            
+                            INSERT INTO JournalLines (JournalID, LineNumber, AccountID, Debit, Credit, LineDescription)
+                            VALUES (@JournalID, 2, @InventoryAccountID, 0, @Amount, @Description)
+                        END
+                    END
                 END
             END"
         
-        Using cmd As New SqlCommand(sql, conn)
+        Using cmd As New SqlCommand(sql, conn, transaction)
             cmd.Parameters.AddWithValue("@SKU", sku)
             cmd.Parameters.AddWithValue("@BranchID", currentBranchID)
             cmd.Parameters.AddWithValue("@NewQty", newQty)
@@ -537,7 +593,7 @@ Public Class StockTakeForm
         End Using
     End Sub
     
-    Private Sub UpdatePrices(conn As SqlConnection, sku As String, sellingPrice As Decimal?, costPrice As Decimal?)
+    Private Sub UpdatePrices(conn As SqlConnection, transaction As SqlTransaction, sku As String, sellingPrice As Decimal?, costPrice As Decimal?)
         Dim sql = "
             DECLARE @ProductID INT, @VariantID INT, @ProductName NVARCHAR(200), @OldCostPrice DECIMAL(18,2), @QtyOnHand DECIMAL(18,3)
             
@@ -589,28 +645,32 @@ Public Class StockTakeForm
                     SELECT @InventoryAccountID = AccountID FROM Accounts WHERE AccountCode = '1300'
                     SELECT @RevalReserveAccountID = AccountID FROM Accounts WHERE AccountCode = '3500'
                     
-                    IF @CostDelta > 0
+                    -- Only create journal entries if accounts exist
+                    IF @InventoryAccountID IS NOT NULL AND @RevalReserveAccountID IS NOT NULL
                     BEGIN
-                        -- Cost increase: DR Inventory, CR Inventory Revaluation Reserve
-                        INSERT INTO JournalLines (JournalID, LineNumber, AccountID, Debit, Credit, LineDescription)
-                        VALUES (@JournalID, 1, @InventoryAccountID, ABS(@CostDelta), 0, @Description)
-                        
-                        INSERT INTO JournalLines (JournalID, LineNumber, AccountID, Debit, Credit, LineDescription)
-                        VALUES (@JournalID, 2, @RevalReserveAccountID, 0, ABS(@CostDelta), @Description)
-                    END
-                    ELSE
-                    BEGIN
-                        -- Cost decrease: DR Inventory Revaluation Reserve, CR Inventory
-                        INSERT INTO JournalLines (JournalID, LineNumber, AccountID, Debit, Credit, LineDescription)
-                        VALUES (@JournalID, 1, @RevalReserveAccountID, ABS(@CostDelta), 0, @Description)
-                        
-                        INSERT INTO JournalLines (JournalID, LineNumber, AccountID, Debit, Credit, LineDescription)
-                        VALUES (@JournalID, 2, @InventoryAccountID, 0, ABS(@CostDelta), @Description)
+                        IF @CostDelta > 0
+                        BEGIN
+                            -- Cost increase: DR Inventory, CR Inventory Revaluation Reserve
+                            INSERT INTO JournalLines (JournalID, LineNumber, AccountID, Debit, Credit, LineDescription)
+                            VALUES (@JournalID, 1, @InventoryAccountID, ABS(@CostDelta), 0, @Description)
+                            
+                            INSERT INTO JournalLines (JournalID, LineNumber, AccountID, Debit, Credit, LineDescription)
+                            VALUES (@JournalID, 2, @RevalReserveAccountID, 0, ABS(@CostDelta), @Description)
+                        END
+                        ELSE
+                        BEGIN
+                            -- Cost decrease: DR Inventory Revaluation Reserve, CR Inventory
+                            INSERT INTO JournalLines (JournalID, LineNumber, AccountID, Debit, Credit, LineDescription)
+                            VALUES (@JournalID, 1, @RevalReserveAccountID, ABS(@CostDelta), 0, @Description)
+                            
+                            INSERT INTO JournalLines (JournalID, LineNumber, AccountID, Debit, Credit, LineDescription)
+                            VALUES (@JournalID, 2, @InventoryAccountID, 0, ABS(@CostDelta), @Description)
+                        END
                     END
                 END
             END"
         
-        Using cmd As New SqlCommand(sql, conn)
+        Using cmd As New SqlCommand(sql, conn, transaction)
             cmd.Parameters.AddWithValue("@SKU", sku)
             cmd.Parameters.AddWithValue("@BranchID", currentBranchID)
             cmd.Parameters.AddWithValue("@SellingPrice", If(sellingPrice.HasValue, CObj(sellingPrice.Value), DBNull.Value))
@@ -626,19 +686,27 @@ Public Class StockTakeForm
             
             Using conn As New SqlConnection(connString)
                 conn.Open()
+                Dim transaction As SqlTransaction = conn.BeginTransaction()
                 
-                For Each row As DataGridViewRow In dgv.Rows
-                    If Not row.IsNewRow AndAlso row.Cells("SKU").Value IsNot Nothing Then
-                        Dim sku = row.Cells("SKU").Value.ToString()
-                        Dim stock = CDec(row.Cells("CurrentStock").Value)
-                        Dim selling = CDec(row.Cells("SellingPrice").Value)
-                        Dim cost = CDec(row.Cells("CostPrice").Value)
-                        
-                        UpdateStock(conn, sku, stock)
-                        UpdatePrices(conn, sku, selling, cost)
-                        saved += 1
-                    End If
-                Next
+                Try
+                    For Each row As DataGridViewRow In dgv.Rows
+                        If Not row.IsNewRow AndAlso row.Cells("SKU").Value IsNot Nothing Then
+                            Dim sku = row.Cells("SKU").Value.ToString()
+                            Dim stock = CDec(row.Cells("CurrentStock").Value)
+                            Dim selling = CDec(row.Cells("SellingPrice").Value)
+                            Dim cost = CDec(row.Cells("CostPrice").Value)
+                            
+                            UpdateStock(conn, transaction, sku, stock)
+                            UpdatePrices(conn, transaction, sku, selling, cost)
+                            saved += 1
+                        End If
+                    Next
+                    
+                    transaction.Commit()
+                Catch ex As Exception
+                    transaction.Rollback()
+                    Throw
+                End Try
             End Using
             
             MessageBox.Show($"Successfully saved {saved} products!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)

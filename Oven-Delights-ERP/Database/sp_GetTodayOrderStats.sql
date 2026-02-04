@@ -14,23 +14,24 @@ AS
 BEGIN
     SET NOCOUNT ON;
     
-    DECLARE @Today DATE = CAST(GETDATE() AS DATE);
+    -- Use South Africa timezone (UTC+2)
+    DECLARE @Today DATE = CAST(DATEADD(HOUR, 2, GETUTCDATE()) AS DATE);
     
     SELECT 
         -- Orders due today (ReadyDate = Today)
         COUNT(CASE WHEN o.ReadyDate = @Today THEN 1 END) AS OrdersRequested,
         
-        -- Orders completed (any status = Completed or PickedUp)
-        COUNT(CASE WHEN o.OrderStatus IN ('Completed', 'PickedUp') THEN 1 END) AS OrdersCompleted,
+        -- Orders completed (any status = Ready, Completed or PickedUp)
+        COUNT(CASE WHEN o.OrderStatus IN ('Ready', 'Completed', 'PickedUp') THEN 1 END) AS OrdersCompleted,
         
         -- Orders picked up
         COUNT(CASE WHEN o.OrderStatus = 'PickedUp' THEN 1 END) AS OrdersPickedUp,
         
-        -- Orders completed but not picked up
-        COUNT(CASE WHEN o.OrderStatus = 'Completed' THEN 1 END) AS OrdersCompletedNotPickedUp,
+        -- Orders completed but not picked up (Ready or Completed status)
+        COUNT(CASE WHEN o.OrderStatus IN ('Ready', 'Completed') THEN 1 END) AS OrdersCompletedNotPickedUp,
         
         -- Orders due today but not completed
-        COUNT(CASE WHEN o.ReadyDate = @Today AND o.OrderStatus NOT IN ('Completed', 'PickedUp') THEN 1 END) AS OrdersDueTodayNotCompleted,
+        COUNT(CASE WHEN o.ReadyDate = @Today AND o.OrderStatus NOT IN ('Ready', 'Completed', 'PickedUp') THEN 1 END) AS OrdersDueTodayNotCompleted,
         
         -- Total orders
         COUNT(*) AS TotalOrders

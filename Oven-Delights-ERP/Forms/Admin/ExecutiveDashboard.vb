@@ -555,8 +555,8 @@ Namespace Admin
                         UpdateKPIValue(pnlTotalOrders, totalOrders.ToString("N0"))
                     End Using
 
-                    ' Cake Orders - from custom orders table
-                    sql = $"SELECT COUNT(*) FROM POS_CustomOrders o WHERE CAST(o.OrderDate AS DATE) >= CAST(DATEADD(DAY, -30, GETDATE()) AS DATE)"
+                    ' Cake Orders - from custom orders table (today only) - Use South Africa timezone (UTC+2)
+                    sql = $"SELECT COUNT(*) FROM POS_CustomOrders o WHERE CAST(o.OrderDate AS DATE) = CAST(DATEADD(HOUR, 2, GETUTCDATE()) AS DATE) AND o.OrderStatus NOT IN ('Cancelled')"
                     Using cmd As New Microsoft.Data.SqlClient.SqlCommand(sql, conn)
                         Dim cakeOrders = Convert.ToInt32(cmd.ExecuteScalar())
                         UpdateKPIValue(pnlCakeOrders, cakeOrders.ToString("N0"))
@@ -914,7 +914,7 @@ Namespace Admin
             
             Select Case currentPeriod
                 Case "Today"
-                    filter = "CAST(i.SaleDate AS DATE) = CAST(GETDATE() AS DATE)"
+                    filter = "CAST(i.SaleDate AS DATE) = CAST(DATEADD(HOUR, 2, GETUTCDATE()) AS DATE)"
                 Case "Week"
                     filter = "i.SaleDate >= DATEADD(WEEK, DATEDIFF(WEEK, 0, GETDATE()), 0)"
                 Case "Month"
@@ -938,7 +938,7 @@ Namespace Admin
             
             Select Case currentPeriod
                 Case "Today"
-                    filter = "CAST(s.SaleDate AS DATE) = CAST(GETDATE() AS DATE)"
+                    filter = "CAST(s.SaleDate AS DATE) = CAST(DATEADD(HOUR, 2, GETUTCDATE()) AS DATE)"
                 Case "Week"
                     filter = "s.SaleDate >= DATEADD(WEEK, DATEDIFF(WEEK, 0, GETDATE()), 0)"
                 Case "Month"
@@ -962,7 +962,7 @@ Namespace Admin
             
             Select Case currentPeriod
                 Case "Today"
-                    filter = "CAST(i.SaleDate AS DATE) = CAST(GETDATE() AS DATE)"
+                    filter = "CAST(i.SaleDate AS DATE) = CAST(DATEADD(HOUR, 2, GETUTCDATE()) AS DATE)"
                 Case "Week"
                     filter = "i.SaleDate >= DATEADD(WEEK, DATEDIFF(WEEK, 0, GETDATE()), 0)"
                 Case "Month"

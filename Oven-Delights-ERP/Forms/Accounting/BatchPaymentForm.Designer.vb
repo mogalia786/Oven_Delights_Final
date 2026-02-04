@@ -51,6 +51,7 @@ Partial Class BatchPaymentForm
         Me.btnPrintSchedule = New System.Windows.Forms.Button()
         Me.btnSubmitFNB = New System.Windows.Forms.Button()
         Me.btnViewTransactions = New System.Windows.Forms.Button()
+        Me.btnRemoveFromBatch = New System.Windows.Forms.Button()
         Me.btnLoadBatch = New System.Windows.Forms.Button()
         Me.btnClose = New System.Windows.Forms.Button()
         Me.pnlTop.SuspendLayout()
@@ -491,6 +492,6 @@ Partial Class BatchPaymentForm
     Friend WithEvents btnPrintSchedule As Button
     Friend WithEvents btnSubmitFNB As Button
     Friend WithEvents btnViewTransactions As Button
-    Friend WithEvents btnRemoveFromBatch As Button
     Friend WithEvents btnClose As Button
+    Friend WithEvents btnRemoveFromBatch As Button
 End Class
