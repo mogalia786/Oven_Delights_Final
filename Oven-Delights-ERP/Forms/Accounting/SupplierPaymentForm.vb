@@ -28,6 +28,17 @@ Partial Public Class SupplierPaymentForm
                     cboSupplier.DisplayMember = "CompanyName"
                     cboSupplier.ValueMember = "SupplierID"
                     cboSupplier.SelectedIndex = -1
+                    
+                    ' Setup autocomplete like PO form
+                    If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
+                        Dim ac As New AutoCompleteStringCollection()
+                        For Each r As DataRow In dt.Rows
+                            ac.Add(r("CompanyName").ToString())
+                        Next
+                        cboSupplier.AutoCompleteMode = AutoCompleteMode.SuggestAppend
+                        cboSupplier.AutoCompleteSource = AutoCompleteSource.CustomSource
+                        cboSupplier.AutoCompleteCustomSource = ac
+                    End If
                 End Using
             End Using
         Catch ex As Exception

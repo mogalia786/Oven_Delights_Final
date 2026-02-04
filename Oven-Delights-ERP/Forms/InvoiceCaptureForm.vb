@@ -74,6 +74,17 @@ Public Class InvoiceCaptureForm
             cboSupplier.DisplayMember = "CompanyName"
             cboSupplier.ValueMember = "SupplierID"
             cboSupplier.SelectedIndex = -1
+            
+            ' Setup autocomplete like PO form
+            If suppliers IsNot Nothing AndAlso suppliers.Rows.Count > 0 Then
+                Dim ac As New AutoCompleteStringCollection()
+                For Each r As DataRow In suppliers.Rows
+                    ac.Add(r("CompanyName").ToString())
+                Next
+                cboSupplier.AutoCompleteMode = AutoCompleteMode.SuggestAppend
+                cboSupplier.AutoCompleteSource = AutoCompleteSource.CustomSource
+                cboSupplier.AutoCompleteCustomSource = ac
+            End If
         Catch ex As Exception
             MessageBox.Show("Error loading suppliers: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
@@ -455,13 +466,8 @@ Public Class InvoiceCaptureForm
                                 productId = Convert.ToInt32(row.Cells("ProductID").Value)
                             End If
 
-                            MessageBox.Show($"DEBUG: ProductType={productType}, ProductID={productId}, BranchID={branchId}, Qty={receiveNow}, UnitCost={unitCost}", "DEBUG", MessageBoxButtons.OK, MessageBoxIcon.Information)
-
                             If productId > 0 Then
                                 UpdateExternalProductInventory(productId, branchId, receiveNow, unitCost)
-                                MessageBox.Show($"Stock updated for ProductID {productId}", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                            Else
-                                MessageBox.Show("ProductID is 0 or NULL!", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error)
                             End If
                         Else
                             ' Default to raw material if type is unclear - try MaterialID first, then ProductID
@@ -626,7 +632,7 @@ Public Class InvoiceCaptureForm
                         ' Create supplier invoice header
                         Dim invoiceId As Integer
                         Dim sql = "INSERT INTO SupplierInvoices (InvoiceNumber, SupplierID, BranchID, InvoiceDate, DueDate, SubTotal, VATAmount, TotalAmount, AmountPaid, AmountOutstanding, Status, GRVID, CreatedBy) " &
-                                 "OUTPUT INSERTED.InvoiceID VALUES (@InvNum, @SupID, @BranchID, @InvDate, @DueDate, @SubTotal, @VAT, @Total, 0, @Total, 'Unpaid', @GRVID, @UserID)"
+                                 "VALUES (@InvNum, @SupID, @BranchID, @InvDate, @DueDate, @SubTotal, @VAT, @Total, 0, @Total, 'Unpaid', @GRVID, @UserID); SELECT SCOPE_IDENTITY();"
                         Using cmd As New SqlCommand(sql, con, tx)
                             cmd.Parameters.AddWithValue("@InvNum", invoiceNumber)
                             cmd.Parameters.AddWithValue("@SupID", supplierId)
@@ -641,11 +647,122 @@ Public Class InvoiceCaptureForm
                             invoiceId = Convert.ToInt32(cmd.ExecuteScalar())
                         End Using
 
+                        ' Insert invoice lines
+                        For Each row As DataGridViewRow In dgvLines.Rows
+                            If Not row.IsNewRow Then
+                                Dim receivedQty As Decimal = If(row.Cells("ReceiveNow").Value, 0D)
+                                If receivedQty > 0 Then
+                                    Dim itemId As Integer = If(row.Cells("ProductID").Value, 0)
+                                    If itemId > 0 Then
+                                        Dim productType As String = If(row.Cells("ProductType").Value, "").ToString()
+                                        Dim itemSource As String = If(productType.Contains("Product"), "PR", "RM")
+                                        Dim unitPrice As Decimal = If(row.Cells("UnitCost").Value, 0D)
+                                        Dim lineTotal As Decimal = receivedQty * unitPrice
+                                        
+                                        Dim lineSql = "INSERT INTO SupplierInvoiceLines (InvoiceID, ItemID, ItemSource, Description, Quantity, UnitPrice, LineTotal) " &
+                                                     "VALUES (@InvoiceID, @ItemID, @ItemSource, @Description, @Quantity, @UnitPrice, @LineTotal)"
+                                        Using lineCmd As New SqlCommand(lineSql, con, tx)
+                                            lineCmd.Parameters.AddWithValue("@InvoiceID", invoiceId)
+                                            lineCmd.Parameters.AddWithValue("@ItemID", itemId)
+                                            lineCmd.Parameters.AddWithValue("@ItemSource", itemSource)
+                                            lineCmd.Parameters.AddWithValue("@Description", If(row.Cells("ProductName").Value, ""))
+                                            lineCmd.Parameters.AddWithValue("@Quantity", receivedQty)
+                                            lineCmd.Parameters.AddWithValue("@UnitPrice", unitPrice)
+                                            lineCmd.Parameters.AddWithValue("@LineTotal", lineTotal)
+                                            lineCmd.ExecuteNonQuery()
+                                        End Using
+                                    End If
+                                End If
+                            End If
+                        Next
+
                         ' Create journal entries
                         CreatePurchaseJournalEntries(supplierId, invoiceNumber, subTotal, vatAmount, totalAmount, con, tx)
 
                         ' Create supplier ledger entry
                         CreateSupplierLedgerEntry(supplierId, invoiceId, invoiceNumber, totalAmount, con, tx)
+
+                        ' Also insert into AP_Invoices for FNB bulk payment system
+                        ' First get or create beneficiary from supplier
+                        Dim beneficiaryId As Integer = 0
+                        Dim getBeneficiarySql = "SELECT BeneficiaryID FROM AP_Beneficiaries WHERE BeneficiaryName = (SELECT CompanyName FROM Suppliers WHERE SupplierID = @SupplierID)"
+                        Using cmd As New SqlCommand(getBeneficiarySql, con, tx)
+                            cmd.Parameters.AddWithValue("@SupplierID", supplierId)
+                            Dim result = cmd.ExecuteScalar()
+                            If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                                beneficiaryId = Convert.ToInt32(result)
+                            End If
+                        End Using
+                        
+                        ' If beneficiary doesn't exist, create it from supplier
+                        If beneficiaryId = 0 Then
+                            Dim createBeneficiarySql = "INSERT INTO AP_Beneficiaries (BeneficiaryName, BankName, BranchCode, AccountNumber, AccountType, AccountHolderName, IsActive) " &
+                                                      "SELECT CompanyName, BankName, BranchCode, AccountNumber, 'Current', CompanyName, 1 FROM Suppliers WHERE SupplierID = @SupplierID; SELECT SCOPE_IDENTITY();"
+                            Using cmd As New SqlCommand(createBeneficiarySql, con, tx)
+                                cmd.Parameters.AddWithValue("@SupplierID", supplierId)
+                                Dim result = cmd.ExecuteScalar()
+                                If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                                    beneficiaryId = Convert.ToInt32(result)
+                                End If
+                            End Using
+                        End If
+                        
+                        ' Insert or update AP_Invoices if beneficiary exists
+                        If beneficiaryId > 0 Then
+                            Dim categoryId As Integer = 1 ' Default category
+                            Dim getCategorySql = "SELECT TOP 1 CategoryID FROM AP_Categories WHERE CategoryName = 'Supplier Invoice' OR CategoryName LIKE '%Supplier%'"
+                            Using cmd As New SqlCommand(getCategorySql, con, tx)
+                                Dim result = cmd.ExecuteScalar()
+                                If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                                    categoryId = Convert.ToInt32(result)
+                                End If
+                            End Using
+                            
+                            ' Check if invoice already exists for this beneficiary
+                            Dim existingInvoiceId As Integer = 0
+                            Dim checkSql = "SELECT InvoiceID FROM AP_Invoices WHERE InvoiceNumber = @InvNum AND BeneficiaryID = @BeneficiaryID"
+                            Using cmd As New SqlCommand(checkSql, con, tx)
+                                cmd.Parameters.AddWithValue("@InvNum", invoiceNumber)
+                                cmd.Parameters.AddWithValue("@BeneficiaryID", beneficiaryId)
+                                Dim result = cmd.ExecuteScalar()
+                                If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                                    existingInvoiceId = Convert.ToInt32(result)
+                                End If
+                            End Using
+                            
+                            If existingInvoiceId > 0 Then
+                                ' Update existing invoice
+                                Dim updateAPSql = "UPDATE AP_Invoices SET Amount = @Amount, TaxAmount = @Tax, InvoiceDate = @InvDate, DueDate = @DueDate, " &
+                                                "Description = @Description, ModifiedBy = @UserID, ModifiedDate = GETDATE() " &
+                                                "WHERE InvoiceID = @InvoiceID"
+                                Using cmd As New SqlCommand(updateAPSql, con, tx)
+                                    cmd.Parameters.AddWithValue("@InvoiceID", existingInvoiceId)
+                                    cmd.Parameters.AddWithValue("@Amount", subTotal)
+                                    cmd.Parameters.AddWithValue("@Tax", vatAmount)
+                                    cmd.Parameters.AddWithValue("@InvDate", invoiceDate)
+                                    cmd.Parameters.AddWithValue("@DueDate", invoiceDate.AddDays(30))
+                                    cmd.Parameters.AddWithValue("@Description", $"Supplier Invoice from GRV")
+                                    cmd.Parameters.AddWithValue("@UserID", AppSession.CurrentUserID)
+                                    cmd.ExecuteNonQuery()
+                                End Using
+                            Else
+                                ' Insert new invoice
+                                Dim insertAPSql = "INSERT INTO AP_Invoices (InvoiceNumber, BeneficiaryID, CategoryID, InvoiceDate, DueDate, Amount, TaxAmount, Description, Status, CreatedBy) " &
+                                                "VALUES (@InvNum, @BeneficiaryID, @CategoryID, @InvDate, @DueDate, @Amount, @Tax, @Description, 'Pending', @UserID)"
+                                Using cmd As New SqlCommand(insertAPSql, con, tx)
+                                    cmd.Parameters.AddWithValue("@InvNum", invoiceNumber)
+                                    cmd.Parameters.AddWithValue("@BeneficiaryID", beneficiaryId)
+                                    cmd.Parameters.AddWithValue("@CategoryID", categoryId)
+                                    cmd.Parameters.AddWithValue("@InvDate", invoiceDate)
+                                    cmd.Parameters.AddWithValue("@DueDate", invoiceDate.AddDays(30))
+                                    cmd.Parameters.AddWithValue("@Amount", subTotal)
+                                    cmd.Parameters.AddWithValue("@Tax", vatAmount)
+                                    cmd.Parameters.AddWithValue("@Description", $"Supplier Invoice from GRV")
+                                    cmd.Parameters.AddWithValue("@UserID", AppSession.CurrentUserID)
+                                    cmd.ExecuteNonQuery()
+                                End Using
+                            End If
+                        End If
 
                         tx.Commit()
                     Catch

@@ -128,7 +128,7 @@ Partial Class SupplierPaymentForm
         '
         'cboSupplier
         '
-        Me.cboSupplier.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
+        Me.cboSupplier.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDown
         Me.cboSupplier.FormattingEnabled = True
         Me.cboSupplier.Location = New System.Drawing.Point(12, 33)
         Me.cboSupplier.Name = "cboSupplier"

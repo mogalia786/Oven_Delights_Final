@@ -386,12 +386,12 @@ Public Class InvoiceGRVForm
     End Function
 
     Private Function CreateInvoice(conn As SqlConnection, trans As SqlTransaction) As Integer
-        Dim cmd As New SqlCommand("INSERT INTO SupplierInvoices (SupplierID, BranchID, PurchaseOrderID, InvoiceNumber, InvoiceDate, DueDate, SubTotal, VATAmount, TotalAmount, Status, CreatedBy) OUTPUT INSERTED.InvoiceID VALUES (@SupplierID, @BranchID, @PurchaseOrderID, @InvoiceNumber, @InvoiceDate, @DueDate, @SubTotal, @VATAmount, @TotalAmount, @Status, @CreatedBy)", conn, trans)
+        Dim cmd As New SqlCommand("INSERT INTO SupplierInvoices (SupplierID, BranchID, PurchaseOrderID, InvoiceNumber, InvoiceDate, DueDate, SubTotal, VATAmount, TotalAmount, Status, CreatedBy) VALUES (@SupplierID, @BranchID, @PurchaseOrderID, @InvoiceNumber, @InvoiceDate, @DueDate, @SubTotal, @VATAmount, @TotalAmount, @Status, @CreatedBy); SELECT SCOPE_IDENTITY();", conn, trans)
 
         cmd.Parameters.AddWithValue("@SupplierID", selectedSupplierId)
         cmd.Parameters.AddWithValue("@BranchID", currentBranchId)
         cmd.Parameters.AddWithValue("@PurchaseOrderID", selectedPOId)
-        cmd.Parameters.AddWithValue("@InvoiceNumber", $"GRV-{DateTime.Now:yyyyMMdd}-{selectedPOId}")
+        cmd.Parameters.AddWithValue("@InvoiceNumber", txtDeliveryNote.Text.Trim())
         cmd.Parameters.AddWithValue("@InvoiceDate", dtpReceived.Value)
         cmd.Parameters.AddWithValue("@DueDate", dtpReceived.Value.AddDays(30))
         cmd.Parameters.AddWithValue("@SubTotal", Convert.ToDecimal(txtSubTotal.Text))
@@ -400,7 +400,36 @@ Public Class InvoiceGRVForm
         cmd.Parameters.AddWithValue("@Status", "Unpaid")
         cmd.Parameters.AddWithValue("@CreatedBy", 1)
 
-        Return Convert.ToInt32(cmd.ExecuteScalar())
+        Dim invoiceId = Convert.ToInt32(cmd.ExecuteScalar())
+        
+        ' Debug: Show grid state
+        Dim debugMsg As String = $"Grid Rows: {dgvLines.Rows.Count}" & vbCrLf
+        For i As Integer = 0 To Math.Min(2, dgvLines.Rows.Count - 1)
+            Dim r = dgvLines.Rows(i)
+            debugMsg &= $"Row {i}: Code={r.Cells("ProductCode").Value}, RecvQty={r.Cells("ReceivedQty").Value}" & vbCrLf
+        Next
+        MessageBox.Show(debugMsg, "DEBUG Grid State")
+        
+        ' Add Invoice Lines - same pattern as GRV lines
+        Dim lineNumber As Integer = 1
+        For Each row As DataGridViewRow In dgvLines.Rows
+            If Convert.ToDecimal(row.Cells("ReceivedQty").Value) > 0 Then
+                Dim lineCmd As New SqlCommand("INSERT INTO SupplierInvoiceLines (InvoiceID, LineNumber, ProductCode, ProductName, Quantity, UnitPrice, LineTotal) VALUES (@InvoiceID, @LineNumber, @ProductCode, @ProductName, @Quantity, @UnitPrice, @LineTotal)", conn, trans)
+                
+                lineCmd.Parameters.AddWithValue("@InvoiceID", invoiceId)
+                lineCmd.Parameters.AddWithValue("@LineNumber", lineNumber)
+                lineCmd.Parameters.AddWithValue("@ProductCode", row.Cells("ProductCode").Value)
+                lineCmd.Parameters.AddWithValue("@ProductName", row.Cells("ProductName").Value)
+                lineCmd.Parameters.AddWithValue("@Quantity", row.Cells("ReceivedQty").Value)
+                lineCmd.Parameters.AddWithValue("@UnitPrice", row.Cells("UnitCost").Value)
+                lineCmd.Parameters.AddWithValue("@LineTotal", row.Cells("LineTotal").Value)
+                
+                lineCmd.ExecuteNonQuery()
+                lineNumber += 1
+            End If
+        Next
+
+        Return invoiceId
     End Function
 
     Private Sub UpdateStockLevels(conn As SqlConnection, trans As SqlTransaction)

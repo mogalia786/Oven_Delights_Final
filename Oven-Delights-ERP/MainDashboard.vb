@@ -1046,7 +1046,7 @@ Partial Class MainDashboard
         If stockroom Is Nothing Then stockroom = EnsureTopMenu("Stockroom")
         If stockroom Is Nothing Then Exit Sub
 
-        ' Create/ensure: Stockroom > Supply Invoices > (Capture Invoice, Edit Invoice)
+        ' Create/ensure: Stockroom > Supply Invoices > (Capture Invoice, Edit Invoice, Supplier Invoice Report)
         Dim supply As ToolStripMenuItem = EnsureSubMenu(stockroom, "Supply Invoices")
         Dim miCapture As ToolStripMenuItem = EnsureSubMenu(supply, "Capture Invoice")
         RemoveHandler miCapture.Click, AddressOf OpenSupplyCaptureInvoice
@@ -1054,13 +1054,16 @@ Partial Class MainDashboard
         Dim miEdit As ToolStripMenuItem = EnsureSubMenu(supply, "Edit Invoice")
         RemoveHandler miEdit.Click, AddressOf OpenSupplyEditInvoice
         AddHandler miEdit.Click, AddressOf OpenSupplyEditInvoice
+        Dim miReport As ToolStripMenuItem = EnsureSubMenu(supply, "Supplier Invoice Report")
+        RemoveHandler miReport.Click, AddressOf OpenSupplierInvoiceReport
+        AddHandler miReport.Click, AddressOf OpenSupplierInvoiceReport
     End Sub
 
     Private Sub OpenInvoiceEditor(sender As Object, e As EventArgs)
         Try
             Dim branchId As Integer = If(currentUser IsNot Nothing AndAlso currentUser.BranchID.HasValue, currentUser.BranchID.Value, 0)
             Dim userId As Integer = If(currentUser IsNot Nothing, currentUser.UserID, 0)
-            Dim f As New InvoiceEditorForm(branchId, userId)
+            Dim f As New EditSupplierInvoiceForm()
             f.MdiParent = Me
             f.Show()
             f.WindowState = FormWindowState.Maximized
@@ -4121,21 +4124,38 @@ Partial Class MainDashboard
     Private Sub OpenSupplyEditInvoice(sender As Object, e As EventArgs)
         Try
             For Each child As Form In Me.MdiChildren
-                If TypeOf child Is InvoiceEditorForm Then
+                If TypeOf child Is EditSupplierInvoiceForm Then
                     child.Activate()
                     child.WindowState = FormWindowState.Maximized
                     Return
                 End If
             Next
-            Dim branchId As Integer = If(currentUser IsNot Nothing AndAlso currentUser.BranchID.HasValue, currentUser.BranchID.Value, 0)
-            Dim userId As Integer = If(currentUser IsNot Nothing, currentUser.UserID, 0)
-            Dim f As New InvoiceEditorForm(branchId, userId)
+            Dim f As New EditSupplierInvoiceForm()
             f.MdiParent = Me
             f.Show()
             f.WindowState = FormWindowState.Maximized
             f.BringToFront()
         Catch ex As Exception
             MessageBox.Show("Error opening Edit Invoice: " & ex.Message, "Supply Invoices", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenSupplierInvoiceReport(sender As Object, e As EventArgs)
+        Try
+            For Each child As Form In Me.MdiChildren
+                If TypeOf child Is SupplierInvoiceReportForm Then
+                    child.Activate()
+                    child.WindowState = FormWindowState.Maximized
+                    Return
+                End If
+            Next
+            Dim f As New SupplierInvoiceReportForm()
+            f.MdiParent = Me
+            f.Show()
+            f.WindowState = FormWindowState.Maximized
+            f.BringToFront()
+        Catch ex As Exception
+            MessageBox.Show("Error opening Supplier Invoice Report: " & ex.Message, "Supply Invoices", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 

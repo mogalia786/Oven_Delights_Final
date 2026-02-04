@@ -15,6 +15,9 @@ Public Class InvoiceEditorForm
     Private cboSupplier As ComboBox
     Private lblPO As Label
     Private cboPO As ComboBox
+    Private lblInvoiceNumber As Label
+    Private txtInvoiceNumber As TextBox
+    Private btnSearchInvoice As Button
     Private lblFrom As Label
     Private dtpFrom As DateTimePicker
     Private lblTo As Label
@@ -36,6 +39,7 @@ Public Class InvoiceEditorForm
     Private lblTotal As Label
     Private txtTotal As TextBox
     Private btnSave As Button
+    Private btnPrint As Button
     Private btnClose As Button
 
     ' State
@@ -57,6 +61,8 @@ Public Class InvoiceEditorForm
     Private Sub InvoiceEditorForm_Load(sender As Object, e As EventArgs)
         Try
             AddHandler btnLoad.Click, AddressOf btnLoad_Click
+            AddHandler btnSearchInvoice.Click, AddressOf btnSearchInvoice_Click
+            AddHandler txtInvoiceNumber.KeyPress, AddressOf txtInvoiceNumber_KeyPress
             AddHandler cboSupplier.SelectedIndexChanged, AddressOf cboSupplier_SelectedIndexChanged
             AddHandler dtpFrom.ValueChanged, AddressOf OnDateFilterChanged
             AddHandler dtpTo.ValueChanged, AddressOf OnDateFilterChanged
@@ -158,13 +164,18 @@ Public Class InvoiceEditorForm
         pnlSearch = New Panel() With {.Dock = DockStyle.Top, .Height = 64, .Padding = New Padding(8)}
         lblSupplier = New Label() With {.Text = "Supplier:", .AutoSize = True, .Left = 8, .Top = 12}
         cboSupplier = New ComboBox() With {.Left = 70, .Top = 8, .Width = 220, .DropDownStyle = ComboBoxStyle.DropDownList}
-        ' PO dropdown removed from filter; POs are listed in the top grid after Load
+        
+        ' Invoice Number search
+        lblInvoiceNumber = New Label() With {.Text = "Invoice #:", .AutoSize = True, .Left = 300, .Top = 12}
+        txtInvoiceNumber = New TextBox() With {.Left = 370, .Top = 8, .Width = 150}
+        btnSearchInvoice = New Button() With {.Left = 530, .Top = 8, .Width = 60, .Text = "Search"}
+        
         lblFrom = New Label() With {.Text = "From:", .AutoSize = True, .Left = 600, .Top = 12}
         dtpFrom = New DateTimePicker() With {.Left = 640, .Top = 8, .Format = DateTimePickerFormat.Custom, .CustomFormat = "dd MMM yyyy"}
         lblTo = New Label() With {.Text = "To:", .AutoSize = True, .Left = 792, .Top = 12}
         dtpTo = New DateTimePicker() With {.Left = 820, .Top = 8, .Format = DateTimePickerFormat.Custom, .CustomFormat = "dd MMM yyyy"}
         btnLoad = New Button() With {.Left = 1010, .Top = 8, .Width = 100, .Text = "Load"}
-        pnlSearch.Controls.AddRange(New Control() {lblSupplier, cboSupplier, lblFrom, dtpFrom, lblTo, dtpTo, btnLoad})
+        pnlSearch.Controls.AddRange(New Control() {lblSupplier, cboSupplier, lblInvoiceNumber, txtInvoiceNumber, btnSearchInvoice, lblFrom, dtpFrom, lblTo, dtpTo, btnLoad})
 
         ' Results grid
         dgvResults = New DataGridView() With {.Dock = DockStyle.Top, .Height = 180, .ReadOnly = True, .SelectionMode = DataGridViewSelectionMode.FullRowSelect, .AllowUserToAddRows = False, .AllowUserToDeleteRows = False, .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill}
@@ -202,10 +213,12 @@ Public Class InvoiceEditorForm
         lblTotal = New Label() With {.Text = "Total:", .Left = 880, .Top = 12}
         txtTotal = New TextBox() With {.Left = 920, .Top = 8, .Width = 120, .ReadOnly = True, .TextAlign = HorizontalAlignment.Right}
         btnSave = New Button() With {.Left = 8, .Top = 8, .Width = 100, .Text = "Save"}
-        btnClose = New Button() With {.Left = 116, .Top = 8, .Width = 100, .Text = "Close"}
+        btnPrint = New Button() With {.Left = 116, .Top = 8, .Width = 100, .Text = "Print"}
+        btnClose = New Button() With {.Left = 224, .Top = 8, .Width = 100, .Text = "Close"}
         AddHandler btnSave.Click, AddressOf btnSave_Click
+        AddHandler btnPrint.Click, AddressOf btnPrint_Click
         AddHandler btnClose.Click, Sub() Me.Close()
-        pnlBottomHost.Controls.AddRange(New Control() {btnSave, btnClose, lblSubTotal, txtSubTotal, lblVat, txtVat, lblTotal, txtTotal})
+        pnlBottomHost.Controls.AddRange(New Control() {btnSave, btnPrint, btnClose, lblSubTotal, txtSubTotal, lblVat, txtVat, lblTotal, txtTotal})
 
         ' Form layout
         Me.Controls.AddRange(New Control() {dgvLines, lblLines, dgvResults, pnlSearch, pnlBottomHost})
@@ -213,7 +226,7 @@ Public Class InvoiceEditorForm
         Theme.Apply(Me)
     End Sub
 
-    ' Load ALL invoices (captured invoices) by optional Supplier and Date range
+    ' Load invoices by Supplier - if supplier selected, show only unpaid invoices
     Private Sub btnLoad_Click(sender As Object, e As EventArgs)
         Try
             Dim supId As Integer = 0
@@ -225,13 +238,25 @@ Public Class InvoiceEditorForm
 
             Dim cs = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
             Dim dt As New DataTable()
+            Dim totalCount As Integer = 0
+            
             Using con As New Microsoft.Data.SqlClient.SqlConnection(cs)
                 con.Open()
-                ' Keep this query minimal to avoid referencing non-existent columns
-                Dim sql As String = "SELECT i.InvoiceID, s.CompanyName AS Supplier, i.InvoiceDate AS [Date], i.Total " &
-                                    "FROM Invoices i " &
+                
+                ' Get total count for debugging
+                Using cmdCount As New SqlCommand("SELECT COUNT(*) FROM SupplierInvoices", con)
+                    totalCount = Convert.ToInt32(cmdCount.ExecuteScalar())
+                End Using
+                
+                ' Query SupplierInvoices table
+                ' If supplier is selected, show only unpaid/partially paid invoices for that supplier
+                ' If no supplier selected, show all invoices
+                Dim sql As String = "SELECT i.InvoiceID, s.CompanyName AS Supplier, i.InvoiceNumber AS [Invoice #], " &
+                                    "i.InvoiceDate AS [Date], i.TotalAmount AS Total, i.AmountOutstanding AS Outstanding, i.Status " &
+                                    "FROM SupplierInvoices i " &
                                     "LEFT JOIN Suppliers s ON s.SupplierID = i.SupplierID " &
                                     "WHERE (@sid = 0 OR i.SupplierID = @sid) " &
+                                    "AND (@sid = 0 OR i.Status IN ('Unpaid', 'Partial', 'PartiallyPaid')) " &
                                     "ORDER BY i.InvoiceDate DESC, i.InvoiceID DESC"
                 Using cmd As New Microsoft.Data.SqlClient.SqlCommand(sql, con)
                     cmd.Parameters.AddWithValue("@sid", supId)
@@ -239,32 +264,51 @@ Public Class InvoiceEditorForm
                         da.Fill(dt)
                     End Using
                 End Using
-                ' Fallback: if no invoices found, load POs (use columns that exist in your DB)
-                If dt IsNot Nothing AndAlso dt.Rows.Count = 0 Then
-                    Dim dtPO As New DataTable()
-                    Dim sqlPO As String = "SELECT p.PurchaseOrderID AS POID, COALESCE(p.SupplierName, s.CompanyName, '') AS Supplier, " &
-                                          "p.Status " &
-                                          "FROM PurchaseOrders p " &
-                                          "LEFT JOIN Suppliers s ON s.SupplierID = p.SupplierID " &
-                                          "WHERE (@sid = 0 OR p.SupplierID = @sid) " &
-                                          "ORDER BY p.PurchaseOrderID DESC"
-                    Using cmdPO As New Microsoft.Data.SqlClient.SqlCommand(sqlPO, con)
-                        cmdPO.Parameters.AddWithValue("@sid", supId)
-                        Using daPO As New Microsoft.Data.SqlClient.SqlDataAdapter(cmdPO)
-                            daPO.Fill(dtPO)
-                        End Using
-                    End Using
-                    dt = dtPO
-                End If
             End Using
 
             dgvResults.DataSource = dt
-            ' Basic formatting
-            If dgvResults.Columns.Contains("InvoiceID") Then dgvResults.Columns("InvoiceID").HeaderText = "Invoice ID"
-            If dgvResults.Columns.Contains("POID") Then dgvResults.Columns("POID").HeaderText = "PO ID"
-            If dgvResults.Columns.Contains("Status") Then dgvResults.Columns("Status").HeaderText = "Status"
-            If dgvResults.Columns.Contains("Total") Then dgvResults.Columns("Total").DefaultCellStyle.Format = "N2"
-        Catch
+            
+            ' Format columns
+            If dgvResults.Columns.Contains("InvoiceID") Then 
+                dgvResults.Columns("InvoiceID").HeaderText = "Invoice ID"
+                dgvResults.Columns("InvoiceID").Width = 80
+            End If
+            If dgvResults.Columns.Contains("Supplier") Then dgvResults.Columns("Supplier").Width = 200
+            If dgvResults.Columns.Contains("Invoice #") Then dgvResults.Columns("Invoice #").Width = 120
+            If dgvResults.Columns.Contains("Date") Then 
+                dgvResults.Columns("Date").DefaultCellStyle.Format = "dd MMM yyyy"
+                dgvResults.Columns("Date").Width = 100
+            End If
+            If dgvResults.Columns.Contains("Total") Then 
+                dgvResults.Columns("Total").DefaultCellStyle.Format = "N2"
+                dgvResults.Columns("Total").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+                dgvResults.Columns("Total").Width = 100
+            End If
+            If dgvResults.Columns.Contains("Outstanding") Then 
+                dgvResults.Columns("Outstanding").DefaultCellStyle.Format = "N2"
+                dgvResults.Columns("Outstanding").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+                dgvResults.Columns("Outstanding").Width = 100
+            End If
+            If dgvResults.Columns.Contains("Status") Then dgvResults.Columns("Status").Width = 80
+            
+            ' Show count
+            If supId > 0 Then
+                Me.Text = $"Edit Invoices - {cboSupplier.Text} ({dt.Rows.Count} unpaid invoice(s))"
+            Else
+                Me.Text = $"Edit Invoices ({dt.Rows.Count} invoice(s) - Total in DB: {totalCount})"
+            End If
+            
+            ' Show message if no results
+            If dt.Rows.Count = 0 Then
+                If supId > 0 Then
+                    MessageBox.Show($"No unpaid invoices found for {cboSupplier.Text}.{Environment.NewLine}{Environment.NewLine}Total invoices in database: {totalCount}", "No Results", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Else
+                    MessageBox.Show($"No invoices found in the database.", "No Results", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                End If
+            End If
+            
+        Catch ex As Exception
+            MessageBox.Show($"Error loading invoices: {ex.Message}", "Load Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             dgvResults.DataSource = Nothing
         End Try
     End Sub
@@ -553,6 +597,81 @@ Public Class InvoiceEditorForm
         Return 15D
     End Function
 
+    Private Sub btnSearchInvoice_Click(sender As Object, e As EventArgs)
+        SearchInvoiceByNumber()
+    End Sub
+    
+    Private Sub txtInvoiceNumber_KeyPress(sender As Object, e As KeyPressEventArgs)
+        If e.KeyChar = ChrW(Keys.Enter) Then
+            e.Handled = True
+            SearchInvoiceByNumber()
+        End If
+    End Sub
+    
+    Private Sub SearchInvoiceByNumber()
+        Try
+            Dim invoiceNum As String = txtInvoiceNumber.Text.Trim()
+            If String.IsNullOrWhiteSpace(invoiceNum) Then
+                MessageBox.Show("Please enter an invoice number to search.", "Search Invoice", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                txtInvoiceNumber.Focus()
+                Return
+            End If
+            
+            Dim cs = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
+            Dim dt As New DataTable()
+            Dim totalCount As Integer = 0
+            Dim searchPattern As String = "%" & invoiceNum & "%"
+            
+            Using con As New Microsoft.Data.SqlClient.SqlConnection(cs)
+                con.Open()
+                
+                ' First check if SupplierInvoices table has any data
+                Dim countSql = "SELECT COUNT(*) FROM SupplierInvoices"
+                Using cmdCount As New Microsoft.Data.SqlClient.SqlCommand(countSql, con)
+                    totalCount = Convert.ToInt32(cmdCount.ExecuteScalar())
+                End Using
+                
+                ' Search in SupplierInvoices table by InvoiceNumber (using LIKE for partial match)
+                Dim sql As String = "SELECT i.InvoiceID, s.CompanyName AS Supplier, i.InvoiceNumber AS [Invoice #], " &
+                                    "i.InvoiceDate AS [Date], i.TotalAmount AS Total, i.AmountOutstanding AS Outstanding, i.Status " &
+                                    "FROM SupplierInvoices i " &
+                                    "LEFT JOIN Suppliers s ON s.SupplierID = i.SupplierID " &
+                                    "WHERE i.InvoiceNumber LIKE @InvNum"
+                Using cmd As New Microsoft.Data.SqlClient.SqlCommand(sql, con)
+                    cmd.Parameters.AddWithValue("@InvNum", searchPattern)
+                    
+                    ' DEBUG: Show what we're searching for
+                    MessageBox.Show($"Searching for: {searchPattern}{Environment.NewLine}Total invoices in DB: {totalCount}{Environment.NewLine}Connection: {con.Database}", "DEBUG Search", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    
+                    Using da As New Microsoft.Data.SqlClient.SqlDataAdapter(cmd)
+                        da.Fill(dt)
+                    End Using
+                End Using
+            End Using
+            
+            ' DEBUG: Show results count
+            MessageBox.Show($"Found {dt.Rows.Count} invoice(s)", "DEBUG Results", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            
+            If dt.Rows.Count = 0 Then
+                MessageBox.Show($"Invoice Number containing '{invoiceNum}' not found.{Environment.NewLine}{Environment.NewLine}Total invoices in database: {totalCount}", "Not Found", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Return
+            End If
+            
+            dgvResults.DataSource = dt
+            If dgvResults.Columns.Contains("InvoiceID") Then dgvResults.Columns("InvoiceID").HeaderText = "Invoice ID"
+            If dgvResults.Columns.Contains("Total") Then dgvResults.Columns("Total").DefaultCellStyle.Format = "N2"
+            
+            ' Auto-select the first row to load invoice lines
+            If dgvResults.Rows.Count > 0 Then
+                dgvResults.Rows(0).Selected = True
+                dgvResults_SelectionChanged(Nothing, EventArgs.Empty)
+            End If
+            
+        Catch ex As Exception
+            MessageBox.Show($"Error searching for invoice: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    
     Private Sub btnSave_Click(sender As Object, e As EventArgs)
         If currentInvoiceId <= 0 Then
             MessageBox.Show("Select an invoice to edit.", "Edit Invoice", MessageBoxButtons.OK, MessageBoxIcon.Information)
@@ -605,6 +724,162 @@ Public Class InvoiceEditorForm
             MessageBox.Show("Invoice updated and journal adjusted.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
         Catch ex As Exception
             MessageBox.Show("Unable to update invoice: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub btnPrint_Click(sender As Object, e As EventArgs)
+        If currentInvoiceId <= 0 Then
+            MessageBox.Show("Please select an invoice to print.", "Print Invoice", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
+
+        Try
+            ' Get invoice details
+            Dim cs = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
+            Dim invoiceData As DataRow = Nothing
+            Dim linesData As New DataTable()
+
+            Using con As New SqlConnection(cs)
+                con.Open()
+                
+                ' Get invoice header
+                Dim sqlHeader = "SELECT i.InvoiceID, i.InvoiceNumber, i.InvoiceDate, i.DueDate, " &
+                               "i.SubTotal, i.VATAmount, i.TotalAmount, i.AmountPaid, i.AmountOutstanding, i.Status, " &
+                               "s.CompanyName AS SupplierName, s.PhysicalAddress, s.ContactPerson, s.Phone, s.Email, " &
+                               "b.BranchName, b.Address AS BranchAddress, b.Phone AS BranchPhone " &
+                               "FROM SupplierInvoices i " &
+                               "LEFT JOIN Suppliers s ON s.SupplierID = i.SupplierID " &
+                               "LEFT JOIN Branches b ON b.BranchID = i.BranchID " &
+                               "WHERE i.InvoiceID = @id"
+                Using cmd As New SqlCommand(sqlHeader, con)
+                    cmd.Parameters.AddWithValue("@id", currentInvoiceId)
+                    Using da As New SqlDataAdapter(cmd)
+                        Dim dt As New DataTable()
+                        da.Fill(dt)
+                        If dt.Rows.Count > 0 Then invoiceData = dt.Rows(0)
+                    End Using
+                End Using
+
+                ' Get invoice lines from current grid
+                linesData.Columns.Add("MaterialName", GetType(String))
+                linesData.Columns.Add("Quantity", GetType(Decimal))
+                linesData.Columns.Add("UnitCost", GetType(Decimal))
+                linesData.Columns.Add("LineTotal", GetType(Decimal))
+
+                For Each row As DataGridViewRow In dgvLines.Rows
+                    If Not row.IsNewRow Then
+                        Dim lineRow = linesData.NewRow()
+                        lineRow("MaterialName") = If(row.Cells("MaterialName").Value, "")
+                        lineRow("Quantity") = ToDec(row.Cells("ReceiveNow").Value)
+                        lineRow("UnitCost") = ToDec(row.Cells("UnitCost").Value)
+                        lineRow("LineTotal") = ToDec(row.Cells("LineTotal").Value)
+                        linesData.Rows.Add(lineRow)
+                    End If
+                Next
+            End Using
+
+            If invoiceData Is Nothing Then
+                MessageBox.Show("Unable to load invoice details for printing.", "Print Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Return
+            End If
+
+            ' Generate print document
+            Dim printDoc As New System.Drawing.Printing.PrintDocument()
+            AddHandler printDoc.PrintPage, Sub(s, ev)
+                Dim font As New Font("Arial", 10)
+                Dim fontBold As New Font("Arial", 10, FontStyle.Bold)
+                Dim fontTitle As New Font("Arial", 14, FontStyle.Bold)
+                Dim y As Single = 50
+
+                ' Title
+                ev.Graphics.DrawString("SUPPLIER INVOICE", fontTitle, Brushes.Black, 300, y)
+                y += 40
+
+                ' Company details
+                ev.Graphics.DrawString($"Branch: {invoiceData("BranchName")}", fontBold, Brushes.Black, 50, y)
+                y += 20
+                If Not IsDBNull(invoiceData("BranchAddress")) Then
+                    ev.Graphics.DrawString($"{invoiceData("BranchAddress")}", font, Brushes.Black, 50, y)
+                    y += 20
+                End If
+                y += 10
+
+                ' Supplier details
+                ev.Graphics.DrawString("SUPPLIER:", fontBold, Brushes.Black, 50, y)
+                y += 20
+                ev.Graphics.DrawString($"{invoiceData("SupplierName")}", font, Brushes.Black, 50, y)
+                y += 20
+                If Not IsDBNull(invoiceData("PhysicalAddress")) Then
+                    ev.Graphics.DrawString($"{invoiceData("PhysicalAddress")}", font, Brushes.Black, 50, y)
+                    y += 20
+                End If
+                If Not IsDBNull(invoiceData("Phone")) Then
+                    ev.Graphics.DrawString($"Phone: {invoiceData("Phone")}", font, Brushes.Black, 50, y)
+                    y += 20
+                End If
+                y += 20
+
+                ' Invoice details
+                ev.Graphics.DrawString($"Invoice Number: {invoiceData("InvoiceNumber")}", fontBold, Brushes.Black, 50, y)
+                ev.Graphics.DrawString($"Date: {CDate(invoiceData("InvoiceDate")):dd MMM yyyy}", font, Brushes.Black, 400, y)
+                y += 20
+                ev.Graphics.DrawString($"Status: {invoiceData("Status")}", font, Brushes.Black, 50, y)
+                ev.Graphics.DrawString($"Due Date: {CDate(invoiceData("DueDate")):dd MMM yyyy}", font, Brushes.Black, 400, y)
+                y += 30
+
+                ' Line items header
+                ev.Graphics.DrawLine(Pens.Black, 50, y, 750, y)
+                y += 5
+                ev.Graphics.DrawString("Description", fontBold, Brushes.Black, 50, y)
+                ev.Graphics.DrawString("Qty", fontBold, Brushes.Black, 450, y)
+                ev.Graphics.DrawString("Unit Cost", fontBold, Brushes.Black, 550, y)
+                ev.Graphics.DrawString("Total", fontBold, Brushes.Black, 670, y)
+                y += 20
+                ev.Graphics.DrawLine(Pens.Black, 50, y, 750, y)
+                y += 10
+
+                ' Line items
+                For Each lineRow As DataRow In linesData.Rows
+                    ev.Graphics.DrawString(lineRow("MaterialName").ToString(), font, Brushes.Black, 50, y)
+                    ev.Graphics.DrawString(CDec(lineRow("Quantity")).ToString("N2"), font, Brushes.Black, 450, y)
+                    ev.Graphics.DrawString($"R{CDec(lineRow("UnitCost")):N2}", font, Brushes.Black, 550, y)
+                    ev.Graphics.DrawString($"R{CDec(lineRow("LineTotal")):N2}", font, Brushes.Black, 670, y)
+                    y += 20
+                Next
+
+                y += 10
+                ev.Graphics.DrawLine(Pens.Black, 50, y, 750, y)
+                y += 20
+
+                ' Totals
+                ev.Graphics.DrawString("Sub Total:", fontBold, Brushes.Black, 550, y)
+                ev.Graphics.DrawString($"R{CDec(invoiceData("SubTotal")):N2}", font, Brushes.Black, 670, y)
+                y += 20
+                ev.Graphics.DrawString("VAT (15%):", fontBold, Brushes.Black, 550, y)
+                ev.Graphics.DrawString($"R{CDec(invoiceData("VATAmount")):N2}", font, Brushes.Black, 670, y)
+                y += 20
+                ev.Graphics.DrawLine(Pens.Black, 550, y, 750, y)
+                y += 5
+                ev.Graphics.DrawString("TOTAL:", fontBold, Brushes.Black, 550, y)
+                ev.Graphics.DrawString($"R{CDec(invoiceData("TotalAmount")):N2}", fontBold, Brushes.Black, 670, y)
+                y += 30
+
+                ' Payment info
+                If CDec(invoiceData("AmountPaid")) > 0 Then
+                    ev.Graphics.DrawString($"Amount Paid: R{CDec(invoiceData("AmountPaid")):N2}", font, Brushes.Black, 550, y)
+                    y += 20
+                    ev.Graphics.DrawString($"Outstanding: R{CDec(invoiceData("AmountOutstanding")):N2}", fontBold, Brushes.Black, 550, y)
+                End If
+            End Sub
+
+            ' Show print preview
+            Dim printPreview As New PrintPreviewDialog()
+            printPreview.Document = printDoc
+            printPreview.WindowState = FormWindowState.Maximized
+            printPreview.ShowDialog()
+
+        Catch ex As Exception
+            MessageBox.Show($"Error printing invoice: {ex.Message}", "Print Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 End Class
