@@ -223,7 +223,7 @@ Namespace Forms.IBT
             ' Grid Columns
             dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "ProductID", .Visible = False, .DataPropertyName = "ProductID"})
             dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "ProductName", .HeaderText = "Product", .Width = 400, .DataPropertyName = "ProductName"})
-            dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "Quantity", .HeaderText = "Quantity", .Width = 150, .DataPropertyName = "Quantity", .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}})
+            dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "Quantity", .HeaderText = "Quantity", .Width = 150, .DataPropertyName = "Quantity", .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N4"}})
             dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "RequiredByDate", .HeaderText = "Required By", .Width = 150, .DataPropertyName = "RequiredByDate", .DefaultCellStyle = New DataGridViewCellStyle With {.Format = "dd/MM/yyyy"}})
             dgvItems.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "Notes", .HeaderText = "Notes", .Width = 440, .DataPropertyName = "Notes"})
 

@@ -50,6 +50,10 @@ Public Class PurchaseOrderForm
 
     ' Actions
     Private btnSave As Button
+    Private btnClose As Button
+    
+    ' Track if PO has been saved
+    Private poHasBeenSaved As Boolean = False
 
     ' Dashboard panel (removed to honor single left sidebar layout)
 
@@ -214,14 +218,14 @@ Public Class PurchaseOrderForm
         materialColumn.DefaultCellStyle.DataSourceNullValue = DBNull.Value
         materialColumn.FlatStyle = FlatStyle.Flat
         dgvLines.Columns.Add(materialColumn)
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "OrderedQuantity", .HeaderText = "Qty", .DataPropertyName = "OrderedQuantity", .Width = 80, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}})
+        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "OrderedQuantity", .HeaderText = "Qty", .DataPropertyName = "OrderedQuantity", .Width = 80, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N4"}})
         ' Optional unit cost (can be blank/null). We keep DataPropertyName = UnitCost to avoid backend changes
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "UnitCost", .HeaderText = "Unit Price (Excl VAT)", .DataPropertyName = "UnitCost", .Width = 130, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}})
+        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "UnitCost", .HeaderText = "Unit Price (Excl VAT)", .DataPropertyName = "UnitCost", .Width = 130, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N4"}})
         ' Guidance prices
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LastPaidPrice", .HeaderText = "Last Paid (Excl)", .ReadOnly = True, .Width = 100, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .ForeColor = Color.FromArgb(90, 90, 90), .Format = "N2"}})
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LastCost", .HeaderText = "Avg Cost (Excl)", .ReadOnly = True, .Width = 100, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .ForeColor = Color.FromArgb(120, 120, 120), .Format = "N2"}})
+        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LastPaidPrice", .HeaderText = "Last Paid (Excl)", .ReadOnly = True, .Width = 100, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .ForeColor = Color.FromArgb(90, 90, 90), .Format = "N4"}})
+        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LastCost", .HeaderText = "Avg Cost (Excl)", .ReadOnly = True, .Width = 100, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .ForeColor = Color.FromArgb(120, 120, 120), .Format = "N4"}})
         ' Expected total uses UnitCost if provided, otherwise LastPaidPrice
-        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LineTotal", .HeaderText = "Expected Total", .ReadOnly = True, .Width = 120, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}})
+        dgvLines.Columns.Add(New DataGridViewTextBoxColumn With {.Name = "LineTotal", .HeaderText = "Expected Total", .ReadOnly = True, .Width = 120, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N4"}})
         AddHandler dgvLines.CellValueChanged, AddressOf dgvLines_CellValueChanged
         AddHandler dgvLines.EditingControlShowing, AddressOf dgvLines_EditingControlShowing
         AddHandler dgvLines.DataError, AddressOf dgvLines_DataError
@@ -243,10 +247,13 @@ Public Class PurchaseOrderForm
         lblTotal = New Label With {.Text = "Total (Incl VAT)", .AutoSize = True, .Top = 12, .Left = 300, .Font = New Font("Segoe UI", 10.0F, FontStyle.Bold), .ForeColor = Color.FromArgb(192, 57, 43)}
         txtTotal = New TextBox With {.ReadOnly = True, .TextAlign = HorizontalAlignment.Right, .Width = 140, .Top = 32, .Left = 300, .Font = New Font("Segoe UI", 11.0F, FontStyle.Bold), .BackColor = Color.White, .ForeColor = Color.FromArgb(192, 57, 43)}
 
-        btnSave = New Button With {.Text = "Save", .Width = 120, .Height = 30, .Top = 16, .Left = 420}
+        btnSave = New Button With {.Text = "Save", .Width = 120, .Height = 30, .Top = 16, .Left = 460, .BackColor = Color.FromArgb(40, 167, 69), .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat, .Font = New Font("Segoe UI", 9.0F, FontStyle.Bold)}
         AddHandler btnSave.Click, AddressOf btnSave_Click
+        
+        btnClose = New Button With {.Text = "Close", .Width = 120, .Height = 30, .Top = 16, .Left = 590, .BackColor = Color.FromArgb(220, 53, 69), .ForeColor = Color.White, .FlatStyle = FlatStyle.Flat, .Font = New Font("Segoe UI", 9.0F, FontStyle.Bold)}
+        AddHandler btnClose.Click, AddressOf btnClose_Click
 
-        footer.Controls.AddRange(New Control() {lblSubTotal, txtSubTotal, lblVAT, txtVAT, lblTotal, txtTotal, btnSave})
+        footer.Controls.AddRange(New Control() {lblSubTotal, txtSubTotal, lblVAT, txtVAT, lblTotal, txtTotal, btnSave, btnClose})
 
         ' Compose form
         Me.Controls.Clear()
@@ -458,9 +465,9 @@ Public Class PurchaseOrderForm
         Dim subTotal As Decimal = Math.Round(totalInclVAT / 1.15D, 2)
         Dim vat As Decimal = Math.Round(totalInclVAT - subTotal, 2)
         
-        txtSubTotal.Text = subTotal.ToString("N2")
-        txtVAT.Text = vat.ToString("N2")
-        txtTotal.Text = totalInclVAT.ToString("N2")
+        txtSubTotal.Text = subTotal.ToString("N4")
+        txtVAT.Text = vat.ToString("N4")
+        txtTotal.Text = totalInclVAT.ToString("N4")
     End Sub
 
     Private Sub RefreshGuidancePricesForAllRows()
@@ -641,6 +648,7 @@ Public Class PurchaseOrderForm
             End If
             MessageBox.Show($"Purchase Order saved: {If(String.IsNullOrWhiteSpace(poNumber), "(number pending)", poNumber)} (ID: {poId}).", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
             Me.Tag = poId
+            poHasBeenSaved = True
             RaiseEvent SidebarContextChanged(Me, EventArgs.Empty)
 
             ' Attempt to post journal immediately using physical document numbers
@@ -900,8 +908,8 @@ Public Class PurchaseOrderForm
         Dim info As String = $"Supplier: {If(String.IsNullOrEmpty(supplierName), "(none)", supplierName)}" & Environment.NewLine &
                              $"BranchID: {branchId}" & Environment.NewLine &
                              $"MaterialID: {If(materialId > 0, materialId.ToString(), "(none)")}" & Environment.NewLine &
-                             $"Last Paid: {lastPaid:N2}  Last Cost: {lastCost:N2}" & Environment.NewLine &
-                             $"Stock On Hand: {soh:N2}"
+                             $"Last Paid: {lastPaid:N4}  Last Cost: {lastCost:N4}" & Environment.NewLine &
+                             $"Stock On Hand: {soh:N4}"
         Dim lbl As New Label() With {
             .Text = info,
             .Dock = DockStyle.Fill,
@@ -911,5 +919,55 @@ Public Class PurchaseOrderForm
         p.Controls.SetChildIndex(lbl, 0)
         Return p
     End Function
+
+    Private Sub btnClose_Click(sender As Object, e As EventArgs)
+        Me.Close()
+    End Sub
+
+    Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
+        MyBase.OnFormClosing(e)
+        
+        ' If PO has already been saved, just close
+        If poHasBeenSaved Then
+            Return
+        End If
+        
+        ' Check if there's any data entered
+        Dim hasData As Boolean = False
+        
+        ' Check if supplier is selected
+        If Not String.IsNullOrWhiteSpace(txtSupplier.Text) Then
+            hasData = True
+        End If
+        
+        ' Check if any lines have been added
+        If Not hasData Then
+            For Each row As DataGridViewRow In dgvLines.Rows
+                If Not row.IsNewRow AndAlso row.Cells("Material").Value IsNot Nothing Then
+                    hasData = True
+                    Exit For
+                End If
+            Next
+        End If
+        
+        ' If no data entered, just close
+        If Not hasData Then
+            Return
+        End If
+        
+        ' Warn user about unsaved changes
+        Dim result = MessageBox.Show(
+            "You have unsaved changes. Do you want to close without saving?" & Environment.NewLine & Environment.NewLine &
+            "Click 'Yes' to close without saving" & Environment.NewLine &
+            "Click 'No' to go back and save your Purchase Order",
+            "Unsaved Changes",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning,
+            MessageBoxDefaultButton.Button2)
+        
+        If result = DialogResult.No Then
+            e.Cancel = True
+        End If
+    End Sub
 
 End Class

@@ -42,6 +42,8 @@ Partial Class InvoiceCaptureForm
         Me.txtDiscount = New System.Windows.Forms.TextBox()
         Me.btnApplyDiscount = New System.Windows.Forms.Button()
         Me.lblDiscountNote = New System.Windows.Forms.Label()
+        Me.lblDiscountRand = New System.Windows.Forms.Label()
+        Me.txtDiscountRand = New System.Windows.Forms.TextBox()
         Me.lblTotal = New System.Windows.Forms.Label()
         Me.txtTotal = New System.Windows.Forms.TextBox()
         CType(Me.dgvLines, System.ComponentModel.ISupportInitialize).BeginInit()
@@ -145,10 +147,28 @@ Partial Class InvoiceCaptureForm
         Me.txtSubTotal.TabIndex = 10
         Me.txtSubTotal.TextAlign = System.Windows.Forms.HorizontalAlignment.Right
         '
+        'lblDiscountRand
+        '
+        Me.lblDiscountRand.AutoSize = True
+        Me.lblDiscountRand.Location = New System.Drawing.Point(600, 525)
+        Me.lblDiscountRand.Name = "lblDiscountRand"
+        Me.lblDiscountRand.Size = New System.Drawing.Size(52, 13)
+        Me.lblDiscountRand.TabIndex = 19
+        Me.lblDiscountRand.Text = "Discount:"
+        '
+        'txtDiscountRand
+        '
+        Me.txtDiscountRand.Location = New System.Drawing.Point(670, 522)
+        Me.txtDiscountRand.Name = "txtDiscountRand"
+        Me.txtDiscountRand.Size = New System.Drawing.Size(100, 20)
+        Me.txtDiscountRand.TabIndex = 20
+        Me.txtDiscountRand.Text = "0.0000"
+        Me.txtDiscountRand.TextAlign = System.Windows.Forms.HorizontalAlignment.Right
+        '
         'lblVat
         '
         Me.lblVat.AutoSize = True
-        Me.lblVat.Location = New System.Drawing.Point(600, 525)
+        Me.lblVat.Location = New System.Drawing.Point(600, 550)
         Me.lblVat.Name = "lblVat"
         Me.lblVat.Size = New System.Drawing.Size(31, 13)
         Me.lblVat.TabIndex = 11
@@ -156,7 +176,7 @@ Partial Class InvoiceCaptureForm
         '
         'txtVat
         '
-        Me.txtVat.Location = New System.Drawing.Point(670, 522)
+        Me.txtVat.Location = New System.Drawing.Point(670, 547)
         Me.txtVat.Name = "txtVat"
         Me.txtVat.ReadOnly = True
         Me.txtVat.Size = New System.Drawing.Size(100, 20)
@@ -209,7 +229,7 @@ Partial Class InvoiceCaptureForm
         '
         Me.lblTotal.AutoSize = True
         Me.lblTotal.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.lblTotal.Location = New System.Drawing.Point(600, 550)
+        Me.lblTotal.Location = New System.Drawing.Point(600, 575)
         Me.lblTotal.Name = "lblTotal"
         Me.lblTotal.Size = New System.Drawing.Size(39, 13)
         Me.lblTotal.TabIndex = 17
@@ -218,7 +238,7 @@ Partial Class InvoiceCaptureForm
         'txtTotal
         '
         Me.txtTotal.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.txtTotal.Location = New System.Drawing.Point(670, 547)
+        Me.txtTotal.Location = New System.Drawing.Point(670, 572)
         Me.txtTotal.Name = "txtTotal"
         Me.txtTotal.ReadOnly = True
         Me.txtTotal.Size = New System.Drawing.Size(100, 20)
@@ -230,7 +250,7 @@ Partial Class InvoiceCaptureForm
         Me.btnSave.BackColor = System.Drawing.Color.FromArgb(CType(CType(0, Byte), Integer), CType(CType(122, Byte), Integer), CType(CType(204, Byte), Integer))
         Me.btnSave.FlatStyle = System.Windows.Forms.FlatStyle.Flat
         Me.btnSave.ForeColor = System.Drawing.Color.White
-        Me.btnSave.Location = New System.Drawing.Point(600, 580)
+        Me.btnSave.Location = New System.Drawing.Point(600, 605)
         Me.btnSave.Name = "btnSave"
         Me.btnSave.Size = New System.Drawing.Size(80, 30)
         Me.btnSave.TabIndex = 15
@@ -242,7 +262,7 @@ Partial Class InvoiceCaptureForm
         Me.btnCancel.BackColor = System.Drawing.Color.FromArgb(CType(CType(108, Byte), Integer), CType(CType(117, Byte), Integer), CType(CType(125, Byte), Integer))
         Me.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.Flat
         Me.btnCancel.ForeColor = System.Drawing.Color.White
-        Me.btnCancel.Location = New System.Drawing.Point(690, 580)
+        Me.btnCancel.Location = New System.Drawing.Point(690, 605)
         Me.btnCancel.Name = "btnCancel"
         Me.btnCancel.Size = New System.Drawing.Size(80, 30)
         Me.btnCancel.TabIndex = 16
@@ -265,6 +285,8 @@ Partial Class InvoiceCaptureForm
         Me.Controls.Add(Me.lblDiscount)
         Me.Controls.Add(Me.txtVat)
         Me.Controls.Add(Me.lblVat)
+        Me.Controls.Add(Me.txtDiscountRand)
+        Me.Controls.Add(Me.lblDiscountRand)
         Me.Controls.Add(Me.txtSubTotal)
         Me.Controls.Add(Me.lblSubTotal)
         Me.Controls.Add(Me.dgvLines)
@@ -302,6 +324,8 @@ Partial Class InvoiceCaptureForm
     Friend WithEvents dtpReceived As System.Windows.Forms.DateTimePicker
     Friend WithEvents lblSubTotal As System.Windows.Forms.Label
     Friend WithEvents txtSubTotal As System.Windows.Forms.TextBox
+    Friend WithEvents lblDiscountRand As System.Windows.Forms.Label
+    Friend WithEvents txtDiscountRand As System.Windows.Forms.TextBox
     Friend WithEvents lblVat As System.Windows.Forms.Label
     Friend WithEvents txtVat As System.Windows.Forms.TextBox
     Friend WithEvents lblDiscount As System.Windows.Forms.Label

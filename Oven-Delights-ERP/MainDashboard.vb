@@ -1046,12 +1046,12 @@ Partial Class MainDashboard
         If stockroom Is Nothing Then stockroom = EnsureTopMenu("Stockroom")
         If stockroom Is Nothing Then Exit Sub
 
-        ' Create/ensure: Stockroom > Supply Invoices > (Capture Invoice, Edit Invoice, Supplier Invoice Report)
+        ' Create/ensure: Stockroom > Supply Invoices > (Capture Invoice, View/Edit Invoice and PO, Supplier Invoice Report)
         Dim supply As ToolStripMenuItem = EnsureSubMenu(stockroom, "Supply Invoices")
         Dim miCapture As ToolStripMenuItem = EnsureSubMenu(supply, "Capture Invoice")
         RemoveHandler miCapture.Click, AddressOf OpenSupplyCaptureInvoice
         AddHandler miCapture.Click, AddressOf OpenSupplyCaptureInvoice
-        Dim miEdit As ToolStripMenuItem = EnsureSubMenu(supply, "Edit Invoice")
+        Dim miEdit As ToolStripMenuItem = EnsureSubMenu(supply, "View/Edit Invoice and PO")
         RemoveHandler miEdit.Click, AddressOf OpenSupplyEditInvoice
         AddHandler miEdit.Click, AddressOf OpenSupplyEditInvoice
         Dim miReport As ToolStripMenuItem = EnsureSubMenu(supply, "Supplier Invoice Report")
@@ -4097,7 +4097,7 @@ Partial Class MainDashboard
         Dim miCapture As ToolStripMenuItem = EnsureSubMenu(supply, "Capture Invoice")
         RemoveHandler miCapture.Click, AddressOf OpenSupplyCaptureInvoice
         AddHandler miCapture.Click, AddressOf OpenSupplyCaptureInvoice
-        Dim miEdit As ToolStripMenuItem = EnsureSubMenu(supply, "Edit Invoice")
+        Dim miEdit As ToolStripMenuItem = EnsureSubMenu(supply, "View/Edit Invoice and PO")
         RemoveHandler miEdit.Click, AddressOf OpenSupplyEditInvoice
         AddHandler miEdit.Click, AddressOf OpenSupplyEditInvoice
     End Sub

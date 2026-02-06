@@ -414,14 +414,28 @@ Public Class InvoiceCaptureForm
                     subTotal += receiveNow * unitCost
                 End If
             Next
-            Dim vatAmount As Decimal = subTotal * 0.15D
+            
+            ' Apply discount - use Rand discount value directly
+            Dim discountAmount As Decimal = 0
+            Dim discountPercent As Decimal = 0
+            
+            ' Get discount amount from txtDiscountRand
+            If Decimal.TryParse(txtDiscountRand.Text, discountAmount) AndAlso discountAmount > 0 Then
+                subTotal = subTotal - discountAmount
+                ' Calculate percentage for saving
+                If subTotal > 0 Then
+                    discountPercent = Math.Round((discountAmount / (subTotal + discountAmount)) * 100, 4)
+                End If
+            End If
+            
+            Dim vatAmount As Decimal = Math.Round(subTotal * 0.15D, 4)
             Dim totalAmount As Decimal = subTotal + vatAmount
 
             ' Save GRV and update inventory
             Dim grvId = stockroomService.SaveGoodsReceivedVoucher(selectedSupplierId, selectedPOId, txtDeliveryNote.Text, dtpReceived.Value, dgvLines)
 
             ' Create Supplier Invoice record
-            CreateSupplierInvoice(selectedSupplierId, txtDeliveryNote.Text, dtpReceived.Value, subTotal, vatAmount, totalAmount, grvId)
+            CreateSupplierInvoice(selectedSupplierId, selectedPOId, txtDeliveryNote.Text, dtpReceived.Value, subTotal, vatAmount, totalAmount, grvId, discountAmount, discountPercent)
 
             ' Update inventory based on ProductType
             Dim branchId As Integer = If(AppSession.CurrentUser IsNot Nothing AndAlso AppSession.CurrentUser.BranchID.HasValue, AppSession.CurrentUser.BranchID.Value, 0)
@@ -528,6 +542,8 @@ Public Class InvoiceCaptureForm
         AddHandler dgvLines.CellValueChanged, AddressOf CalculateTotals
         AddHandler dgvLines.RowsAdded, AddressOf CalculateTotals
         AddHandler dgvLines.RowsRemoved, AddressOf CalculateTotals
+        AddHandler txtDiscount.TextChanged, AddressOf txtDiscount_TextChanged
+        AddHandler txtDiscountRand.TextChanged, AddressOf txtDiscountRand_TextChanged
     End Sub
 
     Private Sub CalculateTotals(sender As Object, e As EventArgs)
@@ -568,7 +584,7 @@ Public Class InvoiceCaptureForm
                     
                     If isVatable Then
                         ' Price is excl VAT - calculate VAT amount
-                        Dim lineVAT As Decimal = Math.Round(lineTotalExclVAT * 0.15D, 2)
+                        Dim lineVAT As Decimal = Math.Round(lineTotalExclVAT * 0.15D, 4)
                         subTotalVatable += lineTotalExclVAT
                         vatTotal += lineVAT
                     Else
@@ -579,22 +595,31 @@ Public Class InvoiceCaptureForm
             Next
             
             Dim subTotal As Decimal = subTotalVatable + subTotalNonVatable
+            Dim originalSubTotal As Decimal = subTotal
             
-            ' Apply discount PERCENTAGE if entered
+            ' Apply discount - check if Rand discount or Percentage discount is entered
+            Dim discountRand As Decimal = 0
             Dim discountPercent As Decimal = 0
-            If Decimal.TryParse(txtDiscount.Text, discountPercent) AndAlso discountPercent > 0 Then
-                ' Apply discount to subtotal (excl VAT)
-                Dim discountAmount As Decimal = Math.Round(subTotal * (discountPercent / 100), 2)
+            
+            ' Priority: Rand discount takes precedence over percentage
+            If Decimal.TryParse(txtDiscountRand.Text, discountRand) AndAlso discountRand > 0 Then
+                ' Apply Rand discount to subtotal (excl VAT)
+                subTotal = subTotal - discountRand
+                ' Recalculate VAT on discounted subtotal
+                vatTotal = Math.Round(subTotal * 0.15D, 4)
+            ElseIf Decimal.TryParse(txtDiscount.Text, discountPercent) AndAlso discountPercent > 0 Then
+                ' Apply percentage discount to subtotal (excl VAT)
+                Dim discountAmount As Decimal = Math.Round(originalSubTotal * (discountPercent / 100), 4)
                 subTotal = subTotal - discountAmount
                 ' Recalculate VAT on discounted subtotal
-                vatTotal = Math.Round(subTotal * 0.15D, 2)
+                vatTotal = Math.Round(subTotal * 0.15D, 4)
             End If
             
             Dim total As Decimal = subTotal + vatTotal
 
-            txtSubTotal.Text = subTotal.ToString("F2")
-            txtVat.Text = vatTotal.ToString("F2")
-            txtTotal.Text = total.ToString("F2")
+            txtSubTotal.Text = originalSubTotal.ToString("N4")
+            txtVat.Text = vatTotal.ToString("N4")
+            txtTotal.Text = total.ToString("N4")
         Catch ex As Exception
             ' Ignore calculation errors
         End Try
@@ -623,7 +648,7 @@ Public Class InvoiceCaptureForm
         End Try
     End Sub
     
-    Private Sub CreateSupplierInvoice(supplierId As Integer, invoiceNumber As String, invoiceDate As DateTime, subTotal As Decimal, vatAmount As Decimal, totalAmount As Decimal, grvId As Integer)
+    Private Sub CreateSupplierInvoice(supplierId As Integer, purchaseOrderId As Integer, invoiceNumber As String, invoiceDate As DateTime, subTotal As Decimal, vatAmount As Decimal, totalAmount As Decimal, grvId As Integer, discountAmount As Decimal, discountPercent As Decimal)
         Try
             Using con As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
                 con.Open()
@@ -631,18 +656,21 @@ Public Class InvoiceCaptureForm
                     Try
                         ' Create supplier invoice header
                         Dim invoiceId As Integer
-                        Dim sql = "INSERT INTO SupplierInvoices (InvoiceNumber, SupplierID, BranchID, InvoiceDate, DueDate, SubTotal, VATAmount, TotalAmount, AmountPaid, AmountOutstanding, Status, GRVID, CreatedBy) " &
-                                 "VALUES (@InvNum, @SupID, @BranchID, @InvDate, @DueDate, @SubTotal, @VAT, @Total, 0, @Total, 'Unpaid', @GRVID, @UserID); SELECT SCOPE_IDENTITY();"
+                        Dim sql = "INSERT INTO SupplierInvoices (InvoiceNumber, SupplierID, BranchID, PurchaseOrderID, InvoiceDate, DueDate, SubTotal, VATAmount, TotalAmount, AmountPaid, AmountOutstanding, Status, GRVID, DiscountAmount, DiscountPercent, CreatedBy) " &
+                                 "VALUES (@InvNum, @SupID, @BranchID, @POID, @InvDate, @DueDate, @SubTotal, @VAT, @Total, 0, @Total, 'Unpaid', @GRVID, @DiscountAmount, @DiscountPercent, @UserID); SELECT SCOPE_IDENTITY();"
                         Using cmd As New SqlCommand(sql, con, tx)
                             cmd.Parameters.AddWithValue("@InvNum", invoiceNumber)
                             cmd.Parameters.AddWithValue("@SupID", supplierId)
                             cmd.Parameters.AddWithValue("@BranchID", AppSession.CurrentBranchID)
+                            cmd.Parameters.AddWithValue("@POID", purchaseOrderId)
                             cmd.Parameters.AddWithValue("@InvDate", invoiceDate)
                             cmd.Parameters.AddWithValue("@DueDate", invoiceDate.AddDays(30))
                             cmd.Parameters.AddWithValue("@SubTotal", subTotal)
                             cmd.Parameters.AddWithValue("@VAT", vatAmount)
                             cmd.Parameters.AddWithValue("@Total", totalAmount)
                             cmd.Parameters.AddWithValue("@GRVID", grvId)
+                            cmd.Parameters.AddWithValue("@DiscountAmount", discountAmount)
+                            cmd.Parameters.AddWithValue("@DiscountPercent", discountPercent)
                             cmd.Parameters.AddWithValue("@UserID", AppSession.CurrentUserID)
                             invoiceId = Convert.ToInt32(cmd.ExecuteScalar())
                         End Using
@@ -969,6 +997,62 @@ Public Class InvoiceCaptureForm
             Return False
         End Try
     End Function
+    
+    Private Sub txtDiscount_TextChanged(sender As Object, e As EventArgs)
+        ' When percentage changes, calculate and update Rand discount
+        Try
+            Dim discountPercent As Decimal = 0
+            If Decimal.TryParse(txtDiscount.Text, discountPercent) AndAlso discountPercent > 0 Then
+                ' Get current subtotal
+                Dim subTotal As Decimal = 0
+                If Decimal.TryParse(txtSubTotal.Text.Replace(",", ""), subTotal) Then
+                    Dim discountRand As Decimal = Math.Round(subTotal * (discountPercent / 100), 4)
+                    ' Update Rand discount textbox without triggering its event
+                    RemoveHandler txtDiscountRand.TextChanged, AddressOf txtDiscountRand_TextChanged
+                    txtDiscountRand.Text = discountRand.ToString("N4")
+                    AddHandler txtDiscountRand.TextChanged, AddressOf txtDiscountRand_TextChanged
+                End If
+            ElseIf String.IsNullOrWhiteSpace(txtDiscount.Text) OrElse discountPercent = 0 Then
+                ' Clear Rand discount if percentage is cleared
+                RemoveHandler txtDiscountRand.TextChanged, AddressOf txtDiscountRand_TextChanged
+                txtDiscountRand.Text = "0.0000"
+                AddHandler txtDiscountRand.TextChanged, AddressOf txtDiscountRand_TextChanged
+            End If
+            
+            ' Recalculate totals
+            CalculateTotals(Nothing, EventArgs.Empty)
+        Catch ex As Exception
+            ' Ignore errors during sync
+        End Try
+    End Sub
+    
+    Private Sub txtDiscountRand_TextChanged(sender As Object, e As EventArgs)
+        ' When Rand discount changes, calculate and update percentage
+        Try
+            Dim discountRand As Decimal = 0
+            If Decimal.TryParse(txtDiscountRand.Text, discountRand) AndAlso discountRand > 0 Then
+                ' Get current subtotal
+                Dim subTotal As Decimal = 0
+                If Decimal.TryParse(txtSubTotal.Text.Replace(",", ""), subTotal) AndAlso subTotal > 0 Then
+                    Dim discountPercent As Decimal = Math.Round((discountRand / subTotal) * 100, 4)
+                    ' Update percentage textbox without triggering its event
+                    RemoveHandler txtDiscount.TextChanged, AddressOf txtDiscount_TextChanged
+                    txtDiscount.Text = discountPercent.ToString("N4")
+                    AddHandler txtDiscount.TextChanged, AddressOf txtDiscount_TextChanged
+                End If
+            ElseIf String.IsNullOrWhiteSpace(txtDiscountRand.Text) OrElse discountRand = 0 Then
+                ' Clear percentage if Rand is cleared
+                RemoveHandler txtDiscount.TextChanged, AddressOf txtDiscount_TextChanged
+                txtDiscount.Text = "0.00"
+                AddHandler txtDiscount.TextChanged, AddressOf txtDiscount_TextChanged
+            End If
+            
+            ' Recalculate totals
+            CalculateTotals(Nothing, EventArgs.Empty)
+        Catch ex As Exception
+            ' Ignore errors during sync
+        End Try
+    End Sub
     
     Private Sub UpdateLastPaidPriceByName(productName As String, unitCost As Decimal)
         Try

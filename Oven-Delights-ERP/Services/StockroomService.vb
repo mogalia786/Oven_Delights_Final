@@ -3431,20 +3431,42 @@ Public Class StockroomService
                             cmd.Parameters.AddWithValue("@ReceivedDate", receivedDate)
                             Dim grvId = Convert.ToInt32(cmd.ExecuteScalar())
                             
-                            ' Insert GRV lines
+                            ' Insert GRV lines and update PO ReceivedQuantity
                             For Each row As DataGridViewRow In dgvLines.Rows
                                 If Not row.IsNewRow Then
                                     Dim receiveNow = If(row.Cells("ReceiveNow").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("ReceiveNow").Value))
                                     If receiveNow > 0 Then
+                                        Dim itemId = Convert.ToInt32(row.Cells("ProductID").Value)
+                                        Dim poLineId As Integer = 0
+                                        
+                                        ' Get POLineID - check both MaterialID and ProductID columns
+                                        Using getPOLineCmd As New SqlCommand("SELECT TOP 1 POLineID FROM PurchaseOrderLines WHERE PurchaseOrderID = @POID AND (MaterialID = @ItemID OR ProductID = @ItemID)", conn, trans)
+                                            getPOLineCmd.Parameters.AddWithValue("@POID", poId)
+                                            getPOLineCmd.Parameters.AddWithValue("@ItemID", itemId)
+                                            Dim result = getPOLineCmd.ExecuteScalar()
+                                            If result IsNot Nothing Then
+                                                poLineId = Convert.ToInt32(result)
+                                            End If
+                                        End Using
+                                        
                                         Using lineCmd As New SqlCommand("INSERT INTO GRNLines (GRNID, MaterialID, OrderedQuantity, ReceivedQuantity, UnitCost, LineTotal) VALUES (@GRNID, @MaterialID, @OrderedQty, @ReceivedQty, @UnitCost, @LineTotal)", conn, trans)
                                             lineCmd.Parameters.AddWithValue("@GRNID", grvId)
-                                            lineCmd.Parameters.AddWithValue("@MaterialID", Convert.ToInt32(row.Cells("ProductID").Value))
+                                            lineCmd.Parameters.AddWithValue("@MaterialID", itemId)
                                             lineCmd.Parameters.AddWithValue("@OrderedQty", Convert.ToDecimal(row.Cells("OrderQuantity").Value))
                                             lineCmd.Parameters.AddWithValue("@ReceivedQty", receiveNow)
                                             lineCmd.Parameters.AddWithValue("@UnitCost", Convert.ToDecimal(row.Cells("UnitCost").Value))
                                             lineCmd.Parameters.AddWithValue("@LineTotal", receiveNow * Convert.ToDecimal(row.Cells("UnitCost").Value))
                                             lineCmd.ExecuteNonQuery()
                                         End Using
+                                        
+                                        ' Update ReceivedQuantity in PurchaseOrderLines
+                                        If poLineId > 0 Then
+                                            Using updatePOLineCmd As New SqlCommand("UPDATE PurchaseOrderLines SET ReceivedQuantity = ReceivedQuantity + @ReceivedQty WHERE POLineID = @POLineID", conn, trans)
+                                                updatePOLineCmd.Parameters.AddWithValue("@ReceivedQty", receiveNow)
+                                                updatePOLineCmd.Parameters.AddWithValue("@POLineID", poLineId)
+                                                updatePOLineCmd.ExecuteNonQuery()
+                                            End Using
+                                        End If
                                     End If
                                 End If
                             Next

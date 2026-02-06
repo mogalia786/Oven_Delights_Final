@@ -230,10 +230,7 @@ Public Class StockTakeForm
                         p.Category,
                         p.BranchID,
                         b.BranchName,
-                        ISNULL((SELECT SUM(s2.QtyOnHand) 
-                                FROM Demo_Retail_Variant v2 
-                                INNER JOIN Demo_Retail_Stock s2 ON v2.VariantID = s2.VariantID 
-                                WHERE v2.ProductID = p.ProductID AND s2.BranchID = p.BranchID), 0) AS CurrentStock,
+                        ISNULL(p.CurrentStock, 0) AS CurrentStock,
                         ISNULL(pr.SellingPrice, 0) AS SellingPrice,
                         ISNULL(pr.CostPrice, 0) AS CostPrice,
                         p.IsActive
@@ -512,35 +509,33 @@ Public Class StockTakeForm
     
     Private Sub UpdateStock(conn As SqlConnection, transaction As SqlTransaction, sku As String, newQty As Decimal)
         Dim sql = "
-            DECLARE @ProductID INT, @VariantID INT, @OldQty DECIMAL(18,3), @QtyDelta DECIMAL(18,3), @ProductName NVARCHAR(200), @CostPrice DECIMAL(18,2)
-            DECLARE @DebugMsg NVARCHAR(500)
+            DECLARE @ProductID INT, @OldQty DECIMAL(18,3), @QtyDelta DECIMAL(18,3), @ProductName NVARCHAR(200), @CostPrice DECIMAL(18,2)
             
-            -- Get ProductID and VariantID
-            SELECT @ProductID = ProductID, @ProductName = Name FROM Demo_Retail_Product WHERE SKU = @SKU AND BranchID = @BranchID
-            SELECT @VariantID = VariantID FROM Demo_Retail_Variant WHERE ProductID = @ProductID AND IsActive = 1
+            -- Get ProductID and current stock from Demo_Retail_Product
+            SELECT @ProductID = ProductID, @ProductName = Name, @OldQty = ISNULL(CurrentStock, 0) 
+            FROM Demo_Retail_Product 
+            WHERE SKU = @SKU AND BranchID = @BranchID
             
-            -- Debug: Check what we found
+            -- Check if product exists
             IF @ProductID IS NULL
-                RAISERROR('ProductID is NULL for SKU: %s, BranchID: %d', 16, 1, @SKU, @BranchID)
+                RAISERROR('Product not found for SKU: %s, BranchID: %d', 16, 1, @SKU, @BranchID)
             
-            IF @VariantID IS NULL AND @ProductID IS NOT NULL
-                RAISERROR('VariantID is NULL for ProductID: %d, SKU: %s', 16, 1, @ProductID, @SKU)
-            
-            -- Only proceed if we have valid IDs
-            IF @ProductID IS NOT NULL AND @VariantID IS NOT NULL
+            -- Only proceed if we have valid ProductID
+            IF @ProductID IS NOT NULL
             BEGIN
-                SELECT @OldQty = ISNULL(QtyOnHand, 0) FROM Demo_Retail_Stock WHERE VariantID = @VariantID AND BranchID = @BranchID
-                SELECT @CostPrice = ISNULL(CostPrice, 0) FROM Demo_Retail_Price WHERE ProductID = @ProductID AND BranchID = @BranchID AND (EffectiveTo IS NULL OR EffectiveTo >= GETDATE())
+                -- Get cost price
+                SELECT @CostPrice = ISNULL(CostPrice, 0) 
+                FROM Demo_Retail_Price 
+                WHERE ProductID = @ProductID AND BranchID = @BranchID 
+                  AND (EffectiveTo IS NULL OR EffectiveTo >= GETDATE())
                 
                 SET @QtyDelta = @NewQty - ISNULL(@OldQty, 0)
                 
-                IF EXISTS (SELECT 1 FROM Demo_Retail_Stock WHERE VariantID = @VariantID AND BranchID = @BranchID)
-                    UPDATE Demo_Retail_Stock SET QtyOnHand = @NewQty, UpdatedAt = GETDATE() WHERE VariantID = @VariantID AND BranchID = @BranchID
-                ELSE
-                    INSERT INTO Demo_Retail_Stock (VariantID, BranchID, QtyOnHand) VALUES (@VariantID, @BranchID, @NewQty)
-                
-                INSERT INTO Demo_Retail_StockMovements (VariantID, BranchID, QtyDelta, Reason, Ref1)
-                VALUES (@VariantID, @BranchID, @QtyDelta, 'Stock Take', 'Excel Import')
+                -- Update CurrentStock in Demo_Retail_Product
+                UPDATE Demo_Retail_Product 
+                SET CurrentStock = @NewQty, 
+                    UpdatedAt = GETDATE() 
+                WHERE ProductID = @ProductID AND BranchID = @BranchID
                 
                 -- Create ledger entry for stock adjustment
                 DECLARE @Amount DECIMAL(18,2) = ABS(@QtyDelta * @CostPrice)
@@ -595,11 +590,12 @@ Public Class StockTakeForm
     
     Private Sub UpdatePrices(conn As SqlConnection, transaction As SqlTransaction, sku As String, sellingPrice As Decimal?, costPrice As Decimal?)
         Dim sql = "
-            DECLARE @ProductID INT, @VariantID INT, @ProductName NVARCHAR(200), @OldCostPrice DECIMAL(18,2), @QtyOnHand DECIMAL(18,3)
+            DECLARE @ProductID INT, @ProductName NVARCHAR(200), @OldCostPrice DECIMAL(18,2), @QtyOnHand DECIMAL(18,3)
             
-            SELECT @ProductID = ProductID, @ProductName = Name FROM Demo_Retail_Product WHERE SKU = @SKU
-            SELECT @VariantID = VariantID FROM Demo_Retail_Variant WHERE ProductID = @ProductID AND IsActive = 1
-            SELECT @QtyOnHand = ISNULL(QtyOnHand, 0) FROM Demo_Retail_Stock WHERE VariantID = @VariantID AND BranchID = @BranchID
+            -- Get ProductID, ProductName, and CurrentStock from Demo_Retail_Product
+            SELECT @ProductID = ProductID, @ProductName = Name, @QtyOnHand = ISNULL(CurrentStock, 0) 
+            FROM Demo_Retail_Product 
+            WHERE SKU = @SKU AND BranchID = @BranchID
             
             -- Get old cost price
             SELECT @OldCostPrice = ISNULL(CostPrice, 0) FROM Demo_Retail_Price WHERE ProductID = @ProductID AND BranchID = @BranchID AND EffectiveTo IS NULL

@@ -8,6 +8,7 @@ Public Class EditSupplierInvoiceForm
     Inherits Form
     Private connectionString As String = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
     Private currentInvoiceId As Integer = 0
+    Private currentPurchaseOrderId As Integer = 0
     Private printDocument As New PrintDocument()
     Private printFont As Font
     Private printY As Integer = 0
@@ -96,14 +97,20 @@ Public Class EditSupplierInvoiceForm
         Dim lblStatus2 As New Label With {.Text = "Status:", .Location = New Point(350, 90), .AutoSize = True}
         Dim txtStatus As New TextBox With {.Name = "txtStatus", .Location = New Point(410, 87), .Width = 120, .ReadOnly = True}
         
+        Dim lblPONumber As New Label With {.Text = "PO Number:", .Location = New Point(550, 90), .AutoSize = True}
+        Dim txtPONumber As New TextBox With {.Name = "txtPONumber", .Location = New Point(640, 87), .Width = 150, .ReadOnly = True}
+        
         Dim lblSubTotal As New Label With {.Text = "Sub Total:", .Location = New Point(20, 120), .AutoSize = True}
         Dim txtSubTotal As New TextBox With {.Name = "txtSubTotal", .Location = New Point(120, 117), .Width = 120, .ReadOnly = True, .TextAlign = HorizontalAlignment.Right}
         
-        Dim lblVAT As New Label With {.Text = "VAT:", .Location = New Point(260, 120), .AutoSize = True}
-        Dim txtVAT As New TextBox With {.Name = "txtVAT", .Location = New Point(310, 117), .Width = 120, .ReadOnly = True, .TextAlign = HorizontalAlignment.Right}
+        Dim lblDiscount As New Label With {.Text = "Discount:", .Location = New Point(260, 120), .AutoSize = True}
+        Dim txtDiscount As New TextBox With {.Name = "txtDiscount", .Location = New Point(330, 117), .Width = 120, .ReadOnly = True, .TextAlign = HorizontalAlignment.Right}
         
-        Dim lblTotal As New Label With {.Text = "Total:", .Location = New Point(450, 120), .AutoSize = True}
-        Dim txtTotal As New TextBox With {.Name = "txtTotal", .Location = New Point(500, 117), .Width = 120, .ReadOnly = True, .TextAlign = HorizontalAlignment.Right, .Font = New Font("Segoe UI", 10, FontStyle.Bold)}
+        Dim lblVAT As New Label With {.Text = "VAT:", .Location = New Point(470, 120), .AutoSize = True}
+        Dim txtVAT As New TextBox With {.Name = "txtVAT", .Location = New Point(520, 117), .Width = 120, .ReadOnly = True, .TextAlign = HorizontalAlignment.Right}
+        
+        Dim lblTotal As New Label With {.Text = "Total:", .Location = New Point(660, 120), .AutoSize = True}
+        Dim txtTotal As New TextBox With {.Name = "txtTotal", .Location = New Point(710, 117), .Width = 120, .ReadOnly = True, .TextAlign = HorizontalAlignment.Right, .Font = New Font("Segoe UI", 10, FontStyle.Bold)}
         
         Dim lblAmountPaid As New Label With {.Text = "Amount Paid:", .Location = New Point(20, 150), .AutoSize = True}
         Dim txtAmountPaid As New TextBox With {.Name = "txtAmountPaid", .Location = New Point(120, 147), .Width = 120, .ReadOnly = True, .TextAlign = HorizontalAlignment.Right}
@@ -112,7 +119,8 @@ Public Class EditSupplierInvoiceForm
         Dim txtOutstanding As New TextBox With {.Name = "txtOutstanding", .Location = New Point(350, 147), .Width = 120, .ReadOnly = True, .TextAlign = HorizontalAlignment.Right, .Font = New Font("Segoe UI", 10, FontStyle.Bold), .ForeColor = Color.Red}
         
         grpHeader.Controls.AddRange({lblSupplier, txtSupplier, lblInvoiceDate, dtpInvoiceDate, lblDueDate, dtpDueDate,
-                                     lblBranch, txtBranch, lblStatus2, txtStatus, lblSubTotal, txtSubTotal, lblVAT, txtVAT,
+                                     lblBranch, txtBranch, lblStatus2, txtStatus, lblPONumber, txtPONumber,
+                                     lblSubTotal, txtSubTotal, lblDiscount, txtDiscount, lblVAT, txtVAT,
                                      lblTotal, txtTotal, lblAmountPaid, txtAmountPaid, lblOutstanding, txtOutstanding})
         
         ' Invoice lines grid
@@ -161,15 +169,27 @@ Public Class EditSupplierInvoiceForm
         }
         AddHandler btnPrint.Click, AddressOf btnPrint_Click
         
+        Dim btnViewPO As New Button With {
+            .Name = "btnViewPO",
+            .Text = "View Purchase Order",
+            .Location = New Point(270, 15),
+            .Width = 150,
+            .Height = 35,
+            .Enabled = False,
+            .BackColor = Color.DodgerBlue,
+            .ForeColor = Color.White
+        }
+        AddHandler btnViewPO.Click, AddressOf btnViewPO_Click
+        
         Dim btnClose As New Button With {
             .Text = "Close",
-            .Location = New Point(270, 15),
+            .Location = New Point(430, 15),
             .Width = 100,
             .Height = 35
         }
         AddHandler btnClose.Click, Sub() Me.Close()
         
-        pnlButtons.Controls.AddRange({btnSave, btnPrint, btnClose})
+        pnlButtons.Controls.AddRange({btnSave, btnPrint, btnViewPO, btnClose})
         
         ' Add panels to form
         Me.Controls.AddRange({pnlInvoice, pnlSearch, pnlButtons})
@@ -197,14 +217,35 @@ Public Class EditSupplierInvoiceForm
             Using con As New SqlConnection(connectionString)
                 con.Open()
                 
-                ' Search for invoice
-                Dim sql = "SELECT i.InvoiceID, i.InvoiceNumber, i.InvoiceDate, i.DueDate, i.SubTotal, i.VATAmount, i.TotalAmount, " &
-                         "i.AmountPaid, i.AmountOutstanding, i.Status, s.CompanyName, s.ContactPerson, s.Phone, s.Email, " &
-                         "s.Address, s.City, s.PostalCode, b.BranchName " &
+                ' Search for invoice (handle PurchaseOrderID column if it exists)
+                Dim sql As String
+                
+                ' Check if PurchaseOrderID column exists
+                Dim checkColumnSql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'SupplierInvoices' AND COLUMN_NAME = 'PurchaseOrderID'"
+                Dim hasPOColumn As Boolean = False
+                
+                Using checkCmd As New SqlCommand(checkColumnSql, con)
+                    hasPOColumn = (Convert.ToInt32(checkCmd.ExecuteScalar()) > 0)
+                End Using
+                
+                If hasPOColumn Then
+                    sql = "SELECT i.InvoiceID, i.InvoiceNumber, i.InvoiceDate, i.DueDate, i.SubTotal, i.VATAmount, i.TotalAmount, " &
+                         "i.AmountPaid, i.AmountOutstanding, i.Status, i.PurchaseOrderID, ISNULL(i.DiscountAmount, 0) AS DiscountAmount, ISNULL(i.DiscountPercent, 0) AS DiscountPercent, " &
+                         "s.CompanyName, s.ContactPerson, s.Phone, s.Email, s.Address, s.City, s.PostalCode, b.BranchName, po.PONumber " &
+                         "FROM SupplierInvoices i " &
+                         "INNER JOIN Suppliers s ON s.SupplierID = i.SupplierID " &
+                         "LEFT JOIN Branches b ON b.BranchID = i.BranchID " &
+                         "LEFT JOIN PurchaseOrders po ON po.PurchaseOrderID = i.PurchaseOrderID " &
+                         "WHERE i.InvoiceNumber = @InvoiceNumber"
+                Else
+                    sql = "SELECT i.InvoiceID, i.InvoiceNumber, i.InvoiceDate, i.DueDate, i.SubTotal, i.VATAmount, i.TotalAmount, " &
+                         "i.AmountPaid, i.AmountOutstanding, i.Status, 0 AS PurchaseOrderID, ISNULL(i.DiscountAmount, 0) AS DiscountAmount, ISNULL(i.DiscountPercent, 0) AS DiscountPercent, " &
+                         "s.CompanyName, s.ContactPerson, s.Phone, s.Email, s.Address, s.City, s.PostalCode, b.BranchName, 'N/A' AS PONumber " &
                          "FROM SupplierInvoices i " &
                          "INNER JOIN Suppliers s ON s.SupplierID = i.SupplierID " &
                          "LEFT JOIN Branches b ON b.BranchID = i.BranchID " &
                          "WHERE i.InvoiceNumber = @InvoiceNumber"
+                End If
                 
                 Using cmd As New SqlCommand(sql, con)
                     cmd.Parameters.AddWithValue("@InvoiceNumber", invoiceNumber)
@@ -212,6 +253,7 @@ Public Class EditSupplierInvoiceForm
                     Using reader = cmd.ExecuteReader()
                         If reader.Read() Then
                             currentInvoiceId = Convert.ToInt32(reader("InvoiceID"))
+                            currentPurchaseOrderId = If(IsDBNull(reader("PurchaseOrderID")), 0, Convert.ToInt32(reader("PurchaseOrderID")))
                             LoadInvoiceDetails(reader)
                             reader.Close()
                             LoadInvoiceLines(con)
@@ -220,6 +262,7 @@ Public Class EditSupplierInvoiceForm
                             lblStatus.ForeColor = Color.Green
                             
                             DirectCast(Me.Controls.Find("btnPrint", True)(0), Button).Enabled = True
+                            DirectCast(Me.Controls.Find("btnViewPO", True)(0), Button).Enabled = (currentPurchaseOrderId > 0)
                         Else
                             MessageBox.Show($"Invoice number '{invoiceNumber}' not found.", "Not Found", MessageBoxButtons.OK, MessageBoxIcon.Information)
                             lblStatus.Text = "Invoice not found"
@@ -241,11 +284,21 @@ Public Class EditSupplierInvoiceForm
         DirectCast(Me.Controls.Find("dtpDueDate", True)(0), DateTimePicker).Value = Convert.ToDateTime(reader("DueDate"))
         DirectCast(Me.Controls.Find("txtBranch", True)(0), TextBox).Text = If(IsDBNull(reader("BranchName")), "", reader("BranchName").ToString())
         DirectCast(Me.Controls.Find("txtStatus", True)(0), TextBox).Text = reader("Status").ToString()
-        DirectCast(Me.Controls.Find("txtSubTotal", True)(0), TextBox).Text = Convert.ToDecimal(reader("SubTotal")).ToString("N2")
-        DirectCast(Me.Controls.Find("txtVAT", True)(0), TextBox).Text = Convert.ToDecimal(reader("VATAmount")).ToString("N2")
-        DirectCast(Me.Controls.Find("txtTotal", True)(0), TextBox).Text = Convert.ToDecimal(reader("TotalAmount")).ToString("N2")
-        DirectCast(Me.Controls.Find("txtAmountPaid", True)(0), TextBox).Text = Convert.ToDecimal(reader("AmountPaid")).ToString("N2")
-        DirectCast(Me.Controls.Find("txtOutstanding", True)(0), TextBox).Text = Convert.ToDecimal(reader("AmountOutstanding")).ToString("N2")
+        DirectCast(Me.Controls.Find("txtPONumber", True)(0), TextBox).Text = If(IsDBNull(reader("PONumber")), "N/A", reader("PONumber").ToString())
+        DirectCast(Me.Controls.Find("txtSubTotal", True)(0), TextBox).Text = Convert.ToDecimal(reader("SubTotal")).ToString("N4")
+        
+        Dim discountAmount As Decimal = Convert.ToDecimal(reader("DiscountAmount"))
+        Dim discountPercent As Decimal = Convert.ToDecimal(reader("DiscountPercent"))
+        If discountAmount > 0 Then
+            DirectCast(Me.Controls.Find("txtDiscount", True)(0), TextBox).Text = $"R {discountAmount:N4} ({discountPercent:N4}%)"
+        Else
+            DirectCast(Me.Controls.Find("txtDiscount", True)(0), TextBox).Text = "R 0.0000"
+        End If
+        
+        DirectCast(Me.Controls.Find("txtVAT", True)(0), TextBox).Text = Convert.ToDecimal(reader("VATAmount")).ToString("N4")
+        DirectCast(Me.Controls.Find("txtTotal", True)(0), TextBox).Text = Convert.ToDecimal(reader("TotalAmount")).ToString("N4")
+        DirectCast(Me.Controls.Find("txtAmountPaid", True)(0), TextBox).Text = Convert.ToDecimal(reader("AmountPaid")).ToString("N4")
+        DirectCast(Me.Controls.Find("txtOutstanding", True)(0), TextBox).Text = Convert.ToDecimal(reader("AmountOutstanding")).ToString("N4")
     End Sub
     
     Private Sub LoadInvoiceLines(con As SqlConnection)
@@ -274,15 +327,15 @@ Public Class EditSupplierInvoiceForm
                 dgvLines.Columns("Description").HeaderText = "Description"
                 dgvLines.Columns("Description").ReadOnly = True
                 dgvLines.Columns("Quantity").HeaderText = "Quantity"
-                dgvLines.Columns("Quantity").DefaultCellStyle.Format = "N2"
+                dgvLines.Columns("Quantity").DefaultCellStyle.Format = "N4"
                 dgvLines.Columns("Quantity").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
                 dgvLines.Columns("Quantity").ReadOnly = False
                 dgvLines.Columns("UnitPrice").HeaderText = "Unit Price"
-                dgvLines.Columns("UnitPrice").DefaultCellStyle.Format = "N2"
+                dgvLines.Columns("UnitPrice").DefaultCellStyle.Format = "N4"
                 dgvLines.Columns("UnitPrice").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
                 dgvLines.Columns("UnitPrice").ReadOnly = False
                 dgvLines.Columns("LineTotal").HeaderText = "Total"
-                dgvLines.Columns("LineTotal").DefaultCellStyle.Format = "N2"
+                dgvLines.Columns("LineTotal").DefaultCellStyle.Format = "N4"
                 dgvLines.Columns("LineTotal").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
                 dgvLines.Columns("LineTotal").ReadOnly = True
             End If
@@ -293,6 +346,7 @@ Public Class EditSupplierInvoiceForm
     
     Private Sub ClearForm()
         currentInvoiceId = 0
+        currentPurchaseOrderId = 0
         DirectCast(Me.Controls.Find("txtSupplier", True)(0), TextBox).Clear()
         DirectCast(Me.Controls.Find("txtBranch", True)(0), TextBox).Clear()
         DirectCast(Me.Controls.Find("txtStatus", True)(0), TextBox).Clear()
@@ -303,6 +357,21 @@ Public Class EditSupplierInvoiceForm
         DirectCast(Me.Controls.Find("txtOutstanding", True)(0), TextBox).Clear()
         DirectCast(Me.Controls.Find("dgvLines", True)(0), DataGridView).DataSource = Nothing
         DirectCast(Me.Controls.Find("btnPrint", True)(0), Button).Enabled = False
+        DirectCast(Me.Controls.Find("btnViewPO", True)(0), Button).Enabled = False
+    End Sub
+    
+    Private Sub btnViewPO_Click(sender As Object, e As EventArgs)
+        If currentPurchaseOrderId <= 0 Then
+            MessageBox.Show("No Purchase Order linked to this invoice.", "View PO", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
+        
+        Try
+            Dim poViewer As New PurchaseOrderViewerForm(currentPurchaseOrderId)
+            poViewer.ShowDialog(Me)
+        Catch ex As Exception
+            MessageBox.Show($"Error opening Purchase Order: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
     
     Private Sub btnPrint_Click(sender As Object, e As EventArgs)
@@ -357,10 +426,9 @@ Public Class EditSupplierInvoiceForm
         printY += 25
         
         e.Graphics.DrawString($"Branch: {txtBranch.Text}", normalFont, Brushes.Black, 50, printY)
-        e.Graphics.DrawString($"Due Date: {dtpDueDate.Value:dd MMM yyyy}", normalFont, Brushes.Black, 500, printY)
-        printY += 25
-        
-        e.Graphics.DrawString($"Status: {txtStatus.Text}", normalFont, Brushes.Black, 50, printY)
+        e.Graphics.DrawString($"Status: {txtStatus.Text}", normalFont, Brushes.Black, 400, printY)
+        Dim txtPONumber = DirectCast(Me.Controls.Find("txtPONumber", True)(0), TextBox)
+        e.Graphics.DrawString($"PO Number: {txtPONumber.Text}", normalFont, Brushes.Black, 550, printY)
         printY += 40
         
         ' Line items header
@@ -385,9 +453,9 @@ Public Class EditSupplierInvoiceForm
                 Dim description As String = If(row.Cells("Description").Value, "").ToString()
                 e.Graphics.DrawString(itemSource, normalFont, Brushes.Black, 50, printY)
                 e.Graphics.DrawString(description, normalFont, Brushes.Black, 150, printY)
-                e.Graphics.DrawString(Convert.ToDecimal(row.Cells("Quantity").Value).ToString("N2"), normalFont, Brushes.Black, 450, printY)
-                e.Graphics.DrawString(Convert.ToDecimal(row.Cells("UnitPrice").Value).ToString("N2"), normalFont, Brushes.Black, 520, printY)
-                e.Graphics.DrawString(Convert.ToDecimal(row.Cells("LineTotal").Value).ToString("N2"), normalFont, Brushes.Black, 650, printY)
+                e.Graphics.DrawString(Convert.ToDecimal(row.Cells("Quantity").Value).ToString("N4"), normalFont, Brushes.Black, 450, printY)
+                e.Graphics.DrawString(Convert.ToDecimal(row.Cells("UnitPrice").Value).ToString("N4"), normalFont, Brushes.Black, 520, printY)
+                e.Graphics.DrawString(Convert.ToDecimal(row.Cells("LineTotal").Value).ToString("N4"), normalFont, Brushes.Black, 650, printY)
                 printY += 20
             End If
         Next
@@ -398,6 +466,7 @@ Public Class EditSupplierInvoiceForm
         
         ' Totals
         Dim txtSubTotal = DirectCast(Me.Controls.Find("txtSubTotal", True)(0), TextBox)
+        Dim txtDiscount = DirectCast(Me.Controls.Find("txtDiscount", True)(0), TextBox)
         Dim txtVAT = DirectCast(Me.Controls.Find("txtVAT", True)(0), TextBox)
         Dim txtTotal = DirectCast(Me.Controls.Find("txtTotal", True)(0), TextBox)
         Dim txtAmountPaid = DirectCast(Me.Controls.Find("txtAmountPaid", True)(0), TextBox)
@@ -406,6 +475,12 @@ Public Class EditSupplierInvoiceForm
         e.Graphics.DrawString("Sub Total:", normalFont, Brushes.Black, 550, printY)
         e.Graphics.DrawString($"R {txtSubTotal.Text}", normalFont, Brushes.Black, 650, printY)
         printY += 25
+        
+        If Not txtDiscount.Text.StartsWith("R 0.0000") Then
+            e.Graphics.DrawString("Discount:", normalFont, Brushes.Black, 550, printY)
+            e.Graphics.DrawString(txtDiscount.Text, normalFont, Brushes.Black, 650, printY)
+            printY += 25
+        End If
         
         e.Graphics.DrawString("VAT:", normalFont, Brushes.Black, 550, printY)
         e.Graphics.DrawString($"R {txtVAT.Text}", normalFont, Brushes.Black, 650, printY)
@@ -475,17 +550,17 @@ Public Class EditSupplierInvoiceForm
             End If
         Next
         
-        Dim vatAmount As Decimal = Math.Round(subTotal * 0.15D, 2)
+        Dim vatAmount As Decimal = Math.Round(subTotal * 0.15D, 4)
         Dim totalAmount As Decimal = subTotal + vatAmount
         
-        DirectCast(Me.Controls.Find("txtSubTotal", True)(0), TextBox).Text = subTotal.ToString("N2")
-        DirectCast(Me.Controls.Find("txtVAT", True)(0), TextBox).Text = vatAmount.ToString("N2")
-        DirectCast(Me.Controls.Find("txtTotal", True)(0), TextBox).Text = totalAmount.ToString("N2")
+        DirectCast(Me.Controls.Find("txtSubTotal", True)(0), TextBox).Text = subTotal.ToString("N4")
+        DirectCast(Me.Controls.Find("txtVAT", True)(0), TextBox).Text = vatAmount.ToString("N4")
+        DirectCast(Me.Controls.Find("txtTotal", True)(0), TextBox).Text = totalAmount.ToString("N4")
         
         ' Update outstanding (Total - AmountPaid)
         Dim amountPaid As Decimal = Decimal.Parse(DirectCast(Me.Controls.Find("txtAmountPaid", True)(0), TextBox).Text)
         Dim outstanding As Decimal = totalAmount - amountPaid
-        DirectCast(Me.Controls.Find("txtOutstanding", True)(0), TextBox).Text = outstanding.ToString("N2")
+        DirectCast(Me.Controls.Find("txtOutstanding", True)(0), TextBox).Text = outstanding.ToString("N4")
     End Sub
     
     Private Sub btnSave_Click(sender As Object, e As EventArgs)
