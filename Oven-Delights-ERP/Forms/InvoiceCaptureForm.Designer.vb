@@ -26,6 +26,7 @@ Partial Class InvoiceCaptureForm
         Me.dgvLines = New System.Windows.Forms.DataGridView()
         Me.btnSave = New System.Windows.Forms.Button()
         Me.btnCancel = New System.Windows.Forms.Button()
+        Me.btnPrint = New System.Windows.Forms.Button()
         Me.lblSupplier = New System.Windows.Forms.Label()
         Me.cboSupplier = New System.Windows.Forms.ComboBox()
         Me.lblPO = New System.Windows.Forms.Label()
@@ -266,8 +267,21 @@ Partial Class InvoiceCaptureForm
         Me.btnCancel.Name = "btnCancel"
         Me.btnCancel.Size = New System.Drawing.Size(80, 30)
         Me.btnCancel.TabIndex = 16
-        Me.btnCancel.Text = "Cancel"
+        Me.btnCancel.Text = "Close"
         Me.btnCancel.UseVisualStyleBackColor = False
+        '
+        'btnPrint
+        '
+        Me.btnPrint.BackColor = System.Drawing.Color.FromArgb(CType(CType(230, Byte), Integer), CType(CType(126, Byte), Integer), CType(CType(34, Byte), Integer))
+        Me.btnPrint.FlatStyle = System.Windows.Forms.FlatStyle.Flat
+        Me.btnPrint.ForeColor = System.Drawing.Color.White
+        Me.btnPrint.Location = New System.Drawing.Point(780, 605)
+        Me.btnPrint.Name = "btnPrint"
+        Me.btnPrint.Size = New System.Drawing.Size(80, 30)
+        Me.btnPrint.TabIndex = 17
+        Me.btnPrint.Text = "Print"
+        Me.btnPrint.Enabled = False
+        Me.btnPrint.UseVisualStyleBackColor = False
         '
         'InvoiceCaptureForm
         '
@@ -275,6 +289,7 @@ Partial Class InvoiceCaptureForm
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.BackColor = System.Drawing.Color.White
         Me.ClientSize = New System.Drawing.Size(800, 620)
+        Me.Controls.Add(Me.btnPrint)
         Me.Controls.Add(Me.btnCancel)
         Me.Controls.Add(Me.btnSave)
         Me.Controls.Add(Me.txtTotal)
@@ -314,6 +329,7 @@ Partial Class InvoiceCaptureForm
     Friend WithEvents dgvLines As System.Windows.Forms.DataGridView
     Friend WithEvents btnSave As System.Windows.Forms.Button
     Friend WithEvents btnCancel As System.Windows.Forms.Button
+    Friend WithEvents btnPrint As System.Windows.Forms.Button
     Friend WithEvents lblSupplier As System.Windows.Forms.Label
     Friend WithEvents cboSupplier As System.Windows.Forms.ComboBox
     Friend WithEvents lblPO As System.Windows.Forms.Label

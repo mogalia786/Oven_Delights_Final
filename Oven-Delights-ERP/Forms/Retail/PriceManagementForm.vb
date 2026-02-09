@@ -28,6 +28,7 @@ Public Class PriceManagementForm
     Private lblRecommended As Label
     Private lblRecommendedValue As Label
     Private btnSave As Button
+    Private btnDelete As Button
     Private grpImage As GroupBox
     Private picProduct As PictureBox
     Private btnBrowseImage As Button
@@ -167,7 +168,7 @@ Public Class PriceManagementForm
         }
 
         btnSave = New Button With {
-            .Text = "💾SAVE PRICE",
+            .Text = "💾 SAVE PRICE",
             .Location = New Point(460, 32),
             .Size = New Size(150, 40),
             .BackColor = Color.FromArgb(46, 204, 113),
@@ -178,8 +179,21 @@ Public Class PriceManagementForm
         }
         btnSave.FlatAppearance.BorderSize = 0
         AddHandler btnSave.Click, AddressOf btnSave_Click
+        
+        btnDelete = New Button With {
+            .Text = "🗑️ DELETE",
+            .Location = New Point(460, 75),
+            .Size = New Size(150, 30),
+            .BackColor = Color.FromArgb(231, 76, 60),
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat,
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .Cursor = Cursors.Hand
+        }
+        btnDelete.FlatAppearance.BorderSize = 0
+        AddHandler btnDelete.Click, AddressOf btnDelete_Click
 
-        grpPricing.Controls.AddRange({lblPrice, numPrice, lblCurrency, txtCurrency, lblRecommended, lblRecommendedValue, btnSave})
+        grpPricing.Controls.AddRange({lblPrice, numPrice, lblCurrency, txtCurrency, lblRecommended, lblRecommendedValue, btnSave, btnDelete})
 
         ' Image Group
         grpImage = New GroupBox With {
@@ -576,6 +590,63 @@ Public Class PriceManagementForm
             End Using
         Catch
             ' No image or error loading
+        End Try
+    End Sub
+
+    Private Sub btnDelete_Click(sender As Object, e As EventArgs)
+        If _selectedProductId = 0 Then
+            MessageBox.Show("Please select a product to delete.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+
+        ' Confirm deletion
+        Dim productName As String = cboProduct.Text
+        Dim result = MessageBox.Show(
+            $"Are you sure you want to delete '{productName}'?" & Environment.NewLine & Environment.NewLine &
+            "This will hide the product from POS and Price Management." & Environment.NewLine &
+            "The product data will be preserved in the database.",
+            "Confirm Delete",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question,
+            MessageBoxDefaultButton.Button2)
+
+        If result = DialogResult.No Then
+            Return
+        End If
+
+        Try
+            Using conn As New SqlConnection(_connString)
+                conn.Open()
+                
+                ' Soft delete: Set IsActive = 0 for this product in this branch
+                Dim sql = "UPDATE Demo_Retail_Product SET IsActive = 0 WHERE ProductID = @pid AND BranchID = @bid"
+                Using cmd As New SqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@pid", _selectedProductId)
+                    cmd.Parameters.AddWithValue("@bid", _sessionBranchId)
+                    Dim rowsAffected = cmd.ExecuteNonQuery()
+                    
+                    If rowsAffected > 0 Then
+                        MessageBox.Show($"Product '{productName}' has been deleted successfully." & Environment.NewLine &
+                                      "It will no longer appear in POS or Price Management.",
+                                      "Success",
+                                      MessageBoxButtons.OK,
+                                      MessageBoxIcon.Information)
+                        
+                        ' Reset selection
+                        _selectedProductId = 0
+                        numPrice.Value = 0
+                        lblRecommendedValue.Text = "R 0.00"
+                        picProduct.Image = Nothing
+                        
+                        ' Refresh product list to remove deleted item
+                        LoadProducts()
+                    Else
+                        MessageBox.Show("Product not found or already deleted.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    End If
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show($"Error deleting product: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 End Class

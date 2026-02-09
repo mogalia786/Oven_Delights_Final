@@ -165,7 +165,7 @@ Public Class GRVCreateForm
             
             ' Check for duplicate invoice number
             If CheckDuplicateInvoiceNumber(txtDeliveryNote.Text.Trim(), supplierId) Then
-                MessageBox.Show($"Invoice Number '{txtDeliveryNote.Text.Trim()}' already exists for this supplier. Please enter a unique invoice number.", "Duplicate Invoice", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                MessageBox.Show($"[GRVCreateForm.vb Line 168] Invoice Number '{txtDeliveryNote.Text.Trim()}' already exists for this supplier. Please enter a unique invoice number.", "Duplicate Invoice", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 txtDeliveryNote.Focus()
                 txtDeliveryNote.SelectAll()
                 Return

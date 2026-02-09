@@ -187,6 +187,7 @@ Public Class InvoiceEditorForm
         ' Define columns (match capture names for reuse)
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "POLineID", .HeaderText = "POLineID", .Visible = False})
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "MaterialID", .HeaderText = "MaterialID", .Visible = False})
+        dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "ProductID", .HeaderText = "ProductID", .Visible = False})
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "MaterialCode", .HeaderText = "Code", .ReadOnly = True})
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "MaterialName", .HeaderText = "Material", .ReadOnly = True})
         dgvLines.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "OrderedQuantity", .HeaderText = "Ordered", .ReadOnly = True, .DefaultCellStyle = New DataGridViewCellStyle() With {.Format = "N2"}})
@@ -388,7 +389,7 @@ Public Class InvoiceEditorForm
             row.Cells("CreditReason").Value = GetStr(r, "CreditReason")
             row.Cells("CreditComments").Value = GetStr(r, "CreditComments")
             row.Cells("LineTotal").Value = Math.Round(GetDec(r, "ReceiveNow") * GetDec(r, "UnitCost"), 2)
-
+            
             ' Enrich missing fields (Material/Ordered/ReceivedTD) if not provided by service
             Try
                 Dim matName As String = Convert.ToString(row.Cells("MaterialName").Value)
@@ -398,6 +399,11 @@ Public Class InvoiceEditorForm
                 ' 1) If we have a MaterialID, fetch Code/Name from Materials first
                 Dim materialId As Integer = 0
                 If row.Cells("MaterialID").Value IsNot Nothing Then Integer.TryParse(row.Cells("MaterialID").Value.ToString(), materialId)
+                
+                ' Populate ProductID from MaterialID for VAT calculation
+                If materialId > 0 AndAlso dgvLines.Columns.Contains("ProductID") Then
+                    row.Cells("ProductID").Value = materialId
+                End If
                 If materialId > 0 AndAlso (String.IsNullOrWhiteSpace(matName) OrElse String.IsNullOrWhiteSpace(matCode)) Then
                     Dim csM = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
                     Using conM As New Microsoft.Data.SqlClient.SqlConnection(csM)
@@ -563,16 +569,52 @@ Public Class InvoiceEditorForm
     End Function
 
     Private Sub RecalcTotals()
-        Dim subTot As Decimal = 0D
+        Dim subTotVatable As Decimal = 0D
+        Dim subTotNonVatable As Decimal = 0D
+        Dim vatTotal As Decimal = 0D
+        Dim vatRate As Decimal = GetVatRate()
+        
         For Each row As DataGridViewRow In dgvLines.Rows
             If Not row.IsNewRow Then
-                subTot += ToDec(row.Cells("ReceiveNow").Value) * ToDec(row.Cells("UnitCost").Value)
+                Dim lineTotal As Decimal = ToDec(row.Cells("ReceiveNow").Value) * ToDec(row.Cells("UnitCost").Value)
+                
+                ' Check if product is vatable
+                Dim productId As Integer = 0
+                If dgvLines.Columns.Contains("ProductID") AndAlso row.Cells("ProductID").Value IsNot Nothing Then
+                    productId = CInt(row.Cells("ProductID").Value)
+                End If
+                
+                Dim isVatable As Boolean = True
+                If productId > 0 Then
+                    Try
+                        Dim cs = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
+                        Using conn As New Microsoft.Data.SqlClient.SqlConnection(cs)
+                            conn.Open()
+                            Using cmd As New Microsoft.Data.SqlClient.SqlCommand("SELECT ISNULL(IsVatable, 1) FROM Demo_Retail_Product WHERE ProductID = @ProductID", conn)
+                                cmd.Parameters.AddWithValue("@ProductID", productId)
+                                Dim result = cmd.ExecuteScalar()
+                                If result IsNot Nothing Then isVatable = Convert.ToBoolean(result)
+                            End Using
+                        End Using
+                    Catch
+                        ' Default to vatable if check fails
+                        isVatable = True
+                    End Try
+                End If
+                
+                If isVatable Then
+                    subTotVatable += lineTotal
+                    vatTotal += Math.Round(lineTotal * (vatRate / 100D), 4)
+                Else
+                    subTotNonVatable += lineTotal
+                End If
             End If
         Next
-        subTot = Math.Round(subTot, 2)
-        Dim vatRate As Decimal = GetVatRate()
-        Dim vat As Decimal = Math.Round(subTot * (vatRate / 100D), 2)
+        
+        Dim subTot As Decimal = Math.Round(subTotVatable + subTotNonVatable, 2)
+        Dim vat As Decimal = Math.Round(vatTotal, 2)
         Dim total As Decimal = Math.Round(subTot + vat, 2)
+        
         If txtSubTotal IsNot Nothing Then txtSubTotal.Text = subTot.ToString("N2")
         If txtVat IsNot Nothing Then txtVat.Text = vat.ToString("N2")
         If txtTotal IsNot Nothing Then txtTotal.Text = total.ToString("N2")

@@ -10,6 +10,7 @@ Public Class InvoiceCaptureForm
     Private ReadOnly accountingService As New AccountsPayableService()
     Private selectedSupplierId As Integer
     Private selectedPOId As Integer
+    Private isSaving As Boolean = False
 
     Private Sub InvoiceCaptureForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Try
@@ -364,20 +365,33 @@ Public Class InvoiceCaptureForm
     End Sub
 
     Private Sub btnSave_Click(sender As Object, e As EventArgs) Handles btnSave.Click
+        ' Prevent re-entry if already saving
+        If isSaving Then Return
+        isSaving = True
+        
+        ' Disable save button immediately to prevent double-click
+        btnSave.Enabled = False
+        
         Try
             If selectedSupplierId <= 0 Then
                 MessageBox.Show("Please select a supplier.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                btnSave.Enabled = True
+                isSaving = False
                 Return
             End If
 
             If selectedPOId <= 0 Then
                 MessageBox.Show("Please select a purchase order.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                btnSave.Enabled = True
+                isSaving = False
                 Return
             End If
 
             If String.IsNullOrWhiteSpace(txtDeliveryNote.Text) Then
                 MessageBox.Show("Please enter an Invoice Number.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 txtDeliveryNote.Focus()
+                btnSave.Enabled = True
+                isSaving = False
                 Return
             End If
             
@@ -386,6 +400,8 @@ Public Class InvoiceCaptureForm
                 MessageBox.Show($"Invoice Number '{txtDeliveryNote.Text.Trim()}' already exists for this supplier. Please enter a unique invoice number.", "Duplicate Invoice", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 txtDeliveryNote.Focus()
                 txtDeliveryNote.SelectAll()
+                btnSave.Enabled = True
+                isSaving = False
                 Return
             End If
 
@@ -405,15 +421,47 @@ Public Class InvoiceCaptureForm
                 Return
             End If
 
-            ' Calculate totals
-            Dim subTotal As Decimal = 0
+            ' Calculate totals - respecting IsVatable status
+            Dim subTotalVatable As Decimal = 0
+            Dim subTotalNonVatable As Decimal = 0
+            Dim vatTotal As Decimal = 0
+            
             For Each row As DataGridViewRow In dgvLines.Rows
                 If Not row.IsNewRow Then
                     Dim receiveNow = If(row.Cells("ReceiveNow").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("ReceiveNow").Value))
                     Dim unitCost = If(row.Cells("UnitCost").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("UnitCost").Value))
-                    subTotal += receiveNow * unitCost
+                    Dim lineTotalExclVAT As Decimal = receiveNow * unitCost
+                    
+                    ' Get ProductID to check IsVatable
+                    Dim productId As Integer = 0
+                    If row.Cells("ProductID").Value IsNot Nothing Then
+                        productId = Convert.ToInt32(row.Cells("ProductID").Value)
+                    End If
+                    
+                    ' Check if product is vatable
+                    Dim isVatable As Boolean = True
+                    If productId > 0 Then
+                        Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                            conn.Open()
+                            Using cmd As New SqlCommand("SELECT ISNULL(IsVatable, 1) FROM Demo_Retail_Product WHERE ProductID = @ProductID", conn)
+                                cmd.Parameters.AddWithValue("@ProductID", productId)
+                                Dim result = cmd.ExecuteScalar()
+                                If result IsNot Nothing Then isVatable = Convert.ToBoolean(result)
+                            End Using
+                        End Using
+                    End If
+                    
+                    If isVatable Then
+                        Dim lineVAT As Decimal = Math.Round(lineTotalExclVAT * 0.15D, 4)
+                        subTotalVatable += lineTotalExclVAT
+                        vatTotal += lineVAT
+                    Else
+                        subTotalNonVatable += lineTotalExclVAT
+                    End If
                 End If
             Next
+            
+            Dim subTotal As Decimal = subTotalVatable + subTotalNonVatable
             
             ' Apply discount - use Rand discount value directly
             Dim discountAmount As Decimal = 0
@@ -426,9 +474,12 @@ Public Class InvoiceCaptureForm
                 If subTotal > 0 Then
                     discountPercent = Math.Round((discountAmount / (subTotal + discountAmount)) * 100, 4)
                 End If
+                ' Recalculate VAT only on vatable portion after discount
+                Dim vatableAfterDiscount As Decimal = subTotalVatable - (discountAmount * (subTotalVatable / (subTotalVatable + subTotalNonVatable)))
+                vatTotal = Math.Round(vatableAfterDiscount * 0.15D, 4)
             End If
             
-            Dim vatAmount As Decimal = Math.Round(subTotal * 0.15D, 4)
+            Dim vatAmount As Decimal = vatTotal
             Dim totalAmount As Decimal = subTotal + vatAmount
 
             ' Save GRV and update inventory
@@ -504,27 +555,151 @@ Public Class InvoiceCaptureForm
             ' Update PO status to captured/closed
             stockroomService.UpdatePurchaseOrderStatus(selectedPOId, "Captured")
 
-            MessageBox.Show("GRV saved successfully! Inventory updated.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            ' Enable print button - save button already disabled at start of method
+            btnPrint.Enabled = True
 
-            ' Refresh PO dropdown to remove captured PO
-            LoadPurchaseOrders()
-
-            ' Clear the form
-            cboPO.SelectedIndex = -1
-            dgvLines.DataSource = Nothing
-            txtSubTotal.Text = "0.00"
-            txtVat.Text = "0.00"
-            txtTotal.Text = "0.00"
-
-            Me.Close()
+            MessageBox.Show("GRV saved successfully! Inventory updated. You can now print the invoice.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
 
         Catch ex As Exception
             MessageBox.Show("Error saving GRV: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            btnSave.Enabled = True  ' Re-enable save button on error
         End Try
     End Sub
 
     Private Sub btnCancel_Click(sender As Object, e As EventArgs) Handles btnCancel.Click
         Me.Close()
+    End Sub
+
+    Private Sub btnPrint_Click(sender As Object, e As EventArgs) Handles btnPrint.Click
+        Try
+            Dim printDoc As New System.Drawing.Printing.PrintDocument()
+            AddHandler printDoc.PrintPage, AddressOf PrintInvoice
+            
+            Dim printDialog As New PrintDialog()
+            printDialog.Document = printDoc
+            
+            If printDialog.ShowDialog() = DialogResult.OK Then
+                printDoc.Print()
+                MessageBox.Show("Invoice printed successfully!", "Print", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+        Catch ex As Exception
+            MessageBox.Show($"Print error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub PrintInvoice(sender As Object, e As System.Drawing.Printing.PrintPageEventArgs)
+        Try
+            Dim font As New Font("Arial", 10)
+            Dim fontBold As New Font("Arial", 10, FontStyle.Bold)
+            Dim fontTitle As New Font("Arial", 16, FontStyle.Bold)
+            Dim fontHeader As New Font("Arial", 12, FontStyle.Bold)
+            
+            Dim yPos As Single = 50
+            Dim leftMargin As Single = 50
+            Dim rightMargin As Single = e.PageBounds.Width - 50
+            
+            ' Company Header
+            e.Graphics.DrawString("OVEN DELIGHTS (PTY) LTD", fontTitle, Brushes.Black, leftMargin, yPos)
+            yPos += 30
+            e.Graphics.DrawString("GOODS RECEIVED VOUCHER / SUPPLIER INVOICE", fontHeader, Brushes.Black, leftMargin, yPos)
+            yPos += 40
+            
+            ' Supplier Information
+            e.Graphics.DrawString("Supplier:", fontBold, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString(cboSupplier.Text, font, Brushes.Black, leftMargin + 150, yPos)
+            yPos += 25
+            
+            e.Graphics.DrawString("Purchase Order:", fontBold, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString(cboPO.Text, font, Brushes.Black, leftMargin + 150, yPos)
+            yPos += 25
+            
+            e.Graphics.DrawString("Invoice Number:", fontBold, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString(txtDeliveryNote.Text, font, Brushes.Black, leftMargin + 150, yPos)
+            yPos += 25
+            
+            e.Graphics.DrawString("Date Received:", fontBold, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString(dtpReceived.Value.ToString("dd MMM yyyy"), font, Brushes.Black, leftMargin + 150, yPos)
+            yPos += 25
+            
+            e.Graphics.DrawString("Received By:", fontBold, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString(If(AppSession.CurrentUser?.Username, "System"), font, Brushes.Black, leftMargin + 150, yPos)
+            yPos += 40
+            
+            ' Line separator
+            e.Graphics.DrawLine(Pens.Black, leftMargin, yPos, rightMargin, yPos)
+            yPos += 10
+            
+            ' Column Headers
+            e.Graphics.DrawString("Product", fontBold, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString("Qty", fontBold, Brushes.Black, leftMargin + 350, yPos)
+            e.Graphics.DrawString("Unit Cost", fontBold, Brushes.Black, leftMargin + 420, yPos)
+            e.Graphics.DrawString("Total", fontBold, Brushes.Black, leftMargin + 520, yPos)
+            yPos += 25
+            
+            e.Graphics.DrawLine(Pens.Black, leftMargin, yPos, rightMargin, yPos)
+            yPos += 10
+            
+            ' Line Items
+            For Each row As DataGridViewRow In dgvLines.Rows
+                If Not row.IsNewRow Then
+                    Dim receiveNow = If(row.Cells("ReceiveNow").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("ReceiveNow").Value))
+                    If receiveNow > 0 Then
+                        Dim productName = If(row.Cells("ProductName").Value, "").ToString()
+                        Dim unitCost = If(row.Cells("UnitCost").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("UnitCost").Value))
+                        Dim lineTotal = receiveNow * unitCost
+                        
+                        If productName.Length > 40 Then productName = productName.Substring(0, 37) & "..."
+                        
+                        e.Graphics.DrawString(productName, font, Brushes.Black, leftMargin, yPos)
+                        e.Graphics.DrawString(receiveNow.ToString("N2"), font, Brushes.Black, leftMargin + 350, yPos)
+                        e.Graphics.DrawString("R " & unitCost.ToString("N2"), font, Brushes.Black, leftMargin + 420, yPos)
+                        e.Graphics.DrawString("R " & lineTotal.ToString("N2"), font, Brushes.Black, leftMargin + 520, yPos)
+                        yPos += 20
+                    End If
+                End If
+            Next
+            
+            yPos += 10
+            e.Graphics.DrawLine(Pens.Black, leftMargin, yPos, rightMargin, yPos)
+            yPos += 15
+            
+            ' Totals
+            e.Graphics.DrawString("Sub Total:", fontBold, Brushes.Black, leftMargin + 420, yPos)
+            e.Graphics.DrawString("R " & txtSubTotal.Text, font, Brushes.Black, leftMargin + 520, yPos)
+            yPos += 25
+            
+            If Decimal.TryParse(txtDiscountRand.Text, Nothing) AndAlso Convert.ToDecimal(txtDiscountRand.Text) > 0 Then
+                e.Graphics.DrawString("Discount:", fontBold, Brushes.Black, leftMargin + 420, yPos)
+                e.Graphics.DrawString("R " & txtDiscountRand.Text, font, Brushes.Black, leftMargin + 520, yPos)
+                yPos += 25
+            End If
+            
+            e.Graphics.DrawString("VAT (15%):", fontBold, Brushes.Black, leftMargin + 420, yPos)
+            e.Graphics.DrawString("R " & txtVat.Text, font, Brushes.Black, leftMargin + 520, yPos)
+            yPos += 25
+            
+            e.Graphics.DrawLine(Pens.Black, leftMargin + 420, yPos, rightMargin, yPos)
+            yPos += 10
+            
+            e.Graphics.DrawString("TOTAL:", fontBold, Brushes.Black, leftMargin + 420, yPos)
+            e.Graphics.DrawString("R " & txtTotal.Text, fontBold, Brushes.Black, leftMargin + 520, yPos)
+            yPos += 40
+            
+            ' Footer
+            e.Graphics.DrawLine(Pens.Black, leftMargin, yPos, rightMargin, yPos)
+            yPos += 20
+            
+            e.Graphics.DrawString("Authorized Signature: _______________________", font, Brushes.Black, leftMargin, yPos)
+            yPos += 30
+            
+            e.Graphics.DrawString("Date: _______________________", font, Brushes.Black, leftMargin, yPos)
+            yPos += 40
+            
+            e.Graphics.DrawString($"Printed: {DateTime.Now:dd MMM yyyy HH:mm}", New Font("Arial", 8), Brushes.Gray, leftMargin, yPos)
+            
+        Catch ex As Exception
+            MessageBox.Show($"Error generating invoice: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub ConfigureTotalsTextBoxes()
@@ -984,13 +1159,26 @@ Public Class InvoiceCaptureForm
         Try
             Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
                 conn.Open()
+                
+                ' Check SupplierInvoices table
                 Dim sql As String = "SELECT COUNT(*) FROM SupplierInvoices WHERE InvoiceNumber = @InvoiceNumber AND SupplierID = @SupplierID"
                 Using cmd As New SqlCommand(sql, conn)
                     cmd.Parameters.AddWithValue("@InvoiceNumber", invoiceNumber)
                     cmd.Parameters.AddWithValue("@SupplierID", supplierId)
                     Dim count As Integer = CInt(cmd.ExecuteScalar())
-                    Return count > 0
+                    If count > 0 Then Return True
                 End Using
+                
+                ' Also check GoodsReceivedNotes table (StockroomService checks this during save)
+                Dim sql2 As String = "SELECT COUNT(*) FROM GoodsReceivedNotes WHERE DeliveryNote = @InvoiceNumber AND SupplierID = @SupplierID"
+                Using cmd As New SqlCommand(sql2, conn)
+                    cmd.Parameters.AddWithValue("@InvoiceNumber", invoiceNumber)
+                    cmd.Parameters.AddWithValue("@SupplierID", supplierId)
+                    Dim count As Integer = CInt(cmd.ExecuteScalar())
+                    If count > 0 Then Return True
+                End Using
+                
+                Return False
             End Using
         Catch ex As Exception
             MessageBox.Show($"Error checking duplicate invoice: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)

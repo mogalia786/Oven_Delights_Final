@@ -208,7 +208,21 @@ Public Class BatchPriceUpdateForm
         btnExport.FlatAppearance.BorderSize = 0
         AddHandler btnExport.Click, AddressOf BtnExport_Click
         
-        buttonPanel.Controls.AddRange({lblInfo, btnExport, btnPrint, btnSave, btnClose})
+        Dim btnDelete As New Button With {
+            .Name = "btnDelete",
+            .Text = "🗑️ Delete",
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .Size = New Size(120, 45),
+            .Location = New Point(520, 15),
+            .BackColor = Color.FromArgb(231, 76, 60),
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat,
+            .Cursor = Cursors.Hand
+        }
+        btnDelete.FlatAppearance.BorderSize = 0
+        AddHandler btnDelete.Click, AddressOf BtnDelete_Click
+        
+        buttonPanel.Controls.AddRange({lblInfo, btnDelete, btnExport, btnPrint, btnSave, btnClose})
         Me.Controls.Add(buttonPanel)
         
         ' ===================== DATAGRIDVIEW (ADD LAST!) =====================
@@ -564,5 +578,71 @@ Public Class BatchPriceUpdateForm
         Next
         
         e.HasMorePages = False
+    End Sub
+    
+    Private Sub BtnDelete_Click(sender As Object, e As EventArgs)
+        Try
+            ' Check if any rows are selected
+            If dgvProducts.SelectedRows.Count = 0 Then
+                MessageBox.Show("Please select at least one product to delete.", "No Selection", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+            
+            ' Confirm deletion
+            Dim selectedCount = dgvProducts.SelectedRows.Count
+            Dim result = MessageBox.Show(
+                $"Are you sure you want to delete {selectedCount} product(s)?" & Environment.NewLine & Environment.NewLine &
+                "This will hide the selected products from POS and Price Management." & Environment.NewLine &
+                "The product data will be preserved in the database.",
+                "Confirm Delete",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button2)
+            
+            If result = DialogResult.No Then
+                Return
+            End If
+            
+            Dim deletedCount As Integer = 0
+            Using conn As New SqlConnection(connString)
+                conn.Open()
+                
+                For Each row As DataGridViewRow In dgvProducts.SelectedRows
+                    If Not row.IsNewRow Then
+                        ' Get SKU from the row
+                        Dim sku As String = If(row.Cells("SKU")?.Value?.ToString(), "")
+                        
+                        If Not String.IsNullOrEmpty(sku) Then
+                            ' Soft delete: Set IsActive = 0 for this product in this branch
+                            Dim sql = "UPDATE Demo_Retail_Product SET IsActive = 0 WHERE SKU = @sku AND BranchID = @bid"
+                            Using cmd As New SqlCommand(sql, conn)
+                                cmd.Parameters.AddWithValue("@sku", sku)
+                                cmd.Parameters.AddWithValue("@bid", currentBranchID)
+                                Dim rowsAffected = cmd.ExecuteNonQuery()
+                                If rowsAffected > 0 Then
+                                    deletedCount += 1
+                                End If
+                            End Using
+                        End If
+                    End If
+                Next
+            End Using
+            
+            If deletedCount > 0 Then
+                MessageBox.Show($"Successfully deleted {deletedCount} product(s)." & Environment.NewLine &
+                              "They will no longer appear in POS or Price Management.",
+                              "Success",
+                              MessageBoxButtons.OK,
+                              MessageBoxIcon.Information)
+                
+                ' Refresh the grid to remove deleted items
+                LoadProducts()
+            Else
+                MessageBox.Show("No products were deleted.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+            
+        Catch ex As Exception
+            MessageBox.Show($"Error deleting products: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 End Class

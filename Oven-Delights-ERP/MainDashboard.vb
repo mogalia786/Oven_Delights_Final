@@ -1672,6 +1672,12 @@ Partial Class MainDashboard
                                               frm.ShowDialog()
                                           End Sub
             
+            Dim miAddSubRecipe As New ToolStripMenuItem("Add Sub-Recipe")
+            AddHandler miAddSubRecipe.Click, Sub(sender, e)
+                                              Dim frm As New Manufacturing.AddSubRecipeForm()
+                                              frm.ShowDialog()
+                                          End Sub
+            
             Dim miCreateSubRecipe As New ToolStripMenuItem("Create Sub-Recipe")
             AddHandler miCreateSubRecipe.Click, Sub(sender, e)
                                                     Try
@@ -1696,7 +1702,7 @@ Partial Class MainDashboard
                                                         End Try
                                                     End Sub
             
-            Dim miSubRecipeInventory As New ToolStripMenuItem("📊 Sub-Recipe Inventory Report")
+            Dim miSubRecipeInventory As New ToolStripMenuItem("📝 View/Edit Sub Recipe Created")
             AddHandler miSubRecipeInventory.Click, Sub(sender, e)
                                                         Try
                                                             Dim frm As New Manufacturing.SubRecipeInventoryReportForm()
@@ -1708,7 +1714,7 @@ Partial Class MainDashboard
                                                         End Try
                                                     End Sub
             
-            miAddProduct.DropDownItems.AddRange(New ToolStripItem() {miAddProductForm, miCreateSubRecipe, miCreateProductRecipe, miSubRecipeInventory})
+            miAddProduct.DropDownItems.AddRange(New ToolStripItem() {miAddProductForm, miAddSubRecipe, miCreateSubRecipe, miCreateProductRecipe, miSubRecipeInventory})
 
             Dim miRecipeCreator As New ToolStripMenuItem("Recipe Creator")
             AddHandler miRecipeCreator.Click, Sub(sender, e)
@@ -5081,13 +5087,16 @@ Partial Class MainDashboard
                     Return
                 End If
                 
+                ' Use current session branch ID (respects super admin's branch selection)
+                Dim effectiveBranchID As Integer = AppSession.CurrentBranchID
+                
                 ' Get branch name for display
                 Dim branchName As String = "Unknown Branch"
                 Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
                     conn.Open()
                     Dim sql = "SELECT BranchName FROM Branches WHERE BranchID = @BranchID"
                     Using cmd As New SqlCommand(sql, conn)
-                        cmd.Parameters.AddWithValue("@BranchID", authResult.BranchID)
+                        cmd.Parameters.AddWithValue("@BranchID", effectiveBranchID)
                         Dim result = cmd.ExecuteScalar()
                         If result IsNot Nothing Then
                             branchName = result.ToString()
@@ -5095,7 +5104,7 @@ Partial Class MainDashboard
                     End Using
                 End Using
                 
-                Dim frm As New BatchPriceUpdateForm(authResult.BranchID, branchName)
+                Dim frm As New BatchPriceUpdateForm(effectiveBranchID, branchName)
                 frm.MdiParent = Me
                 frm.Show()
                 frm.WindowState = FormWindowState.Maximized

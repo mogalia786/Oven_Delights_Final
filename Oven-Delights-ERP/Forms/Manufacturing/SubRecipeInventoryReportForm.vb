@@ -15,10 +15,18 @@ Namespace Manufacturing
             ' Configure DataGridView for better appearance
             ConfigureDataGridView()
             
-            ' Hide only the Freshness dropdown and Export button (keep Branch and Sub-Recipe filters)
+            ' Hide all filter controls - we only show sub-recipes with recipes
             If cmbFreshness IsNot Nothing Then
                 cmbFreshness.Visible = False
                 If Label4 IsNot Nothing Then Label4.Visible = False
+            End If
+            If cmbBranch IsNot Nothing Then
+                cmbBranch.Visible = False
+                If Label1 IsNot Nothing Then Label1.Visible = False
+            End If
+            If cmbSubRecipe IsNot Nothing Then
+                cmbSubRecipe.Visible = False
+                If Label2 IsNot Nothing Then Label2.Visible = False
             End If
             If btnExport IsNot Nothing Then
                 btnExport.Visible = False
@@ -27,13 +35,10 @@ Namespace Manufacturing
             ' Load data
             If AppSession.CurrentUser IsNot Nothing Then
                 currentBranchID = AppSession.CurrentUser.BranchID
-                ' Super admin check: UserID = 1 or RoleID = 1
                 isSuperAdmin = (AppSession.CurrentUser.UserID = 1 OrElse AppSession.CurrentUser.RoleID = 1)
             End If
             
-            LoadBranches()
-            LoadSubRecipes()
-            LoadInventoryReport()
+            LoadSubRecipesWithRecipes()
         End Sub
         
         Private Sub ConfigureDataGridView()
@@ -48,232 +53,119 @@ Namespace Manufacturing
             dgvInventory.RowHeadersVisible = False
             dgvInventory.EnableHeadersVisualStyles = False
             dgvInventory.ColumnHeadersHeight = 40
-            dgvInventory.RowTemplate.Height = 35
+            dgvInventory.RowTemplate.Height = 40
             
             ' Header styling
-            dgvInventory.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(52, 73, 94)
+            dgvInventory.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(230, 126, 34)
             dgvInventory.ColumnHeadersDefaultCellStyle.ForeColor = Color.White
-            dgvInventory.ColumnHeadersDefaultCellStyle.Font = New Font("Segoe UI", 10, FontStyle.Bold)
+            dgvInventory.ColumnHeadersDefaultCellStyle.Font = New Font("Segoe UI", 11, FontStyle.Bold)
             dgvInventory.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft
-            dgvInventory.ColumnHeadersDefaultCellStyle.Padding = New Padding(5)
+            dgvInventory.ColumnHeadersDefaultCellStyle.Padding = New Padding(10)
             
             ' Alternating row colors
-            dgvInventory.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 245, 245)
-            dgvInventory.DefaultCellStyle.SelectionBackColor = Color.FromArgb(52, 152, 219)
+            dgvInventory.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(250, 250, 250)
+            dgvInventory.DefaultCellStyle.SelectionBackColor = Color.FromArgb(230, 126, 34)
             dgvInventory.DefaultCellStyle.SelectionForeColor = Color.White
-            dgvInventory.DefaultCellStyle.Font = New Font("Segoe UI", 9)
-            dgvInventory.DefaultCellStyle.Padding = New Padding(5)
+            dgvInventory.DefaultCellStyle.Font = New Font("Segoe UI", 10)
+            dgvInventory.DefaultCellStyle.Padding = New Padding(8)
             
             ' Clear existing columns and add new ones
             dgvInventory.Columns.Clear()
             
-            ' Add hidden InventoryID column for delete functionality
-            Dim colInventoryID As New DataGridViewTextBoxColumn With {
-                .Name = "InventoryID",
-                .DataPropertyName = "InventoryID",
+            ' Add hidden ProductID column
+            Dim colProductID As New DataGridViewTextBoxColumn With {
+                .Name = "ProductID",
+                .DataPropertyName = "ProductID",
                 .Visible = False
             }
-            dgvInventory.Columns.Add(colInventoryID)
+            dgvInventory.Columns.Add(colProductID)
             
-            ' Add Delete button column
-            Dim colDelete As New DataGridViewButtonColumn With {
-                .Name = "Delete",
+            ' Add hidden BOMID column
+            Dim colBOMID As New DataGridViewTextBoxColumn With {
+                .Name = "BOMID",
+                .DataPropertyName = "BOMID",
+                .Visible = False
+            }
+            dgvInventory.Columns.Add(colBOMID)
+            
+            ' Add Edit button column
+            Dim colEdit As New DataGridViewButtonColumn With {
+                .Name = "Edit",
                 .HeaderText = "Action",
-                .Text = "Delete",
+                .Text = "✏️ Edit Recipe",
                 .UseColumnTextForButtonValue = True,
-                .Width = 80,
+                .Width = 120,
                 .DefaultCellStyle = New DataGridViewCellStyle With {
-                    .BackColor = Color.FromArgb(231, 76, 60),
+                    .BackColor = Color.FromArgb(52, 152, 219),
                     .ForeColor = Color.White,
-                    .SelectionBackColor = Color.FromArgb(192, 57, 43),
-                    .SelectionForeColor = Color.White
+                    .SelectionBackColor = Color.FromArgb(41, 128, 185),
+                    .SelectionForeColor = Color.White,
+                    .Font = New Font("Segoe UI", 10, FontStyle.Bold)
                 }
             }
-            dgvInventory.Columns.Add(colDelete)
+            dgvInventory.Columns.Add(colEdit)
             
             dgvInventory.Columns.AddRange({
-                New DataGridViewTextBoxColumn With {.Name = "BatchNumber", .HeaderText = "Batch Number", .DataPropertyName = "BatchNumber", .Width = 150},
-                New DataGridViewTextBoxColumn With {.Name = "SubRecipeName", .HeaderText = "Sub-Recipe", .DataPropertyName = "SubRecipeName", .Width = 180},
-                New DataGridViewTextBoxColumn With {.Name = "Quantity", .HeaderText = "Qty", .DataPropertyName = "Quantity", .Width = 70, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}},
-                New DataGridViewTextBoxColumn With {.Name = "UnitOfMeasure", .HeaderText = "Unit", .DataPropertyName = "UnitOfMeasure", .Width = 70},
-                New DataGridViewTextBoxColumn With {.Name = "UnitCost", .HeaderText = "Unit Cost", .DataPropertyName = "UnitCost", .Width = 90, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "C2"}},
-                New DataGridViewTextBoxColumn With {.Name = "TotalCost", .HeaderText = "Total Cost", .DataPropertyName = "TotalCost", .Width = 100, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "C2"}},
-                New DataGridViewTextBoxColumn With {.Name = "ManufacturedDateFormatted", .HeaderText = "Mfg Date", .DataPropertyName = "ManufacturedDateFormatted", .Width = 100},
-                New DataGridViewTextBoxColumn With {.Name = "ManufacturedTimeFormatted", .HeaderText = "Time", .DataPropertyName = "ManufacturedTimeFormatted", .Width = 80},
-                New DataGridViewTextBoxColumn With {.Name = "AgeInHours", .HeaderText = "Age (Hrs)", .DataPropertyName = "AgeInHours", .Width = 80, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight}},
-                New DataGridViewTextBoxColumn With {.Name = "FreshnessLevel", .HeaderText = "Freshness", .DataPropertyName = "FreshnessLevel", .Width = 90},
-                New DataGridViewTextBoxColumn With {.Name = "BranchName", .HeaderText = "Branch", .DataPropertyName = "BranchName", .Width = 110}
+                New DataGridViewTextBoxColumn With {.Name = "SubRecipeName", .HeaderText = "Sub-Recipe Name", .DataPropertyName = "SubRecipeName", .Width = 300},
+                New DataGridViewTextBoxColumn With {.Name = "SKU", .HeaderText = "SKU", .DataPropertyName = "SKU", .Width = 150},
+                New DataGridViewTextBoxColumn With {.Name = "BatchSize", .HeaderText = "Batch Size", .DataPropertyName = "BatchSize", .Width = 100, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "N2"}},
+                New DataGridViewTextBoxColumn With {.Name = "TotalCost", .HeaderText = "Total Cost", .DataPropertyName = "TotalCost", .Width = 120, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleRight, .Format = "C2"}},
+                New DataGridViewTextBoxColumn With {.Name = "IngredientCount", .HeaderText = "# Ingredients", .DataPropertyName = "IngredientCount", .Width = 110, .DefaultCellStyle = New DataGridViewCellStyle With {.Alignment = DataGridViewContentAlignment.MiddleCenter}},
+                New DataGridViewTextBoxColumn With {.Name = "CreatedDate", .HeaderText = "Created Date", .DataPropertyName = "CreatedDate", .Width = 130},
+                New DataGridViewTextBoxColumn With {.Name = "IsActive", .HeaderText = "Status", .DataPropertyName = "IsActive", .Width = 90}
             })
         End Sub
         
-        Private Sub LoadBranches()
+        Private Sub LoadSubRecipesWithRecipes()
             Try
                 Using conn As New SqlConnection(connectionString)
-                    Dim sql = "SELECT BranchID, BranchName FROM Branches WHERE IsActive = 1 ORDER BY BranchName"
+                    ' Query to get all sub-recipes that have recipes defined in Demo_SubRecipe_Master
+                    Dim sql As String = "
+                        SELECT 
+                            p.ProductID,
+                            srm.SubRecipeID AS BOMID,
+                            p.Name AS SubRecipeName,
+                            p.SKU,
+                            srm.BatchQty AS BatchSize,
+                            srm.TotalCost,
+                            COUNT(sri.IngredientLineID) AS IngredientCount,
+                            CONVERT(VARCHAR(10), srm.CreatedDate, 120) AS CreatedDate,
+                            CASE WHEN srm.IsActive = 1 THEN 'Active' ELSE 'Inactive' END AS IsActive
+                        FROM Demo_Retail_Product p
+                        INNER JOIN Demo_SubRecipe_Master srm ON p.ProductID = srm.SubRecipeID
+                        LEFT JOIN Demo_SubRecipe_Ingredients sri ON srm.SubRecipeID = sri.SubRecipeID
+                        WHERE (p.Category LIKE '%sub%recipe%' OR p.Category LIKE '%subrecipe%')
+                          AND p.IsActive = 1
+                          AND srm.IsActive = 1
+                        GROUP BY p.ProductID, srm.SubRecipeID, p.Name, p.SKU, srm.BatchQty, srm.TotalCost, srm.CreatedDate, srm.IsActive
+                        ORDER BY p.Name"
+                    
                     Dim cmd As New SqlCommand(sql, conn)
                     conn.Open()
                     
                     Dim dt As New DataTable()
                     dt.Load(cmd.ExecuteReader())
                     
-                    ' Add "All Branches" option for super admin (use -1 instead of NULL)
-                    If isSuperAdmin Then
-                        Dim allRow = dt.NewRow()
-                        allRow("BranchID") = -1  ' Use -1 for "All Branches"
-                        allRow("BranchName") = "All Branches"
-                        dt.Rows.InsertAt(allRow, 0)
-                    End If
-                    
-                    cmbBranch.DisplayMember = "BranchName"
-                    cmbBranch.ValueMember = "BranchID"
-                    cmbBranch.DataSource = dt
-                    
-                    ' Super admin can view all branches, regular users locked to their branch
-                    If isSuperAdmin Then
-                        ' Select "All Branches" by default
-                        cmbBranch.SelectedIndex = 0
-                        cmbBranch.Enabled = True
-                    Else
-                        ' Regular user locked to their branch
-                        If currentBranchID > 0 Then
-                            cmbBranch.SelectedValue = currentBranchID
-                        End If
-                        cmbBranch.Enabled = False
-                    End If
-                End Using
-            Catch ex As Exception
-                MessageBox.Show("Error loading branches: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            End Try
-        End Sub
-        
-        Private Sub LoadSubRecipes()
-            Try
-                Using conn As New SqlConnection(connectionString)
-                    ' Load sub-recipes from inventory (distinct list of what's actually in stock)
-                    Dim sql = "SELECT DISTINCT sri.SubRecipeID, sri.SubRecipeName " &
-                              "FROM Demo_SubRecipe_Inventory sri " &
-                              "WHERE sri.Status = 'Available' " &
-                              "ORDER BY sri.SubRecipeName"
-                    Dim cmd As New SqlCommand(sql, conn)
-                    conn.Open()
-                    
-                    Dim dt As New DataTable()
-                    dt.Load(cmd.ExecuteReader())
-                    
-                    ' Allow SubRecipeID column to accept nulls for "All" option
-                    If dt.Columns.Contains("SubRecipeID") Then
-                        dt.Columns("SubRecipeID").AllowDBNull = True
-                    End If
-                    
-                    ' Add "All Sub-Recipes" option
-                    Dim allRow = dt.NewRow()
-                    allRow("SubRecipeID") = DBNull.Value
-                    allRow("SubRecipeName") = "All Sub-Recipes"
-                    dt.Rows.InsertAt(allRow, 0)
-                    
-                    cmbSubRecipe.DisplayMember = "SubRecipeName"
-                    cmbSubRecipe.ValueMember = "SubRecipeID"
-                    cmbSubRecipe.DataSource = dt
-                End Using
-            Catch ex As Exception
-                MessageBox.Show("Error loading sub-recipes: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            End Try
-        End Sub
-        
-        Private Sub LoadInventoryReport()
-            Try
-                Using conn As New SqlConnection(connectionString)
-                    Dim cmd As New SqlCommand("sp_GetSubRecipeInventoryReport", conn)
-                    cmd.CommandType = CommandType.StoredProcedure
-                    
-                    ' Branch filter (-1 means "All Branches")
-                    Dim selectedBranchID As Integer = If(cmbBranch.SelectedValue IsNot Nothing, Convert.ToInt32(cmbBranch.SelectedValue), -1)
-                    If selectedBranchID > 0 Then
-                        cmd.Parameters.AddWithValue("@BranchID", selectedBranchID)
-                    Else
-                        cmd.Parameters.AddWithValue("@BranchID", DBNull.Value)
-                    End If
-                    
-                    ' Sub-recipe filter
-                    If cmbSubRecipe.SelectedValue IsNot Nothing AndAlso Not IsDBNull(cmbSubRecipe.SelectedValue) Then
-                        cmd.Parameters.AddWithValue("@SubRecipeID", cmbSubRecipe.SelectedValue)
-                    Else
-                        cmd.Parameters.AddWithValue("@SubRecipeID", DBNull.Value)
-                    End If
-                    
-                    cmd.Parameters.AddWithValue("@FreshnessFilter", DBNull.Value)
-                    
-                    conn.Open()
-                    Dim dt As New DataTable()
-                    dt.Load(cmd.ExecuteReader())
-                    
-                    ' Clear existing data source
+                    ' Bind to grid
                     dgvInventory.DataSource = Nothing
                     dgvInventory.DataSource = dt
                     dgvInventory.Refresh()
                     
-                    ' Apply freshness color coding to entire rows
-                    Application.DoEvents()
-                    
-                    For Each row As DataGridViewRow In dgvInventory.Rows
-                        If row.DataBoundItem IsNot Nothing Then
-                            Try
-                                Dim drv = CType(row.DataBoundItem, DataRowView)
-                                If drv.Row.Table.Columns.Contains("FreshnessLevel") AndAlso Not IsDBNull(drv("FreshnessLevel")) Then
-                                    Dim freshness = drv("FreshnessLevel").ToString()
-                                    Dim backColor As Color
-                                    Dim foreColor As Color = Color.Black
-                                    
-                                    ' Apply color based on freshness level
-                                    Select Case freshness
-                                        Case "Very Fresh"
-                                            backColor = Color.FromArgb(200, 255, 200) ' Light green
-                                        Case "Fresh"
-                                            backColor = Color.FromArgb(220, 255, 220) ' Very light green
-                                        Case "Good"
-                                            backColor = Color.FromArgb(255, 255, 200) ' Light yellow
-                                        Case "Aging"
-                                            backColor = Color.FromArgb(255, 230, 150) ' Light orange
-                                        Case "Old"
-                                            backColor = Color.FromArgb(255, 200, 150) ' Orange
-                                            foreColor = Color.DarkRed
-                                        Case "Very Old"
-                                            backColor = Color.FromArgb(255, 180, 180) ' Light red
-                                            foreColor = Color.DarkRed
-                                        Case Else
-                                            backColor = Color.White
-                                    End Select
-                                    
-                                    row.DefaultCellStyle.BackColor = backColor
-                                    row.DefaultCellStyle.ForeColor = foreColor
-                                    row.DefaultCellStyle.SelectionBackColor = Color.FromArgb(52, 152, 219)
-                                    row.DefaultCellStyle.SelectionForeColor = Color.White
-                                End If
-                            Catch colorEx As Exception
-                                ' Skip color coding if there's an error
-                            End Try
-                        End If
-                    Next
-                    
-                    lblTotalBatches.Text = $"Total Batches: {dt.Rows.Count}"
-                    Dim totalQty As Decimal = If(dt.Rows.Count > 0, Convert.ToDecimal(dt.Compute("SUM(Quantity)", "")), 0)
-                    lblTotalQuantity.Text = $"Total Quantity: {totalQty:N2}"
+                    ' Update summary labels
+                    If lblTotalBatches IsNot Nothing Then
+                        lblTotalBatches.Text = $"Total Sub-Recipes: {dt.Rows.Count}"
+                    End If
+                    If lblTotalQuantity IsNot Nothing Then
+                        lblTotalQuantity.Text = $"Total Ingredients: {If(dt.Rows.Count > 0, Convert.ToInt32(dt.Compute("SUM(IngredientCount)", "")), 0)}"
+                    End If
                 End Using
             Catch ex As Exception
-                MessageBox.Show("Error loading inventory report: " & ex.Message & vbCrLf & vbCrLf & ex.StackTrace, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                MessageBox.Show("Error loading sub-recipes: " & ex.Message & vbCrLf & vbCrLf & ex.StackTrace, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
         End Sub
         
         Private Sub btnRefresh_Click(sender As Object, e As EventArgs) Handles btnRefresh.Click
-            LoadInventoryReport()
-        End Sub
-        
-        Private Sub cmbBranch_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cmbBranch.SelectedIndexChanged
-            LoadInventoryReport()
-        End Sub
-        
-        Private Sub cmbSubRecipe_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cmbSubRecipe.SelectedIndexChanged
-            LoadInventoryReport()
+            LoadSubRecipesWithRecipes()
         End Sub
         
         Private Sub btnClose_Click(sender As Object, e As EventArgs) Handles btnClose.Click
@@ -281,57 +173,28 @@ Namespace Manufacturing
         End Sub
         
         Private Sub dgvInventory_CellContentClick(sender As Object, e As DataGridViewCellEventArgs) Handles dgvInventory.CellContentClick
-            ' Handle Delete button click
-            If e.RowIndex >= 0 AndAlso e.ColumnIndex = dgvInventory.Columns("Delete").Index Then
+            ' Handle Edit button click
+            If e.RowIndex >= 0 AndAlso e.ColumnIndex = dgvInventory.Columns("Edit").Index Then
                 Try
                     Dim row = dgvInventory.Rows(e.RowIndex)
-                    Dim inventoryID = Convert.ToInt32(row.Cells("InventoryID").Value)
-                    Dim batchNumber = row.Cells("BatchNumber").Value.ToString()
+                    Dim productID = Convert.ToInt32(row.Cells("ProductID").Value)
                     Dim subRecipeName = row.Cells("SubRecipeName").Value.ToString()
-                    Dim quantity = Convert.ToDecimal(row.Cells("Quantity").Value)
                     
-                    ' Confirm deletion
-                    Dim result = MessageBox.Show(
-                        $"Are you sure you want to delete this sub-recipe batch?" & vbCrLf & vbCrLf &
-                        $"Batch: {batchNumber}" & vbCrLf &
-                        $"Sub-Recipe: {subRecipeName}" & vbCrLf &
-                        $"Quantity: {quantity}" & vbCrLf & vbCrLf &
-                        "This action cannot be undone.",
-                        "Confirm Delete",
-                        MessageBoxButtons.YesNo,
-                        MessageBoxIcon.Warning)
+                    ' Open EditSubRecipeForm with the selected sub-recipe
+                    Dim editForm As New EditSubRecipeForm(productID, subRecipeName)
+                    editForm.MdiParent = Me.MdiParent
+                    editForm.Show()
+                    editForm.WindowState = FormWindowState.Maximized
                     
-                    If result = DialogResult.Yes Then
-                        DeleteSubRecipeBatch(inventoryID)
-                    End If
+                    ' Refresh the grid after editing
+                    AddHandler editForm.FormClosed, Sub(s, ev)
+                        LoadSubRecipesWithRecipes()
+                    End Sub
+                    
                 Catch ex As Exception
-                    MessageBox.Show("Error processing delete: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                    MessageBox.Show("Error opening recipe editor: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 End Try
             End If
-        End Sub
-        
-        Private Sub DeleteSubRecipeBatch(inventoryID As Integer)
-            Try
-                Using conn As New SqlConnection(connectionString)
-                    conn.Open()
-                    
-                    ' Delete the batch from inventory
-                    Dim sql = "DELETE FROM Demo_SubRecipe_Inventory WHERE InventoryID = @InventoryID"
-                    Dim cmd As New SqlCommand(sql, conn)
-                    cmd.Parameters.AddWithValue("@InventoryID", inventoryID)
-                    
-                    Dim rowsAffected = cmd.ExecuteNonQuery()
-                    
-                    If rowsAffected > 0 Then
-                        MessageBox.Show("Sub-recipe batch deleted successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                        LoadInventoryReport() ' Refresh the grid
-                    Else
-                        MessageBox.Show("Batch not found or already deleted.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                    End If
-                End Using
-            Catch ex As Exception
-                MessageBox.Show("Error deleting batch: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            End Try
         End Sub
     End Class
 End Namespace

@@ -724,14 +724,15 @@ Public Class StockroomService
                     If String.IsNullOrWhiteSpace(deliveryNote) Then
                         Throw New ApplicationException("Supplier invoice / delivery note is required. To correct a captured invoice, use a Credit Note.")
                     End If
-                    Using cmdDup As New SqlCommand("SELECT TOP 1 1 FROM GoodsReceivedNotes WHERE SupplierID = @Sup AND DeliveryNote = @DN", con, tx)
-                        cmdDup.Parameters.AddWithValue("@Sup", supplierId)
-                        cmdDup.Parameters.AddWithValue("@DN", deliveryNote)
-                        Dim exists = cmdDup.ExecuteScalar()
-                        If exists IsNot Nothing Then
-                            Throw New ApplicationException("This supplier invoice/delivery note has already been captured. Use a Credit Note for any corrections; recapturing is not allowed.")
-                        End If
-                    End Using
+                    ' Duplicate check now handled on client side before calling this method
+                    'Using cmdDup As New SqlCommand("SELECT TOP 1 1 FROM GoodsReceivedNotes WHERE SupplierID = @Sup AND DeliveryNote = @DN", con, tx)
+                    '    cmdDup.Parameters.AddWithValue("@Sup", supplierId)
+                    '    cmdDup.Parameters.AddWithValue("@DN", deliveryNote)
+                    '    Dim exists = cmdDup.ExecuteScalar()
+                    '    If exists IsNot Nothing Then
+                    '        Throw New ApplicationException("This supplier invoice/delivery note has already been captured. Use a Credit Note for any corrections; recapturing is not allowed.")
+                    '    End If
+                    'End Using
 
                     ' Create GRN Header
                     Dim grnNumber As String = GetNextDocumentNumber("GRN", branchId, createdBy, con, tx)
@@ -2110,17 +2111,55 @@ Public Class StockroomService
             Using tx = con.BeginTransaction()
                 Try
                     Dim poId As Integer
-                    ' Compute totals from lines
-                    Dim subTotal As Decimal = 0D
+                    ' Compute totals from lines - separate vatable and non-vatable items
+                    Dim subTotalVatable As Decimal = 0D
+                    Dim subTotalNonVatable As Decimal = 0D
                     Dim qtyCol As Integer = lines.Columns("OrderedQuantity").Ordinal
                     Dim costCol As Integer = lines.Columns("UnitCost").Ordinal
+                    Dim matIdCol As Integer = If(lines.Columns.Contains("MaterialID"), lines.Columns("MaterialID").Ordinal, -1)
+                    Dim prodIdCol As Integer = If(lines.Columns.Contains("ProductID"), lines.Columns("ProductID").Ordinal, -1)
+                    
                     For Each r As DataRow In lines.Rows
                         Dim qty As Decimal = Convert.ToDecimal(r(qtyCol))
                         Dim cost As Decimal = Convert.ToDecimal(r(costCol))
-                        subTotal += qty * cost
+                        Dim lineTotal As Decimal = qty * cost
+                        
+                        ' Check if item is vatable
+                        Dim isVatable As Boolean = True
+                        Dim productId As Integer = 0
+                        
+                        ' Try to get ProductID from the line
+                        If prodIdCol >= 0 AndAlso Not IsDBNull(r(prodIdCol)) Then
+                            productId = Convert.ToInt32(r(prodIdCol))
+                        ElseIf matIdCol >= 0 AndAlso Not IsDBNull(r(matIdCol)) Then
+                            ' If MaterialID, try to find corresponding ProductID
+                            Dim materialId As Integer = Convert.ToInt32(r(matIdCol))
+                            Using cmdProd As New SqlCommand("SELECT TOP 1 ProductID FROM Demo_Retail_Product WHERE ProductID = @MatID OR Code = (SELECT MaterialCode FROM RawMaterials WHERE MaterialID = @MatID)", con, tx)
+                                cmdProd.Parameters.AddWithValue("@MatID", materialId)
+                                Dim result = cmdProd.ExecuteScalar()
+                                If result IsNot Nothing Then productId = Convert.ToInt32(result)
+                            End Using
+                        End If
+                        
+                        ' Check IsVatable flag
+                        If productId > 0 Then
+                            Using cmdVat As New SqlCommand("SELECT ISNULL(IsVatable, 1) FROM Demo_Retail_Product WHERE ProductID = @ProductID", con, tx)
+                                cmdVat.Parameters.AddWithValue("@ProductID", productId)
+                                Dim result = cmdVat.ExecuteScalar()
+                                If result IsNot Nothing Then isVatable = Convert.ToBoolean(result)
+                            End Using
+                        End If
+                        
+                        If isVatable Then
+                            subTotalVatable += lineTotal
+                        Else
+                            subTotalNonVatable += lineTotal
+                        End If
                     Next
+                    
+                    Dim subTotal As Decimal = subTotalVatable + subTotalNonVatable
                     Dim vatRatePercent As Decimal = GetVatRatePercent()
-                    Dim vat As Decimal = Math.Round(subTotal * (vatRatePercent / 100D), 2)
+                    Dim vat As Decimal = Math.Round(subTotalVatable * (vatRatePercent / 100D), 2)
                     ' Skip branch validation for now to avoid errors
                     ' Assume branch exists and proceed
 
@@ -2175,9 +2214,9 @@ Public Class StockroomService
                         insertLineProd.Parameters.Add("@Qty", SqlDbType.Decimal).Precision = 18 : insertLineProd.Parameters("@Qty").Scale = 4
                         insertLineProd.Parameters.Add("@Cost", SqlDbType.Decimal).Precision = 18 : insertLineProd.Parameters("@Cost").Scale = 4
 
-                        Dim matIdCol As Integer = lines.Columns("MaterialID").Ordinal
-                        Dim qtyCol2 As Integer = lines.Columns("OrderedQuantity").Ordinal
-                        Dim costCol2 As Integer = lines.Columns("UnitCost").Ordinal
+                        ' Use existing matIdCol, qtyCol, costCol from earlier in the method
+                        Dim qtyCol2 As Integer = qtyCol
+                        Dim costCol2 As Integer = costCol
                         
                         For Each r As DataRow In lines.Rows
                             Dim selId As Integer = If(r(matIdCol) IsNot Nothing AndAlso Not IsDBNull(r(matIdCol)), Convert.ToInt32(r(matIdCol)), 0)
