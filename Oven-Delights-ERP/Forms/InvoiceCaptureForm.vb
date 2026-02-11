@@ -668,15 +668,15 @@ Public Class InvoiceCaptureForm
             e.Graphics.DrawString("R " & txtSubTotal.Text, font, Brushes.Black, leftMargin + 520, yPos)
             yPos += 25
             
+            e.Graphics.DrawString("VAT (15%):", fontBold, Brushes.Black, leftMargin + 420, yPos)
+            e.Graphics.DrawString("R " & txtVat.Text, font, Brushes.Black, leftMargin + 520, yPos)
+            yPos += 25
+            
             If Decimal.TryParse(txtDiscountRand.Text, Nothing) AndAlso Convert.ToDecimal(txtDiscountRand.Text) > 0 Then
                 e.Graphics.DrawString("Discount:", fontBold, Brushes.Black, leftMargin + 420, yPos)
                 e.Graphics.DrawString("R " & txtDiscountRand.Text, font, Brushes.Black, leftMargin + 520, yPos)
                 yPos += 25
             End If
-            
-            e.Graphics.DrawString("VAT (15%):", fontBold, Brushes.Black, leftMargin + 420, yPos)
-            e.Graphics.DrawString("R " & txtVat.Text, font, Brushes.Black, leftMargin + 520, yPos)
-            yPos += 25
             
             e.Graphics.DrawLine(Pens.Black, leftMargin + 420, yPos, rightMargin, yPos)
             yPos += 10
@@ -770,31 +770,34 @@ Public Class InvoiceCaptureForm
             Next
             
             Dim subTotal As Decimal = subTotalVatable + subTotalNonVatable
-            Dim originalSubTotal As Decimal = subTotal
+            
+            ' Calculate total BEFORE discount (SubTotal + VAT)
+            Dim totalBeforeDiscount As Decimal = subTotal + vatTotal
             
             ' Apply discount - check if Rand discount or Percentage discount is entered
             Dim discountRand As Decimal = 0
             Dim discountPercent As Decimal = 0
+            Dim finalTotal As Decimal = totalBeforeDiscount
             
             ' Priority: Rand discount takes precedence over percentage
             If Decimal.TryParse(txtDiscountRand.Text, discountRand) AndAlso discountRand > 0 Then
-                ' Apply Rand discount to subtotal (excl VAT)
-                subTotal = subTotal - discountRand
-                ' Recalculate VAT on discounted subtotal
-                vatTotal = Math.Round(subTotal * 0.15D, 4)
+                ' Apply Rand discount to total (SubTotal + VAT)
+                finalTotal = totalBeforeDiscount - discountRand
             ElseIf Decimal.TryParse(txtDiscount.Text, discountPercent) AndAlso discountPercent > 0 Then
-                ' Apply percentage discount to subtotal (excl VAT)
-                Dim discountAmount As Decimal = Math.Round(originalSubTotal * (discountPercent / 100), 4)
-                subTotal = subTotal - discountAmount
-                ' Recalculate VAT on discounted subtotal
-                vatTotal = Math.Round(subTotal * 0.15D, 4)
+                ' Apply percentage discount to total (SubTotal + VAT)
+                Dim discountAmount As Decimal = Math.Round(totalBeforeDiscount * (discountPercent / 100), 4)
+                discountRand = discountAmount
+                finalTotal = totalBeforeDiscount - discountAmount
+                
+                ' Update txtDiscountRand to show calculated discount amount
+                RemoveHandler txtDiscountRand.TextChanged, AddressOf txtDiscountRand_TextChanged
+                txtDiscountRand.Text = discountRand.ToString("N4")
+                AddHandler txtDiscountRand.TextChanged, AddressOf txtDiscountRand_TextChanged
             End If
-            
-            Dim total As Decimal = subTotal + vatTotal
 
-            txtSubTotal.Text = originalSubTotal.ToString("N4")
+            txtSubTotal.Text = subTotal.ToString("N4")
             txtVat.Text = vatTotal.ToString("N4")
-            txtTotal.Text = total.ToString("N4")
+            txtTotal.Text = finalTotal.ToString("N4")
         Catch ex As Exception
             ' Ignore calculation errors
         End Try
@@ -1187,14 +1190,16 @@ Public Class InvoiceCaptureForm
     End Function
     
     Private Sub txtDiscount_TextChanged(sender As Object, e As EventArgs)
-        ' When percentage changes, calculate and update Rand discount
+        ' When percentage changes, calculate and update Rand discount based on TOTAL (SubTotal + VAT)
         Try
             Dim discountPercent As Decimal = 0
             If Decimal.TryParse(txtDiscount.Text, discountPercent) AndAlso discountPercent > 0 Then
-                ' Get current subtotal
+                ' Get current subtotal and VAT to calculate total before discount
                 Dim subTotal As Decimal = 0
-                If Decimal.TryParse(txtSubTotal.Text.Replace(",", ""), subTotal) Then
-                    Dim discountRand As Decimal = Math.Round(subTotal * (discountPercent / 100), 4)
+                Dim vatAmount As Decimal = 0
+                If Decimal.TryParse(txtSubTotal.Text.Replace(",", ""), subTotal) AndAlso Decimal.TryParse(txtVat.Text.Replace(",", ""), vatAmount) Then
+                    Dim totalBeforeDiscount As Decimal = subTotal + vatAmount
+                    Dim discountRand As Decimal = Math.Round(totalBeforeDiscount * (discountPercent / 100), 4)
                     ' Update Rand discount textbox without triggering its event
                     RemoveHandler txtDiscountRand.TextChanged, AddressOf txtDiscountRand_TextChanged
                     txtDiscountRand.Text = discountRand.ToString("N4")
@@ -1215,18 +1220,22 @@ Public Class InvoiceCaptureForm
     End Sub
     
     Private Sub txtDiscountRand_TextChanged(sender As Object, e As EventArgs)
-        ' When Rand discount changes, calculate and update percentage
+        ' When Rand discount changes, calculate and update percentage based on TOTAL (SubTotal + VAT)
         Try
             Dim discountRand As Decimal = 0
             If Decimal.TryParse(txtDiscountRand.Text, discountRand) AndAlso discountRand > 0 Then
-                ' Get current subtotal
+                ' Get current subtotal and VAT to calculate total before discount
                 Dim subTotal As Decimal = 0
-                If Decimal.TryParse(txtSubTotal.Text.Replace(",", ""), subTotal) AndAlso subTotal > 0 Then
-                    Dim discountPercent As Decimal = Math.Round((discountRand / subTotal) * 100, 4)
-                    ' Update percentage textbox without triggering its event
-                    RemoveHandler txtDiscount.TextChanged, AddressOf txtDiscount_TextChanged
-                    txtDiscount.Text = discountPercent.ToString("N4")
-                    AddHandler txtDiscount.TextChanged, AddressOf txtDiscount_TextChanged
+                Dim vatAmount As Decimal = 0
+                If Decimal.TryParse(txtSubTotal.Text.Replace(",", ""), subTotal) AndAlso Decimal.TryParse(txtVat.Text.Replace(",", ""), vatAmount) Then
+                    Dim totalBeforeDiscount As Decimal = subTotal + vatAmount
+                    If totalBeforeDiscount > 0 Then
+                        Dim discountPercent As Decimal = Math.Round((discountRand / totalBeforeDiscount) * 100, 4)
+                        ' Update percentage textbox without triggering its event
+                        RemoveHandler txtDiscount.TextChanged, AddressOf txtDiscount_TextChanged
+                        txtDiscount.Text = discountPercent.ToString("N4")
+                        AddHandler txtDiscount.TextChanged, AddressOf txtDiscount_TextChanged
+                    End If
                 End If
             ElseIf String.IsNullOrWhiteSpace(txtDiscountRand.Text) OrElse discountRand = 0 Then
                 ' Clear percentage if Rand is cleared

@@ -9,6 +9,7 @@ Public Class EditSupplierInvoiceForm
     Private connectionString As String = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
     Private currentInvoiceId As Integer = 0
     Private currentPurchaseOrderId As Integer = 0
+    Private currentSupplierId As Integer = 0
     Private printDocument As New PrintDocument()
     Private printFont As Font
     Private printY As Integer = 0
@@ -41,15 +42,49 @@ Public Class EditSupplierInvoiceForm
         }
         
         ' Search controls
+        Dim lblSupplier As New Label With {
+            .Text = "Supplier:",
+            .Location = New Point(10, 15),
+            .AutoSize = True
+        }
+        
+        Dim cboSupplier As New ComboBox With {
+            .Name = "cboSupplier",
+            .Location = New Point(80, 12),
+            .Width = 250,
+            .DropDownStyle = ComboBoxStyle.DropDownList,
+            .Font = New Font("Segoe UI", 10)
+        }
+        
+        ' Load suppliers
+        Try
+            Using con As New SqlConnection(connectionString)
+                con.Open()
+                Dim sql = "SELECT SupplierID, CompanyName FROM Suppliers ORDER BY CompanyName"
+                Using cmd As New SqlCommand(sql, con)
+                    Dim dt As New DataTable()
+                    Using adapter As New SqlDataAdapter(cmd)
+                        adapter.Fill(dt)
+                    End Using
+                    cboSupplier.DataSource = dt
+                    cboSupplier.DisplayMember = "CompanyName"
+                    cboSupplier.ValueMember = "SupplierID"
+                    cboSupplier.SelectedIndex = -1
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show($"Error loading suppliers: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+        
         Dim lblInvoiceNumber As New Label With {
             .Text = "Invoice Number:",
-            .Location = New Point(10, 15),
+            .Location = New Point(350, 15),
             .AutoSize = True
         }
         
         Dim txtInvoiceNumber As New TextBox With {
             .Name = "txtInvoiceNumber",
-            .Location = New Point(120, 12),
+            .Location = New Point(470, 12),
             .Width = 200,
             .Font = New Font("Segoe UI", 10, FontStyle.Bold)
         }
@@ -57,7 +92,7 @@ Public Class EditSupplierInvoiceForm
         Dim btnSearch As New Button With {
             .Name = "btnSearch",
             .Text = "Search",
-            .Location = New Point(330, 10),
+            .Location = New Point(680, 10),
             .Width = 100,
             .Height = 30
         }
@@ -65,13 +100,13 @@ Public Class EditSupplierInvoiceForm
         
         Dim lblStatus As New Label With {
             .Name = "lblStatus",
-            .Location = New Point(450, 15),
+            .Location = New Point(800, 15),
             .AutoSize = True,
             .ForeColor = Color.Blue,
             .Font = New Font("Segoe UI", 9, FontStyle.Italic)
         }
         
-        pnlSearch.Controls.AddRange({lblInvoiceNumber, txtInvoiceNumber, btnSearch, lblStatus})
+        pnlSearch.Controls.AddRange({lblSupplier, cboSupplier, lblInvoiceNumber, txtInvoiceNumber, btnSearch, lblStatus})
         
         ' Invoice header group
         Dim grpHeader As New GroupBox With {
@@ -82,7 +117,7 @@ Public Class EditSupplierInvoiceForm
         }
         
         ' Header fields
-        Dim lblSupplier As New Label With {.Text = "Supplier:", .Location = New Point(20, 30), .AutoSize = True}
+        Dim lblSupplierHeader As New Label With {.Text = "Supplier:", .Location = New Point(20, 30), .AutoSize = True}
         Dim txtSupplier As New TextBox With {.Name = "txtSupplier", .Location = New Point(120, 27), .Width = 300, .ReadOnly = True}
         
         Dim lblInvoiceDate As New Label With {.Text = "Invoice Date:", .Location = New Point(20, 60), .AutoSize = True}
@@ -103,11 +138,11 @@ Public Class EditSupplierInvoiceForm
         Dim lblSubTotal As New Label With {.Text = "Sub Total:", .Location = New Point(20, 120), .AutoSize = True}
         Dim txtSubTotal As New TextBox With {.Name = "txtSubTotal", .Location = New Point(120, 117), .Width = 120, .ReadOnly = True, .TextAlign = HorizontalAlignment.Right}
         
-        Dim lblDiscount As New Label With {.Text = "Discount:", .Location = New Point(260, 120), .AutoSize = True}
-        Dim txtDiscount As New TextBox With {.Name = "txtDiscount", .Location = New Point(330, 117), .Width = 120, .ReadOnly = True, .TextAlign = HorizontalAlignment.Right}
+        Dim lblVAT As New Label With {.Text = "VAT:", .Location = New Point(260, 120), .AutoSize = True}
+        Dim txtVAT As New TextBox With {.Name = "txtVAT", .Location = New Point(310, 117), .Width = 120, .ReadOnly = True, .TextAlign = HorizontalAlignment.Right}
         
-        Dim lblVAT As New Label With {.Text = "VAT:", .Location = New Point(470, 120), .AutoSize = True}
-        Dim txtVAT As New TextBox With {.Name = "txtVAT", .Location = New Point(520, 117), .Width = 120, .ReadOnly = True, .TextAlign = HorizontalAlignment.Right}
+        Dim lblDiscount As New Label With {.Text = "Discount:", .Location = New Point(450, 120), .AutoSize = True}
+        Dim txtDiscount As New TextBox With {.Name = "txtDiscount", .Location = New Point(520, 117), .Width = 120, .ReadOnly = True, .TextAlign = HorizontalAlignment.Right}
         
         Dim lblTotal As New Label With {.Text = "Total:", .Location = New Point(660, 120), .AutoSize = True}
         Dim txtTotal As New TextBox With {.Name = "txtTotal", .Location = New Point(710, 117), .Width = 120, .ReadOnly = True, .TextAlign = HorizontalAlignment.Right, .Font = New Font("Segoe UI", 10, FontStyle.Bold)}
@@ -118,7 +153,7 @@ Public Class EditSupplierInvoiceForm
         Dim lblOutstanding As New Label With {.Text = "Outstanding:", .Location = New Point(260, 150), .AutoSize = True}
         Dim txtOutstanding As New TextBox With {.Name = "txtOutstanding", .Location = New Point(350, 147), .Width = 120, .ReadOnly = True, .TextAlign = HorizontalAlignment.Right, .Font = New Font("Segoe UI", 10, FontStyle.Bold), .ForeColor = Color.Red}
         
-        grpHeader.Controls.AddRange({lblSupplier, txtSupplier, lblInvoiceDate, dtpInvoiceDate, lblDueDate, dtpDueDate,
+        grpHeader.Controls.AddRange({lblSupplierHeader, txtSupplier, lblInvoiceDate, dtpInvoiceDate, lblDueDate, dtpDueDate,
                                      lblBranch, txtBranch, lblStatus2, txtStatus, lblPONumber, txtPONumber,
                                      lblSubTotal, txtSubTotal, lblDiscount, txtDiscount, lblVAT, txtVAT,
                                      lblTotal, txtTotal, lblAmountPaid, txtAmountPaid, lblOutstanding, txtOutstanding})
@@ -196,8 +231,15 @@ Public Class EditSupplierInvoiceForm
     End Sub
     
     Private Sub btnSearch_Click(sender As Object, e As EventArgs)
+        Dim cboSupplier = DirectCast(Me.Controls.Find("cboSupplier", True)(0), ComboBox)
         Dim txtInvoiceNumber = DirectCast(Me.Controls.Find("txtInvoiceNumber", True)(0), TextBox)
         Dim invoiceNum As String = txtInvoiceNumber.Text.Trim()
+        
+        If cboSupplier.SelectedIndex < 0 Then
+            MessageBox.Show("Please select a supplier first.", "Search", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            cboSupplier.Focus()
+            Return
+        End If
         
         If String.IsNullOrWhiteSpace(invoiceNum) Then
             MessageBox.Show("Please enter an invoice number.", "Search", MessageBoxButtons.OK, MessageBoxIcon.Information)
@@ -205,10 +247,11 @@ Public Class EditSupplierInvoiceForm
             Return
         End If
         
-        SearchAndLoadInvoice(invoiceNum)
+        currentSupplierId = Convert.ToInt32(cboSupplier.SelectedValue)
+        SearchAndLoadInvoice(invoiceNum, currentSupplierId)
     End Sub
     
-    Private Sub SearchAndLoadInvoice(invoiceNumber As String)
+    Private Sub SearchAndLoadInvoice(invoiceNumber As String, supplierId As Integer)
         Try
             Dim lblStatus = DirectCast(Me.Controls.Find("lblStatus", True)(0), Label)
             lblStatus.Text = "Searching..."
@@ -217,12 +260,83 @@ Public Class EditSupplierInvoiceForm
             Using con As New SqlConnection(connectionString)
                 con.Open()
                 
-                ' Search for invoice (handle PurchaseOrderID column if it exists)
+                ' Search for invoice by supplier and invoice number
                 Dim sql As String
                 
-                ' Check if PurchaseOrderID column exists
+                ' Search with supplier filter
+                sql = "SELECT TOP 1 si.InvoiceID, si.InvoiceNumber, si.SupplierID, s.CompanyName AS SupplierName, " &
+                      "si.InvoiceDate, si.DueDate, si.BranchID, b.BranchName, si.Status, si.PurchaseOrderID, " &
+                      "si.SubTotal, si.VATAmount, si.TotalAmount, si.AmountPaid, si.AmountOutstanding, " &
+                      "si.DiscountAmount, si.DiscountPercent " &
+                      "FROM SupplierInvoices si " &
+                      "INNER JOIN Suppliers s ON si.SupplierID = s.SupplierID " &
+                      "LEFT JOIN Branches b ON si.BranchID = b.BranchID " &
+                      "WHERE si.InvoiceNumber = @InvoiceNumber AND si.SupplierID = @SupplierID"
+                
+                Using cmd As New SqlCommand(sql, con)
+                    cmd.Parameters.AddWithValue("@InvoiceNumber", invoiceNumber)
+                    cmd.Parameters.AddWithValue("@SupplierID", supplierId)
+                    
+                    Using reader As SqlDataReader = cmd.ExecuteReader()
+                        If reader.Read() Then
+                            currentInvoiceId = Convert.ToInt32(reader("InvoiceID"))
+                            currentPurchaseOrderId = If(IsDBNull(reader("PurchaseOrderID")), 0, Convert.ToInt32(reader("PurchaseOrderID")))
+                            
+                            ' Populate header fields
+                            DirectCast(Me.Controls.Find("txtSupplier", True)(0), TextBox).Text = reader("SupplierName").ToString()
+                            DirectCast(Me.Controls.Find("dtpInvoiceDate", True)(0), DateTimePicker).Value = Convert.ToDateTime(reader("InvoiceDate"))
+                            DirectCast(Me.Controls.Find("dtpDueDate", True)(0), DateTimePicker).Value = Convert.ToDateTime(reader("DueDate"))
+                            DirectCast(Me.Controls.Find("txtBranch", True)(0), TextBox).Text = If(IsDBNull(reader("BranchName")), "", reader("BranchName").ToString())
+                            DirectCast(Me.Controls.Find("txtStatus", True)(0), TextBox).Text = reader("Status").ToString()
+                            DirectCast(Me.Controls.Find("txtPONumber", True)(0), TextBox).Text = If(currentPurchaseOrderId > 0, "PO-" & currentPurchaseOrderId.ToString(), "N/A")
+                            
+                            DirectCast(Me.Controls.Find("txtSubTotal", True)(0), TextBox).Text = Convert.ToDecimal(reader("SubTotal")).ToString("N4")
+                            DirectCast(Me.Controls.Find("txtDiscount", True)(0), TextBox).Text = Convert.ToDecimal(reader("DiscountAmount")).ToString("N4")
+                            DirectCast(Me.Controls.Find("txtVAT", True)(0), TextBox).Text = Convert.ToDecimal(reader("VATAmount")).ToString("N4")
+                            DirectCast(Me.Controls.Find("txtTotal", True)(0), TextBox).Text = Convert.ToDecimal(reader("TotalAmount")).ToString("N4")
+                            DirectCast(Me.Controls.Find("txtAmountPaid", True)(0), TextBox).Text = Convert.ToDecimal(reader("AmountPaid")).ToString("N4")
+                            DirectCast(Me.Controls.Find("txtOutstanding", True)(0), TextBox).Text = Convert.ToDecimal(reader("AmountOutstanding")).ToString("N4")
+                            
+                            reader.Close()
+                            
+                            ' Load invoice lines
+                            LoadInvoiceLines(con)
+                            
+                            lblStatus.Text = $"Invoice {invoiceNumber} loaded successfully"
+                            lblStatus.ForeColor = Color.Green
+                            
+                            ' Enable buttons
+                            DirectCast(Me.Controls.Find("btnSave", True)(0), Button).Enabled = True
+                            DirectCast(Me.Controls.Find("btnPrint", True)(0), Button).Enabled = True
+                            DirectCast(Me.Controls.Find("btnViewPO", True)(0), Button).Enabled = (currentPurchaseOrderId > 0)
+                        Else
+                            MessageBox.Show($"Invoice number '{invoiceNumber}' not found for the selected supplier.", "Not Found", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                            lblStatus.Text = "Invoice not found"
+                            lblStatus.ForeColor = Color.Red
+                            ClearForm()
+                        End If
+                    End Using
+                End Using
+            End Using
+            
+        Catch ex As Exception
+            MessageBox.Show($"Error searching invoice: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    
+    Private Sub SearchAndLoadInvoice_Old(invoiceNumber As String)
+        Try
+            Dim lblStatus = DirectCast(Me.Controls.Find("lblStatus", True)(0), Label)
+            lblStatus.Text = "Searching..."
+            lblStatus.ForeColor = Color.Blue
+            
+            Using con As New SqlConnection(connectionString)
+                con.Open()
+                
+                ' OLD CODE - Check if PurchaseOrderID column exists
                 Dim checkColumnSql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'SupplierInvoices' AND COLUMN_NAME = 'PurchaseOrderID'"
                 Dim hasPOColumn As Boolean = False
+                Dim sql As String
                 
                 Using checkCmd As New SqlCommand(checkColumnSql, con)
                     hasPOColumn = (Convert.ToInt32(checkCmd.ExecuteScalar()) > 0)
@@ -476,15 +590,15 @@ Public Class EditSupplierInvoiceForm
         e.Graphics.DrawString($"R {txtSubTotal.Text}", normalFont, Brushes.Black, 650, printY)
         printY += 25
         
+        e.Graphics.DrawString("VAT:", normalFont, Brushes.Black, 550, printY)
+        e.Graphics.DrawString($"R {txtVAT.Text}", normalFont, Brushes.Black, 650, printY)
+        printY += 25
+        
         If Not txtDiscount.Text.StartsWith("R 0.0000") Then
             e.Graphics.DrawString("Discount:", normalFont, Brushes.Black, 550, printY)
             e.Graphics.DrawString(txtDiscount.Text, normalFont, Brushes.Black, 650, printY)
             printY += 25
         End If
-        
-        e.Graphics.DrawString("VAT:", normalFont, Brushes.Black, 550, printY)
-        e.Graphics.DrawString($"R {txtVAT.Text}", normalFont, Brushes.Black, 650, printY)
-        printY += 25
         
         e.Graphics.DrawString("Total:", headerFont, Brushes.Black, 550, printY)
         e.Graphics.DrawString($"R {txtTotal.Text}", headerFont, Brushes.Black, 650, printY)

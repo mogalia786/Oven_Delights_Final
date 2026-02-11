@@ -1672,12 +1672,6 @@ Partial Class MainDashboard
                                               frm.ShowDialog()
                                           End Sub
             
-            Dim miAddSubRecipe As New ToolStripMenuItem("Add Sub-Recipe")
-            AddHandler miAddSubRecipe.Click, Sub(sender, e)
-                                              Dim frm As New Manufacturing.AddSubRecipeForm()
-                                              frm.ShowDialog()
-                                          End Sub
-            
             Dim miCreateSubRecipe As New ToolStripMenuItem("Create Sub-Recipe")
             AddHandler miCreateSubRecipe.Click, Sub(sender, e)
                                                     Try
@@ -1714,7 +1708,7 @@ Partial Class MainDashboard
                                                         End Try
                                                     End Sub
             
-            miAddProduct.DropDownItems.AddRange(New ToolStripItem() {miAddProductForm, miAddSubRecipe, miCreateSubRecipe, miCreateProductRecipe, miSubRecipeInventory})
+            miAddProduct.DropDownItems.AddRange(New ToolStripItem() {miAddProductForm, miCreateSubRecipe, miCreateProductRecipe, miSubRecipeInventory})
 
             Dim miRecipeCreator As New ToolStripMenuItem("Recipe Creator")
             AddHandler miRecipeCreator.Click, Sub(sender, e)
@@ -2875,6 +2869,10 @@ Partial Class MainDashboard
         RemoveHandler miCreatePO.Click, AddressOf OpenCreatePurchaseOrder
         AddHandler miCreatePO.Click, AddressOf OpenCreatePurchaseOrder
         
+        Dim miEditPO As ToolStripMenuItem = EnsureSubMenu(po, "Edit Purchase Order")
+        RemoveHandler miEditPO.Click, AddressOf OpenEditPurchaseOrder
+        AddHandler miEditPO.Click, AddressOf OpenEditPurchaseOrder
+        
         ' Inventory Management
         Dim inventory As ToolStripMenuItem = EnsureSubMenu(stockroom, "Inventory Management")
         Dim miAddInventory As ToolStripMenuItem = EnsureSubMenu(inventory, "Add Inventory")
@@ -2913,6 +2911,24 @@ Partial Class MainDashboard
             frm.WindowState = FormWindowState.Maximized
         Catch ex As Exception
             MessageBox.Show("Error opening Purchase Order form: " & ex.Message, "Stockroom", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenEditPurchaseOrder(sender As Object, e As EventArgs)
+        Try
+            For Each child As Form In Me.MdiChildren
+                If TypeOf child Is Purchasing.EditPurchaseOrderForm Then
+                    child.Activate()
+                    child.WindowState = FormWindowState.Maximized
+                    Return
+                End If
+            Next
+            Dim frm As New Purchasing.EditPurchaseOrderForm()
+            frm.MdiParent = Me
+            frm.Show()
+            frm.WindowState = FormWindowState.Maximized
+        Catch ex As Exception
+            MessageBox.Show("Error opening Edit Purchase Order form: " & ex.Message, "Stockroom", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 

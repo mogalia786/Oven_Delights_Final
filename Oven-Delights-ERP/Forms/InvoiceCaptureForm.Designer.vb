@@ -148,28 +148,10 @@ Partial Class InvoiceCaptureForm
         Me.txtSubTotal.TabIndex = 10
         Me.txtSubTotal.TextAlign = System.Windows.Forms.HorizontalAlignment.Right
         '
-        'lblDiscountRand
-        '
-        Me.lblDiscountRand.AutoSize = True
-        Me.lblDiscountRand.Location = New System.Drawing.Point(600, 525)
-        Me.lblDiscountRand.Name = "lblDiscountRand"
-        Me.lblDiscountRand.Size = New System.Drawing.Size(52, 13)
-        Me.lblDiscountRand.TabIndex = 19
-        Me.lblDiscountRand.Text = "Discount:"
-        '
-        'txtDiscountRand
-        '
-        Me.txtDiscountRand.Location = New System.Drawing.Point(670, 522)
-        Me.txtDiscountRand.Name = "txtDiscountRand"
-        Me.txtDiscountRand.Size = New System.Drawing.Size(100, 20)
-        Me.txtDiscountRand.TabIndex = 20
-        Me.txtDiscountRand.Text = "0.0000"
-        Me.txtDiscountRand.TextAlign = System.Windows.Forms.HorizontalAlignment.Right
-        '
         'lblVat
         '
         Me.lblVat.AutoSize = True
-        Me.lblVat.Location = New System.Drawing.Point(600, 550)
+        Me.lblVat.Location = New System.Drawing.Point(600, 525)
         Me.lblVat.Name = "lblVat"
         Me.lblVat.Size = New System.Drawing.Size(31, 13)
         Me.lblVat.TabIndex = 11
@@ -177,18 +159,36 @@ Partial Class InvoiceCaptureForm
         '
         'txtVat
         '
-        Me.txtVat.Location = New System.Drawing.Point(670, 547)
+        Me.txtVat.Location = New System.Drawing.Point(670, 522)
         Me.txtVat.Name = "txtVat"
         Me.txtVat.ReadOnly = True
         Me.txtVat.Size = New System.Drawing.Size(100, 20)
         Me.txtVat.TabIndex = 12
         Me.txtVat.TextAlign = System.Windows.Forms.HorizontalAlignment.Right
         '
+        'lblDiscountRand
+        '
+        Me.lblDiscountRand.AutoSize = True
+        Me.lblDiscountRand.Location = New System.Drawing.Point(600, 550)
+        Me.lblDiscountRand.Name = "lblDiscountRand"
+        Me.lblDiscountRand.Size = New System.Drawing.Size(52, 13)
+        Me.lblDiscountRand.TabIndex = 19
+        Me.lblDiscountRand.Text = "Discount:"
+        '
+        'txtDiscountRand
+        '
+        Me.txtDiscountRand.Location = New System.Drawing.Point(670, 547)
+        Me.txtDiscountRand.Name = "txtDiscountRand"
+        Me.txtDiscountRand.Size = New System.Drawing.Size(100, 20)
+        Me.txtDiscountRand.TabIndex = 20
+        Me.txtDiscountRand.Text = "0.0000"
+        Me.txtDiscountRand.TextAlign = System.Windows.Forms.HorizontalAlignment.Right
+        '
         'lblDiscount
         '
         Me.lblDiscount.AutoSize = True
         Me.lblDiscount.ForeColor = System.Drawing.Color.FromArgb(CType(CType(220, Byte), Integer), CType(CType(53, Byte), Integer), CType(CType(69, Byte), Integer))
-        Me.lblDiscount.Location = New System.Drawing.Point(800, 500)
+        Me.lblDiscount.Location = New System.Drawing.Point(800, 525)
         Me.lblDiscount.Name = "lblDiscount"
         Me.lblDiscount.Size = New System.Drawing.Size(52, 13)
         Me.lblDiscount.TabIndex = 13
@@ -196,7 +196,7 @@ Partial Class InvoiceCaptureForm
         '
         'txtDiscount
         '
-        Me.txtDiscount.Location = New System.Drawing.Point(860, 497)
+        Me.txtDiscount.Location = New System.Drawing.Point(860, 522)
         Me.txtDiscount.Name = "txtDiscount"
         Me.txtDiscount.Size = New System.Drawing.Size(80, 20)
         Me.txtDiscount.TabIndex = 14
@@ -208,7 +208,7 @@ Partial Class InvoiceCaptureForm
         Me.btnApplyDiscount.BackColor = System.Drawing.Color.FromArgb(CType(CType(40, Byte), Integer), CType(CType(167, Byte), Integer), CType(CType(69, Byte), Integer))
         Me.btnApplyDiscount.FlatStyle = System.Windows.Forms.FlatStyle.Flat
         Me.btnApplyDiscount.ForeColor = System.Drawing.Color.White
-        Me.btnApplyDiscount.Location = New System.Drawing.Point(950, 495)
+        Me.btnApplyDiscount.Location = New System.Drawing.Point(950, 520)
         Me.btnApplyDiscount.Name = "btnApplyDiscount"
         Me.btnApplyDiscount.Size = New System.Drawing.Size(60, 24)
         Me.btnApplyDiscount.TabIndex = 15
@@ -220,7 +220,7 @@ Partial Class InvoiceCaptureForm
         Me.lblDiscountNote.AutoSize = True
         Me.lblDiscountNote.Font = New System.Drawing.Font("Microsoft Sans Serif", 7.0!, System.Drawing.FontStyle.Italic)
         Me.lblDiscountNote.ForeColor = System.Drawing.Color.Gray
-        Me.lblDiscountNote.Location = New System.Drawing.Point(800, 522)
+        Me.lblDiscountNote.Location = New System.Drawing.Point(800, 547)
         Me.lblDiscountNote.Name = "lblDiscountNote"
         Me.lblDiscountNote.Size = New System.Drawing.Size(120, 11)
         Me.lblDiscountNote.TabIndex = 16
