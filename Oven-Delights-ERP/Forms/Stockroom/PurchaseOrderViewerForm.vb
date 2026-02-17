@@ -12,6 +12,7 @@ Public Class PurchaseOrderViewerForm
     Private printFont As Font
     Private printY As Integer = 0
     Private printPageNumber As Integer = 0
+    Private currentPrintRow As Integer = 0
     
     Public Sub New(poId As Integer)
         purchaseOrderId = poId
@@ -252,6 +253,7 @@ Public Class PurchaseOrderViewerForm
         Try
             printFont = New Font("Arial", 10)
             printPageNumber = 0
+            currentPrintRow = 0
             
             Dim preview As New PrintPreviewDialog With {
                 .Document = printDocument,
@@ -272,44 +274,49 @@ Public Class PurchaseOrderViewerForm
         Dim headerFont As New Font("Arial", 12, FontStyle.Bold)
         Dim normalFont As New Font("Arial", 10)
         Dim smallFont As New Font("Arial", 8)
+        Dim maxY As Integer = 1000
+        Dim lineHeight As Integer = 20
         
         ' Company header
         e.Graphics.DrawString("OVEN DELIGHTS", titleFont, Brushes.Black, 50, printY)
         printY += 30
         e.Graphics.DrawString("PURCHASE ORDER", headerFont, Brushes.Black, 50, printY)
+        e.Graphics.DrawString($"Page {printPageNumber}", smallFont, Brushes.Gray, 700, printY)
         printY += 40
         
-        ' PO details
-        Dim txtPONumber = DirectCast(Me.Controls.Find("txtPONumber", True)(0), TextBox)
-        Dim txtSupplier = DirectCast(Me.Controls.Find("txtSupplier", True)(0), TextBox)
-        Dim txtOrderDate = DirectCast(Me.Controls.Find("txtOrderDate", True)(0), TextBox)
-        Dim txtExpectedDate = DirectCast(Me.Controls.Find("txtExpectedDate", True)(0), TextBox)
-        Dim txtBranch = DirectCast(Me.Controls.Find("txtBranch", True)(0), TextBox)
-        Dim txtStatus = DirectCast(Me.Controls.Find("txtStatus", True)(0), TextBox)
-        Dim txtNotes = DirectCast(Me.Controls.Find("txtNotes", True)(0), TextBox)
-        
-        e.Graphics.DrawString($"PO Number: {txtPONumber.Text}", normalFont, Brushes.Black, 50, printY)
-        e.Graphics.DrawString($"Date: {txtOrderDate.Text}", normalFont, Brushes.Black, 500, printY)
-        printY += 25
-        
-        e.Graphics.DrawString($"Supplier: {txtSupplier.Text}", normalFont, Brushes.Black, 50, printY)
-        printY += 25
-        
-        e.Graphics.DrawString($"Branch: {txtBranch.Text}", normalFont, Brushes.Black, 50, printY)
-        e.Graphics.DrawString($"Expected: {txtExpectedDate.Text}", normalFont, Brushes.Black, 500, printY)
-        printY += 25
-        
-        e.Graphics.DrawString($"Status: {txtStatus.Text}", normalFont, Brushes.Black, 400, printY)
-        Dim txtInvoice = DirectCast(Me.Controls.Find("txtInvoice", True)(0), TextBox)
-        e.Graphics.DrawString($"Linked Invoice: {txtInvoice.Text}", normalFont, Brushes.Black, 550, printY)
-        printY += 25
-        
-        If Not String.IsNullOrWhiteSpace(txtNotes.Text) Then
-            e.Graphics.DrawString($"Notes: {txtNotes.Text}", normalFont, Brushes.Black, 50, printY)
+        ' PO details (only on first page)
+        If printPageNumber = 1 Then
+            Dim txtPONumber = DirectCast(Me.Controls.Find("txtPONumber", True)(0), TextBox)
+            Dim txtSupplier = DirectCast(Me.Controls.Find("txtSupplier", True)(0), TextBox)
+            Dim txtOrderDate = DirectCast(Me.Controls.Find("txtOrderDate", True)(0), TextBox)
+            Dim txtExpectedDate = DirectCast(Me.Controls.Find("txtExpectedDate", True)(0), TextBox)
+            Dim txtBranch = DirectCast(Me.Controls.Find("txtBranch", True)(0), TextBox)
+            Dim txtStatus = DirectCast(Me.Controls.Find("txtStatus", True)(0), TextBox)
+            Dim txtNotes = DirectCast(Me.Controls.Find("txtNotes", True)(0), TextBox)
+            
+            e.Graphics.DrawString($"PO Number: {txtPONumber.Text}", normalFont, Brushes.Black, 50, printY)
+            e.Graphics.DrawString($"Date: {txtOrderDate.Text}", normalFont, Brushes.Black, 500, printY)
             printY += 25
+            
+            e.Graphics.DrawString($"Supplier: {txtSupplier.Text}", normalFont, Brushes.Black, 50, printY)
+            printY += 25
+            
+            e.Graphics.DrawString($"Branch: {txtBranch.Text}", normalFont, Brushes.Black, 50, printY)
+            e.Graphics.DrawString($"Expected: {txtExpectedDate.Text}", normalFont, Brushes.Black, 500, printY)
+            printY += 25
+            
+            e.Graphics.DrawString($"Status: {txtStatus.Text}", normalFont, Brushes.Black, 400, printY)
+            Dim txtInvoice = DirectCast(Me.Controls.Find("txtInvoice", True)(0), TextBox)
+            e.Graphics.DrawString($"Linked Invoice: {txtInvoice.Text}", normalFont, Brushes.Black, 550, printY)
+            printY += 25
+            
+            If Not String.IsNullOrWhiteSpace(txtNotes.Text) Then
+                e.Graphics.DrawString($"Notes: {txtNotes.Text}", normalFont, Brushes.Black, 50, printY)
+                printY += 25
+            End If
+            
+            printY += 15
         End If
-        
-        printY += 15
         
         ' Line items header
         e.Graphics.DrawLine(Pens.Black, 50, printY, 750, printY)
@@ -324,10 +331,21 @@ Public Class PurchaseOrderViewerForm
         e.Graphics.DrawLine(Pens.Black, 50, printY, 750, printY)
         printY += 10
         
-        ' Line items
+        ' Line items - with pagination
         Dim dgvLines = DirectCast(Me.Controls.Find("dgvLines", True)(0), DataGridView)
-        For Each row As DataGridViewRow In dgvLines.Rows
+        Dim rowCount As Integer = dgvLines.Rows.Count
+        Dim hasMoreItems As Boolean = False
+        
+        While currentPrintRow < rowCount
+            Dim row As DataGridViewRow = dgvLines.Rows(currentPrintRow)
+            
             If Not row.IsNewRow Then
+                ' Check if we have space for this line
+                If printY + lineHeight > maxY Then
+                    hasMoreItems = True
+                    Exit While
+                End If
+                
                 Dim description As String = If(row.Cells("Description").Value, "").ToString()
                 
                 ' Truncate long descriptions
@@ -339,42 +357,53 @@ Public Class PurchaseOrderViewerForm
                 e.Graphics.DrawString(Convert.ToDecimal(row.Cells("OrderedQuantity").Value).ToString("N4"), normalFont, Brushes.Black, 500, printY)
                 e.Graphics.DrawString(Convert.ToDecimal(row.Cells("UnitCost").Value).ToString("N4"), normalFont, Brushes.Black, 600, printY)
                 e.Graphics.DrawString(Convert.ToDecimal(row.Cells("LineTotal").Value).ToString("N4"), normalFont, Brushes.Black, 710, printY)
-                printY += 20
+                printY += lineHeight
             End If
-        Next
+            
+            currentPrintRow += 1
+        End While
         
-        printY += 10
-        e.Graphics.DrawLine(Pens.Black, 50, printY, 780, printY)
-        printY += 20
-        
-        ' Totals - Right aligned with proper labels
-        Dim txtSubTotal = DirectCast(Me.Controls.Find("txtSubTotal", True)(0), TextBox)
-        Dim txtVAT = DirectCast(Me.Controls.Find("txtVAT", True)(0), TextBox)
-        Dim txtTotal = DirectCast(Me.Controls.Find("txtTotal", True)(0), TextBox)
-        
-        ' Total Excl VAT
-        e.Graphics.DrawString("Total Excl VAT:", normalFont, Brushes.Black, 580, printY)
-        e.Graphics.DrawString($"R {txtSubTotal.Text}", normalFont, Brushes.Black, 710, printY)
-        printY += 25
-        
-        ' VAT Amount
-        e.Graphics.DrawString("VAT (15%):", normalFont, Brushes.Black, 580, printY)
-        e.Graphics.DrawString($"R {txtVAT.Text}", normalFont, Brushes.Black, 710, printY)
-        printY += 25
-        
-        ' Draw line before total
-        e.Graphics.DrawLine(Pens.Black, 580, printY, 780, printY)
-        printY += 10
-        
-        ' Total Incl VAT
-        e.Graphics.DrawString("Total Incl VAT:", headerFont, Brushes.Black, 580, printY)
-        e.Graphics.DrawString($"R {txtTotal.Text}", headerFont, Brushes.Black, 710, printY)
+        ' If this is the last page, print totals
+        If Not hasMoreItems Then
+            printY += 10
+            e.Graphics.DrawLine(Pens.Black, 50, printY, 780, printY)
+            printY += 20
+            
+            ' Totals - Right aligned with proper labels
+            Dim txtSubTotal = DirectCast(Me.Controls.Find("txtSubTotal", True)(0), TextBox)
+            Dim txtVAT = DirectCast(Me.Controls.Find("txtVAT", True)(0), TextBox)
+            Dim txtTotal = DirectCast(Me.Controls.Find("txtTotal", True)(0), TextBox)
+            
+            ' Total Excl VAT
+            e.Graphics.DrawString("Total Excl VAT:", normalFont, Brushes.Black, 580, printY)
+            e.Graphics.DrawString($"R {txtSubTotal.Text}", normalFont, Brushes.Black, 710, printY)
+            printY += 25
+            
+            ' VAT Amount
+            e.Graphics.DrawString("VAT (15%):", normalFont, Brushes.Black, 580, printY)
+            e.Graphics.DrawString($"R {txtVAT.Text}", normalFont, Brushes.Black, 710, printY)
+            printY += 25
+            
+            ' Draw line before total
+            e.Graphics.DrawLine(Pens.Black, 580, printY, 780, printY)
+            printY += 10
+            
+            ' Total Incl VAT
+            e.Graphics.DrawString("Total Incl VAT:", headerFont, Brushes.Black, 580, printY)
+            e.Graphics.DrawString($"R {txtTotal.Text}", headerFont, Brushes.Black, 710, printY)
+        End If
         
         ' Footer
-        printY = 1050
-        e.Graphics.DrawString($"Printed: {DateTime.Now:dd MMM yyyy HH:mm}", smallFont, Brushes.Gray, 50, printY)
-        e.Graphics.DrawString($"Page {printPageNumber}", smallFont, Brushes.Gray, 700, printY)
+        e.Graphics.DrawString($"Printed: {DateTime.Now:dd MMM yyyy HH:mm}", smallFont, Brushes.Gray, 50, 1050)
         
-        e.HasMorePages = False
+        ' Set HasMorePages
+        If hasMoreItems Then
+            e.HasMorePages = True
+        Else
+            e.HasMorePages = False
+            ' Reset for next print
+            currentPrintRow = 0
+            printPageNumber = 0
+        End If
     End Sub
 End Class
