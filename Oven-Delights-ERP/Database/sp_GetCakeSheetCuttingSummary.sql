@@ -97,6 +97,7 @@ BEGIN
     
     WHERE o.ReadyDate = @ReadyDate
         AND o.OrderStatus IN ('New', 'InProgress', 'Ready') -- Include Ready status for manufacturing
+        AND o.OrderStatus <> 'Cancelled' -- Exclude cancelled orders
         AND (@BranchID IS NULL OR o.BranchID = @BranchID)
     
     GROUP BY 

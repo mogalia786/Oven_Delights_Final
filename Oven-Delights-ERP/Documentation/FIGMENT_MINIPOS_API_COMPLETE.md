@@ -25,7 +25,7 @@
 
 ## OVERVIEW
 
-### What is Figment MiniPOS?
+### What is Figment MiniPOS? ONLY FOR TESTING- LIVE REQUIRES A PYSICAL CARD TERMINAL
 
 Figment MiniPOS Cloud Gateway is a REST API that allows POS systems to process card payments without requiring a physical card terminal. The API communicates with virtual terminals in the cloud.
 
@@ -143,7 +143,7 @@ GET https://test.figment.co.za:49410/api/endpoint?apiKey=Q7w30FOnntfiLzJuKKJrKqV
 
 **Sandbox Testing (Current Setup):**
 ```
-Your POS Application (Development PC)
+My POS Application (Development PC)
     ↓ HTTPS API Call
 Figment Sandbox API (https://test.figment.co.za:49410/api/)
     ↓ Routes transaction to
@@ -151,7 +151,7 @@ Marcel's Physical Terminal (posIdentifier: 7)
     ↓ Terminal processes card
 Response + Photos sent back
     ↓ JSON Response
-Your POS Application receives result
+My POS Application receives result
 ```
 
 **Production Environment (Planned):**
@@ -168,15 +168,15 @@ POS Terminal receives result
 ```
 
 **Key Points:**
-- POS and payment terminal on same network (LAN)
-- Payment terminal connects via Ethernet
+- The POS and payment terminal on same network (LAN)
+- The Payment terminal connects via Ethernet
 - API calls go over internet to Figment
 - Figment routes to appropriate terminal based on `siteId` and `posIdentifier`
 - Async processing - POS must wait for terminal response
 
 ### Implementation Timeline
 
-**Target Start Date:** January 23, 2026
+**Target Start Date:** January 26, 2026 (Tentative)
 
 **Pre-Implementation Checklist:**
 - [ ] OAuth2 credentials configured in App.config (encrypted)

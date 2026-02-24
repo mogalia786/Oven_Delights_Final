@@ -924,7 +924,7 @@ Public Class BatchPaymentForm
                             Dim invoiceNum As String = If(reader("InvoiceNumber") Is DBNull.Value, "PAYMENT", reader.GetString(reader.GetOrdinal("InvoiceNumber")))
                             Dim invoiceID As Integer = reader.GetInt32(reader.GetOrdinal("InvoiceID"))
                             Dim amount As Decimal = reader.GetDecimal(reader.GetOrdinal("TotalAmount"))
-                            
+
                             Dim line As New PaymentLineInfo() With {
                                 .SupplierID = invoiceID,
                                 .PaymentType = "Beneficiary",
@@ -935,7 +935,7 @@ Public Class BatchPaymentForm
                                 .CreditorBIC = "FIRNZAJJ",
                                 .Amount = amount,
                                 .Reference = invoiceNum.Substring(0, Math.Min(20, invoiceNum.Length)),
-                                .ProofOfPaymentEmail = If(reader("Email") Is DBNull.Value, Nothing, reader.GetString(reader.GetOrdinal("Email")))
+                                .ProofOfPaymentEmail = "tshepo.kgasoane@rmb.co.za"
                             }
 
                             ' Validate bank details

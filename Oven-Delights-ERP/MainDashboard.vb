@@ -160,6 +160,13 @@ Partial Class MainDashboard
             SetupAccountingExpensesMenus()
         Catch
         End Try
+        
+        ' Wire Accounting menus (Financial Dashboard, GL, Ledgers, Bank Reconciliation)
+        Try
+            WireAccountingMenus()
+        Catch
+            ' non-fatal
+        End Try
 
         ' Wire Stockroom Add Inventory menu under Inventory Management
         Try

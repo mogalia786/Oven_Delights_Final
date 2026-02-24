@@ -125,3 +125,4 @@ DROP TABLE #DuplicateMapping
 -- Review the output above, then:
 -- COMMIT TRANSACTION  -- Run this if everything looks good
 -- ROLLBACK TRANSACTION  -- Run this to undo changes
+COMMIT TRANSACTION

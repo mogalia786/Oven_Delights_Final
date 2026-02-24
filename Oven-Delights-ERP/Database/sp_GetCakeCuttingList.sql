@@ -86,8 +86,8 @@ BEGIN
         -- Extract Cream Type
         CASE 
             WHEN i.ProductName LIKE '%Fresh Cream%' OR i.ProductName LIKE '%Fresh-Cream%' OR i.ProductName LIKE '%FreshCream%' THEN 'Fresh Cream'
-            WHEN i.ProductName LIKE '%Butter Cream%' OR i.ProductName LIKE '%Buttercream%' OR i.ProductName LIKE '%Butter-Cream%' THEN 'Butter Cream'
-            ELSE 'Unknown'
+            WHEN i.ProductName LIKE '%Butter Cream%' OR i.ProductName LIKE '%Buttercream%' OR i.ProductName LIKE '%Butter-Cream%' THEN 'Buttercream'
+            ELSE 'Buttercream' -- Default to Buttercream
         END AS CakeCream,
         
         -- Special Request: Pull from order SpecialInstructions + product name variants
@@ -118,6 +118,7 @@ BEGIN
     
     WHERE o.ReadyDate = @ReadyDate
         AND o.OrderStatus IN ('New', 'InProgress', 'Ready') -- Include Ready status for manufacturing
+        AND o.OrderStatus <> 'Cancelled' -- Exclude cancelled orders
         AND (@BranchID IS NULL OR o.BranchID = @BranchID)
     
     GROUP BY 
@@ -179,8 +180,8 @@ BEGIN
         -- Cream Type
         CASE 
             WHEN i.ProductName LIKE '%Fresh Cream%' OR i.ProductName LIKE '%Fresh-Cream%' OR i.ProductName LIKE '%FreshCream%' THEN 'Fresh Cream'
-            WHEN i.ProductName LIKE '%Butter Cream%' OR i.ProductName LIKE '%Buttercream%' OR i.ProductName LIKE '%Butter-Cream%' THEN 'Butter Cream'
-            ELSE 'Unknown'
+            WHEN i.ProductName LIKE '%Butter Cream%' OR i.ProductName LIKE '%Buttercream%' OR i.ProductName LIKE '%Butter-Cream%' THEN 'Buttercream'
+            ELSE 'Buttercream'
         END,
         -- Special Request
         CASE 
