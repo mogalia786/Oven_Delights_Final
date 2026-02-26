@@ -18,6 +18,7 @@ Public Class GeneralLedgerViewer
     Private cboAccount As ComboBox
     Private btnFilter As Button
     Private btnExport As Button
+    Private WithEvents btnPrint As Button
     Private btnClose As Button
     Private lblTotalDebits As Label
     Private lblTotalCredits As Label
@@ -132,6 +133,19 @@ Public Class GeneralLedgerViewer
         btnExport.FlatAppearance.BorderSize = 0
         AddHandler btnExport.Click, AddressOf btnExport_Click
         pnlFilter.Controls.Add(btnExport)
+        
+        btnPrint = New Button With {
+            .Text = "🖨️ Print",
+            .Location = New Point(1080, 15),
+            .Size = New Size(100, 30),
+            .BackColor = ColorTranslator.FromHtml("#9B59B6"),
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat,
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold)
+        }
+        btnPrint.FlatAppearance.BorderSize = 0
+        AddHandler btnPrint.Click, AddressOf btnPrint_Click
+        pnlFilter.Controls.Add(btnPrint)
         
         ' DataGridView
         dgvLedger = New DataGridView With {
@@ -300,6 +314,69 @@ Public Class GeneralLedgerViewer
     
     Private Sub btnFilter_Click(sender As Object, e As EventArgs)
         LoadLedger()
+    End Sub
+    
+    Private Sub btnPrint_Click(sender As Object, e As EventArgs) Handles btnPrint.Click
+        Try
+            Dim printDoc As New Printing.PrintDocument()
+            AddHandler printDoc.PrintPage, AddressOf PrintLedger
+            
+            Dim printDialog As New PrintDialog With {
+                .Document = printDoc
+            }
+            
+            If printDialog.ShowDialog() = DialogResult.OK Then
+                printDoc.Print()
+            End If
+            
+        Catch ex As Exception
+            MessageBox.Show($"Error printing: {ex.Message}", "Print Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    
+    Private Sub PrintLedger(sender As Object, e As Printing.PrintPageEventArgs)
+        Dim font As New Font("Courier New", 8)
+        Dim headerFont As New Font("Courier New", 10, FontStyle.Bold)
+        Dim y As Single = 50
+        Dim leftMargin As Single = 50
+        
+        ' Print header
+        e.Graphics.DrawString("GENERAL LEDGER REPORT", headerFont, Brushes.Black, leftMargin, y)
+        y += 30
+        e.Graphics.DrawString($"Period: {dtpFrom.Value:dd/MM/yyyy} to {dtpTo.Value:dd/MM/yyyy}", font, Brushes.Black, leftMargin, y)
+        y += 20
+        e.Graphics.DrawString(New String("-"c, 100), font, Brushes.Black, leftMargin, y)
+        y += 20
+        
+        ' Print column headers
+        e.Graphics.DrawString("Date       Account                    Description                Debit        Credit", font, Brushes.Black, leftMargin, y)
+        y += 15
+        e.Graphics.DrawString(New String("-"c, 100), font, Brushes.Black, leftMargin, y)
+        y += 20
+        
+        ' Print rows
+        For Each row As DataGridViewRow In dgvLedger.Rows
+            If y > e.PageBounds.Height - 100 Then Exit For
+            
+            Dim dateStr = If(row.Cells("Date").Value, "").ToString().PadRight(10)
+            Dim accountStr = If(row.Cells("Account").Value, "").ToString().Substring(0, Math.Min(25, If(row.Cells("Account").Value, "").ToString().Length)).PadRight(25)
+            Dim descStr = If(row.Cells("Description").Value, "").ToString().Substring(0, Math.Min(25, If(row.Cells("Description").Value, "").ToString().Length)).PadRight(25)
+            Dim debitStr = If(IsDBNull(row.Cells("Debit").Value), "", $"R{CDec(row.Cells("Debit").Value):N2}").PadLeft(12)
+            Dim creditStr = If(IsDBNull(row.Cells("Credit").Value), "", $"R{CDec(row.Cells("Credit").Value):N2}").PadLeft(12)
+            
+            e.Graphics.DrawString($"{dateStr} {accountStr} {descStr} {debitStr} {creditStr}", font, Brushes.Black, leftMargin, y)
+            y += 15
+        Next
+        
+        ' Print totals
+        y += 10
+        e.Graphics.DrawString(New String("-"c, 100), font, Brushes.Black, leftMargin, y)
+        y += 20
+        e.Graphics.DrawString(lblTotalDebits.Text, headerFont, Brushes.Black, leftMargin, y)
+        y += 20
+        e.Graphics.DrawString(lblTotalCredits.Text, headerFont, Brushes.Black, leftMargin, y)
+        
+        e.HasMorePages = False
     End Sub
     
     Private Sub btnExport_Click(sender As Object, e As EventArgs)

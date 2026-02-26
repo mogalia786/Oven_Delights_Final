@@ -15,6 +15,7 @@ Public Class SupplierLedgerViewer
     Private dgvSuppliers As DataGridView
     Private txtSearch As TextBox
     Private btnSearch As Button
+    Private WithEvents btnPrint As Button
     Private btnClose As Button
     Private lblTotalPayables As Label
     Private lblTotalPrepaid As Label

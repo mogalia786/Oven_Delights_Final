@@ -44,7 +44,9 @@ BEGIN
     FROM AP_Invoices i
     INNER JOIN AP_Beneficiaries b ON i.BeneficiaryID = b.BeneficiaryID
     INNER JOIN AP_Categories c ON i.CategoryID = c.CategoryID
-    WHERE i.Status IN ('Pending', 'Overdue')
+    WHERE i.Status IN ('Pending', 'Approved', 'Outstanding', 'Overdue')
+      AND i.Status <> 'Paid'  -- Explicitly exclude paid invoices
+      AND i.Status <> 'Cancelled'  -- Explicitly exclude cancelled invoices
       AND (@SupplierID IS NULL OR @SupplierID = 0 OR i.BeneficiaryID = @SupplierID)
       AND (@DueDateFrom IS NULL OR i.DueDate >= @DueDateFrom)
       AND (@DueDateTo IS NULL OR i.DueDate <= @DueDateTo)
@@ -55,7 +57,7 @@ BEGIN
              WHERE m.InvoiceID = i.InvoiceID
                AND pb.BatchStatus IN ('Pending', 'ACCP', 'ACSC', 'PDNG')),
             0
-        )) > 0
+        )) > 0  -- Only show invoices with remaining balance
     ORDER BY i.DueDate ASC, i.InvoiceDate ASC
 END
 GO

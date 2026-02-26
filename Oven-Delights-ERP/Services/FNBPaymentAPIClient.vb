@@ -61,14 +61,11 @@ Public Class FNBPaymentAPIClient
             Using client As New HttpClient()
                 client.Timeout = TimeSpan.FromSeconds(30)
 
-                ' FNB requires Basic Auth header with credentials
-                Dim credentials = Convert.ToBase64String(Text.Encoding.ASCII.GetBytes($"{_clientId}:{_clientSecret}"))
-                client.DefaultRequestHeaders.Authorization = New Headers.AuthenticationHeaderValue("Basic", credentials)
-
-                ' Only grant_type and scope in body
+                ' Send credentials in body (same as working BankStatementViewerForm)
                 Dim content As New FormUrlEncodedContent(New Dictionary(Of String, String) From {
                     {"grant_type", "client_credentials"},
-                    {"scope", "i_can"}
+                    {"client_id", _clientId},
+                    {"client_secret", _clientSecret}
                 })
 
                 Dim response = client.PostAsync(_tokenUrl, content).Result

@@ -90,8 +90,8 @@ Partial Class MainDashboard
     
     Private Sub OpenBankReconciliation(sender As Object, e As EventArgs)
         Try
-            Dim branchID = If(AppSession.CurrentUser IsNot Nothing, AppSession.CurrentUser.BranchID, 0)
-            Dim frm As New BankReconciliationForm(branchID)
+            Dim userName = If(AppSession.CurrentUser IsNot Nothing, AppSession.CurrentUser.Username, "System")
+            Dim frm As New Accounting.BankReconciliationDashboard(userName)
             frm.MdiParent = Me
             frm.Show()
             frm.WindowState = FormWindowState.Maximized

@@ -263,13 +263,16 @@ Public Class CancelOrderForm
                 
                 Using transaction = conn.BeginTransaction()
                     Try
-                        ' 1. Update order status to Cancelled
-                        Dim sqlUpdateOrder = "UPDATE POS_CustomOrders 
-                                             SET OrderStatus = 'Cancelled',
-                                                 ModifiedDate = GETDATE()
-                                             WHERE OrderNumber = @orderNumber"
+                        ' 1. Delete order items first (foreign key constraint)
+                        Dim sqlDeleteItems = "DELETE FROM POS_CustomOrderItems WHERE OrderID = @orderId"
+                        Using cmd As New SqlCommand(sqlDeleteItems, conn, transaction)
+                            cmd.Parameters.AddWithValue("@orderId", _orderData("OrderID"))
+                            cmd.ExecuteNonQuery()
+                        End Using
                         
-                        Using cmd As New SqlCommand(sqlUpdateOrder, conn, transaction)
+                        ' 2. Delete the order completely (this auto-updates ERP cutting list)
+                        Dim sqlDeleteOrder = "DELETE FROM POS_CustomOrders WHERE OrderNumber = @orderNumber"
+                        Using cmd As New SqlCommand(sqlDeleteOrder, conn, transaction)
                             cmd.Parameters.AddWithValue("@orderNumber", txtOrderNumber.Text.Trim())
                             cmd.ExecuteNonQuery()
                         End Using
@@ -277,18 +280,23 @@ Public Class CancelOrderForm
                         ' 2. Record cancellation fee as revenue (GL: DR Customer Deposits, CR Cancellation Fee Revenue)
                         Dim cancellationInvoice = GenerateInvoiceNumber()
                         Dim sqlCancellationSale = "INSERT INTO Demo_Sales 
-                                                  (InvoiceNumber, BranchID, TotalAmount, PaymentMethod, 
-                                                   SaleType, SaleDate, CashierID, CustomerName)
+                                                  (SaleNumber, InvoiceNumber, BranchID, TillPointID, CashierID, SaleDate,
+                                                   Subtotal, TaxAmount, TotalAmount, PaymentMethod, CashAmount, CardAmount,
+                                                   SaleType, ReferenceNumber)
                                                   VALUES 
-                                                  (@invoice, @branchId, @amount, 'Cash', 
-                                                   'CancellationFee', GETDATE(), @cashierId, @customerName)"
+                                                  (@saleNumber, @invoice, @branchId, @tillPointId, @cashierId, GETDATE(),
+                                                   @subtotal, @taxAmount, @amount, 'Cash', @amount, 0,
+                                                   'CancellationFee', @invoice)"
                         
                         Using cmd As New SqlCommand(sqlCancellationSale, conn, transaction)
+                            cmd.Parameters.AddWithValue("@saleNumber", cancellationInvoice)
                             cmd.Parameters.AddWithValue("@invoice", cancellationInvoice)
                             cmd.Parameters.AddWithValue("@branchId", _orderData("BranchID"))
-                            cmd.Parameters.AddWithValue("@amount", _cancellationFeeAmount)
+                            cmd.Parameters.AddWithValue("@tillPointId", 0)
                             cmd.Parameters.AddWithValue("@cashierId", AppSession.CurrentUser.UserID)
-                            cmd.Parameters.AddWithValue("@customerName", txtCustomerName.Text)
+                            cmd.Parameters.AddWithValue("@subtotal", _cancellationFeeAmount / 1.15D)
+                            cmd.Parameters.AddWithValue("@taxAmount", _cancellationFeeAmount - (_cancellationFeeAmount / 1.15D))
+                            cmd.Parameters.AddWithValue("@amount", _cancellationFeeAmount)
                             cmd.ExecuteNonQuery()
                         End Using
                         
@@ -301,19 +309,26 @@ Public Class CancelOrderForm
                             Dim refundInvoice = GenerateInvoiceNumber()
                             
                             Dim sqlRefund = "INSERT INTO Demo_Sales 
-                                           (InvoiceNumber, BranchID, TotalAmount, PaymentMethod, 
-                                            SaleType, SaleDate, CashierID, CustomerName)
+                                           (SaleNumber, InvoiceNumber, BranchID, TillPointID, CashierID, SaleDate,
+                                            Subtotal, TaxAmount, TotalAmount, PaymentMethod, CashAmount, CardAmount,
+                                            SaleType, ReferenceNumber)
                                            VALUES 
-                                           (@invoice, @branchId, @amount, @paymentMethod, 
-                                            'OrderRefund', GETDATE(), @cashierId, @customerName)"
+                                           (@saleNumber, @invoice, @branchId, @tillPointId, @cashierId, GETDATE(),
+                                            @subtotal, @taxAmount, @amount, @paymentMethod, @cashAmount, @cardAmount,
+                                            'OrderRefund', @invoice)"
                             
                             Using cmd As New SqlCommand(sqlRefund, conn, transaction)
+                                cmd.Parameters.AddWithValue("@saleNumber", refundInvoice)
                                 cmd.Parameters.AddWithValue("@invoice", refundInvoice)
                                 cmd.Parameters.AddWithValue("@branchId", _orderData("BranchID"))
+                                cmd.Parameters.AddWithValue("@tillPointId", 0)
+                                cmd.Parameters.AddWithValue("@cashierId", AppSession.CurrentUser.UserID)
+                                cmd.Parameters.AddWithValue("@subtotal", -(_refundAmount / 1.15D))
+                                cmd.Parameters.AddWithValue("@taxAmount", -(_refundAmount - (_refundAmount / 1.15D)))
                                 cmd.Parameters.AddWithValue("@amount", -_refundAmount) ' Negative for refund
                                 cmd.Parameters.AddWithValue("@paymentMethod", selectedRefundMethod)
-                                cmd.Parameters.AddWithValue("@cashierId", AppSession.CurrentUser.UserID)
-                                cmd.Parameters.AddWithValue("@customerName", txtCustomerName.Text)
+                                cmd.Parameters.AddWithValue("@cashAmount", If(selectedRefundMethod = "Cash", _refundAmount, 0))
+                                cmd.Parameters.AddWithValue("@cardAmount", If(selectedRefundMethod = "Card", _refundAmount, 0))
                                 cmd.ExecuteNonQuery()
                             End Using
                             

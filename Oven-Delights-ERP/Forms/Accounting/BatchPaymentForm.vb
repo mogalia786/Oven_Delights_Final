@@ -308,31 +308,13 @@ Public Class BatchPaymentForm
 
     Private Sub btnCreateBatch_Click(sender As Object, e As EventArgs) Handles btnCreateBatch.Click
         Try
-            ' Validate
-            If cmbPaymentMethod.SelectedIndex < 0 Then
-                MessageBox.Show("Please select a payment method", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                Return
-            End If
-            
-            If cmbBankAccount.SelectedIndex <= 0 Then
-                MessageBox.Show("Please select a bank account", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-                Return
-            End If
-            
-            ' Create batch
+            ' Create empty batch first, then add invoices to it
             Using conn As New SqlConnection(connectionString)
                 conn.Open()
-                Using cmd As New SqlCommand("sp_CreatePaymentBatch", conn)
+                Using cmd As New SqlCommand("sp_AP_CreatePaymentBatch", conn)
                     cmd.CommandType = CommandType.StoredProcedure
                     
-                    Dim batchNumber As New SqlParameter("@BatchNumber", SqlDbType.NVarChar, 50)
-                    batchNumber.Direction = ParameterDirection.Output
-                    cmd.Parameters.Add(batchNumber)
-                    
-                    cmd.Parameters.AddWithValue("@PaymentDate", dtpPaymentDate.Value.Date)
-                    cmd.Parameters.AddWithValue("@PaymentMethod", cmbPaymentMethod.SelectedItem.ToString())
-                    cmd.Parameters.AddWithValue("@BankAccountID", CType(cmbBankAccount.SelectedItem, Object).BankAccountID)
-                    cmd.Parameters.AddWithValue("@Notes", txtNotes.Text)
+                    cmd.Parameters.AddWithValue("@InvoiceIDs", "")
                     cmd.Parameters.AddWithValue("@CreatedBy", If(AppSession.CurrentUsername, "System"))
                     
                     Dim batchID As New SqlParameter("@BatchID", SqlDbType.Int)
@@ -342,9 +324,14 @@ Public Class BatchPaymentForm
                     cmd.ExecuteNonQuery()
                     
                     currentFNBBatchID = CInt(batchID.Value)
-                    txtBatchNumber.Text = batchNumber.Value.ToString()
                     
-                    MessageBox.Show($"Batch {txtBatchNumber.Text} created successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    ' Get batch number
+                    Using cmdBatch As New SqlCommand("SELECT BatchNumber FROM AP_PaymentBatches WHERE BatchID = @BatchID", conn)
+                        cmdBatch.Parameters.AddWithValue("@BatchID", currentFNBBatchID)
+                        txtBatchNumber.Text = cmdBatch.ExecuteScalar()?.ToString()
+                    End Using
+                    
+                    MessageBox.Show($"Batch {txtBatchNumber.Text} created successfully! Now select invoices to add to this batch.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
                     UpdateUIState()
                 End Using
             End Using

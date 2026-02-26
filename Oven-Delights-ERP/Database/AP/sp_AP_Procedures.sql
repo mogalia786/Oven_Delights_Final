@@ -93,15 +93,18 @@ BEGIN
         DECLARE @BatchNumber NVARCHAR(50) = 'APB' + FORMAT(GETDATE(), 'yyyyMMddHHmmss')
         
         -- Calculate totals
-        DECLARE @TotalAmount DECIMAL(18,2)
-        DECLARE @TotalInvoices INT
+        DECLARE @TotalAmount DECIMAL(18,2) = 0
+        DECLARE @TotalInvoices INT = 0
         
-        SELECT 
-            @TotalAmount = SUM(TotalAmount),
-            @TotalInvoices = COUNT(*)
-        FROM AP_Invoices
-        WHERE InvoiceID IN (SELECT value FROM STRING_SPLIT(@InvoiceIDs, ','))
-            AND Status = 'Pending'
+        IF @InvoiceIDs IS NOT NULL AND @InvoiceIDs <> ''
+        BEGIN
+            SELECT 
+                @TotalAmount = ISNULL(SUM(TotalAmount), 0),
+                @TotalInvoices = COUNT(*)
+            FROM AP_Invoices
+            WHERE InvoiceID IN (SELECT value FROM STRING_SPLIT(@InvoiceIDs, ','))
+                AND Status = 'Pending'
+        END
         
         -- Create batch
         INSERT INTO AP_PaymentBatches (
@@ -115,16 +118,19 @@ BEGIN
         
         SET @BatchID = SCOPE_IDENTITY()
         
-        -- Add batch items
-        INSERT INTO AP_PaymentBatchItems (BatchID, InvoiceID, Amount, CreatedDate)
-        SELECT 
-            @BatchID,
-            InvoiceID,
-            TotalAmount,
-            GETDATE()
-        FROM AP_Invoices
-        WHERE InvoiceID IN (SELECT value FROM STRING_SPLIT(@InvoiceIDs, ','))
-            AND Status = 'Pending'
+        -- Add batch items only if invoices provided
+        IF @InvoiceIDs IS NOT NULL AND @InvoiceIDs <> ''
+        BEGIN
+            INSERT INTO AP_PaymentBatchItems (BatchID, InvoiceID, Amount, CreatedDate)
+            SELECT 
+                @BatchID,
+                InvoiceID,
+                TotalAmount,
+                GETDATE()
+            FROM AP_Invoices
+            WHERE InvoiceID IN (SELECT value FROM STRING_SPLIT(@InvoiceIDs, ','))
+                AND Status = 'Pending'
+        END
         
         COMMIT TRANSACTION;
         

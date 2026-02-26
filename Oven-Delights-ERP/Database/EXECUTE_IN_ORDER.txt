@@ -1,0 +1,15 @@
+BANK RECONCILIATION INSTALLATION - EXECUTE IN THIS ORDER
+=========================================================
+
+IMPORTANT: Connect to OvenDelightsERP database FIRST, then execute each script separately.
+
+Step 1: CREATE_GLBATCHES_TABLE.sql
+Step 2: CREATE_BANK_RECONCILIATION_SYSTEM.sql
+Step 3: sp_GeneratePaymentReference.sql
+Step 4: sp_AutoMatchBankTransactions.sql
+Step 5: sp_PostBankTransactionsToGL.sql
+Step 6: TEST_BANK_RECONCILIATION.sql (to validate)
+
+DO NOT use SQLCMD mode.
+DO NOT execute INSTALL_BANK_RECONCILIATION.sql (it uses SQLCMD syntax).
+Execute each script individually in SSMS.

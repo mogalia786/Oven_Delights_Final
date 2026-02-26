@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+  <connectionStrings>
+    <add name="OvenDelightsERPConnectionString" 
+         connectionString="Data Source=YOUR_SERVER;Initial Catalog=OvenDelightsERP;Integrated Security=True" 
+         providerName="System.Data.SqlClient" />
+  </connectionStrings>
+  
+  <appSettings>
+    <!-- FNB Banking API Configuration -->
+    <!-- IMPORTANT: Replace these values with your actual FNB API credentials -->
+    
+    <!-- FNB API Base URL -->
+    <add key="FNB_API_BaseUrl" value="https://api.fnb.co.za/v1" />
+    
+    <!-- FNB API Key (obtain from FNB Business Banking Portal) -->
+    <add key="FNB_API_Key" value="YOUR_FNB_API_KEY_HERE" />
+    
+    <!-- FNB Client ID (obtain from FNB Business Banking Portal) -->
+    <add key="FNB_ClientId" value="YOUR_FNB_CLIENT_ID_HERE" />
+    
+    <!-- FNB Client Secret (obtain from FNB Business Banking Portal) -->
+    <add key="FNB_ClientSecret" value="YOUR_FNB_CLIENT_SECRET_HERE" />
+    
+    <!-- Enable/Disable FNB Integration (set to false to use CSV import only) -->
+    <add key="FNB_Integration_Enabled" value="true" />
+    
+    <!-- Auto-download statement daily (true/false) -->
+    <add key="FNB_AutoDownload_Enabled" value="false" />
+    
+    <!-- Auto-download time (24-hour format: HH:mm) -->
+    <add key="FNB_AutoDownload_Time" value="08:00" />
+  </appSettings>
+  
+  <startup>
+    <supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.7.2" />
+  </startup>
+</configuration>
+
+<!-- 
+  SETUP INSTRUCTIONS:
+  
+  1. Copy this file to App.config (replace existing)
+  2. Update YOUR_SERVER with your SQL Server instance name
+  3. Obtain FNB API credentials from FNB Business Banking Portal:
+     - Login to FNB Business Online Banking
+     - Navigate to: Settings → API Management
+     - Create new API application
+     - Copy API Key, Client ID, and Client Secret
+  4. Replace placeholder values above with actual credentials
+  5. Save and rebuild application
+  
+  SECURITY NOTES:
+  - Never commit App.config with real credentials to source control
+  - Add App.config to .gitignore
+  - Use encrypted configuration in production
+  - Restrict file permissions to authorized users only
+  
+  TESTING:
+  - Set FNB_Integration_Enabled to false to test with CSV import only
+  - Once FNB credentials are configured, set to true
+  - Test with small date range first
+  
+  CSV IMPORT FORMAT:
+  If using CSV import instead of FNB API, ensure CSV has these columns:
+  - TransactionDate (dd/MM/yyyy)
+  - Description
+  - DebitAmount
+  - CreditAmount
+  - Balance
+  - Reference (optional)
+-->
