@@ -23,7 +23,8 @@ Public Class APInvoiceService
     Public Function GetOutstandingInvoices(Optional beneficiaryId As Integer? = Nothing,
                                           Optional categoryId As Integer? = Nothing,
                                           Optional dueDateFrom As Date? = Nothing,
-                                          Optional dueDateTo As Date? = Nothing) As DataTable
+                                          Optional dueDateTo As Date? = Nothing,
+                                          Optional branchId As Integer? = Nothing) As DataTable
         Dim dt As New DataTable()
 
         Try
@@ -39,6 +40,7 @@ Public Class APInvoiceService
                     cmd.Parameters.AddWithValue("@CategoryID", If(categoryId, DBNull.Value))
                     cmd.Parameters.AddWithValue("@DueDateFrom", If(dueDateFrom, DBNull.Value))
                     cmd.Parameters.AddWithValue("@DueDateTo", If(dueDateTo, DBNull.Value))
+                    cmd.Parameters.AddWithValue("@BranchID", If(branchId, DBNull.Value))
 
                     Using adapter As New SqlDataAdapter(cmd)
                         adapter.Fill(dt)

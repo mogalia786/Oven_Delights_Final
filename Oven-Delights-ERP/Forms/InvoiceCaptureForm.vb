@@ -463,30 +463,29 @@ Public Class InvoiceCaptureForm
             
             Dim subTotal As Decimal = subTotalVatable + subTotalNonVatable
             
-            ' Apply discount - use Rand discount value directly
+            ' Calculate total BEFORE discount
+            Dim totalBeforeDiscount As Decimal = subTotal + vatTotal
+            
+            ' Apply discount to TOTAL (not subtotal, not VAT)
             Dim discountAmount As Decimal = 0
             Dim discountPercent As Decimal = 0
             
             ' Get discount amount from txtDiscountRand
             If Decimal.TryParse(txtDiscountRand.Text, discountAmount) AndAlso discountAmount > 0 Then
-                subTotal = subTotal - discountAmount
-                ' Calculate percentage for saving
-                If subTotal > 0 Then
-                    discountPercent = Math.Round((discountAmount / (subTotal + discountAmount)) * 100, 4)
+                ' Calculate percentage based on total before discount
+                If totalBeforeDiscount > 0 Then
+                    discountPercent = Math.Round((discountAmount / totalBeforeDiscount) * 100, 4)
                 End If
-                ' Recalculate VAT only on vatable portion after discount
-                Dim vatableAfterDiscount As Decimal = subTotalVatable - (discountAmount * (subTotalVatable / (subTotalVatable + subTotalNonVatable)))
-                vatTotal = Math.Round(vatableAfterDiscount * 0.15D, 4)
             End If
             
-            Dim vatAmount As Decimal = vatTotal
-            Dim totalAmount As Decimal = subTotal + vatAmount
+            ' Final total = Total before discount - discount amount
+            Dim totalAmount As Decimal = totalBeforeDiscount - discountAmount
 
             ' Save GRV and update inventory
             Dim grvId = stockroomService.SaveGoodsReceivedVoucher(selectedSupplierId, selectedPOId, txtDeliveryNote.Text, dtpReceived.Value, dgvLines)
 
             ' Create Supplier Invoice record
-            CreateSupplierInvoice(selectedSupplierId, selectedPOId, txtDeliveryNote.Text, dtpReceived.Value, subTotal, vatAmount, totalAmount, grvId, discountAmount, discountPercent)
+            CreateSupplierInvoice(selectedSupplierId, selectedPOId, txtDeliveryNote.Text, dtpReceived.Value, subTotal, vatTotal, totalAmount, grvId, discountAmount, discountPercent)
 
             ' Update inventory based on ProductType
             Dim branchId As Integer = If(AppSession.CurrentUser IsNot Nothing AndAlso AppSession.CurrentUser.BranchID.HasValue, AppSession.CurrentUser.BranchID.Value, 0)
@@ -651,9 +650,9 @@ Public Class InvoiceCaptureForm
                         If productName.Length > 40 Then productName = productName.Substring(0, 37) & "..."
                         
                         e.Graphics.DrawString(productName, font, Brushes.Black, leftMargin, yPos)
-                        e.Graphics.DrawString(receiveNow.ToString("N2"), font, Brushes.Black, leftMargin + 350, yPos)
-                        e.Graphics.DrawString("R " & unitCost.ToString("N2"), font, Brushes.Black, leftMargin + 420, yPos)
-                        e.Graphics.DrawString("R " & lineTotal.ToString("N2"), font, Brushes.Black, leftMargin + 520, yPos)
+                        e.Graphics.DrawString(receiveNow.ToString("N4"), font, Brushes.Black, leftMargin + 350, yPos)
+                        e.Graphics.DrawString("R " & unitCost.ToString("N4"), font, Brushes.Black, leftMargin + 420, yPos)
+                        e.Graphics.DrawString("R " & lineTotal.ToString("N4"), font, Brushes.Black, leftMargin + 520, yPos)
                         yPos += 20
                     End If
                 End If
@@ -937,32 +936,32 @@ Public Class InvoiceCaptureForm
                             End Using
                             
                             If existingInvoiceId > 0 Then
-                                ' Update existing invoice
+                                ' Update existing invoice - Amount should be final total after discount
                                 Dim updateAPSql = "UPDATE AP_Invoices SET Amount = @Amount, TaxAmount = @Tax, InvoiceDate = @InvDate, DueDate = @DueDate, " &
                                                 "Description = @Description, ModifiedBy = @UserID, ModifiedDate = GETDATE() " &
                                                 "WHERE InvoiceID = @InvoiceID"
                                 Using cmd As New SqlCommand(updateAPSql, con, tx)
                                     cmd.Parameters.AddWithValue("@InvoiceID", existingInvoiceId)
-                                    cmd.Parameters.AddWithValue("@Amount", subTotal)
-                                    cmd.Parameters.AddWithValue("@Tax", vatAmount)
+                                    cmd.Parameters.AddWithValue("@Amount", totalAmount)
+                                    cmd.Parameters.AddWithValue("@Tax", 0)
                                     cmd.Parameters.AddWithValue("@InvDate", invoiceDate)
                                     cmd.Parameters.AddWithValue("@DueDate", invoiceDate.AddDays(30))
-                                    cmd.Parameters.AddWithValue("@Description", $"Supplier Invoice from GRV")
+                                    cmd.Parameters.AddWithValue("@Description", $"Supplier Invoice from GRV (Subtotal: {subTotal:N2}, VAT: {vatAmount:N2}, Discount: {discountAmount:N2})")
                                     cmd.Parameters.AddWithValue("@UserID", AppSession.CurrentUserID)
                                     cmd.ExecuteNonQuery()
                                 End Using
                             Else
-                                ' Insert new invoice
-                                Dim insertAPSql = "INSERT INTO AP_Invoices (InvoiceNumber, BeneficiaryID, CategoryID, InvoiceDate, DueDate, Amount, TaxAmount, Description, Status, CreatedBy) " &
-                                                "VALUES (@InvNum, @BeneficiaryID, @CategoryID, @InvDate, @DueDate, @Amount, @Tax, @Description, 'Pending', @UserID)"
+                                ' Insert new invoice - Amount should be final total after discount, TaxAmount = 0 (already included in Amount)
+                                Dim insertAPSql = "INSERT INTO AP_Invoices (InvoiceNumber, BeneficiaryID, CategoryID, InvoiceDate, DueDate, Amount, TaxAmount, Description, Status, CreatedBy, Reference) " &
+                                                "VALUES (@InvNum, @BeneficiaryID, @CategoryID, @InvDate, @DueDate, @Amount, @Tax, @Description, 'Pending', @UserID, @InvNum)"
                                 Using cmd As New SqlCommand(insertAPSql, con, tx)
                                     cmd.Parameters.AddWithValue("@InvNum", invoiceNumber)
                                     cmd.Parameters.AddWithValue("@BeneficiaryID", beneficiaryId)
                                     cmd.Parameters.AddWithValue("@CategoryID", categoryId)
                                     cmd.Parameters.AddWithValue("@InvDate", invoiceDate)
                                     cmd.Parameters.AddWithValue("@DueDate", invoiceDate.AddDays(30))
-                                    cmd.Parameters.AddWithValue("@Amount", subTotal)
-                                    cmd.Parameters.AddWithValue("@Tax", vatAmount)
+                                    cmd.Parameters.AddWithValue("@Amount", totalAmount)
+                                    cmd.Parameters.AddWithValue("@Tax", 0)
                                     cmd.Parameters.AddWithValue("@Description", $"Supplier Invoice from GRV")
                                     cmd.Parameters.AddWithValue("@UserID", AppSession.CurrentUserID)
                                     cmd.ExecuteNonQuery()
@@ -1074,15 +1073,32 @@ Public Class InvoiceCaptureForm
 
     Private Sub CreateSupplierLedgerEntry(supplierId As Integer, invoiceId As Integer, reference As String, amount As Decimal, con As SqlConnection, tx As SqlTransaction)
         ' Create supplier ledger entry for the invoice
-        Dim sql = "INSERT INTO SupplierLedger (SupplierID, TransactionDate, TransactionType, Reference, Debit, Credit, Balance, Description, InvoiceID, CreatedBy, CreatedDate) " &
-                  "VALUES (@SupplierID, GETDATE(), 'Invoice', @Reference, @Amount, 0, @Amount, @Description, @InvoiceID, @UserID, GETDATE())"
+        ' Get supplier name and code
+        Dim supplierName As String = ""
+        Dim supplierCode As String = ""
+        Dim getSupplierSql = "SELECT CompanyName, SupplierCode FROM Suppliers WHERE SupplierID = @SupplierID"
+        Using cmd As New SqlCommand(getSupplierSql, con, tx)
+            cmd.Parameters.AddWithValue("@SupplierID", supplierId)
+            Using reader = cmd.ExecuteReader()
+                If reader.Read() Then
+                    supplierName = If(reader("CompanyName"), "").ToString()
+                    supplierCode = If(reader("SupplierCode"), "").ToString()
+                End If
+            End Using
+        End Using
+        
+        Dim sql = "INSERT INTO SupplierLedger (SupplierID, SupplierName, SupplierCode, TransactionDate, TransactionType, ReferenceNumber, Description, DebitAmount, CreditAmount, RunningBalance, BranchID, CreatedBy, CreatedDate) " &
+                  "VALUES (@SupplierID, @SupplierName, @SupplierCode, GETDATE(), 'Invoice', @ReferenceNumber, @Description, @DebitAmount, 0, @RunningBalance, @BranchID, @UserID, GETDATE())"
 
         Using cmd As New SqlCommand(sql, con, tx)
             cmd.Parameters.AddWithValue("@SupplierID", supplierId)
-            cmd.Parameters.AddWithValue("@Reference", reference)
-            cmd.Parameters.AddWithValue("@Amount", amount)
+            cmd.Parameters.AddWithValue("@SupplierName", supplierName)
+            cmd.Parameters.AddWithValue("@SupplierCode", supplierCode)
+            cmd.Parameters.AddWithValue("@ReferenceNumber", reference)
             cmd.Parameters.AddWithValue("@Description", $"Purchase Invoice - {reference}")
-            cmd.Parameters.AddWithValue("@InvoiceID", invoiceId)
+            cmd.Parameters.AddWithValue("@DebitAmount", amount)
+            cmd.Parameters.AddWithValue("@RunningBalance", amount)
+            cmd.Parameters.AddWithValue("@BranchID", AppSession.CurrentBranchID)
             cmd.Parameters.AddWithValue("@UserID", AppSession.CurrentUserID)
             cmd.ExecuteNonQuery()
         End Using
@@ -1094,16 +1110,16 @@ Public Class InvoiceCaptureForm
     Private Sub UpdateSupplierBalance(supplierId As Integer, con As SqlConnection, tx As SqlTransaction)
         ' Recalculate running balance for all supplier ledger entries
         Dim sql = "WITH OrderedLedger AS ( " &
-                  "  SELECT LedgerID, Debit, Credit, " &
+                  "  SELECT LedgerID, DebitAmount, CreditAmount, " &
                   "  ROW_NUMBER() OVER (ORDER BY TransactionDate, LedgerID) AS RowNum " &
                   "  FROM SupplierLedger WHERE SupplierID = @SupplierID " &
                   "), " &
                   "RunningBalance AS ( " &
-                  "  SELECT LedgerID, Debit, Credit, " &
-                  "  SUM(Debit - Credit) OVER (ORDER BY RowNum) AS Balance " &
+                  "  SELECT LedgerID, DebitAmount, CreditAmount, " &
+                  "  SUM(DebitAmount - CreditAmount) OVER (ORDER BY RowNum) AS Balance " &
                   "  FROM OrderedLedger " &
                   ") " &
-                  "UPDATE sl SET sl.Balance = rb.Balance " &
+                  "UPDATE sl SET sl.RunningBalance = rb.Balance " &
                   "FROM SupplierLedger sl " &
                   "INNER JOIN RunningBalance rb ON sl.LedgerID = rb.LedgerID"
 
@@ -1153,9 +1169,28 @@ Public Class InvoiceCaptureForm
             End Using
         End Using
     End Sub
-
+    
     Private Sub UpdateLastPaidPrice(materialId As Integer, unitCost As Decimal, itemType As String)
         ' IGNORE materialId - update by product name from grid instead
+    End Sub
+    
+    Private Sub UpdateLastPaidPriceByName(productName As String, unitCost As Decimal)
+        Try
+            Using con As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                con.Open()
+                
+                ' Update by MaterialName - more reliable than ID
+                Dim sql = "UPDATE RawMaterials SET LastPaidPrice = @UnitCost, LastPurchaseDate = GETDATE() WHERE MaterialName = @Name"
+                
+                Using cmd As New SqlCommand(sql, con)
+                    cmd.Parameters.AddWithValue("@UnitCost", unitCost)
+                    cmd.Parameters.AddWithValue("@Name", productName)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+        Catch ex As Exception
+            ' Silent
+        End Try
     End Sub
     
     Private Function CheckDuplicateInvoiceNumber(invoiceNumber As String, supplierId As Integer) As Boolean
@@ -1248,25 +1283,6 @@ Public Class InvoiceCaptureForm
             CalculateTotals(Nothing, EventArgs.Empty)
         Catch ex As Exception
             ' Ignore errors during sync
-        End Try
-    End Sub
-    
-    Private Sub UpdateLastPaidPriceByName(productName As String, unitCost As Decimal)
-        Try
-            Using con As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
-                con.Open()
-                
-                ' Update by MaterialName - more reliable than ID
-                Dim sql = "UPDATE RawMaterials SET LastPaidPrice = @UnitCost, LastPurchaseDate = GETDATE() WHERE MaterialName = @Name"
-                
-                Using cmd As New SqlCommand(sql, con)
-                    cmd.Parameters.AddWithValue("@UnitCost", unitCost)
-                    cmd.Parameters.AddWithValue("@Name", productName)
-                    cmd.ExecuteNonQuery()
-                End Using
-            End Using
-        Catch ex As Exception
-            ' Silent
         End Try
     End Sub
 End Class

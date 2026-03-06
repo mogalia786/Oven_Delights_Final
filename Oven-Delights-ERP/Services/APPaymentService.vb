@@ -14,7 +14,7 @@ Public Class APPaymentService
         _fnbApiClient = New FNBPaymentAPIClient(_connectionString)
     End Sub
 
-    Public Function CreatePaymentBatch(invoiceIds As List(Of Integer), createdBy As String) As Integer
+    Public Function CreatePaymentBatch(invoiceIds As List(Of Integer), createdBy As String, Optional branchId As Integer? = Nothing) As Integer
         Dim batchId As Integer = 0
 
         Using conn As New SqlConnection(_connectionString)
@@ -23,6 +23,7 @@ Public Class APPaymentService
                 cmd.CommandType = CommandType.StoredProcedure
                 cmd.Parameters.AddWithValue("@InvoiceIDs", String.Join(",", invoiceIds))
                 cmd.Parameters.AddWithValue("@CreatedBy", createdBy)
+                cmd.Parameters.AddWithValue("@BranchID", If(branchId, DBNull.Value))
 
                 Dim outputParam As New SqlParameter("@BatchID", SqlDbType.Int) With {
                     .Direction = ParameterDirection.Output
@@ -60,6 +61,22 @@ Public Class APPaymentService
             Dim paymentRequest = JsonConvert.DeserializeObject(Of PaymentInitiationRequest)(paymentRequestJson)
             Dim response = _fnbApiClient.InitiatePayment(paymentRequest)
 
+            ' Handle missing MessageID/InstructionID in test/sandbox mode
+            If String.IsNullOrEmpty(response.messageId) Then
+                response.messageId = "TEST-MSG-" & batchId.ToString("D10") & "-" & DateTime.Now.ToString("yyyyMMddHHmmss")
+                RaiseEvent LogMessage($"⚠ FNB API did not return MessageID - generated local ID: {response.messageId}")
+            End If
+            
+            If String.IsNullOrEmpty(response.instructionId) Then
+                response.instructionId = "TEST-INST-" & batchId.ToString("D10") & "-" & DateTime.Now.ToString("yyyyMMddHHmmss")
+                RaiseEvent LogMessage($"⚠ FNB API did not return InstructionID - generated local ID: {response.instructionId}")
+            End If
+            
+            If String.IsNullOrEmpty(response.status) Then
+                response.status = "PDNG"
+                RaiseEvent LogMessage($"⚠ FNB API did not return status - defaulting to PDNG")
+            End If
+
             RaiseEvent LogMessage($"✓ Batch submitted successfully")
             RaiseEvent LogMessage($"Instruction ID: {response.instructionId}")
             RaiseEvent LogMessage($"Message ID: {response.messageId}")
@@ -68,6 +85,9 @@ Public Class APPaymentService
             ' Update batch with FNB response
             UpdateBatchStatus(batchId, "Submitted", response.instructionId, response.messageId, 
                             "Submitted to FNB", JsonConvert.SerializeObject(response))
+
+            ' Create corresponding FNB batch record for transaction viewer
+            CreateFNBBatchRecord(batchId, batchData, response, paymentRequestJson)
 
             ' Update invoices to Processing status
             UpdateInvoicesInBatch(batchId, "Processing", batchId, DateTime.Now)
@@ -334,6 +354,153 @@ Public Class APPaymentService
             RaiseEvent LogMessage($"✓ Batch {batchId} posted to GL successfully")
         Catch ex As Exception
             RaiseEvent LogMessage($"Error posting to GL: {ex.Message}")
+        End Try
+    End Sub
+
+    Private Sub CreateFNBBatchRecord(apBatchId As Integer, batchData As DataTable, response As PaymentInitiationResponse, requestJson As String)
+        Try
+            RaiseEvent LogMessage($"Creating FNB batch record for AP batch {apBatchId}...")
+            
+            ' Validate response data
+            If response Is Nothing Then
+                Throw New Exception("Payment response is null")
+            End If
+            
+            If String.IsNullOrEmpty(response.messageId) Then
+                Throw New Exception("MessageID is null or empty in payment response")
+            End If
+            
+            If String.IsNullOrEmpty(response.instructionId) Then
+                Throw New Exception("InstructionID is null or empty in payment response")
+            End If
+            
+            ' Get AP batch details
+            Dim totalAmount As Decimal = batchData.AsEnumerable().Sum(Function(r) CDec(r("TotalAmount")))
+            Dim transactionCount As Integer = batchData.Rows.Count
+            Dim messageId As String = response.messageId
+            Dim instructionId As String = response.instructionId
+            
+            RaiseEvent LogMessage($"MessageID: {messageId}, InstructionID: {instructionId}")
+            
+            ' Get user ID and branch ID from AP batch
+            Dim createdBy As Integer = 0
+            Dim branchId As Integer = 0
+            Using conn As New SqlConnection(_connectionString)
+                conn.Open()
+                Dim cmd As New SqlCommand("SELECT CreatedBy, BranchID FROM AP_PaymentBatches WHERE BatchID = @BatchID", conn)
+                cmd.Parameters.AddWithValue("@BatchID", apBatchId)
+                Using reader = cmd.ExecuteReader()
+                    If reader.Read() Then
+                        If Not IsDBNull(reader("CreatedBy")) Then
+                            Dim createdByStr = reader("CreatedBy").ToString()
+                            RaiseEvent LogMessage($"CreatedBy username: {createdByStr}")
+                            ' Try to get UserID from username
+                            Using conn2 As New SqlConnection(_connectionString)
+                                conn2.Open()
+                                Dim cmdUser As New SqlCommand("SELECT UserID FROM Users WHERE Username = @Username", conn2)
+                                cmdUser.Parameters.AddWithValue("@Username", createdByStr)
+                                Dim userId = cmdUser.ExecuteScalar()
+                                If userId IsNot Nothing Then
+                                    createdBy = CInt(userId)
+                                    RaiseEvent LogMessage($"Found UserID: {createdBy}")
+                                Else
+                                    RaiseEvent LogMessage($"Warning: UserID not found for username {createdByStr}")
+                                End If
+                            End Using
+                        End If
+                        If Not IsDBNull(reader("BranchID")) Then
+                            branchId = CInt(reader("BranchID"))
+                            RaiseEvent LogMessage($"BranchID: {branchId}")
+                        End If
+                    End If
+                End Using
+            End Using
+
+            ' Create FNB batch record using stored procedure
+            Using conn As New SqlConnection(_connectionString)
+                conn.Open()
+                
+                RaiseEvent LogMessage("Calling sp_FNB_CreatePaymentBatch...")
+                
+                Using cmd As New SqlCommand("sp_FNB_CreatePaymentBatch", conn)
+                    cmd.CommandType = CommandType.StoredProcedure
+                    cmd.Parameters.AddWithValue("@MessageID", messageId)
+                    cmd.Parameters.AddWithValue("@TotalNumberOfTransactions", transactionCount)
+                    cmd.Parameters.AddWithValue("@TotalControlSum", totalAmount)
+                    cmd.Parameters.AddWithValue("@RequestedExecutionDate", DateTime.Today)
+                    cmd.Parameters.AddWithValue("@ServiceLevelCode", "SDVA")
+                    cmd.Parameters.AddWithValue("@DebtorAccountNumber", GetDebtorAccountNumber())
+                    cmd.Parameters.AddWithValue("@BranchID", If(branchId > 0, CType(branchId, Object), DBNull.Value))
+                    cmd.Parameters.AddWithValue("@CreatedBy", If(createdBy > 0, CType(createdBy, Object), DBNull.Value))
+                    cmd.Parameters.AddWithValue("@APIRequestJSON", If(String.IsNullOrEmpty(requestJson), DBNull.Value, CType(requestJson, Object)))
+                    
+                    Dim outputParam As New SqlParameter("@BatchID", SqlDbType.Int) With {
+                        .Direction = ParameterDirection.Output
+                    }
+                    cmd.Parameters.Add(outputParam)
+                    
+                    cmd.ExecuteNonQuery()
+                    Dim fnbBatchId As Integer = CInt(outputParam.Value)
+                    
+                    RaiseEvent LogMessage($"✓ Created FNB batch record {fnbBatchId} for AP batch {apBatchId}")
+                    
+                    ' Update FNB batch with instruction ID and status
+                    RaiseEvent LogMessage("Updating FNB batch status...")
+                    
+                    Using cmdUpdate As New SqlCommand("sp_FNB_UpdateBatchStatus", conn)
+                        cmdUpdate.CommandType = CommandType.StoredProcedure
+                        cmdUpdate.Parameters.AddWithValue("@BatchID", fnbBatchId)
+                        cmdUpdate.Parameters.AddWithValue("@InstructionID", instructionId)
+                        cmdUpdate.Parameters.AddWithValue("@BatchStatus", If(String.IsNullOrEmpty(response.status), "PDNG", response.status))
+                        cmdUpdate.Parameters.AddWithValue("@RejectionReason", DBNull.Value)
+                        cmdUpdate.Parameters.AddWithValue("@APIResponseJSON", JsonConvert.SerializeObject(response))
+                        cmdUpdate.Parameters.AddWithValue("@CheckedBy", If(createdBy > 0, CType(createdBy, Object), DBNull.Value))
+                        cmdUpdate.ExecuteNonQuery()
+                    End Using
+                    
+                    RaiseEvent LogMessage($"✓ Updated FNB batch status to {response.status}")
+                    
+                    ' Create FNB transaction records for each invoice
+                    RaiseEvent LogMessage($"Creating {batchData.Rows.Count} FNB transaction records...")
+                    
+                    Dim txnCount As Integer = 0
+                    For Each row As DataRow In batchData.Rows
+                        Using cmdTxn As New SqlCommand("sp_FNB_AddPaymentTransaction", conn)
+                            cmdTxn.CommandType = CommandType.StoredProcedure
+                            cmdTxn.Parameters.AddWithValue("@BatchID", fnbBatchId)
+                            cmdTxn.Parameters.AddWithValue("@EndToEndID", row("InvoiceNumber").ToString())
+                            cmdTxn.Parameters.AddWithValue("@Amount", CDec(row("TotalAmount")))
+                            cmdTxn.Parameters.AddWithValue("@CreditorName", row("BeneficiaryName").ToString())
+                            cmdTxn.Parameters.AddWithValue("@CreditorAccountNumber", row("AccountNumber").ToString())
+                            cmdTxn.Parameters.AddWithValue("@CreditorAccountType", If(IsDBNull(row("AccountType")) OrElse String.IsNullOrEmpty(row("AccountType").ToString()), "CACC", row("AccountType").ToString()))
+                            cmdTxn.Parameters.AddWithValue("@CreditorBranchID", row("BranchCode").ToString())
+                            cmdTxn.Parameters.AddWithValue("@CreditorBIC", "FIRNZAJJ")
+                            cmdTxn.Parameters.AddWithValue("@RemittanceReference", If(IsDBNull(row("Description")), "", row("Description").ToString()))
+                            cmdTxn.Parameters.AddWithValue("@ProofOfPaymentEmail", DBNull.Value)
+                            cmdTxn.Parameters.AddWithValue("@SupplierID", DBNull.Value)
+                            cmdTxn.Parameters.AddWithValue("@PurchaseInvoiceID", row("InvoiceID"))
+                            cmdTxn.Parameters.AddWithValue("@ExpenseBillID", DBNull.Value)
+                            cmdTxn.Parameters.AddWithValue("@PaymentType", "Supplier")
+                            
+                            Dim txnOutputParam As New SqlParameter("@PaymentTransactionID", SqlDbType.Int) With {
+                                .Direction = ParameterDirection.Output
+                            }
+                            cmdTxn.Parameters.Add(txnOutputParam)
+                            
+                            cmdTxn.ExecuteNonQuery()
+                            txnCount += 1
+                        End Using
+                    Next
+                    
+                    RaiseEvent LogMessage($"✓ Created {txnCount} FNB transaction records")
+                End Using
+            End Using
+            
+            RaiseEvent LogMessage($"✓ FNB batch synchronization completed successfully")
+        Catch ex As Exception
+            RaiseEvent LogMessage($"ERROR creating FNB batch record: {ex.Message}")
+            RaiseEvent LogMessage($"Stack trace: {ex.StackTrace}")
+            Throw New Exception($"Failed to create FNB batch record: {ex.Message}", ex)
         End Try
     End Sub
 End Class

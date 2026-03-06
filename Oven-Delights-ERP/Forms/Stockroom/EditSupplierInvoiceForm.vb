@@ -10,6 +10,7 @@ Public Class EditSupplierInvoiceForm
     Private currentInvoiceId As Integer = 0
     Private currentPurchaseOrderId As Integer = 0
     Private currentSupplierId As Integer = 0
+    Private currentInvoiceNumber As String = ""
     Private printDocument As New PrintDocument()
     Private printFont As Font
     Private printY As Integer = 0
@@ -82,21 +83,60 @@ Public Class EditSupplierInvoiceForm
             .AutoSize = True
         }
         
-        Dim txtInvoiceNumber As New TextBox With {
-            .Name = "txtInvoiceNumber",
+        Dim cboInvoiceNumber As New ComboBox With {
+            .Name = "cboInvoiceNumber",
             .Location = New Point(470, 12),
-            .Width = 200,
-            .Font = New Font("Segoe UI", 10, FontStyle.Bold)
+            .Width = 300,
+            .DropDownStyle = ComboBoxStyle.DropDown,
+            .AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+            .AutoCompleteSource = AutoCompleteSource.ListItems,
+            .Font = New Font("Segoe UI", 10)
         }
         
-        Dim btnSearch As New Button With {
-            .Name = "btnSearch",
-            .Text = "Search",
-            .Location = New Point(680, 10),
-            .Width = 100,
-            .Height = 30
-        }
-        AddHandler btnSearch.Click, AddressOf btnSearch_Click
+        ' Load invoices when supplier selected
+        AddHandler cboSupplier.SelectedIndexChanged, Sub(s, ev)
+            cboInvoiceNumber.DataSource = Nothing
+            If cboSupplier.SelectedIndex >= 0 Then
+                Try
+                    Using con As New SqlConnection(connectionString)
+                        con.Open()
+                        Dim sql = "SELECT InvoiceID, InvoiceNumber, InvoiceDate, TotalAmount, Status " &
+                                 "FROM SupplierInvoices WHERE SupplierID = @SupplierID ORDER BY InvoiceDate DESC"
+                        Using cmd As New SqlCommand(sql, con)
+                            cmd.Parameters.AddWithValue("@SupplierID", cboSupplier.SelectedValue)
+                            Dim dt As New DataTable()
+                            Using adapter As New SqlDataAdapter(cmd)
+                                adapter.Fill(dt)
+                            End Using
+                            If dt.Rows.Count > 0 Then
+                                dt.Columns.Add("Display", GetType(String))
+                                For Each row As DataRow In dt.Rows
+                                    row("Display") = $"{row("InvoiceNumber")} - {CDate(row("InvoiceDate")):dd/MM/yyyy} - R{CDec(row("TotalAmount")):N2} - {row("Status")}"
+                                Next
+                                cboInvoiceNumber.DataSource = dt
+                                cboInvoiceNumber.DisplayMember = "Display"
+                                cboInvoiceNumber.ValueMember = "InvoiceID"
+                                cboInvoiceNumber.SelectedIndex = -1
+                            End If
+                        End Using
+                    End Using
+                Catch ex As Exception
+                    MessageBox.Show($"Error loading invoices: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End Try
+            End If
+        End Sub
+        
+        ' Auto-load invoice when selected
+        AddHandler cboInvoiceNumber.SelectedIndexChanged, Sub(s, ev)
+            If cboInvoiceNumber.SelectedIndex >= 0 AndAlso cboInvoiceNumber.SelectedValue IsNot Nothing Then
+                Try
+                    Dim invoiceId As Integer = Convert.ToInt32(cboInvoiceNumber.SelectedValue)
+                    LoadInvoiceById(invoiceId)
+                Catch ex As Exception
+                    ' Ignore conversion errors during initialization
+                End Try
+            End If
+        End Sub
         
         Dim lblStatus As New Label With {
             .Name = "lblStatus",
@@ -106,7 +146,7 @@ Public Class EditSupplierInvoiceForm
             .Font = New Font("Segoe UI", 9, FontStyle.Italic)
         }
         
-        pnlSearch.Controls.AddRange({lblSupplier, cboSupplier, lblInvoiceNumber, txtInvoiceNumber, btnSearch, lblStatus})
+        pnlSearch.Controls.AddRange({lblSupplier, cboSupplier, lblInvoiceNumber, cboInvoiceNumber, lblStatus})
         
         ' Invoice header group
         Dim grpHeader As New GroupBox With {
@@ -230,57 +270,35 @@ Public Class EditSupplierInvoiceForm
         Me.Controls.AddRange({pnlInvoice, pnlSearch, pnlButtons})
     End Sub
     
-    Private Sub btnSearch_Click(sender As Object, e As EventArgs)
-        Dim cboSupplier = DirectCast(Me.Controls.Find("cboSupplier", True)(0), ComboBox)
-        Dim txtInvoiceNumber = DirectCast(Me.Controls.Find("txtInvoiceNumber", True)(0), TextBox)
-        Dim invoiceNum As String = txtInvoiceNumber.Text.Trim()
-        
-        If cboSupplier.SelectedIndex < 0 Then
-            MessageBox.Show("Please select a supplier first.", "Search", MessageBoxButtons.OK, MessageBoxIcon.Information)
-            cboSupplier.Focus()
-            Return
-        End If
-        
-        If String.IsNullOrWhiteSpace(invoiceNum) Then
-            MessageBox.Show("Please enter an invoice number.", "Search", MessageBoxButtons.OK, MessageBoxIcon.Information)
-            txtInvoiceNumber.Focus()
-            Return
-        End If
-        
-        currentSupplierId = Convert.ToInt32(cboSupplier.SelectedValue)
-        SearchAndLoadInvoice(invoiceNum, currentSupplierId)
-    End Sub
-    
-    Private Sub SearchAndLoadInvoice(invoiceNumber As String, supplierId As Integer)
+    Private Sub LoadInvoiceById(invoiceId As Integer)
         Try
             Dim lblStatus = DirectCast(Me.Controls.Find("lblStatus", True)(0), Label)
-            lblStatus.Text = "Searching..."
+            lblStatus.Text = "Loading..."
             lblStatus.ForeColor = Color.Blue
             
             Using con As New SqlConnection(connectionString)
                 con.Open()
                 
-                ' Search for invoice by supplier and invoice number
-                Dim sql As String
-                
-                ' Search with supplier filter
-                sql = "SELECT TOP 1 si.InvoiceID, si.InvoiceNumber, si.SupplierID, s.CompanyName AS SupplierName, " &
-                      "si.InvoiceDate, si.DueDate, si.BranchID, b.BranchName, si.Status, si.PurchaseOrderID, " &
-                      "si.SubTotal, si.VATAmount, si.TotalAmount, si.AmountPaid, si.AmountOutstanding, " &
-                      "si.DiscountAmount, si.DiscountPercent " &
-                      "FROM SupplierInvoices si " &
-                      "INNER JOIN Suppliers s ON si.SupplierID = s.SupplierID " &
-                      "LEFT JOIN Branches b ON si.BranchID = b.BranchID " &
-                      "WHERE si.InvoiceNumber = @InvoiceNumber AND si.SupplierID = @SupplierID"
+                Dim sql = "SELECT si.InvoiceID, si.InvoiceNumber, si.SupplierID, s.CompanyName AS SupplierName, " &
+                          "si.InvoiceDate, si.DueDate, si.BranchID, b.BranchName, si.Status, si.PurchaseOrderID, " &
+                          "po.PONumber, " &
+                          "si.SubTotal, si.VATAmount, si.TotalAmount, si.AmountPaid, si.AmountOutstanding, " &
+                          "si.DiscountAmount, si.DiscountPercent " &
+                          "FROM SupplierInvoices si " &
+                          "INNER JOIN Suppliers s ON si.SupplierID = s.SupplierID " &
+                          "LEFT JOIN Branches b ON si.BranchID = b.BranchID " &
+                          "LEFT JOIN PurchaseOrders po ON po.PurchaseOrderID = si.PurchaseOrderID " &
+                          "WHERE si.InvoiceID = @InvoiceID"
                 
                 Using cmd As New SqlCommand(sql, con)
-                    cmd.Parameters.AddWithValue("@InvoiceNumber", invoiceNumber)
-                    cmd.Parameters.AddWithValue("@SupplierID", supplierId)
+                    cmd.Parameters.AddWithValue("@InvoiceID", invoiceId)
                     
                     Using reader As SqlDataReader = cmd.ExecuteReader()
                         If reader.Read() Then
                             currentInvoiceId = Convert.ToInt32(reader("InvoiceID"))
                             currentPurchaseOrderId = If(IsDBNull(reader("PurchaseOrderID")), 0, Convert.ToInt32(reader("PurchaseOrderID")))
+                            currentInvoiceNumber = reader("InvoiceNumber").ToString()
+                            Dim invoiceNumber As String = currentInvoiceNumber
                             
                             ' Populate header fields
                             DirectCast(Me.Controls.Find("txtSupplier", True)(0), TextBox).Text = reader("SupplierName").ToString()
@@ -288,7 +306,7 @@ Public Class EditSupplierInvoiceForm
                             DirectCast(Me.Controls.Find("dtpDueDate", True)(0), DateTimePicker).Value = Convert.ToDateTime(reader("DueDate"))
                             DirectCast(Me.Controls.Find("txtBranch", True)(0), TextBox).Text = If(IsDBNull(reader("BranchName")), "", reader("BranchName").ToString())
                             DirectCast(Me.Controls.Find("txtStatus", True)(0), TextBox).Text = reader("Status").ToString()
-                            DirectCast(Me.Controls.Find("txtPONumber", True)(0), TextBox).Text = If(currentPurchaseOrderId > 0, "PO-" & currentPurchaseOrderId.ToString(), "N/A")
+                            DirectCast(Me.Controls.Find("txtPONumber", True)(0), TextBox).Text = If(IsDBNull(reader("PONumber")), "N/A", reader("PONumber").ToString())
                             
                             DirectCast(Me.Controls.Find("txtSubTotal", True)(0), TextBox).Text = Convert.ToDecimal(reader("SubTotal")).ToString("N4")
                             DirectCast(Me.Controls.Find("txtDiscount", True)(0), TextBox).Text = Convert.ToDecimal(reader("DiscountAmount")).ToString("N4")
@@ -310,7 +328,7 @@ Public Class EditSupplierInvoiceForm
                             DirectCast(Me.Controls.Find("btnPrint", True)(0), Button).Enabled = True
                             DirectCast(Me.Controls.Find("btnViewPO", True)(0), Button).Enabled = (currentPurchaseOrderId > 0)
                         Else
-                            MessageBox.Show($"Invoice number '{invoiceNumber}' not found for the selected supplier.", "Not Found", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                            MessageBox.Show($"Invoice not found.", "Not Found", MessageBoxButtons.OK, MessageBoxIcon.Information)
                             lblStatus.Text = "Invoice not found"
                             lblStatus.ForeColor = Color.Red
                             ClearForm()
@@ -525,14 +543,13 @@ Public Class EditSupplierInvoiceForm
         printY += 40
         
         ' Invoice details
-        Dim txtInvoiceNumber = DirectCast(Me.Controls.Find("txtInvoiceNumber", True)(0), TextBox)
         Dim txtSupplier = DirectCast(Me.Controls.Find("txtSupplier", True)(0), TextBox)
         Dim dtpInvoiceDate = DirectCast(Me.Controls.Find("dtpInvoiceDate", True)(0), DateTimePicker)
         Dim dtpDueDate = DirectCast(Me.Controls.Find("dtpDueDate", True)(0), DateTimePicker)
         Dim txtBranch = DirectCast(Me.Controls.Find("txtBranch", True)(0), TextBox)
         Dim txtStatus = DirectCast(Me.Controls.Find("txtStatus", True)(0), TextBox)
         
-        e.Graphics.DrawString($"Invoice Number: {txtInvoiceNumber.Text}", normalFont, Brushes.Black, 50, printY)
+        e.Graphics.DrawString($"Invoice Number: {currentInvoiceNumber}", normalFont, Brushes.Black, 50, printY)
         e.Graphics.DrawString($"Date: {dtpInvoiceDate.Value:dd MMM yyyy}", normalFont, Brushes.Black, 500, printY)
         printY += 25
         

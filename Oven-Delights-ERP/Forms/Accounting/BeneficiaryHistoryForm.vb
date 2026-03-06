@@ -551,38 +551,75 @@ Namespace Accounting
 
             Dim printDoc As New Printing.PrintDocument()
             AddHandler printDoc.PrintPage, Sub(s, ev)
-                Dim font As New Font("Arial", 10)
-                Dim headerFont As New Font("Arial", 12, FontStyle.Bold)
+                Dim normalFont As New Font("Arial", 8)
+                Dim boldFont As New Font("Arial", 8, FontStyle.Bold)
+                Dim headerFont As New Font("Arial", 14, FontStyle.Bold)
+                Dim titleFont As New Font("Arial", 16, FontStyle.Bold)
                 Dim y As Integer = 50
+                Dim leftMargin As Integer = 50
 
                 ' Print header
-                ev.Graphics.DrawString($"Beneficiary Payment History - {beneficiaryName}", headerFont, Brushes.Black, 50, y)
+                ev.Graphics.DrawString($"Beneficiary Payment History - {beneficiaryName}", titleFont, Brushes.Black, leftMargin, y)
+                y += 35
+                ev.Graphics.DrawString($"Opening Balance: R{openingBalance:N2}", headerFont, Brushes.Black, leftMargin, y)
                 y += 30
-                ev.Graphics.DrawString($"Opening Balance: R{openingBalance:N2}", font, Brushes.Black, 50, y)
-                y += 40
+                ev.Graphics.DrawLine(Pens.Black, leftMargin, y, ev.PageBounds.Width - 50, y)
+                y += 15
 
-                ' Print column headers
-                Dim x As Integer = 50
-                For Each col As DataGridViewColumn In dgvHistory.Columns
-                    If col.Visible Then
-                        ev.Graphics.DrawString(col.HeaderText, font, Brushes.Black, x, y)
-                        x += 100
-                    End If
-                Next
+                ' Print column headers with proper spacing
+                ev.Graphics.DrawString("TransactionType", boldFont, Brushes.Black, leftMargin, y)
+                ev.Graphics.DrawString("Reference", boldFont, Brushes.Black, leftMargin + 100, y)
+                ev.Graphics.DrawString("TransactionDate", boldFont, Brushes.Black, leftMargin + 220, y)
+                ev.Graphics.DrawString("DueDate", boldFont, Brushes.Black, leftMargin + 330, y)
+                ev.Graphics.DrawString("Category", boldFont, Brushes.Black, leftMargin + 420, y)
+                ev.Graphics.DrawString("Description", boldFont, Brushes.Black, leftMargin + 520, y)
+                ev.Graphics.DrawString("Debit", boldFont, Brushes.Black, leftMargin + 650, y)
+                ev.Graphics.DrawString("Credit", boldFont, Brushes.Black, leftMargin + 720, y)
                 y += 20
+                ev.Graphics.DrawLine(Pens.Gray, leftMargin, y, ev.PageBounds.Width - 50, y)
+                y += 10
 
-                ' Print rows
+                ' Print rows with proper spacing
                 For Each row As DataGridViewRow In dgvHistory.Rows
-                    x = 50
-                    For Each col As DataGridViewColumn In dgvHistory.Columns
-                        If col.Visible Then
-                            ev.Graphics.DrawString(row.Cells(col.Index).Value?.ToString(), font, Brushes.Black, x, y)
-                            x += 100
-                        End If
-                    Next
-                    y += 20
                     If y > ev.PageBounds.Height - 100 Then Exit For
+                    
+                    Dim transType As String = If(row.Cells("TransactionType").Value?.ToString(), "")
+                    Dim reference As String = If(row.Cells("Reference").Value?.ToString(), "")
+                    Dim transDate As String = ""
+                    If row.Cells("TransactionDate").Value IsNot Nothing Then
+                        transDate = Convert.ToDateTime(row.Cells("TransactionDate").Value).ToString("dd MMM yyyy")
+                    End If
+                    Dim dueDate As String = ""
+                    If row.Cells("DueDate").Value IsNot Nothing AndAlso Not IsDBNull(row.Cells("DueDate").Value) Then
+                        dueDate = Convert.ToDateTime(row.Cells("DueDate").Value).ToString("dd MMM yyyy")
+                    End If
+                    Dim category As String = If(row.Cells("Category").Value?.ToString(), "")
+                    Dim description As String = If(row.Cells("Description").Value?.ToString(), "")
+                    Dim debit As Decimal = If(row.Cells("Debit").Value IsNot Nothing, Convert.ToDecimal(row.Cells("Debit").Value), 0)
+                    Dim credit As Decimal = If(row.Cells("Credit").Value IsNot Nothing, Convert.ToDecimal(row.Cells("Credit").Value), 0)
+                    
+                    ' Truncate long text
+                    If reference.Length > 15 Then reference = reference.Substring(0, 12) & "..."
+                    If category.Length > 12 Then category = category.Substring(0, 9) & "..."
+                    If description.Length > 18 Then description = description.Substring(0, 15) & "..."
+                    
+                    ev.Graphics.DrawString(transType, normalFont, Brushes.Black, leftMargin, y)
+                    ev.Graphics.DrawString(reference, normalFont, Brushes.Black, leftMargin + 100, y)
+                    ev.Graphics.DrawString(transDate, normalFont, Brushes.Black, leftMargin + 220, y)
+                    ev.Graphics.DrawString(dueDate, normalFont, Brushes.Black, leftMargin + 330, y)
+                    ev.Graphics.DrawString(category, normalFont, Brushes.Black, leftMargin + 420, y)
+                    ev.Graphics.DrawString(description, normalFont, Brushes.Black, leftMargin + 520, y)
+                    ev.Graphics.DrawString(debit.ToString("N2"), normalFont, Brushes.Black, leftMargin + 650, y)
+                    ev.Graphics.DrawString(credit.ToString("N2"), normalFont, Brushes.Black, leftMargin + 720, y)
+                    
+                    y += 18
                 Next
+                
+                ' Footer
+                y = ev.PageBounds.Height - 50
+                ev.Graphics.DrawLine(Pens.Black, leftMargin, y, ev.PageBounds.Width - 50, y)
+                y += 10
+                ev.Graphics.DrawString($"Printed: {DateTime.Now:dd MMM yyyy HH:mm}", New Font("Arial", 7), Brushes.Gray, leftMargin, y)
             End Sub
 
             Dim printDialog As New PrintDialog()

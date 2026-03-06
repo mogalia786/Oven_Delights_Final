@@ -691,38 +691,134 @@ Public Class FinancialDashboard
             Using conn As New SqlConnection(_connString)
                 conn.Open()
                 
-                Dim sql = "SELECT 
-                            inv.InvoiceID,
-                            inv.InvoiceNumber,
-                            ISNULL(b.BeneficiaryName, 'Unknown') AS BeneficiaryName,
-                            ISNULL(c.CategoryName, 'General') AS Category,
-                            inv.Description,
-                            inv.TotalAmount AS Amount,
-                            inv.InvoiceDate,
-                            inv.DueDate,
-                            inv.Status,
-                            'Invoice' AS PaymentMethod
-                          FROM AP_Invoices inv
-                          LEFT JOIN AP_Beneficiaries b ON inv.BeneficiaryID = b.BeneficiaryID
-                          LEFT JOIN AP_Categories c ON inv.CategoryID = c.CategoryID
-                          WHERE inv.Status IN ('Pending', 'Approved', 'Outstanding', 'Overdue')
-                          AND inv.Status <> 'Paid'
-                          AND inv.Status <> 'Cancelled'
-                          ORDER BY inv.DueDate ASC, inv.InvoiceDate DESC"
+                ' Get suppliers with unpaid invoices grouped
+                Dim sqlSuppliers = "SELECT 
+                                    ISNULL(b.BeneficiaryName, 'Unknown') AS SupplierName,
+                                    b.BeneficiaryID,
+                                    COUNT(inv.InvoiceID) AS InvoiceCount,
+                                    SUM(inv.TotalAmount) AS TotalOwed
+                                  FROM AP_Invoices inv
+                                  LEFT JOIN AP_Beneficiaries b ON inv.BeneficiaryID = b.BeneficiaryID
+                                  WHERE inv.Status IN ('Pending', 'Approved', 'Outstanding', 'Overdue')
+                                  AND inv.Status <> 'Paid'
+                                  AND inv.Status <> 'Cancelled'
+                                  GROUP BY b.BeneficiaryID, b.BeneficiaryName
+                                  ORDER BY SUM(inv.TotalAmount) DESC"
                 
-                Using cmd As New SqlCommand(sql, conn)
+                Using cmd As New SqlCommand(sqlSuppliers, conn)
                     Using adapter As New SqlDataAdapter(cmd)
-                        Dim dt As New DataTable()
-                        adapter.Fill(dt)
+                        Dim dtSuppliers As New DataTable()
+                        adapter.Fill(dtSuppliers)
                         
-                        If dt.Rows.Count = 0 Then
+                        If dtSuppliers.Rows.Count = 0 Then
                             MessageBox.Show("No unpaid invoices found.", "Unpaid Invoices", MessageBoxButtons.OK, MessageBoxIcon.Information)
                             Return
                         End If
                         
-                        ' Create breakdown form
-                        Dim frmBreakdown As New Form With {
-                            .Text = "All Unpaid Invoices",
+                        ' Create supplier tiles form
+                        Dim frmSuppliers As New Form With {
+                            .Text = "Suppliers - Unpaid Invoices",
+                            .Size = New Size(1000, 700),
+                            .StartPosition = FormStartPosition.CenterParent,
+                            .BackColor = Color.White
+                        }
+                        
+                        Dim pnlSuppliers As New FlowLayoutPanel With {
+                            .Dock = DockStyle.Fill,
+                            .AutoScroll = True,
+                            .Padding = New Padding(20),
+                            .BackColor = Color.White
+                        }
+                        
+                        ' Create tile for each supplier
+                        For Each row As DataRow In dtSuppliers.Rows
+                            Dim supplierName = row("SupplierName").ToString()
+                            Dim beneficiaryID = If(IsDBNull(row("BeneficiaryID")), 0, CInt(row("BeneficiaryID")))
+                            Dim invoiceCount = CInt(row("InvoiceCount"))
+                            Dim totalOwed = CDec(row("TotalOwed"))
+                            
+                            Dim tile As New Panel With {
+                                .Size = New Size(280, 120),
+                                .BackColor = ColorTranslator.FromHtml("#3498DB"),
+                                .Margin = New Padding(10),
+                                .Cursor = Cursors.Hand,
+                                .Tag = beneficiaryID
+                            }
+                            
+                            Dim lblSupplier As New Label With {
+                                .Text = supplierName,
+                                .Font = New Font("Segoe UI", 12, FontStyle.Bold),
+                                .ForeColor = Color.White,
+                                .Location = New Point(15, 15),
+                                .AutoSize = True
+                            }
+                            
+                            Dim lblAmount As New Label With {
+                                .Text = $"R {totalOwed:N2}",
+                                .Font = New Font("Segoe UI", 16, FontStyle.Bold),
+                                .ForeColor = Color.White,
+                                .Location = New Point(15, 45),
+                                .AutoSize = True
+                            }
+                            
+                            Dim lblCount As New Label With {
+                                .Text = $"{invoiceCount} invoice(s)",
+                                .Font = New Font("Segoe UI", 9),
+                                .ForeColor = Color.White,
+                                .Location = New Point(15, 85),
+                                .AutoSize = True
+                            }
+                            
+                            tile.Controls.AddRange({lblSupplier, lblAmount, lblCount})
+                            
+                            ' Click handler to show supplier's invoices
+                            AddHandler tile.Click, Sub(s, ev) ShowSupplierInvoices(beneficiaryID, supplierName)
+                            AddHandler lblSupplier.Click, Sub(s, ev) ShowSupplierInvoices(beneficiaryID, supplierName)
+                            AddHandler lblAmount.Click, Sub(s, ev) ShowSupplierInvoices(beneficiaryID, supplierName)
+                            AddHandler lblCount.Click, Sub(s, ev) ShowSupplierInvoices(beneficiaryID, supplierName)
+                            
+                            pnlSuppliers.Controls.Add(tile)
+                        Next
+                        
+                        frmSuppliers.Controls.Add(pnlSuppliers)
+                        frmSuppliers.ShowDialog()
+                    End Using
+                End Using
+            End Using
+        Catch ex As Exception
+            MessageBox.Show($"Error loading suppliers: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    
+    Private Sub ShowSupplierInvoices(beneficiaryID As Integer, supplierName As String)
+        Try
+            Using conn As New SqlConnection(_connString)
+                conn.Open()
+                
+                Dim sql = "SELECT 
+                            inv.InvoiceID,
+                            inv.InvoiceNumber,
+                            inv.Description,
+                            inv.TotalAmount AS Amount,
+                            inv.InvoiceDate,
+                            inv.DueDate,
+                            inv.Status
+                          FROM AP_Invoices inv
+                          WHERE inv.BeneficiaryID = @BeneficiaryID
+                          AND inv.Status IN ('Pending', 'Approved', 'Outstanding', 'Overdue')
+                          AND inv.Status <> 'Paid'
+                          AND inv.Status <> 'Cancelled'
+                          ORDER BY inv.DueDate ASC"
+                
+                Using cmd As New SqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@BeneficiaryID", beneficiaryID)
+                    
+                    Using adapter As New SqlDataAdapter(cmd)
+                        Dim dt As New DataTable()
+                        adapter.Fill(dt)
+                        
+                        Dim frmInvoices As New Form With {
+                            .Text = $"{supplierName} - Invoices",
                             .Size = New Size(1200, 600),
                             .StartPosition = FormStartPosition.CenterParent,
                             .BackColor = Color.White
@@ -760,13 +856,11 @@ Public Class FinancialDashboard
                             dgv.Columns("Amount").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
                             dgv.Columns("Amount").HeaderText = "Amount (R)"
                         End If
-                        If dgv.Columns.Contains("BeneficiaryName") Then dgv.Columns("BeneficiaryName").HeaderText = "Beneficiary"
                         If dgv.Columns.Contains("InvoiceNumber") Then dgv.Columns("InvoiceNumber").HeaderText = "Invoice #"
                         If dgv.Columns.Contains("Status") Then dgv.Columns("Status").HeaderText = "Status"
-                        If dgv.Columns.Contains("PaymentMethod") Then dgv.Columns("PaymentMethod").HeaderText = "Type"
                         
-                        ' Add total label
-                        Dim pnlTotal As New Panel With {
+                        ' Add total and print button panel
+                        Dim pnlBottom As New Panel With {
                             .Dock = DockStyle.Bottom,
                             .Height = 50,
                             .BackColor = ColorTranslator.FromHtml("#2C3E50")
@@ -778,22 +872,43 @@ Public Class FinancialDashboard
                         Next
                         
                         Dim lblTotal As New Label With {
-                            .Text = $"TOTAL UNPAID EXPENSES: R {totalAmount:N2}",
+                            .Text = $"TOTAL: R {totalAmount:N2}",
                             .Font = New Font("Segoe UI", 14, FontStyle.Bold),
                             .ForeColor = Color.White,
-                            .Dock = DockStyle.Fill,
-                            .TextAlign = ContentAlignment.MiddleCenter
+                            .Location = New Point(20, 12),
+                            .AutoSize = True
                         }
-                        pnlTotal.Controls.Add(lblTotal)
                         
-                        frmBreakdown.Controls.Add(dgv)
-                        frmBreakdown.Controls.Add(pnlTotal)
-                        frmBreakdown.ShowDialog()
+                        Dim btnPrint As New Button With {
+                            .Text = "Print Invoice",
+                            .Size = New Size(120, 35),
+                            .Location = New Point(1050, 7),
+                            .BackColor = ColorTranslator.FromHtml("#27AE60"),
+                            .ForeColor = Color.White,
+                            .FlatStyle = FlatStyle.Flat,
+                            .Font = New Font("Segoe UI", 10, FontStyle.Bold)
+                        }
+                        btnPrint.FlatAppearance.BorderSize = 0
+                        
+                        AddHandler btnPrint.Click, Sub(s, ev)
+                            If dgv.SelectedRows.Count > 0 Then
+                                Dim invoiceID = CInt(dgv.SelectedRows(0).Cells("InvoiceID").Value)
+                                MessageBox.Show($"Print invoice {invoiceID} - functionality to be implemented", "Print", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                            Else
+                                MessageBox.Show("Please select an invoice to print.", "No Selection", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                            End If
+                        End Sub
+                        
+                        pnlBottom.Controls.AddRange({lblTotal, btnPrint})
+                        
+                        frmInvoices.Controls.Add(dgv)
+                        frmInvoices.Controls.Add(pnlBottom)
+                        frmInvoices.ShowDialog()
                     End Using
                 End Using
             End Using
         Catch ex As Exception
-            MessageBox.Show($"Error loading expenses: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show($"Error loading invoices: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
     
@@ -1012,15 +1127,150 @@ Public Class FinancialDashboard
     
     Private Sub PrintDashboard(sender As Object, e As EventArgs)
         Try
-            MessageBox.Show("Print functionality will export dashboard to PDF." & vbCrLf & vbCrLf & 
-                          "Features:" & vbCrLf & 
-                          "• Professional PDF layout" & vbCrLf & 
-                          "• All financial metrics" & vbCrLf & 
-                          "• Transaction details" & vbCrLf & 
-                          "• Company branding" & vbCrLf & vbCrLf & 
-                          "Coming soon!", "Print Dashboard", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Dim printDoc As New System.Drawing.Printing.PrintDocument()
+            AddHandler printDoc.PrintPage, AddressOf PrintDashboardPage
+            
+            Dim printDialog As New PrintDialog()
+            printDialog.Document = printDoc
+            
+            If printDialog.ShowDialog() = DialogResult.OK Then
+                printDoc.Print()
+                MessageBox.Show("Financial Dashboard printed successfully!", "Print", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
         Catch ex As Exception
             MessageBox.Show($"Error printing dashboard: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    
+    Private Sub PrintDashboardPage(sender As Object, e As System.Drawing.Printing.PrintPageEventArgs)
+        Try
+            Dim titleFont As New Font("Arial", 20, FontStyle.Bold)
+            Dim headerFont As New Font("Arial", 14, FontStyle.Bold)
+            Dim normalFont As New Font("Arial", 10)
+            Dim boldFont As New Font("Arial", 10, FontStyle.Bold)
+            Dim smallFont As New Font("Arial", 8)
+            
+            Dim yPos As Single = 50
+            Dim leftMargin As Single = 50
+            Dim rightMargin As Single = e.PageBounds.Width - 50
+            
+            ' Company Header
+            e.Graphics.DrawString("OVEN DELIGHTS (PTY) LTD", titleFont, Brushes.Black, leftMargin, yPos)
+            yPos += 30
+            e.Graphics.DrawString("FINANCIAL DASHBOARD", headerFont, Brushes.Black, leftMargin, yPos)
+            yPos += 25
+            e.Graphics.DrawString($"Generated: {DateTime.Now:dd MMM yyyy HH:mm:ss}", smallFont, Brushes.Gray, leftMargin, yPos)
+            yPos += 30
+            
+            e.Graphics.DrawLine(Pens.Black, leftMargin, yPos, rightMargin, yPos)
+            yPos += 20
+            
+            ' Financial Summary Section
+            e.Graphics.DrawString("FINANCIAL SUMMARY", headerFont, Brushes.Black, leftMargin, yPos)
+            yPos += 30
+            
+            ' Cash on Hand
+            e.Graphics.DrawString("Cash on Hand:", boldFont, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString(lblCashAmount.Text, normalFont, Brushes.Black, leftMargin + 200, yPos)
+            If lblCashTrend.Text <> "" Then
+                e.Graphics.DrawString(lblCashTrend.Text, smallFont, Brushes.Gray, leftMargin + 350, yPos)
+            End If
+            yPos += 25
+            
+            ' Bank Balance
+            e.Graphics.DrawString("Bank Balance:", boldFont, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString(lblBankAmount.Text, normalFont, Brushes.Black, leftMargin + 200, yPos)
+            If lblBankTrend.Text <> "" Then
+                e.Graphics.DrawString(lblBankTrend.Text, smallFont, Brushes.Gray, leftMargin + 350, yPos)
+            End If
+            yPos += 25
+            
+            ' Accounts Receivable
+            e.Graphics.DrawString("Accounts Receivable:", boldFont, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString(lblReceivablesAmount.Text, normalFont, Brushes.Black, leftMargin + 200, yPos)
+            If lblReceivablesTrend.Text <> "" Then
+                e.Graphics.DrawString(lblReceivablesTrend.Text, smallFont, Brushes.Gray, leftMargin + 350, yPos)
+            End If
+            yPos += 25
+            
+            ' Customer Deposits
+            e.Graphics.DrawString("Customer Deposits:", boldFont, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString(lblDepositsAmount.Text, normalFont, Brushes.Black, leftMargin + 200, yPos)
+            yPos += 25
+            
+            ' Monthly Expenses
+            e.Graphics.DrawString("Expenses (MTD):", boldFont, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString(lblExpensesAmount.Text, normalFont, Brushes.Black, leftMargin + 200, yPos)
+            If lblExpensesTrend.Text <> "" Then
+                e.Graphics.DrawString(lblExpensesTrend.Text, smallFont, Brushes.Gray, leftMargin + 350, yPos)
+            End If
+            yPos += 25
+            
+            ' Unpaid Invoices
+            e.Graphics.DrawString("Unpaid Invoices:", boldFont, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString(lblPayablesAmount.Text, normalFont, Brushes.Black, leftMargin + 200, yPos)
+            yPos += 35
+            
+            e.Graphics.DrawLine(Pens.Black, leftMargin, yPos, rightMargin, yPos)
+            yPos += 20
+            
+            ' Financial Health Metrics
+            e.Graphics.DrawString("FINANCIAL HEALTH METRICS", headerFont, Brushes.Black, leftMargin, yPos)
+            yPos += 30
+            
+            e.Graphics.DrawString(lblCurrentRatio.Text, normalFont, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString(lblQuickRatio.Text, normalFont, Brushes.Black, leftMargin + 250, yPos)
+            yPos += 25
+            
+            e.Graphics.DrawString(lblWorkingCapital.Text, normalFont, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString(lblProfitMargin.Text, normalFont, Brushes.Black, leftMargin + 250, yPos)
+            yPos += 35
+            
+            e.Graphics.DrawLine(Pens.Black, leftMargin, yPos, rightMargin, yPos)
+            yPos += 20
+            
+            ' Recent Transactions
+            e.Graphics.DrawString("RECENT TRANSACTIONS", headerFont, Brushes.Black, leftMargin, yPos)
+            yPos += 30
+            
+            ' Transaction headers
+            e.Graphics.DrawString("Date", boldFont, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString("Description", boldFont, Brushes.Black, leftMargin + 100, yPos)
+            e.Graphics.DrawString("Amount", boldFont, Brushes.Black, leftMargin + 400, yPos)
+            yPos += 20
+            
+            e.Graphics.DrawLine(Pens.Gray, leftMargin, yPos, rightMargin, yPos)
+            yPos += 10
+            
+            ' Print up to 15 transactions
+            Dim maxTransactions As Integer = Math.Min(15, dgvRecentTransactions.Rows.Count)
+            For i As Integer = 0 To maxTransactions - 1
+                If yPos > e.PageBounds.Height - 100 Then Exit For
+                
+                Dim row = dgvRecentTransactions.Rows(i)
+                If row.Cells.Count >= 3 Then
+                    Dim transDate = If(row.Cells(0).Value, "").ToString()
+                    Dim transDesc = If(row.Cells(1).Value, "").ToString()
+                    Dim transAmount = If(row.Cells(2).Value, "").ToString()
+                    
+                    If transDesc.Length > 35 Then transDesc = transDesc.Substring(0, 32) & "..."
+                    
+                    e.Graphics.DrawString(transDate, normalFont, Brushes.Black, leftMargin, yPos)
+                    e.Graphics.DrawString(transDesc, normalFont, Brushes.Black, leftMargin + 100, yPos)
+                    e.Graphics.DrawString(transAmount, normalFont, Brushes.Black, leftMargin + 400, yPos)
+                    yPos += 20
+                End If
+            Next
+            
+            ' Footer
+            yPos = e.PageBounds.Height - 50
+            e.Graphics.DrawLine(Pens.Black, leftMargin, yPos, rightMargin, yPos)
+            yPos += 10
+            e.Graphics.DrawString($"Printed: {DateTime.Now:dd MMM yyyy HH:mm}", smallFont, Brushes.Gray, leftMargin, yPos)
+            e.Graphics.DrawString("Page 1 of 1", smallFont, Brushes.Gray, rightMargin - 100, yPos)
+            
+        Catch ex As Exception
+            MessageBox.Show($"Error rendering print page: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
     
