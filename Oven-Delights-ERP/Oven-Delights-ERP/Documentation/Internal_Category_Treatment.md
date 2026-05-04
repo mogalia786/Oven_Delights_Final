@@ -1,0 +1,47 @@
+# Internal Category Treatment Mapping
+
+Type keys:
+- RawMaterial
+- SubComponent
+- FinishedProduct
+- Accessory
+
+- biscuits → FinishedProduct
+- buttercream → SubComponent
+- buttercream 1mx500 → SubComponent
+- buttercream cake → FinishedProduct
+- buttercream cake 1mx500 → FinishedProduct
+- buttercream cake round → FinishedProduct
+- buttercream cakes → FinishedProduct
+- buttercream figure → FinishedProduct
+- buttercream figure cake → FinishedProduct
+- buttercream round → FinishedProduct
+- buttercream square → FinishedProduct
+- buttercream square cake → FinishedProduct
+- consumables → Accessory
+- drink → FinishedProduct
+- exotic → FinishedProduct
+- exotic cakes → FinishedProduct
+- freshcream 1mx500 → SubComponent
+- freshcream black forest → FinishedProduct
+- freshcream cake → FinishedProduct
+- freshcream cake round → FinishedProduct
+- freshcream cakes → FinishedProduct
+- freshcream cakes 1mx500 eggless → FinishedProduct
+- freshcream figure → FinishedProduct
+- freshcream figure cake → FinishedProduct
+- freshcream round → FinishedProduct
+- freshcream square → FinishedProduct
+- freshcream square black forest → FinishedProduct
+- freshcream square eggless → FinishedProduct
+- fruit cake → FinishedProduct
+- fruit cake round → FinishedProduct
+- ingredients → RawMaterial
+- miscellaneous → Accessory
+- novelty → FinishedProduct
+- pie → FinishedProduct
+- platter → FinishedProduct
+- savoury → FinishedProduct
+- shop front → FinishedProduct
+- sub recipe → SubComponent
+- wedding cake → FinishedProduct

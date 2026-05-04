@@ -49,7 +49,7 @@ Public Class GRVService
                                CASE WHEN pol.MaterialID IS NOT NULL THEN 'RM' ELSE 'PR' END,
                                pol.OrderedQuantity, 0, pol.UnitCost, @by
                         FROM PurchaseOrderLines pol
-                        WHERE pol.PurchaseOrderID = @po AND pol.IsActive = 1", con, tx)
+                        WHERE pol.PurchaseOrderID = @po", con, tx)
                     
                     cmdLines.Parameters.AddWithValue("@grvId", grvId)
                     cmdLines.Parameters.AddWithValue("@po", poId)

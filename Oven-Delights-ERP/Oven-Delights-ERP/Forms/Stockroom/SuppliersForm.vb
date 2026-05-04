@@ -14,6 +14,14 @@ Public Class SuppliersForm
     Public Sub New()
         _connString = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString")?.ConnectionString
         InitializeComponent()
+        
+        ' Wire up button events
+        AddHandler btnAdd.Click, AddressOf OnAddSupplier
+        AddHandler btnEdit.Click, AddressOf OnEditSupplier
+        AddHandler btnDelete.Click, AddressOf OnDeleteSupplier
+        AddHandler btnRefresh.Click, AddressOf OnRefresh
+        AddHandler txtSearch.TextChanged, AddressOf OnSearchTextChanged
+        
         LoadSuppliers()
     End Sub
 
@@ -145,6 +153,10 @@ Public Class SuppliersForm
         End Try
     End Sub
 
+    Private Sub OnRefresh(sender As Object, e As EventArgs)
+        LoadSuppliers()
+    End Sub
+
     Private Sub DeleteSupplier(supplierId As Integer)
         Using conn As New SqlConnection(_connString)
             conn.Open()
@@ -154,9 +166,5 @@ Public Class SuppliersForm
             End Using
         End Using
         MessageBox.Show("Supplier deactivated successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
-    End Sub
-
-    Private Sub OnRefresh(sender As Object, e As EventArgs)
-        LoadSuppliers()
     End Sub
 End Class

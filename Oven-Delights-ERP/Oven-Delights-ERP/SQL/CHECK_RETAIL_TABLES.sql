@@ -1,0 +1,22 @@
+-- Check if Retail_Sales and Retail_SaleLines exist
+SELECT TABLE_NAME 
+FROM INFORMATION_SCHEMA.TABLES 
+WHERE TABLE_NAME LIKE 'Retail_%'
+ORDER BY TABLE_NAME;
+
+-- Check row counts
+SELECT 'Retail_Sales' AS TableName, COUNT(*) AS RecordCount FROM Retail_Sales
+UNION ALL
+SELECT 'Retail_SaleLines', COUNT(*) FROM Retail_SaleLines;
+
+-- Check Retail_Sales structure
+SELECT COLUMN_NAME, DATA_TYPE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Retail_Sales'
+ORDER BY ORDINAL_POSITION;
+
+-- Check Retail_SaleLines structure
+SELECT COLUMN_NAME, DATA_TYPE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Retail_SaleLines'
+ORDER BY ORDINAL_POSITION;

@@ -3,7 +3,7 @@ Imports System.Data
 Imports System.Configuration
 Imports Microsoft.Data.SqlClient
 
-Public Class StockTransferForm
+Public Class StockTransferForm_OLD_DEPRECATED
     Inherits Form
 
     Private currentUser As User

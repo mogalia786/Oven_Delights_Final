@@ -1,0 +1,11 @@
+-- Check actual column names in Demo_SubRecipe_Master
+SELECT COLUMN_NAME, DATA_TYPE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Demo_SubRecipe_Master'
+ORDER BY ORDINAL_POSITION;
+
+-- Check actual column names in Demo_Retail_Product
+SELECT COLUMN_NAME, DATA_TYPE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Demo_Retail_Product'
+ORDER BY ORDINAL_POSITION;

@@ -175,7 +175,7 @@ Public Class UserService
         If String.IsNullOrWhiteSpace(password) Then Throw New ArgumentException("Password is required.")
         If password.Length < _minPasswordLength Then Throw New ArgumentException($"Password must be at least {_minPasswordLength} characters.")
 
-        Dim hashed = BCrypt.Net.BCrypt.EnhancedHashPassword(password, 12)
+        ' Store plain password - no hashing
         Using conn As New SqlConnection(_connectionString)
             conn.Open()
             ' detect columns
@@ -187,17 +187,16 @@ Public Class UserService
             Dim sql As New StringBuilder()
             If hasPasswordHash Then
                 sql.AppendLine("INSERT INTO Users (Username, Email, PasswordHash, Password, FirstName, LastName, RoleID, BranchID, IsActive, TwoFactorEnabled)")
-                sql.AppendLine("VALUES (@Username, @Email, @PasswordHash, @PasswordPlain, @FirstName, @LastName, @RoleID, @BranchID, @IsActive, @TwoFactorEnabled)")
+                sql.AppendLine("VALUES (@Username, @Email, @Password, @Password, @FirstName, @LastName, @RoleID, @BranchID, @IsActive, @TwoFactorEnabled)")
             Else
                 sql.AppendLine("INSERT INTO Users (Username, Email, Password, FirstName, LastName, RoleID, BranchID, IsActive, TwoFactorEnabled)")
-                sql.AppendLine("VALUES (@Username, @Email, @PasswordPlain, @FirstName, @LastName, @RoleID, @BranchID, @IsActive, @TwoFactorEnabled)")
+                sql.AppendLine("VALUES (@Username, @Email, @Password, @FirstName, @LastName, @RoleID, @BranchID, @IsActive, @TwoFactorEnabled)")
             End If
 
             Using cmd As New SqlCommand(sql.ToString(), conn)
                 cmd.Parameters.AddWithValue("@Username", username.Trim())
                 cmd.Parameters.AddWithValue("@Email", email.Trim())
-                If hasPasswordHash Then cmd.Parameters.AddWithValue("@PasswordHash", hashed)
-                cmd.Parameters.AddWithValue("@PasswordPlain", password)
+                cmd.Parameters.AddWithValue("@Password", password)
                 cmd.Parameters.AddWithValue("@FirstName", firstName.Trim())
                 cmd.Parameters.AddWithValue("@LastName", lastName.Trim())
                 cmd.Parameters.AddWithValue("@RoleID", roleID)
@@ -347,9 +346,7 @@ Public Class UserService
             Throw New ArgumentException($"Password must be at least {_minPasswordLength} characters long.", NameOf(password))
         End If
         
-        ' Hash the password using bcrypt with work factor of 12
-        Dim hashedPassword = BCrypt.Net.BCrypt.EnhancedHashPassword(password, 12)
-        
+        ' Store plain password - no hashing
         Using conn As New SqlConnection(_connectionString)
             conn.Open()
             
@@ -371,7 +368,7 @@ Public Class UserService
                     cmd.Parameters.AddWithValue("@BranchID", DBNull.Value)
                 End If
                 
-                cmd.Parameters.AddWithValue("@Password", hashedPassword)
+                cmd.Parameters.AddWithValue("@Password", password)
                 cmd.Parameters.AddWithValue("@IsActive", isActive)
                 cmd.Parameters.AddWithValue("@TwoFactorEnabled", twoFactorEnabled)
                 
@@ -837,9 +834,9 @@ Public Class UserService
                                 Return (False, -1, -1, "Account is inactive. Please contact your administrator.")
                             End If
                             
-                            ' Verify password
-                            Dim storedHash = reader("Password").ToString()
-                            If BCrypt.Net.BCrypt.Verify(password, storedHash) Then
+                            ' Verify password - plain text comparison
+                            Dim storedPassword = reader("Password").ToString()
+                            If password = storedPassword Then
                                 ' Log successful authentication
                                 LogAuditAction(userId, "LoginSuccess", "Users", userId, "User authenticated successfully")
                                 
@@ -1102,9 +1099,7 @@ Public Class UserService
                                      "uppercase letters, lowercase letters, numbers, and special characters.")
         End If
         
-        ' Hash the new password
-        Dim hashedPassword = BCrypt.Net.BCrypt.HashPassword(newPassword)
-        
+        ' Store plain password - no hashing
         Using conn As New SqlConnection(_connectionString)
             Try
                 conn.Open()
@@ -1139,7 +1134,7 @@ Public Class UserService
                         Using cmd As New SqlCommand("sp_User_ResetPassword", conn, transaction)
                             cmd.CommandType = CommandType.StoredProcedure
                             cmd.Parameters.AddWithValue("@UserID", userID)
-                            cmd.Parameters.AddWithValue("@NewPassword", hashedPassword)
+                            cmd.Parameters.AddWithValue("@NewPassword", newPassword)
                             cmd.Parameters.AddWithValue("@ModifiedBy", If(currentUserId.HasValue, currentUserId.Value, DBNull.Value))
                             
                             ' Add output parameter for success status

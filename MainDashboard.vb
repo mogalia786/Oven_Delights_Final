@@ -247,6 +247,20 @@ Partial Class MainDashboard
             ' non-fatal
         End Try
 
+        ' Create standalone Retail Dashboard menu
+        Try
+            SetupRetailDashboardMenu()
+        Catch
+            ' non-fatal
+        End Try
+
+        ' Create standalone Stockroom Dashboard menu
+        Try
+            SetupStockroomDashboardMenu()
+        Catch
+            ' non-fatal
+        End Try
+
         ' Ensure Retail > Reports items open working forms
         Try
             SetupRetailReportMenus()
@@ -1344,7 +1358,7 @@ Partial Class MainDashboard
 
             Dim miBuildMyProduct As New ToolStripMenuItem("Build My Product")
             AddHandler miBuildMyProduct.Click, Sub(sender, e)
-                                                   OpenMdiSingleton(Of Manufacturing.BuildProductForm)()
+                                                   MessageBox.Show("Build Product - Coming Soon!", "Manufacturing", MessageBoxButtons.OK, MessageBoxIcon.Information)
                                                End Sub
 
             Dim miBOM As New ToolStripMenuItem("BOM Management")
@@ -1362,8 +1376,42 @@ Partial Class MainDashboard
                                               OpenMdiSingleton(Of Manufacturing.MOActionsForm)()
                                           End Sub
 
+            ' Orders submenu
+            Dim miOrders As New ToolStripMenuItem("Orders")
+            Dim miCakeOrders As New ToolStripMenuItem("Cake Orders")
+            Dim miCakeNew As New ToolStripMenuItem("New Cake Orders")
+            AddHandler miCakeNew.Click, Sub(s, ev)
+                                            OpenMdiSingleton(Of ManufacturerOrdersForm)(Function() New ManufacturerOrdersForm("New", "Cake"))
+                                        End Sub
+            Dim miCakeReady As New ToolStripMenuItem("Ready Cake Orders")
+            AddHandler miCakeReady.Click, Sub(s, ev)
+                                              OpenMdiSingleton(Of ManufacturerOrdersForm)(Function() New ManufacturerOrdersForm("Ready", "Cake"))
+                                          End Sub
+            Dim miCakeAll As New ToolStripMenuItem("All Cake Orders")
+            AddHandler miCakeAll.Click, Sub(s, ev)
+                                            OpenMdiSingleton(Of ManufacturerOrdersForm)(Function() New ManufacturerOrdersForm("All", "Cake"))
+                                        End Sub
+            miCakeOrders.DropDownItems.AddRange({miCakeNew, miCakeReady, miCakeAll})
+
+            Dim miGeneralOrders As New ToolStripMenuItem("General Orders")
+            Dim miGeneralNew As New ToolStripMenuItem("New General Orders")
+            AddHandler miGeneralNew.Click, Sub(s, ev)
+                                               OpenMdiSingleton(Of ManufacturerOrdersForm)(Function() New ManufacturerOrdersForm("New", "General"))
+                                           End Sub
+            Dim miGeneralReady As New ToolStripMenuItem("Ready General Orders")
+            AddHandler miGeneralReady.Click, Sub(s, ev)
+                                                 OpenMdiSingleton(Of ManufacturerOrdersForm)(Function() New ManufacturerOrdersForm("Ready", "General"))
+                                             End Sub
+            Dim miGeneralAll As New ToolStripMenuItem("All General Orders")
+            AddHandler miGeneralAll.Click, Sub(s, ev)
+                                               OpenMdiSingleton(Of ManufacturerOrdersForm)(Function() New ManufacturerOrdersForm("All", "General"))
+                                           End Sub
+            miGeneralOrders.DropDownItems.AddRange({miGeneralNew, miGeneralReady, miGeneralAll})
+
+            miOrders.DropDownItems.AddRange({miCakeOrders, miGeneralOrders})
+
             ManufacturingToolStripMenuItem.DropDownItems.AddRange(New ToolStripItem() {
-                miCategories, miSubcategories, miProducts, miRecipeCreator, miBuildMyProduct, miBOM, miCompleteBuild, miMOActions
+                miCategories, miSubcategories, miProducts, miRecipeCreator, miBuildMyProduct, miBOM, miCompleteBuild, miMOActions, miOrders
             })
         End If
     End Sub
@@ -1377,6 +1425,20 @@ Partial Class MainDashboard
             End If
         Next
         Dim frm As New T()
+        frm.MdiParent = Me
+        frm.Show()
+        frm.WindowState = FormWindowState.Maximized
+    End Sub
+
+    Private Sub OpenMdiSingleton(Of T As Form)(factory As Func(Of T))
+        For Each child As Form In Me.MdiChildren
+            If TypeOf child Is T Then
+                child.Activate()
+                child.WindowState = FormWindowState.Maximized
+                Return
+            End If
+        Next
+        Dim frm As T = factory()
         frm.MdiParent = Me
         frm.Show()
         frm.WindowState = FormWindowState.Maximized
@@ -3666,6 +3728,25 @@ Partial Class MainDashboard
         Catch ex As Exception
             MessageBox.Show("Error opening SKU Assignment: " & ex.Message, "Retail Products", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+    End Sub
+
+    Private Sub SetupRetailDashboardMenu()
+        ' Wire up the Retail Dashboard bottom bar button
+        RemoveHandler btnRetailDash.Click, AddressOf OpenRetailManagerDashboard
+        AddHandler btnRetailDash.Click, AddressOf OpenRetailManagerDashboard
+    End Sub
+
+    Private Sub SetupStockroomDashboardMenu()
+        ' Wire up the Stockroom Dashboard bottom bar button
+        RemoveHandler btnStockroomDash.Click, AddressOf OpenStockroomDashboard
+        AddHandler btnStockroomDash.Click, AddressOf OpenStockroomDashboard
+        ' Wire up Manufacturer Dashboard button
+        RemoveHandler btnManufacturerDash.Click, AddressOf OpenManufacturerDashboard
+        AddHandler btnManufacturerDash.Click, AddressOf OpenManufacturerDashboard
+    End Sub
+
+    Private Sub OpenManufacturerDashboard(sender As Object, e As EventArgs)
+        MessageBox.Show("Manufacturer Dashboard - Coming Soon!", "Manufacturing", MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
 
 End Class

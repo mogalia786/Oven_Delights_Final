@@ -10,6 +10,7 @@ Namespace Manufacturing
 
         Private cmbType As ComboBox
         Private cmbItem As ComboBox
+        Private txtSearch As TextBox
         Private numQty As NumericUpDown
         Private cmbUoM As ComboBox
         Private txtFlavor As TextBox
@@ -19,6 +20,7 @@ Namespace Manufacturing
 
         Private ReadOnly _connectionString As String = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
         Private uomDt As DataTable
+        Private currentItemsDataTable As DataTable
 
         Public ReadOnly Property SubcomponentDisplayName As String
             Get
@@ -35,7 +37,7 @@ Namespace Manufacturing
             Me.MinimizeBox = False
             Me.MaximizeBox = False
             Me.Width = 540
-            Me.Height = 280
+            Me.Height = 320
 
             Dim y As Integer = 16
             Dim lblType As New Label() With {.Text = "Type:", .Left = 16, .Top = y, .AutoSize = True}
@@ -43,6 +45,11 @@ Namespace Manufacturing
             cmbType.Items.AddRange(New Object() {"Raw Material", "SubAssembly", "Decoration", "Toppings", "Accessories", "Packaging"})
             AddHandler cmbType.SelectedIndexChanged, AddressOf OnTypeChanged
 
+            y += 32
+            Dim lblSearch As New Label() With {.Text = "Search:", .Left = 16, .Top = y, .AutoSize = True}
+            txtSearch = New TextBox() With {.Left = 120, .Top = y - 3, .Width = 380}
+            AddHandler txtSearch.TextChanged, AddressOf OnSearchTextChanged
+            
             y += 32
             Dim lblItem As New Label() With {.Text = "Item:", .Left = 16, .Top = y, .AutoSize = True}
             cmbItem = New ComboBox() With {.Left = 120, .Top = y - 3, .Width = 380}
@@ -76,7 +83,7 @@ Namespace Manufacturing
                                             Me.DialogResult = DialogResult.Cancel
                                         End Sub
 
-            Me.Controls.AddRange(New Control() {lblType, cmbType, lblItem, cmbItem, lblQty, numQty, lblUoM, cmbUoM, lblFlavor, txtFlavor, lblNotes, txtNotes, btnOk, btnCancel})
+            Me.Controls.AddRange(New Control() {lblType, cmbType, lblSearch, txtSearch, lblItem, cmbItem, lblQty, numQty, lblUoM, cmbUoM, lblFlavor, txtFlavor, lblNotes, txtNotes, btnOk, btnCancel})
 
             ' Load static lists
             Try
@@ -162,93 +169,162 @@ Namespace Manufacturing
         Private Sub BindRawMaterials()
             Using cn As New Microsoft.Data.SqlClient.SqlConnection(_connectionString)
                 cn.Open()
-                Dim dt As New DataTable()
-                Using cmd As New Microsoft.Data.SqlClient.SqlCommand("SELECT m.MaterialID, (ISNULL(m.MaterialCode,'') + CASE WHEN ISNULL(m.MaterialCode,'')<>'' THEN ' - ' ELSE '' END + ISNULL(m.MaterialName,'')) AS Display, u.UoMID AS DefaultUoMID FROM dbo.RawMaterials m LEFT JOIN dbo.UoM u ON u.UoMCode = m.BaseUnit WHERE m.IsActive=1 ORDER BY m.MaterialName", cn)
-                    dt.Load(cmd.ExecuteReader())
+                currentItemsDataTable = New DataTable()
+                ' Filter by category: Ingredients, Consumables, Packaging, Miscellaneous
+                Dim sql As String = "SELECT m.MaterialID, " & _
+                    "(ISNULL(m.MaterialCode,'') + CASE WHEN ISNULL(m.MaterialCode,'')<>'' THEN ' - ' ELSE '' END + ISNULL(m.MaterialName,'')) AS Display, " & _
+                    "u.UoMID AS DefaultUoMID, m.MaterialName " & _
+                    "FROM dbo.RawMaterials m " & _
+                    "LEFT JOIN dbo.UoM u ON u.UoMCode = m.BaseUnit " & _
+                    "LEFT JOIN dbo.ProductCategories pc ON m.CategoryID = pc.CategoryID " & _
+                    "WHERE m.IsActive=1 " & _
+                    "  AND (pc.CategoryName LIKE '%ingredient%' " & _
+                    "       OR pc.CategoryName LIKE '%consumable%' " & _
+                    "       OR pc.CategoryName LIKE '%packaging%' " & _
+                    "       OR pc.CategoryName LIKE '%misce%') " & _
+                    "ORDER BY m.MaterialName"
+                Using cmd As New Microsoft.Data.SqlClient.SqlCommand(sql, cn)
+                    currentItemsDataTable.Load(cmd.ExecuteReader())
                 End Using
                 ' Clear previous binding first to avoid ValueMember validation against old schema
                 cmbItem.DataSource = Nothing
                 cmbItem.DisplayMember = "Display"
                 cmbItem.ValueMember = "MaterialID"
-                cmbItem.DataSource = dt
-                cmbItem.DropDownStyle = ComboBoxStyle.DropDownList
+                cmbItem.DataSource = currentItemsDataTable
+                cmbItem.DropDownStyle = ComboBoxStyle.DropDown
+                cmbItem.AutoCompleteMode = AutoCompleteMode.SuggestAppend
+                cmbItem.AutoCompleteSource = AutoCompleteSource.ListItems
             End Using
         End Sub
 
         Private Sub BindSubAssemblies()
-            ' Show catalog of Sub-Assemblies
+            ' Show catalog of Sub-Assemblies filtered by "sub recipe" category
             Using cn As New Microsoft.Data.SqlClient.SqlConnection(_connectionString)
                 cn.Open()
-                Dim dt As New DataTable()
-                Using cmd As New Microsoft.Data.SqlClient.SqlCommand("SELECT s.SubAssemblyID, (ISNULL(s.SubAssemblyCode,'') + CASE WHEN ISNULL(s.SubAssemblyCode,'')<>'' THEN ' - ' ELSE '' END + ISNULL(s.SubAssemblyName,'')) AS Display, s.DefaultUoMID FROM dbo.SubAssemblies s WHERE ISNULL(s.IsActive,1)=1 ORDER BY s.SubAssemblyName", cn)
-                    dt.Load(cmd.ExecuteReader())
+                currentItemsDataTable = New DataTable()
+                Dim sql As String = "SELECT s.SubAssemblyID, " & _
+                    "(ISNULL(s.SubAssemblyCode,'') + CASE WHEN ISNULL(s.SubAssemblyCode,'')<>'' THEN ' - ' ELSE '' END + ISNULL(s.SubAssemblyName,'')) AS Display, " & _
+                    "s.DefaultUoMID, s.SubAssemblyName " & _
+                    "FROM dbo.SubAssemblies s " & _
+                    "LEFT JOIN dbo.ProductCategories pc ON s.CategoryID = pc.CategoryID " & _
+                    "WHERE ISNULL(s.IsActive,1)=1 " & _
+                    "  AND (pc.CategoryName LIKE '%sub%recipe%' OR pc.CategoryName LIKE '%subrecipe%') " & _
+                    "ORDER BY s.SubAssemblyName"
+                Using cmd As New Microsoft.Data.SqlClient.SqlCommand(sql, cn)
+                    currentItemsDataTable.Load(cmd.ExecuteReader())
                 End Using
                 ' Clear previous binding first to avoid ValueMember validation against old schema
                 cmbItem.DataSource = Nothing
                 cmbItem.DisplayMember = "Display"
                 cmbItem.ValueMember = "SubAssemblyID"
-                cmbItem.DataSource = dt
-                cmbItem.DropDownStyle = ComboBoxStyle.DropDownList
+                cmbItem.DataSource = currentItemsDataTable
+                cmbItem.DropDownStyle = ComboBoxStyle.DropDown
+                cmbItem.AutoCompleteMode = AutoCompleteMode.SuggestAppend
+                cmbItem.AutoCompleteSource = AutoCompleteSource.ListItems
             End Using
         End Sub
 
         Private Sub BindDecorations()
             Using cn As New SqlConnection(_connectionString)
                 cn.Open()
-                Dim dt As New DataTable()
-                Using cmd As New SqlCommand("SELECT DecorationID, (ISNULL(DecorationCode,'') + CASE WHEN ISNULL(DecorationCode,'')<>'' THEN ' - ' ELSE '' END + ISNULL(DecorationName,'')) AS Display, DefaultUoMID FROM dbo.Decorations WHERE ISNULL(IsActive,1)=1 ORDER BY DecorationName", cn)
-                    dt.Load(cmd.ExecuteReader())
+                currentItemsDataTable = New DataTable()
+                ' Filter by consumables/miscellaneous category
+                Dim sql As String = "SELECT d.DecorationID, " & _
+                    "(ISNULL(d.DecorationCode,'') + CASE WHEN ISNULL(d.DecorationCode,'')<>'' THEN ' - ' ELSE '' END + ISNULL(d.DecorationName,'')) AS Display, " & _
+                    "d.DefaultUoMID, d.DecorationName " & _
+                    "FROM dbo.Decorations d " & _
+                    "LEFT JOIN dbo.ProductCategories pc ON d.CategoryID = pc.CategoryID " & _
+                    "WHERE ISNULL(d.IsActive,1)=1 " & _
+                    "  AND (pc.CategoryName LIKE '%consumable%' OR pc.CategoryName LIKE '%misce%') " & _
+                    "ORDER BY d.DecorationName"
+                Using cmd As New SqlCommand(sql, cn)
+                    currentItemsDataTable.Load(cmd.ExecuteReader())
                 End Using
                 cmbItem.DataSource = Nothing
                 cmbItem.DisplayMember = "Display"
                 cmbItem.ValueMember = "DecorationID"
-                cmbItem.DataSource = dt
-                cmbItem.DropDownStyle = ComboBoxStyle.DropDownList
+                cmbItem.DataSource = currentItemsDataTable
+                cmbItem.DropDownStyle = ComboBoxStyle.DropDown
+                cmbItem.AutoCompleteMode = AutoCompleteMode.SuggestAppend
+                cmbItem.AutoCompleteSource = AutoCompleteSource.ListItems
             End Using
         End Sub
 
         Private Sub BindToppings()
             Using cn As New SqlConnection(_connectionString)
                 cn.Open()
-                Dim dt As New DataTable()
-                Using cmd As New SqlCommand("SELECT ToppingID, (ISNULL(ToppingCode,'') + CASE WHEN ISNULL(ToppingCode,'')<>'' THEN ' - ' ELSE '' END + ISNULL(ToppingName,'')) AS Display, DefaultUoMID FROM dbo.Toppings WHERE ISNULL(IsActive,1)=1 ORDER BY ToppingName", cn)
-                    dt.Load(cmd.ExecuteReader())
+                currentItemsDataTable = New DataTable()
+                ' Filter by consumables/miscellaneous category
+                Dim sql As String = "SELECT t.ToppingID, " & _
+                    "(ISNULL(t.ToppingCode,'') + CASE WHEN ISNULL(t.ToppingCode,'')<>'' THEN ' - ' ELSE '' END + ISNULL(t.ToppingName,'')) AS Display, " & _
+                    "t.DefaultUoMID, t.ToppingName " & _
+                    "FROM dbo.Toppings t " & _
+                    "LEFT JOIN dbo.ProductCategories pc ON t.CategoryID = pc.CategoryID " & _
+                    "WHERE ISNULL(t.IsActive,1)=1 " & _
+                    "  AND (pc.CategoryName LIKE '%consumable%' OR pc.CategoryName LIKE '%misce%') " & _
+                    "ORDER BY t.ToppingName"
+                Using cmd As New SqlCommand(sql, cn)
+                    currentItemsDataTable.Load(cmd.ExecuteReader())
                 End Using
                 cmbItem.DataSource = Nothing
                 cmbItem.DisplayMember = "Display"
                 cmbItem.ValueMember = "ToppingID"
-                cmbItem.DataSource = dt
-                cmbItem.DropDownStyle = ComboBoxStyle.DropDownList
+                cmbItem.DataSource = currentItemsDataTable
+                cmbItem.DropDownStyle = ComboBoxStyle.DropDown
+                cmbItem.AutoCompleteMode = AutoCompleteMode.SuggestAppend
+                cmbItem.AutoCompleteSource = AutoCompleteSource.ListItems
             End Using
         End Sub
 
         Private Sub BindAccessories()
             Using cn As New SqlConnection(_connectionString)
                 cn.Open()
-                Dim dt As New DataTable()
-                Using cmd As New SqlCommand("SELECT AccessoryID, (ISNULL(AccessoryCode,'') + CASE WHEN ISNULL(AccessoryCode,'')<>'' THEN ' - ' ELSE '' END + ISNULL(AccessoryName,'')) AS Display, DefaultUoMID FROM dbo.Accessories WHERE ISNULL(IsActive,1)=1 ORDER BY AccessoryName", cn)
-                    dt.Load(cmd.ExecuteReader())
+                currentItemsDataTable = New DataTable()
+                ' Filter by consumables/miscellaneous category
+                Dim sql As String = "SELECT a.AccessoryID, " & _
+                    "(ISNULL(a.AccessoryCode,'') + CASE WHEN ISNULL(a.AccessoryCode,'')<>'' THEN ' - ' ELSE '' END + ISNULL(a.AccessoryName,'')) AS Display, " & _
+                    "a.DefaultUoMID, a.AccessoryName " & _
+                    "FROM dbo.Accessories a " & _
+                    "LEFT JOIN dbo.ProductCategories pc ON a.CategoryID = pc.CategoryID " & _
+                    "WHERE ISNULL(a.IsActive,1)=1 " & _
+                    "  AND (pc.CategoryName LIKE '%consumable%' OR pc.CategoryName LIKE '%misce%') " & _
+                    "ORDER BY a.AccessoryName"
+                Using cmd As New SqlCommand(sql, cn)
+                    currentItemsDataTable.Load(cmd.ExecuteReader())
                 End Using
                 cmbItem.DataSource = Nothing
                 cmbItem.DisplayMember = "Display"
                 cmbItem.ValueMember = "AccessoryID"
-                cmbItem.DataSource = dt
-                cmbItem.DropDownStyle = ComboBoxStyle.DropDownList
+                cmbItem.DataSource = currentItemsDataTable
+                cmbItem.DropDownStyle = ComboBoxStyle.DropDown
+                cmbItem.AutoCompleteMode = AutoCompleteMode.SuggestAppend
+                cmbItem.AutoCompleteSource = AutoCompleteSource.ListItems
             End Using
         End Sub
 
         Private Sub BindPackaging()
             Using cn As New SqlConnection(_connectionString)
                 cn.Open()
-                Dim dt As New DataTable()
-                Using cmd As New SqlCommand("SELECT PackagingID, (ISNULL(PackagingCode,'') + CASE WHEN ISNULL(PackagingCode,'')<>'' THEN ' - ' ELSE '' END + ISNULL(PackagingName,'')) AS Display, DefaultUoMID FROM dbo.Packaging WHERE ISNULL(IsActive,1)=1 ORDER BY PackagingName", cn)
-                    dt.Load(cmd.ExecuteReader())
+                currentItemsDataTable = New DataTable()
+                ' Filter by packaging category
+                Dim sql As String = "SELECT p.PackagingID, " & _
+                    "(ISNULL(p.PackagingCode,'') + CASE WHEN ISNULL(p.PackagingCode,'')<>'' THEN ' - ' ELSE '' END + ISNULL(p.PackagingName,'')) AS Display, " & _
+                    "p.DefaultUoMID, p.PackagingName " & _
+                    "FROM dbo.Packaging p " & _
+                    "LEFT JOIN dbo.ProductCategories pc ON p.CategoryID = pc.CategoryID " & _
+                    "WHERE ISNULL(p.IsActive,1)=1 " & _
+                    "  AND pc.CategoryName LIKE '%packaging%' " & _
+                    "ORDER BY p.PackagingName"
+                Using cmd As New SqlCommand(sql, cn)
+                    currentItemsDataTable.Load(cmd.ExecuteReader())
                 End Using
                 cmbItem.DataSource = Nothing
                 cmbItem.DisplayMember = "Display"
                 cmbItem.ValueMember = "PackagingID"
-                cmbItem.DataSource = dt
-                cmbItem.DropDownStyle = ComboBoxStyle.DropDownList
+                cmbItem.DataSource = currentItemsDataTable
+                cmbItem.DropDownStyle = ComboBoxStyle.DropDown
+                cmbItem.AutoCompleteMode = AutoCompleteMode.SuggestAppend
+                cmbItem.AutoCompleteSource = AutoCompleteSource.ListItems
             End Using
         End Sub
 
@@ -259,6 +335,30 @@ Namespace Manufacturing
             If drv IsNot Nothing AndAlso drv.Row.Table.Columns.Contains("DefaultUoMID") AndAlso Not IsDBNull(drv("DefaultUoMID")) Then
                 cmbUoM.SelectedValue = CInt(drv("DefaultUoMID"))
             End If
+        End Sub
+
+        Private Sub OnSearchTextChanged(sender As Object, e As EventArgs)
+            If currentItemsDataTable Is Nothing OrElse currentItemsDataTable.Rows.Count = 0 Then Return
+            
+            Dim searchText = txtSearch.Text.Trim()
+            If String.IsNullOrEmpty(searchText) Then
+                ' Show all items
+                cmbItem.DataSource = currentItemsDataTable
+                Return
+            End If
+            
+            ' Filter with wildcards on both sides
+            Try
+                Dim filterExpression = $"Display LIKE '%{searchText.Replace("'", "''")}%'"
+                Dim filteredView = currentItemsDataTable.DefaultView
+                filteredView.RowFilter = filterExpression
+                
+                ' Update combobox with filtered results
+                cmbItem.DataSource = filteredView.ToTable()
+            Catch ex As Exception
+                ' If filter fails, show all
+                cmbItem.DataSource = currentItemsDataTable
+            End Try
         End Sub
 
     End Class

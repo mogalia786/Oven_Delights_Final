@@ -724,14 +724,15 @@ Public Class StockroomService
                     If String.IsNullOrWhiteSpace(deliveryNote) Then
                         Throw New ApplicationException("Supplier invoice / delivery note is required. To correct a captured invoice, use a Credit Note.")
                     End If
-                    Using cmdDup As New SqlCommand("SELECT TOP 1 1 FROM GoodsReceivedNotes WHERE SupplierID = @Sup AND DeliveryNote = @DN", con, tx)
-                        cmdDup.Parameters.AddWithValue("@Sup", supplierId)
-                        cmdDup.Parameters.AddWithValue("@DN", deliveryNote)
-                        Dim exists = cmdDup.ExecuteScalar()
-                        If exists IsNot Nothing Then
-                            Throw New ApplicationException("This supplier invoice/delivery note has already been captured. Use a Credit Note for any corrections; recapturing is not allowed.")
-                        End If
-                    End Using
+                    ' Duplicate check now handled on client side before calling this method
+                    'Using cmdDup As New SqlCommand("SELECT TOP 1 1 FROM GoodsReceivedNotes WHERE SupplierID = @Sup AND DeliveryNote = @DN", con, tx)
+                    '    cmdDup.Parameters.AddWithValue("@Sup", supplierId)
+                    '    cmdDup.Parameters.AddWithValue("@DN", deliveryNote)
+                    '    Dim exists = cmdDup.ExecuteScalar()
+                    '    If exists IsNot Nothing Then
+                    '        Throw New ApplicationException("This supplier invoice/delivery note has already been captured. Use a Credit Note for any corrections; recapturing is not allowed.")
+                    '    End If
+                    'End Using
 
                     ' Create GRN Header
                     Dim grnNumber As String = GetNextDocumentNumber("GRN", branchId, createdBy, con, tx)
@@ -1833,43 +1834,57 @@ Public Class StockroomService
         Return dt
     End Function
 
-    ' Unified Purchase Order items lookup: includes RawMaterials and purchasable Products.
-    ' Columns: MaterialID, MaterialCode, MaterialName, AverageCost, ItemSource ('RM' or 'PR'), CategoryName, SubcategoryName
-    ' Note: MaterialID for 'PR' rows refers to ProductID. Callers must check ItemSource when persisting.
-    Public Function GetPOItemsLookup() As DataTable
+    ' Unified Purchase Order items lookup: RAW MATERIALS and EXTERNAL Products from Demo_Retail_Product
+    ' RAW MATERIALS: Ingredients, Consumables, Packaging, Miscellaneous (used in recipes/BOMs)
+    ' EXTERNAL: Complete products like Coke (bought for resale, NOT manufactured)
+    ' Columns: MaterialID, MaterialCode, MaterialName, AverageCost, ItemSource ('RM' or 'EXT'), CategoryName
+    Public Function GetPOItemsLookup(Optional branchId As Integer = 0) As DataTable
         Dim dt As New DataTable()
         Using con As New SqlConnection(connectionString)
             Try
-                ' CRITICAL: Only show Raw Materials and EXTERNAL Products for Purchase Orders
-                ' Manufactured products should NOT appear in PO - they are created via manufacturing
-                Dim sql As String = _
-                    "SELECT rm.MaterialID AS MaterialID, rm.MaterialCode AS MaterialCode, " & _
-                    "       rm.MaterialName AS MaterialName, ISNULL(rm.AverageCost, 0) AS AverageCost, " & _
-                    "       'RM' AS ItemSource " & _
-                    "FROM RawMaterials rm " & _
-                    "WHERE ISNULL(rm.IsActive, 1) = 1 " & _
-                    "UNION ALL " & _
-                    "SELECT p.ProductID AS MaterialID, ISNULL(p.ProductCode, p.SKU) AS MaterialCode, " & _
-                    "       p.ProductName AS MaterialName, ISNULL(p.AverageCost, 0) AS AverageCost, " & _
-                    "       'PR' AS ItemSource " & _
-                    "FROM Products p " & _
-                    "WHERE ISNULL(p.IsActive, 1) = 1 " & _
-                    "  AND p.ItemType = 'External' " & _
-                    "ORDER BY MaterialName"
+                ' Query Demo_Retail_Product for both Raw Materials and External products
+                ' Use DISTINCT Name to avoid duplicates across branches for HEAD OFFICE
+                Dim sql As String
+                
+                If branchId = 0 OrElse branchId = 12 Then
+                    ' HEAD OFFICE - show all branches with DISTINCT names (ALL active products)
+                    sql = _
+                        "SELECT MIN(ProductID) AS MaterialID, MIN(ISNULL(Code, SKU)) AS MaterialCode, " & _
+                        "       Name AS MaterialName, 0 AS AverageCost, " & _
+                        "       CASE WHEN ProductType = 'External' THEN 'EXT' ELSE 'RM' END AS ItemSource, " & _
+                        "       ISNULL(MIN(Category), 'Uncategorized') AS CategoryName " & _
+                        "FROM Demo_Retail_Product " & _
+                        "WHERE IsActive = 1 " & _
+                        "GROUP BY Name, ProductType " & _
+                        "ORDER BY Name"
+                Else
+                    ' Specific branch - show ALL active products (no category filtering)
+                    sql = _
+                        "SELECT ProductID AS MaterialID, ISNULL(Code, SKU) AS MaterialCode, " & _
+                        "       Name AS MaterialName, 0 AS AverageCost, " & _
+                        "       CASE WHEN ProductType = 'External' THEN 'EXT' ELSE 'RM' END AS ItemSource, " & _
+                        "       ISNULL(Category, 'Uncategorized') AS CategoryName " & _
+                        "FROM Demo_Retail_Product " & _
+                        "WHERE IsActive = 1 " & _
+                        "  AND BranchID = @BranchID " & _
+                        "  AND BranchID IS NOT NULL " & _
+                        "ORDER BY Name"
+                End If
 
                 Using ad As New SqlDataAdapter(sql, con)
+                    If branchId > 0 AndAlso branchId <> 12 Then
+                        ad.SelectCommand.Parameters.AddWithValue("@BranchID", branchId)
+                    End If
                     ad.Fill(dt)
                 End Using
             Catch ex As Exception
-                ' If union fails, just return raw materials
-                Try
-                    Dim simpleSql = "SELECT MaterialID, MaterialCode, MaterialName, ISNULL(AverageCost, 0) AS AverageCost, 'RM' AS ItemSource FROM RawMaterials WHERE ISNULL(IsActive, 1) = 1 ORDER BY MaterialName"
-                    Using ad As New SqlDataAdapter(simpleSql, con)
-                        ad.Fill(dt)
-                    End Using
-                Catch
-                    ' Return empty table if all fails
-                End Try
+                ' Return empty table if query fails
+                dt.Columns.Add("MaterialID", GetType(Integer))
+                dt.Columns.Add("MaterialCode", GetType(String))
+                dt.Columns.Add("MaterialName", GetType(String))
+                dt.Columns.Add("AverageCost", GetType(Decimal))
+                dt.Columns.Add("ItemSource", GetType(String))
+                dt.Columns.Add("CategoryName", GetType(String))
             End Try
         End Using
         Return dt
@@ -1894,19 +1909,18 @@ Public Class StockroomService
     End Function
 
     Public Function GetLastPaidPrice(supplierId As Integer, materialId As Integer) As Nullable(Of Decimal)
-        If supplierId <= 0 OrElse materialId <= 0 Then Return Nothing
+        If materialId <= 0 Then Return Nothing
+        
         Using con As New SqlConnection(connectionString)
-            Dim sql = "SELECT TOP 1 gl.UnitCost FROM GoodsReceivedNotes g " &
-                      "INNER JOIN GRNLines gl ON gl.GRNID = g.GRNID " &
-                      "WHERE g.SupplierID = @sid AND gl.MaterialID = @mid " &
-                      "ORDER BY g.ReceivedDate DESC, gl.GRNLineID DESC"
+            con.Open()
+            ' Get last paid price from RawMaterials table (stored as Incl VAT, return as-is)
+            Dim sql = "SELECT LastPaidPrice FROM RawMaterials WHERE MaterialID = @mid"
             Using cmd As New SqlCommand(sql, con)
-                cmd.Parameters.AddWithValue("@sid", supplierId)
                 cmd.Parameters.AddWithValue("@mid", materialId)
-                con.Open()
                 Dim obj = cmd.ExecuteScalar()
                 If obj IsNot Nothing AndAlso obj IsNot DBNull.Value Then
-                    Return Convert.ToDecimal(obj)
+                    Dim price = Convert.ToDecimal(obj)
+                    If price > 0 Then Return price
                 End If
             End Using
         End Using
@@ -2097,17 +2111,55 @@ Public Class StockroomService
             Using tx = con.BeginTransaction()
                 Try
                     Dim poId As Integer
-                    ' Compute totals from lines
-                    Dim subTotal As Decimal = 0D
+                    ' Compute totals from lines - separate vatable and non-vatable items
+                    Dim subTotalVatable As Decimal = 0D
+                    Dim subTotalNonVatable As Decimal = 0D
                     Dim qtyCol As Integer = lines.Columns("OrderedQuantity").Ordinal
                     Dim costCol As Integer = lines.Columns("UnitCost").Ordinal
+                    Dim matIdCol As Integer = If(lines.Columns.Contains("MaterialID"), lines.Columns("MaterialID").Ordinal, -1)
+                    Dim prodIdCol As Integer = If(lines.Columns.Contains("ProductID"), lines.Columns("ProductID").Ordinal, -1)
+                    
                     For Each r As DataRow In lines.Rows
                         Dim qty As Decimal = Convert.ToDecimal(r(qtyCol))
                         Dim cost As Decimal = Convert.ToDecimal(r(costCol))
-                        subTotal += qty * cost
+                        Dim lineTotal As Decimal = qty * cost
+                        
+                        ' Check if item is vatable
+                        Dim isVatable As Boolean = True
+                        Dim productId As Integer = 0
+                        
+                        ' Try to get ProductID from the line
+                        If prodIdCol >= 0 AndAlso Not IsDBNull(r(prodIdCol)) Then
+                            productId = Convert.ToInt32(r(prodIdCol))
+                        ElseIf matIdCol >= 0 AndAlso Not IsDBNull(r(matIdCol)) Then
+                            ' If MaterialID, try to find corresponding ProductID
+                            Dim materialId As Integer = Convert.ToInt32(r(matIdCol))
+                            Using cmdProd As New SqlCommand("SELECT TOP 1 ProductID FROM Demo_Retail_Product WHERE ProductID = @MatID OR Code = (SELECT MaterialCode FROM RawMaterials WHERE MaterialID = @MatID)", con, tx)
+                                cmdProd.Parameters.AddWithValue("@MatID", materialId)
+                                Dim result = cmdProd.ExecuteScalar()
+                                If result IsNot Nothing Then productId = Convert.ToInt32(result)
+                            End Using
+                        End If
+                        
+                        ' Check IsVatable flag
+                        If productId > 0 Then
+                            Using cmdVat As New SqlCommand("SELECT ISNULL(IsVatable, 1) FROM Demo_Retail_Product WHERE ProductID = @ProductID", con, tx)
+                                cmdVat.Parameters.AddWithValue("@ProductID", productId)
+                                Dim result = cmdVat.ExecuteScalar()
+                                If result IsNot Nothing Then isVatable = Convert.ToBoolean(result)
+                            End Using
+                        End If
+                        
+                        If isVatable Then
+                            subTotalVatable += lineTotal
+                        Else
+                            subTotalNonVatable += lineTotal
+                        End If
                     Next
+                    
+                    Dim subTotal As Decimal = subTotalVatable + subTotalNonVatable
                     Dim vatRatePercent As Decimal = GetVatRatePercent()
-                    Dim vat As Decimal = Math.Round(subTotal * (vatRatePercent / 100D), 2)
+                    Dim vat As Decimal = Math.Round(subTotalVatable * (vatRatePercent / 100D), 2)
                     ' Skip branch validation for now to avoid errors
                     ' Assume branch exists and proceed
 
@@ -2162,9 +2214,9 @@ Public Class StockroomService
                         insertLineProd.Parameters.Add("@Qty", SqlDbType.Decimal).Precision = 18 : insertLineProd.Parameters("@Qty").Scale = 4
                         insertLineProd.Parameters.Add("@Cost", SqlDbType.Decimal).Precision = 18 : insertLineProd.Parameters("@Cost").Scale = 4
 
-                        Dim matIdCol As Integer = lines.Columns("MaterialID").Ordinal
-                        Dim qtyCol2 As Integer = lines.Columns("OrderedQuantity").Ordinal
-                        Dim costCol2 As Integer = lines.Columns("UnitCost").Ordinal
+                        ' Use existing matIdCol, qtyCol, costCol from earlier in the method
+                        Dim qtyCol2 As Integer = qtyCol
+                        Dim costCol2 As Integer = costCol
                         
                         For Each r As DataRow In lines.Rows
                             Dim selId As Integer = If(r(matIdCol) IsNot Nothing AndAlso Not IsDBNull(r(matIdCol)), Convert.ToInt32(r(matIdCol)), 0)
@@ -2185,15 +2237,15 @@ Public Class StockroomService
                                 insertLineRaw.Parameters("@Cost").Value = cost
                                 insertLineRaw.ExecuteNonQuery()
                             Else
-                                ' Otherwise treat as Product if it exists
+                                ' Otherwise treat as Product if it exists in Demo_Retail_Product
                                 Dim isProd As Boolean = False
-                                Using cmdChk As New SqlCommand("SELECT TOP 1 1 FROM dbo.Products WHERE ProductID = @id", con, tx)
+                                Using cmdChk As New SqlCommand("SELECT TOP 1 1 FROM dbo.Demo_Retail_Product WHERE ProductID = @id", con, tx)
                                     cmdChk.Parameters.AddWithValue("@id", selId)
                                     Dim o = cmdChk.ExecuteScalar()
                                     isProd = (o IsNot Nothing AndAlso o IsNot DBNull.Value)
                                 End Using
                                 If Not isProd Then
-                                    Throw New ApplicationException($"Selected item ID {selId} not found in RawMaterials or Products. Please refresh the item list.")
+                                    Throw New ApplicationException($"Selected item ID {selId} not found in RawMaterials or Demo_Retail_Product. Please refresh the item list.")
                                 End If
                                 insertLineProd.Parameters("@POID").Value = poId
                                 insertLineProd.Parameters("@ProductID").Value = selId
@@ -2593,8 +2645,9 @@ Public Class StockroomService
             con.Open()
             Dim sql As String = "SELECT u.UserID, " & _
                                 "       CASE " & _
-                                "           WHEN LTRIM(RTRIM(COALESCE(u.FirstName, '') + ' ' + COALESCE(u.LastName, ''))) = '' THEN u.Username " & _
-                                "           ELSE LTRIM(RTRIM(COALESCE(u.FirstName, '') + ' ' + COALESCE(u.LastName, ''))) " & _
+                                "           WHEN LTRIM(RTRIM(COALESCE(u.FirstName, ''))) = '' THEN u.Username " & _
+                                "           WHEN LTRIM(RTRIM(COALESCE(u.LastName, ''))) = '' THEN LTRIM(RTRIM(u.FirstName)) " & _
+                                "           ELSE LTRIM(RTRIM(u.FirstName)) + ' ' + LTRIM(RTRIM(u.LastName)) " & _
                                 "       END AS FullName, " & _
                                 "       u.Username, u.BranchID " & _
                                 "FROM dbo.Users u " & _
@@ -3308,29 +3361,44 @@ Public Class StockroomService
     Public Function GetPurchaseOrderLines(poId As Integer) As DataTable
         Dim dt As New DataTable()
         Using conn As New SqlConnection(connectionString)
-            Dim sql = "SELECT pol.MaterialID AS ProductID, " &
+            ' FIXED: Join without ItemSource condition to handle all cases including sub-recipes
+            Dim sql = "SELECT " &
+                     "pol.MaterialID, " &
+                     "pol.ProductID, " &
                      "CASE " &
                      "  WHEN rm.MaterialID IS NOT NULL THEN rm.MaterialCode " &
-                     "  WHEN p.ProductID IS NOT NULL THEN p.ProductCode " &
-                     "  ELSE CAST(pol.MaterialID AS NVARCHAR(20)) " &
+                     "  WHEN p.ProductID IS NOT NULL THEN p.SKU " &
+                     "  ELSE COALESCE(CAST(pol.MaterialID AS NVARCHAR(20)), CAST(pol.ProductID AS NVARCHAR(20))) " &
                      "END AS ProductCode, " &
                      "CASE " &
                      "  WHEN rm.MaterialID IS NOT NULL THEN rm.MaterialName " &
-                     "  WHEN p.ProductID IS NOT NULL THEN p.ProductName " &
-                     "  ELSE 'Material ID: ' + CAST(pol.MaterialID AS NVARCHAR(20)) " &
+                     "  WHEN p.ProductID IS NOT NULL THEN p.Name " &
+                     "  ELSE 'Unknown Item' " &
                      "END AS ProductName, " &
-                     "pol.OrderedQuantity AS OrderQuantity, pol.ReceivedQuantity, pol.UnitCost, pol.LineTotal, " &
-                     "0 AS ReceiveNow, 0 AS ReturnQty, 'No Credit Note' AS CreditReason, '' AS CreditComments, " &
+                     "pol.OrderedQuantity AS OrderedQty, " &
+                     "ISNULL(pol.ReceivedQuantity, 0) AS ReceivedQuantity, " &
+                     "pol.UnitCost, " &
+                     "pol.LineTotal, " &
+                     "CAST(0.00 AS DECIMAL(18,2)) AS ReceiveNow, " &
+                     "CAST(0.00 AS DECIMAL(18,2)) AS ReturnQty, " &
+                     "'No Credit Note' AS CreditReason, " &
+                     "'' AS CreditComments, " &
                      "CASE " &
                      "  WHEN rm.MaterialID IS NOT NULL THEN 'Raw Material' " &
                      "  WHEN p.ProductID IS NOT NULL THEN 'Product' " &
                      "  ELSE 'Unknown Type' " &
                      "END AS ProductType, " &
-                     "rm.MaterialCode AS RawMaterialCode, rm.MaterialName AS RawMaterialName, " &
-                     "p.ProductCode AS ProductCodeDirect, p.ProductName AS ProductNameDirect " &
+                     "rm.MaterialCode AS RawMaterialCode, " &
+                     "rm.MaterialName AS RawMaterialName, " &
+                     "rm.MaterialType, " &
+                     "p.SKU AS ProductCodeDirect, " &
+                     "p.Name AS ProductNameDirect, " &
+                     "pol.ItemSource, " &
+                     "ISNULL(pol.IsVatable, 1) AS IsVatable " &
                      "FROM PurchaseOrderLines pol " &
+                     "INNER JOIN PurchaseOrders po ON pol.PurchaseOrderID = po.PurchaseOrderID " &
                      "LEFT JOIN RawMaterials rm ON pol.MaterialID = rm.MaterialID " &
-                     "LEFT JOIN Products p ON pol.MaterialID = p.ProductID " &
+                     "LEFT JOIN Demo_Retail_Product p ON pol.ProductID = p.ProductID AND p.BranchID = po.BranchID " &
                      "WHERE pol.PurchaseOrderID = @POID"
             Using cmd As New SqlCommand(sql, conn)
                 cmd.Parameters.AddWithValue("@POID", poId)
@@ -3402,20 +3470,42 @@ Public Class StockroomService
                             cmd.Parameters.AddWithValue("@ReceivedDate", receivedDate)
                             Dim grvId = Convert.ToInt32(cmd.ExecuteScalar())
                             
-                            ' Insert GRV lines
+                            ' Insert GRV lines and update PO ReceivedQuantity
                             For Each row As DataGridViewRow In dgvLines.Rows
                                 If Not row.IsNewRow Then
                                     Dim receiveNow = If(row.Cells("ReceiveNow").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("ReceiveNow").Value))
                                     If receiveNow > 0 Then
+                                        Dim itemId = Convert.ToInt32(row.Cells("ProductID").Value)
+                                        Dim poLineId As Integer = 0
+                                        
+                                        ' Get POLineID - check both MaterialID and ProductID columns
+                                        Using getPOLineCmd As New SqlCommand("SELECT TOP 1 POLineID FROM PurchaseOrderLines WHERE PurchaseOrderID = @POID AND (MaterialID = @ItemID OR ProductID = @ItemID)", conn, trans)
+                                            getPOLineCmd.Parameters.AddWithValue("@POID", poId)
+                                            getPOLineCmd.Parameters.AddWithValue("@ItemID", itemId)
+                                            Dim result = getPOLineCmd.ExecuteScalar()
+                                            If result IsNot Nothing Then
+                                                poLineId = Convert.ToInt32(result)
+                                            End If
+                                        End Using
+                                        
                                         Using lineCmd As New SqlCommand("INSERT INTO GRNLines (GRNID, MaterialID, OrderedQuantity, ReceivedQuantity, UnitCost, LineTotal) VALUES (@GRNID, @MaterialID, @OrderedQty, @ReceivedQty, @UnitCost, @LineTotal)", conn, trans)
                                             lineCmd.Parameters.AddWithValue("@GRNID", grvId)
-                                            lineCmd.Parameters.AddWithValue("@MaterialID", Convert.ToInt32(row.Cells("ProductID").Value))
+                                            lineCmd.Parameters.AddWithValue("@MaterialID", itemId)
                                             lineCmd.Parameters.AddWithValue("@OrderedQty", Convert.ToDecimal(row.Cells("OrderQuantity").Value))
                                             lineCmd.Parameters.AddWithValue("@ReceivedQty", receiveNow)
                                             lineCmd.Parameters.AddWithValue("@UnitCost", Convert.ToDecimal(row.Cells("UnitCost").Value))
                                             lineCmd.Parameters.AddWithValue("@LineTotal", receiveNow * Convert.ToDecimal(row.Cells("UnitCost").Value))
                                             lineCmd.ExecuteNonQuery()
                                         End Using
+                                        
+                                        ' Update ReceivedQuantity in PurchaseOrderLines
+                                        If poLineId > 0 Then
+                                            Using updatePOLineCmd As New SqlCommand("UPDATE PurchaseOrderLines SET ReceivedQuantity = ReceivedQuantity + @ReceivedQty WHERE POLineID = @POLineID", conn, trans)
+                                                updatePOLineCmd.Parameters.AddWithValue("@ReceivedQty", receiveNow)
+                                                updatePOLineCmd.Parameters.AddWithValue("@POLineID", poLineId)
+                                                updatePOLineCmd.ExecuteNonQuery()
+                                            End Using
+                                        End If
                                     End If
                                 End If
                             Next
@@ -3500,7 +3590,35 @@ Public Class StockroomService
                 conn.Open()
                 Using trans = conn.BeginTransaction()
                     Try
-                        ' Update RawMaterials.CurrentStock (raw materials are shared across branches)
+                        ' Update StockroomStock (branch-specific stockroom inventory)
+                        ' Check if record exists for this material and branch
+                        Dim checkSql = "SELECT COUNT(*) FROM StockroomStock WHERE ProductID = @MaterialID AND BranchID = @BranchID"
+                        Dim exists As Boolean = False
+                        Using cmd As New SqlCommand(checkSql, conn, trans)
+                            cmd.Parameters.AddWithValue("@MaterialID", materialId)
+                            cmd.Parameters.AddWithValue("@BranchID", branchId)
+                            exists = Convert.ToInt32(cmd.ExecuteScalar()) > 0
+                        End Using
+                        
+                        If exists Then
+                            ' Update existing record
+                            Using cmd As New SqlCommand("UPDATE StockroomStock SET Quantity = Quantity + @Quantity, LastUpdated = GETDATE() WHERE ProductID = @MaterialID AND BranchID = @BranchID", conn, trans)
+                                cmd.Parameters.AddWithValue("@Quantity", quantity)
+                                cmd.Parameters.AddWithValue("@MaterialID", materialId)
+                                cmd.Parameters.AddWithValue("@BranchID", branchId)
+                                cmd.ExecuteNonQuery()
+                            End Using
+                        Else
+                            ' Insert new record
+                            Using cmd As New SqlCommand("INSERT INTO StockroomStock (ProductID, BranchID, Quantity, LastUpdated, UpdatedBy) VALUES (@MaterialID, @BranchID, @Quantity, GETDATE(), 'System')", conn, trans)
+                                cmd.Parameters.AddWithValue("@MaterialID", materialId)
+                                cmd.Parameters.AddWithValue("@BranchID", branchId)
+                                cmd.Parameters.AddWithValue("@Quantity", quantity)
+                                cmd.ExecuteNonQuery()
+                            End Using
+                        End If
+                        
+                        ' Also update RawMaterials.CurrentStock for legacy compatibility
                         Using cmd As New SqlCommand("UPDATE RawMaterials SET CurrentStock = CurrentStock + @Quantity WHERE MaterialID = @MaterialID", conn, trans)
                             cmd.Parameters.AddWithValue("@Quantity", quantity)
                             cmd.Parameters.AddWithValue("@MaterialID", materialId)
@@ -3508,8 +3626,9 @@ Public Class StockroomService
                         End Using
                         
                         ' Insert stock movement record for audit
-                        Using cmd As New SqlCommand("INSERT INTO StockMovements (MaterialID, MovementType, MovementDate, QuantityIn, QuantityOut, BalanceAfter, UnitCost, TotalValue, ReferenceType, ReferenceID, ReferenceNumber, Notes, CreatedDate, CreatedBy) VALUES (@MaterialID, 'Adjustment', GETDATE(), @Quantity, 0, 0, 0, 0, 'ADJ', 0, @Reason, @Reason, GETDATE(), 1)", conn, trans)
+                        Using cmd As New SqlCommand("INSERT INTO StockMovements (MaterialID, BranchID, MovementType, MovementDate, QuantityIn, QuantityOut, BalanceAfter, UnitCost, TotalValue, ReferenceType, ReferenceID, ReferenceNumber, Notes, CreatedDate, CreatedBy) VALUES (@MaterialID, @BranchID, 'GRV Receipt', GETDATE(), @Quantity, 0, 0, 0, 0, 'GRV', 0, @Reason, @Reason, GETDATE(), 1)", conn, trans)
                             cmd.Parameters.AddWithValue("@MaterialID", materialId)
+                            cmd.Parameters.AddWithValue("@BranchID", branchId)
                             cmd.Parameters.AddWithValue("@Quantity", quantity)
                             cmd.Parameters.AddWithValue("@Reason", reason)
                             cmd.ExecuteNonQuery()
@@ -3638,6 +3757,35 @@ Public Class StockroomService
             System.Diagnostics.Debug.WriteLine($"CreateCreditNote error: {ex.Message}")
             Return 0
         End Try
+    End Function
+
+    ' Overload for new PurchaseOrderFormNew
+    Public Function CreatePurchaseOrder(supplierId As Integer, branchId As Integer, orderDate As DateTime, requiredDate As DateTime, reference As String, notes As String, lines As List(Of (ProductID As Integer, Qty As Decimal, Price As Decimal)), isExternal As Boolean) As String
+        Dim dt As New DataTable()
+        dt.Columns.Add("MaterialID", GetType(Integer))
+        dt.Columns.Add("OrderedQuantity", GetType(Decimal))
+        dt.Columns.Add("UnitCost", GetType(Decimal))
+        
+        For Each line In lines
+            dt.Rows.Add(line.ProductID, line.Qty, line.Price)
+        Next
+        
+        ' Get current user ID from session
+        Dim userId As Integer = 1 ' Default
+        If CurrentUser IsNot Nothing AndAlso CurrentUser.UserID > 0 Then
+            userId = CurrentUser.UserID
+        End If
+        
+        Dim poId = CreatePurchaseOrder(branchId, supplierId, orderDate, requiredDate, reference, notes, userId, dt)
+        
+        ' Get PO number
+        Using conn As New SqlConnection(connectionString)
+            conn.Open()
+            Using cmd As New SqlCommand("SELECT PONumber FROM PurchaseOrders WHERE PurchaseOrderID = @id", conn)
+                cmd.Parameters.AddWithValue("@id", poId)
+                Return Convert.ToString(cmd.ExecuteScalar())
+            End Using
+        End Using
     End Function
 
 End Class

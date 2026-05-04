@@ -10,6 +10,7 @@ Partial Class LoginForm
     Friend WithEvents txtPassword As System.Windows.Forms.TextBox
     Friend WithEvents btnLogin As System.Windows.Forms.Button
     Friend WithEvents lnkForgotPassword As System.Windows.Forms.LinkLabel
+    Friend WithEvents lblVersion As System.Windows.Forms.Label
     Friend WithEvents pnlCard As System.Windows.Forms.Panel
     Private components As System.ComponentModel.IContainer
 
@@ -24,6 +25,7 @@ Partial Class LoginForm
         Me.txtPassword = New System.Windows.Forms.TextBox()
         Me.btnLogin = New System.Windows.Forms.Button()
         Me.lnkForgotPassword = New System.Windows.Forms.LinkLabel()
+        Me.lblVersion = New System.Windows.Forms.Label()
         Me.SuspendLayout()
         '
         'pnlCard
@@ -124,6 +126,17 @@ Partial Class LoginForm
         Me.lnkForgotPassword.TabStop = True
         Me.lnkForgotPassword.Text = "Forgot your password?"
         '
+        'lblVersion
+        '
+        Me.lblVersion.AutoSize = True
+        Me.lblVersion.Font = New System.Drawing.Font("Segoe UI", 9.0!, System.Drawing.FontStyle.Bold)
+        Me.lblVersion.ForeColor = System.Drawing.Color.FromArgb(52, 73, 94)
+        Me.lblVersion.Location = New System.Drawing.Point(40, 340)
+        Me.lblVersion.Name = "lblVersion"
+        Me.lblVersion.Size = New System.Drawing.Size(70, 15)
+        Me.lblVersion.TabIndex = 9
+        Me.lblVersion.Text = "Version 3.0.0"
+        '
         ' Add controls to pnlCard
         Me.pnlCard.Controls.Add(Me.lblLogo)
         Me.pnlCard.Controls.Add(Me.lblTitle)
@@ -133,6 +146,7 @@ Partial Class LoginForm
         Me.pnlCard.Controls.Add(Me.txtPassword)
         Me.pnlCard.Controls.Add(Me.btnLogin)
         Me.pnlCard.Controls.Add(Me.lnkForgotPassword)
+        Me.pnlCard.Controls.Add(Me.lblVersion)
         '
         ' Add pnlCard to form
         Me.Controls.Add(Me.pnlCard)

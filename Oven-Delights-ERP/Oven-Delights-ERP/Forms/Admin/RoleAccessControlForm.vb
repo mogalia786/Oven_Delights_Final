@@ -54,7 +54,28 @@ Public Class RoleAccessControlForm
     End Sub
 
     Private Sub btnReload_Click(sender As Object, e As EventArgs) Handles btnReload.Click
-        ReloadGrid()
+        Try
+            Dim roleId As Integer = GetSelectedRoleId()
+            If roleId <= 0 Then
+                MessageBox.Show("Please select a role first.", "No Role Selected", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+            
+            ' Clear all existing permissions for this role
+            Using conn As New SqlConnection(_connStr)
+                conn.Open()
+                Using cmd As New SqlCommand("DELETE FROM RolePermissions WHERE RoleID = @roleId", conn)
+                    cmd.Parameters.AddWithValue("@roleId", roleId)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+            
+            MessageBox.Show("Scanning MainDashboard for all menus...", "Refreshing", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            ReloadGrid()
+            MessageBox.Show($"Found {_dt.Rows.Count} menu items! Please review and save permissions.", "Complete", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Catch ex As Exception
+            MessageBox.Show("Error reloading: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub ReloadGrid()
@@ -62,38 +83,47 @@ Public Class RoleAccessControlForm
             Dim roleId As Integer = GetSelectedRoleId()
             BuildGrid()
             
-            ' Add standard modules
-            Dim modules() As String = {"Administration", "Inventory", "Manufacturing", "Retail", "Accounting", "Reporting"}
-            
-            For Each moduleName As String In modules
-                Dim canRead As Boolean = False
-                Dim canWrite As Boolean = False
-                
-                If roleId > 0 Then
-                    ' Load existing permissions for this role and module
-                    Using conn As New SqlConnection(_connStr)
-                        conn.Open()
-                        Dim sql = "SELECT CanRead, CanWrite FROM RolePermissions WHERE RoleID = @roleId AND ModuleName = @module"
-                        Using cmd As New SqlCommand(sql, conn)
-                            cmd.Parameters.AddWithValue("@roleId", roleId)
-                            cmd.Parameters.AddWithValue("@module", moduleName)
-                            Using reader = cmd.ExecuteReader()
-                                If reader.Read() Then
-                                    canRead = Convert.ToBoolean(reader("CanRead"))
-                                    canWrite = Convert.ToBoolean(reader("CanWrite"))
-                                End If
-                            End Using
-                        End Using
+            ' Load all menus from MenuRegistry table
+            Using conn As New SqlConnection(_connStr)
+                conn.Open()
+                Dim sql = "SELECT MenuPath, DisplayName FROM MenuRegistry WHERE IsActive = 1 ORDER BY MenuPath"
+                Using cmd As New SqlCommand(sql, conn)
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            Dim menuPath As String = reader("MenuPath").ToString()
+                            Dim displayName As String = reader("DisplayName").ToString()
+                            Dim canRead As Boolean = False
+                            Dim canWrite As Boolean = False
+                            
+                            ' Check if we need to load existing permissions
+                            If roleId > 0 Then
+                                Using conn2 As New SqlConnection(_connStr)
+                                    conn2.Open()
+                                    Dim sqlPerm = "SELECT CanRead, CanWrite FROM RolePermissions WHERE RoleID = @roleId AND ModuleName = @module"
+                                    Using cmdPerm As New SqlCommand(sqlPerm, conn2)
+                                        cmdPerm.Parameters.AddWithValue("@roleId", roleId)
+                                        cmdPerm.Parameters.AddWithValue("@module", menuPath)
+                                        Using readerPerm = cmdPerm.ExecuteReader()
+                                            If readerPerm.Read() Then
+                                                canRead = Convert.ToBoolean(readerPerm("CanRead"))
+                                                canWrite = Convert.ToBoolean(readerPerm("CanWrite"))
+                                            End If
+                                        End Using
+                                    End Using
+                                End Using
+                            End If
+                            
+                            _dt.Rows.Add(menuPath, menuPath, "Menu", canRead, canWrite)
+                        End While
                     End Using
-                End If
-                
-                _dt.Rows.Add(moduleName, moduleName, "Module", canRead, canWrite)
-            Next
+                End Using
+            End Using
             
         Catch ex As Exception
             MessageBox.Show("Failed to load permissions: " & ex.Message)
         End Try
     End Sub
+    
 
     Private Sub LoadRoles()
         cboRole.Items.Clear()

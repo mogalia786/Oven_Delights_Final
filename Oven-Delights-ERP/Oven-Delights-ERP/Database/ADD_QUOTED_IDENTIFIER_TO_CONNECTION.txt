@@ -1,0 +1,21 @@
+SOLUTION: Add QUOTED_IDENTIFIER=ON to your connection string in App.config
+
+Find your connection string in App.config and add this parameter:
+
+BEFORE:
+<connectionStrings>
+    <add name="OvenDelightsERPConnectionString" 
+         connectionString="Server=your-server;Database=OvenDelightsERP;User Id=user;Password=pass;" 
+         providerName="System.Data.SqlClient" />
+</connectionStrings>
+
+AFTER:
+<connectionStrings>
+    <add name="OvenDelightsERPConnectionString" 
+         connectionString="Server=your-server;Database=OvenDelightsERP;User Id=user;Password=pass;QUOTED_IDENTIFIER=ON;" 
+         providerName="System.Data.SqlClient" />
+</connectionStrings>
+
+Add: QUOTED_IDENTIFIER=ON; to the end of your connection string.
+
+Then rebuild and test.

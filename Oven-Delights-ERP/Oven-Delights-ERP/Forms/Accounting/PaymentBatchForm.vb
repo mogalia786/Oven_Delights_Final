@@ -1,21 +1,124 @@
 Imports System.Data
 Imports Microsoft.Data.SqlClient
+Imports System.Configuration
 
 Public Class PaymentBatchForm
+    Private _connectionString As String = ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString
+    Private tabControl As TabControl
+    Private txtTestResults As TextBox
+    Private txtResponseLog As TextBox
+    Private btnClearLog As Button
+
     Private Sub PaymentBatchForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Try
             ' Super Admin can choose bank/format for any branch; others are locked by branch rule elsewhere when posting
             cboBank.SelectedIndex = 0
             cboFormat.SelectedIndex = 1 ' CSV by default
+            CreateStatusLogControl()
         Catch ex As Exception
             MessageBox.Show($"Error initializing Payment Batch: {ex.Message}")
         End Try
     End Sub
 
+    Private Sub CreateStatusLogControl()
+        Try
+            ' Create TabControl on LEFT side of form
+            tabControl = New TabControl With {
+                .Location = New Point(12, 42),
+                .Size = New Size(400, Me.ClientSize.Height - 92),
+                .Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left,
+                .Visible = True
+            }
+            
+            ' Test Results Tab
+            Dim tabTestResults As New TabPage("Test Results")
+            txtTestResults = New TextBox With {
+                .Multiline = True,
+                .ScrollBars = ScrollBars.Vertical,
+                .ReadOnly = True,
+                .Font = New Font("Consolas", 9),
+                .BackColor = Color.Black,
+                .ForeColor = Color.Lime,
+                .Dock = DockStyle.Fill
+            }
+            tabTestResults.Controls.Add(txtTestResults)
+            
+            ' Response Log Tab
+            Dim tabResponseLog As New TabPage("Response Log")
+            txtResponseLog = New TextBox With {
+                .Multiline = True,
+                .ScrollBars = ScrollBars.Vertical,
+                .ReadOnly = True,
+                .Font = New Font("Consolas", 9),
+                .BackColor = Color.Black,
+                .ForeColor = Color.Lime,
+                .Dock = DockStyle.Fill
+            }
+            tabResponseLog.Controls.Add(txtResponseLog)
+            
+            tabControl.TabPages.Add(tabTestResults)
+            tabControl.TabPages.Add(tabResponseLog)
+            Me.Controls.Add(tabControl)
+            tabControl.BringToFront()
+            
+            ' Clear Log button
+            btnClearLog = New Button With {
+                .Text = "Clear Log",
+                .Location = New Point(12, Me.ClientSize.Height - 42),
+                .Size = New Size(100, 30),
+                .Anchor = AnchorStyles.Bottom Or AnchorStyles.Left,
+                .Visible = True
+            }
+            AddHandler btnClearLog.Click, AddressOf ClearLog_Click
+            Me.Controls.Add(btnClearLog)
+            btnClearLog.BringToFront()
+            
+            ' Adjust dgv to be on the right side
+            If dgv IsNot Nothing Then
+                dgv.Location = New Point(420, 42)
+                dgv.Size = New Size(Me.ClientSize.Width - 432, Me.ClientSize.Height - 54)
+                dgv.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right
+            End If
+            
+            ' Force refresh
+            Me.Refresh()
+        Catch ex As Exception
+            MessageBox.Show($"Error creating status log controls: {ex.Message}{Environment.NewLine}{ex.StackTrace}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub ClearLog_Click(sender As Object, e As EventArgs)
+        txtTestResults.Clear()
+        txtResponseLog.Clear()
+    End Sub
+
+    Private Sub LogMessage(message As String)
+        If txtTestResults.InvokeRequired Then
+            txtTestResults.Invoke(Sub() LogMessage(message))
+        Else
+            Dim timestamp = DateTime.Now.ToString("HH:mm:ss")
+            txtTestResults.AppendText($"[{timestamp}] {message}" & Environment.NewLine)
+            txtTestResults.SelectionStart = txtTestResults.Text.Length
+            txtTestResults.ScrollToCaret()
+        End If
+    End Sub
+    
+    Private Sub LogResponse(message As String)
+        If txtResponseLog.InvokeRequired Then
+            txtResponseLog.Invoke(Sub() LogResponse(message))
+        Else
+            Dim timestamp = DateTime.Now.ToString("HH:mm:ss")
+            txtResponseLog.AppendText($"[{timestamp}] {message}" & Environment.NewLine)
+            txtResponseLog.SelectionStart = txtResponseLog.Text.Length
+            txtResponseLog.ScrollToCaret()
+        End If
+    End Sub
+
     Private Sub btnLoad_Click(sender As Object, e As EventArgs) Handles btnLoad.Click
         Try
-            ' TODO: Replace with real loader combining AP invoices/credits + Expense Bills + Misc
+            ' Load suppliers with bank details from database
             Dim dt As New DataTable()
+            dt.Columns.Add("SupplierID", GetType(Integer))
             dt.Columns.Add("PayeeName")
             dt.Columns.Add("DocType")
             dt.Columns.Add("DocNo")
@@ -23,15 +126,56 @@ Public Class PaymentBatchForm
             dt.Columns.Add("Amount", GetType(Decimal))
             dt.Columns.Add("MyReference")
             dt.Columns.Add("BeneficiaryReference")
-            ' Bank details for exports (placeholders until Supplier Bank Master is wired)
             dt.Columns.Add("AccountNumber")
             dt.Columns.Add("BranchCode")
-            dt.Rows.Add("City of Metropolis", "Expense", "RATES-SEP", Date.Today, 1234.56D, "BATCH-0001", "RATES", "", "")
-            dt.Rows.Add("Eskom", "Expense", "ELEC-SEP", Date.Today, 3456.78D, "BATCH-0001", "ELECTRICITY", "", "")
-            dt.Rows.Add("ABC Supplies", "AP Invoice", "INV-10023", Date.Today, 987.65D, "BATCH-0001", "INV-10023", "", "")
+            dt.Columns.Add("BankName")
+            dt.Columns.Add("Email")
+            
+            ' Load test suppliers with sandbox bank details
+            Using conn As New SqlConnection(_connectionString)
+                Dim sql = "SELECT SupplierID, CompanyName, BankAccountNumber, BankBranchCode, BankName, ProofOfPaymentEmail " &
+                          "FROM Suppliers WHERE IsActive = 1 AND BankAccountNumber IS NOT NULL ORDER BY CompanyName"
+                Using cmd As New SqlCommand(sql, conn)
+                    conn.Open()
+                    Using reader As SqlDataReader = cmd.ExecuteReader()
+                        While reader.Read()
+                            Dim supplierId = CInt(reader("SupplierID"))
+                            Dim supplierName = reader("CompanyName").ToString()
+                            Dim accountNumber = reader("BankAccountNumber").ToString()
+                            Dim branchCode = reader("BankBranchCode").ToString()
+                            Dim bankName = If(reader("BankName") Is DBNull.Value, "FNB", reader("BankName").ToString())
+                            Dim email = If(reader("ProofOfPaymentEmail") Is DBNull.Value, "", reader("ProofOfPaymentEmail").ToString())
+                            
+                            ' Add sample invoice for this supplier
+                            dt.Rows.Add(
+                                supplierId,
+                                supplierName,
+                                "Supplier Payment",
+                                $"INV-{supplierId:D5}",
+                                Date.Today.AddDays(7),
+                                1000.0D + (supplierId * 100),
+                                $"PAY-{Date.Today:yyyyMMdd}-{supplierId:D3}",
+                                $"INV-{supplierId:D5}",
+                                accountNumber,
+                                branchCode,
+                                bankName,
+                                email
+                            )
+                        End While
+                    End Using
+                End Using
+            End Using
+            
             dgv.DataSource = dt
+            
+            ' Hide SupplierID column
+            If dgv.Columns.Contains("SupplierID") Then
+                dgv.Columns("SupplierID").Visible = False
+            End If
+            
+            MessageBox.Show($"Loaded {dt.Rows.Count} payment(s) from suppliers with bank details.", "Load Complete", MessageBoxButtons.OK, MessageBoxIcon.Information)
         Catch ex As Exception
-            MessageBox.Show($"Error loading payables: {ex.Message}")
+            MessageBox.Show($"Error loading payables: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
@@ -335,4 +479,131 @@ Public Class PaymentBatchForm
         End If
         Return s
     End Function
+
+    Private Sub btnSubmitFNB_Click(sender As Object, e As EventArgs) Handles btnSubmitFNB.Click
+        Try
+            If dgv.DataSource Is Nothing OrElse dgv.Rows.Count = 0 Then
+                MessageBox.Show("Please load payment items first.", "No Data", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' Validate FNB requirements
+            Dim bank = If(cboBank.SelectedItem, "").ToString()
+            If bank <> "FNB" Then
+                Dim result = MessageBox.Show(
+                    "This will submit payments via FNB Payment Execution API." & Environment.NewLine & Environment.NewLine &
+                    "*** SANDBOX TESTING MODE ***" & Environment.NewLine &
+                    "Using test beneficiary accounts." & Environment.NewLine & Environment.NewLine &
+                    "Continue?",
+                    "FNB API Submission",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question
+                )
+                If result <> DialogResult.Yes Then Return
+            End If
+
+            If Not ValidateForBank("FNB") Then
+                MessageBox.Show("Validation failed. Please fix highlighted rows before submitting.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' Build payment lines
+            Dim paymentLines As New List(Of PaymentLineInfo)()
+            For Each row As DataGridViewRow In dgv.Rows
+                If row.IsNewRow Then Continue For
+
+                Dim line As New PaymentLineInfo() With {
+                    .SupplierID = If(row.Cells("SupplierID").Value IsNot Nothing, CInt(row.Cells("SupplierID").Value), Nothing),
+                    .PaymentType = "Supplier",
+                    .CreditorName = Convert.ToString(row.Cells("PayeeName").Value),
+                    .CreditorAccountNumber = Convert.ToString(row.Cells("AccountNumber").Value),
+                    .CreditorAccountType = "CACC",
+                    .CreditorBranchCode = Convert.ToString(row.Cells("BranchCode").Value),
+                    .CreditorBIC = "FIRNZAJJ",
+                    .Amount = CDec(row.Cells("Amount").Value),
+                    .Reference = Convert.ToString(row.Cells("MyReference").Value),
+                    .ProofOfPaymentEmail = If(row.Cells("Email") IsNot Nothing, Convert.ToString(row.Cells("Email").Value), Nothing)
+                }
+
+                paymentLines.Add(line)
+            Next
+
+            If paymentLines.Count = 0 Then
+                MessageBox.Show("No valid payment lines to submit.", "No Data", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Return
+            End If
+
+            ' Show confirmation
+            Dim totalAmount = paymentLines.Sum(Function(p) p.Amount)
+            Dim confirmMsg = $"Submit {paymentLines.Count} payment(s) totaling R{totalAmount:N2} to FNB API?" & Environment.NewLine & Environment.NewLine &
+                           $"*** SANDBOX MODE - Test accounts will be used ***" & Environment.NewLine & Environment.NewLine &
+                           $"Execution Date: {Date.Today.AddDays(1):yyyy-MM-dd}"
+
+            If MessageBox.Show(confirmMsg, "Confirm Submission", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
+                Return
+            End If
+
+            ' Submit to FNB API
+            Cursor = Cursors.WaitCursor
+            btnSubmitFNB.Enabled = False
+            
+            ' Clear status log
+            txtTestResults.Clear()
+            LogMessage("Preparing FNB batch payment submission...")
+
+            Dim paymentService As New FNBPaymentExecutionService(_connectionString, "Sandbox")
+            
+            ' Wire up status event handler
+            AddHandler paymentService.StatusUpdate, AddressOf LogMessage
+            
+            Dim executionDate = Date.Today.AddDays(1) ' Next business day
+            Dim branchId = AppSession.CurrentBranchID
+            Dim createdBy = If(AppSession.CurrentUser IsNot Nothing, AppSession.CurrentUser.UserID, 0)
+
+            Dim submitResult = paymentService.CreateAndSubmitPaymentBatch(paymentLines, executionDate, branchId, createdBy)
+            
+            ' Remove event handler
+            RemoveHandler paymentService.StatusUpdate, AddressOf LogMessage
+
+            Cursor = Cursors.Default
+            btnSubmitFNB.Enabled = True
+
+            If submitResult.Item1 Then
+                MessageBox.Show(
+                    $"Payment batch submitted successfully!" & Environment.NewLine & Environment.NewLine &
+                    submitResult.Item2 & Environment.NewLine & Environment.NewLine &
+                    $"Batch ID: {submitResult.Item3}" & Environment.NewLine & Environment.NewLine &
+                    "Click 'View Transactions' to monitor payment status.",
+                    "Success",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                )
+
+                ' Clear grid after successful submission
+                dgv.DataSource = Nothing
+            Else
+                MessageBox.Show(
+                    $"Failed to submit payment batch:" & Environment.NewLine & Environment.NewLine &
+                    submitResult.Item2,
+                    "Submission Failed",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                )
+            End If
+
+        Catch ex As Exception
+            Cursor = Cursors.Default
+            btnSubmitFNB.Enabled = True
+            MessageBox.Show($"Error submitting to FNB API: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub btnViewTransactions_Click(sender As Object, e As EventArgs) Handles btnViewTransactions.Click
+        Try
+            Dim viewForm As New FNBTransactionViewerForm()
+            viewForm.ShowDialog()
+        Catch ex As Exception
+            MessageBox.Show($"Error opening transaction viewer: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
 End Class

@@ -1,0 +1,396 @@
+openapi: 3.0.1
+info:
+  version: 1.0.5
+  title: Transaction History API
+  description: >
+    This service is for retieving Transaction History report on the client's account. 
+    Clients would typically request account Transaction History report for a specific date range, account transactions as well as the total balance will form part of the response.
+    
+    
+     `Error Responses`
+    
+     The API uses common HTTP status codes in the response header to indicate
+     success or failure. Specific error code and description will be returned in
+     the custom error schema.
+
+  contact:
+    name: First National Bank
+    url: https://www.fnb.co.za
+
+servers:
+  - url: 'https://localhost:8901/apigateway'
+    description: localhost
+  - url: 'https://api.i.fnb.co.za/apigateway'
+    description: integration
+  - url: 'https://api.p.fnb.co.za/apigateway'
+    description: preprod
+  - url: 'https://api.fnb.co.za/apigateway'
+    description: production
+
+security:
+  - oauth:
+    - i_can  
+
+paths:
+
+  /transaction-history/retrieve/v2/{accountNumber}:
+
+    get:
+      security:
+        - oauth: []
+      tags:
+        - default
+      summary: Retrieve Transaction History
+
+      description: Retrieve transactions for a specific account
+      parameters:
+        - $ref: '#/components/parameters/XIdempotencyIDHeader'
+        - $ref: '#/components/parameters/XRequestIDHeader'
+        - $ref: '#/components/parameters/AccountNumberPathParameter'
+        - $ref: '#/components/parameters/FromDateQueryParameter'
+        - $ref: '#/components/parameters/ToDateQueryParameter'
+        - $ref: '#/components/parameters/LastItemKeyQueryParameter'
+      
+      responses:
+        '200':
+          $ref: '#/components/responses/200GetTransactionsAccountId'
+        '400':
+          $ref: '#/components/responses/400ErrorResponse'
+        '401':
+          $ref: '#/components/responses/401ErrorResponse'
+        '403':
+          $ref: '#/components/responses/403ErrorResponse'
+        '406':
+          $ref: '#/components/responses/406ErrorResponse'
+        '423':
+          $ref: '#/components/responses/423ErrorResponse'
+        '429':
+          $ref: '#/components/responses/429ErrorResponse'
+        '500':
+          $ref: '#/components/responses/500ErrorResponse'
+
+components:
+  securitySchemes: 
+    oauth:
+      type: oauth2
+      description: This API uses OAuth2 with the Authorization Code grant flow. 
+      
+      flows:
+        authorizationCode:   
+          authorizationUrl: https://api.i.fnb.co.za/apigateway/oauth2/authorize
+          tokenUrl: https://api.i.fnb.co.za/apigateway/oauth2/token/v2
+          scopes:
+            i_can: provides scopes allowed based on partner permissions    
+  
+  schemas:
+    Report:
+      type: object
+      properties:
+        entry:
+          type: array
+          items:
+            $ref: '#/components/schemas/Entry'
+
+
+
+        groupHeader:
+          $ref: '#/components/schemas/GroupHeader'
+
+
+    Entry:
+      type: object
+      properties:
+        entryId:
+          type: string
+          example: "ABC123"
+        bookingDate:
+          $ref: '#/components/schemas/BookingDate'
+        valueDate:
+          $ref: '#/components/schemas/valueDate'
+        
+        entryDetails:
+          type: object
+          properties:
+            transactionDetails:
+              $ref: '#/components/schemas/transactionDetails'
+
+
+        amount:
+          $ref: '#/components/schemas/Amounts'
+        creditDebitIndicator:
+          $ref: '#/components/schemas/CreditDebitIndicator'
+        
+        availability:
+          $ref: '#/components/schemas/Availability'
+
+    
+    Availability:
+      description: Contains the details of the Amount
+      type: object
+      properties:
+        amount:
+          type: string
+          pattern: ^\d{1,13}$\|^\d{1,13}\.\d{1,5}$
+          example: '1000.50'
+        currency:
+          example: "ZAR"
+          type: string
+        creditDebitIndicator:
+          example: "CREDIT"
+          type: string
+
+
+    GroupHeader:
+      type: object
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    Pagination:
+      type: object
+      properties:
+        lastPageIndicator:
+          type: boolean
+        lastItemKey:
+          type: string
+          example: 202301010001
+    BookingDate:
+      type: object
+      properties:
+        Date:
+          $ref: '#/components/schemas/ISODate'
+
+
+    Amounts:
+      description: Contains the details of the Amount
+      type: object
+      required:
+        - amount
+        - currency
+      properties:
+        amount:
+          description:
+            This amount value will be in decimals
+          type: string
+          pattern: ^\d{1,13}$\|^\d{1,13}\.\d{1,5}$
+          example: '1000.50'
+        currency:
+          $ref: '#/components/schemas/ActiveOrHistoricCurrencyCode'
+    CreditDebitIndicator:
+      $ref: '#/components/schemas/CreditDebitCode'
+
+
+
+    CreditDebitCode:
+      description: Debit or Credit indicator
+      type: string
+      enum:
+        - DEBIT
+        - CREDIT
+
+    ErrorDetailsResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        id:
+          type: string
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetails'
+
+    ErrorDetails:
+      required:
+        - code
+        - details
+      properties:
+        code:
+          type: string
+        source:
+          type: string
+        details:
+          type: string
+
+    ErrorMessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+    ActiveOrHistoricCurrencyCode:
+      description: "Currency code as per ISO 4217 three-letter code"
+      example: "ZAR"
+      pattern: '^[A-Z]{3,3}$'
+      type: string
+    
+    valueDate:
+      type: object
+      properties:
+        Date:
+          $ref: '#/components/schemas/ISODate'
+
+
+    ISODateTime:
+      pattern: >-
+        ^(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.[0-9]+)?(?:Z|[+-][01]\d:[0-5]\d)?$
+      type: string
+      example: 'YYYY-MM-DDThh:mm:ss.sss'
+      description: >-
+        UTC time format (YYYY-MM-DDThh:mm:ss.sssZ) or local time with UTC offset
+        format (YYYY-MM-DDThh:mm:ss.sss+/-hh:mm) or local time format
+        (YYYY-MM-DDThh:mm:ss.sss)
+    
+    
+    ISODate:
+      pattern: >-
+        /^\d{4}(-\d\d(-\d\d(T\d\d:\d\d(:\d\d)?(\.\d+)?(([+-]\d\d:\d\d)|Z)?)?)?)?$/i
+      type: string
+      example: '2020-01-01'
+      description: >-
+        ISO 8601 Date spec
+        (YYYY-MM-DD)
+
+    transactionDetails:
+      type: object
+      properties:
+        remittanceInfo:
+          $ref: '#/components/schemas/remittanceInfo'
+        reference:
+          $ref: '#/components/schemas/reference'
+
+
+    remittanceInfo:
+      type: object
+      properties:
+        unstructured:
+          example: "Transaction description"
+          type: string
+
+    reference:
+      type: object
+      properties:
+        endToEndId:
+          example: "Reference info"
+          type: string
+
+  parameters:
+    XRequestIDHeader:
+      description: Used to unique identify each interaction. Field required on all API interactions.
+      example: b4bb32be-bc3c-11ea-96be-6b084b64de76
+      name: X-Request-ID
+      in: header
+      schema:
+        type: string
+        format: uuid
+      required: true
+
+    XIdempotencyIDHeader:
+      description: Used where idempotent behaviour is required.  Same value should be used for retries. Field required where indicated on the API contract.
+      example: cf73c800-bc3c-11ea-8e08-975f1faea42a
+      name: X-Idempotency-ID
+      in: header
+      schema:
+        type: string
+        format: uuid
+      required: true
+
+    AccountNumberPathParameter:
+      description: The unique Account Number
+      example: '62001231234'
+      in: path
+      name: accountNumber
+      schema:
+        type: string
+      required: true  
+    
+    FromDateQueryParameter:
+      description: Start value for transaction date range. Transaction on, and newer than FromDate will be returned.
+      example: '2020-01-01'
+      in: query
+      name: fromDate
+      schema:
+        $ref: '#/components/schemas/ISODate'
+      required: false
+      
+    ToDateQueryParameter:
+      description: To value for transaction date range. Transaction on, and older than FromDate will be returned.
+      example: '2020-01-02'
+      in: query
+      name: toDate
+      schema:
+        $ref: '#/components/schemas/ISODate'          
+      required: false
+
+    LastItemKeyQueryParameter:
+      description: Use the nextPagingKey received in the meta schema. Additional transactions including this key will be returned if available (morePages == true).
+      example: '202301010001'
+      in: query
+      name: lastItemKey
+      schema:
+        type: string
+      required: false   
+
+  responses:
+    200GetTransactionsAccountId:
+      description: 'Successful execution of request. Response will contain zero or more transaction'
+      headers:
+        X-Correlation-ID:
+          description: Returned by all resource APIs. Value equal to X-Request-ID.
+          example: b4bb32be-bc3c-11ea-96be-6b084b64de76
+          schema:
+            type: string
+            format: uuid
+          required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Report'
+
+    400ErrorResponse:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorDetailsResponse'
+    401ErrorResponse:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageResponse'
+    403ErrorResponse:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageResponse'
+    406ErrorResponse:
+      description: Not Acceptable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageResponse'
+    
+    423ErrorResponse:
+      description: Too Many Requests
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageResponse'
+
+    429ErrorResponse:
+      description: Too Many Requests
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorMessageResponse'
+
+    500ErrorResponse:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorDetailsResponse'

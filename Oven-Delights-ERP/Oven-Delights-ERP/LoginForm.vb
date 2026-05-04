@@ -98,16 +98,69 @@ Public Class LoginForm
                                 UpdateLastLogin(loggedInUser.UserID)
 
                                 ' Initialize global session for dashboard and other forms
-                                Dim roleName As String = TryCast(If(reader("RoleName") IsNot DBNull.Value, reader("RoleName").ToString(), Nothing), String)
+                                Dim roleName As String = TryCast(If(reader("RoleName") IsNot DBNull.Value, reader("RoleName").ToString().Trim(), Nothing), String)
                                 Dim branchName As String = TryCast(If(reader("BranchName") IsNot DBNull.Value, reader("BranchName").ToString(), Nothing), String)
                                 Dim branchPrefix As String = TryCast(If(reader("Prefix") IsNot DBNull.Value, reader("Prefix").ToString(), Nothing), String)
 
-                                AppSession.InitializeFromUser(loggedInUser, roleName, branchName, branchPrefix)
-
-                                ' Open main dashboard with user context
-                                Dim dashboard As New MainDashboard(AppSession.CurrentUser)
-                                dashboard.Show()
-                                Me.Hide()
+                                ' Super Administrator: Show JARVIS dashboard first at Head Office
+                                If Not String.IsNullOrEmpty(roleName) AndAlso roleName.Equals("Super Administrator", StringComparison.OrdinalIgnoreCase) Then
+                                    reader.Close() ' Close reader before showing dialog
+                                    
+                                    ' Default to Head Office (BranchID = 1)
+                                    loggedInUser.BranchID = 1
+                                    
+                                    ' Get Head Office details
+                                    Dim headOfficeName As String = "HEAD OFFICE"
+                                    Dim headOfficePrefix As String = "HO"
+                                    Using branchConn As New SqlConnection(connStr)
+                                        branchConn.Open()
+                                        Using branchCmd As New SqlCommand("SELECT BranchName, Prefix FROM Branches WHERE BranchID = 1", branchConn)
+                                            Using branchReader = branchCmd.ExecuteReader()
+                                                If branchReader.Read() Then
+                                                    headOfficeName = branchReader("BranchName").ToString()
+                                                    headOfficePrefix = If(branchReader("Prefix") IsNot DBNull.Value, branchReader("Prefix").ToString(), "HO")
+                                                End If
+                                            End Using
+                                        End Using
+                                    End Using
+                                    
+                                    ' Initialize session with Head Office
+                                    AppSession.InitializeFromUser(loggedInUser, roleName, headOfficeName, headOfficePrefix)
+                                    
+                                    ' Show JARVIS Executive Dashboard in fullscreen
+                                    Dim jarvisDashboard As New Admin.ExecutiveDashboard()
+                                    Me.Hide()
+                                    jarvisDashboard.ShowDialog() ' Modal - blocks until ESC pressed
+                                    
+                                    ' After JARVIS closes, show branch selection dialog
+                                    Using branchDialog As New BranchSelectionDialog()
+                                        If branchDialog.ShowDialog() = DialogResult.OK Then
+                                            ' Override with selected branch
+                                            loggedInUser.BranchID = branchDialog.SelectedBranchID
+                                            branchName = branchDialog.SelectedBranchName
+                                            branchPrefix = branchDialog.SelectedBranchPrefix
+                                            
+                                            ' Re-initialize session with selected branch
+                                            AppSession.InitializeFromUser(loggedInUser, roleName, branchName, branchPrefix)
+                                            
+                                            ' Open main dashboard
+                                            Dim dashboard As New MainDashboard(AppSession.CurrentUser)
+                                            dashboard.Show()
+                                        Else
+                                            ' User cancelled - return to login
+                                            Me.Show()
+                                            Return
+                                        End If
+                                    End Using
+                                Else
+                                    ' Regular user: Use assigned branch
+                                    AppSession.InitializeFromUser(loggedInUser, roleName, branchName, branchPrefix)
+                                    
+                                    ' Open main dashboard with user context
+                                    Dim dashboard As New MainDashboard(AppSession.CurrentUser)
+                                    dashboard.Show()
+                                    Me.Hide()
+                                End If
                             Else
                                 ' Password is incorrect, increment failed login attempts
                                 Dim failedAttempts As Integer = CInt(reader("FailedLoginAttempts"))

@@ -176,6 +176,9 @@ Public Class GRVService
                     cmdStatus.Parameters.AddWithValue("@by", userId)
                     cmdStatus.ExecuteNonQuery()
                     
+                    ' Update stock from GRV (add to RawMaterials.CurrentStock)
+                    UpdateStockFromGRV(grvId, con, tx)
+                    
                     tx.Commit()
                     
                 Catch ex As Exception
@@ -299,7 +302,7 @@ Public Class GRVService
     End Function
 
     Private Sub UpdateStockFromGRV(grvId As Integer, con As SqlConnection, tx As SqlTransaction)
-        ' Update Raw Materials stock
+        ' Update Raw Materials stock (legacy table)
         Dim cmdRM As New SqlCommand("
             UPDATE rm SET 
                 CurrentStock = ISNULL(CurrentStock, 0) + gl.AcceptedQuantity,
@@ -315,6 +318,49 @@ Public Class GRVService
         
         cmdRM.Parameters.AddWithValue("@id", grvId)
         cmdRM.ExecuteNonQuery()
+        
+        ' Update StockroomStock (new table) - match ProductName to MaterialName
+        Dim cmdSS As New SqlCommand("
+            -- Update existing stock for raw materials by name matching
+            UPDATE ss SET 
+                Quantity = ISNULL(ss.Quantity, 0) + gl.AcceptedQuantity,
+                UpdatedBy = 'SYSTEM'
+            FROM StockroomStock ss
+            INNER JOIN Products p ON ss.ProductID = p.ProductID
+            INNER JOIN RawMaterials rm ON p.ProductName = rm.MaterialName
+            INNER JOIN GRVLines gl ON rm.MaterialID = gl.MaterialID
+            INNER JOIN GoodsReceivedVouchers grv ON gl.GRVID = grv.GRVID
+            WHERE gl.GRVID = @id AND gl.ItemType = 'RM' AND ss.BranchID = grv.BranchID
+            
+            -- Insert if doesn't exist for raw materials
+            INSERT INTO StockroomStock (ProductID, Quantity, BranchID, UpdatedBy)
+            SELECT p.ProductID, gl.AcceptedQuantity, grv.BranchID, 'SYSTEM'
+            FROM GRVLines gl
+            INNER JOIN RawMaterials rm ON gl.MaterialID = rm.MaterialID
+            INNER JOIN Products p ON p.ProductName = rm.MaterialName
+            INNER JOIN GoodsReceivedVouchers grv ON gl.GRVID = grv.GRVID
+            WHERE gl.GRVID = @id AND gl.ItemType = 'RM'
+            AND NOT EXISTS (SELECT 1 FROM StockroomStock WHERE ProductID = p.ProductID AND BranchID = grv.BranchID)
+            
+            -- Also handle external products (ItemType = 'PR')
+            UPDATE ss SET 
+                Quantity = ISNULL(ss.Quantity, 0) + gl.AcceptedQuantity,
+                UpdatedBy = 'SYSTEM'
+            FROM StockroomStock ss
+            INNER JOIN GRVLines gl ON ss.ProductID = gl.ProductID
+            INNER JOIN GoodsReceivedVouchers grv ON gl.GRVID = grv.GRVID
+            WHERE gl.GRVID = @id AND gl.ItemType = 'PR' AND ss.BranchID = grv.BranchID
+            
+            INSERT INTO StockroomStock (ProductID, Quantity, BranchID, UpdatedBy)
+            SELECT gl.ProductID, gl.AcceptedQuantity, grv.BranchID, 'SYSTEM'
+            FROM GRVLines gl
+            INNER JOIN GoodsReceivedVouchers grv ON gl.GRVID = grv.GRVID
+            WHERE gl.GRVID = @id AND gl.ItemType = 'PR'
+            AND gl.ProductID IS NOT NULL
+            AND NOT EXISTS (SELECT 1 FROM StockroomStock WHERE ProductID = gl.ProductID AND BranchID = grv.BranchID)", con, tx)
+        
+        cmdSS.Parameters.AddWithValue("@id", grvId)
+        cmdSS.ExecuteNonQuery()
         
         ' Update Product Inventory (Retail_Stock table with branch awareness)
         Dim cmdPI As New SqlCommand("

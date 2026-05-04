@@ -24,6 +24,8 @@ Partial Class PaymentBatchForm
     Friend WithEvents btnValidate As Button
     Friend WithEvents btnExport As Button
     Friend WithEvents btnPost As Button
+    Friend WithEvents btnSubmitFNB As Button
+    Friend WithEvents btnViewTransactions As Button
     Friend WithEvents lblBank As Label
     Friend WithEvents lblFormat As Label
 
@@ -36,6 +38,8 @@ Partial Class PaymentBatchForm
         Me.btnValidate = New System.Windows.Forms.Button()
         Me.btnExport = New System.Windows.Forms.Button()
         Me.btnPost = New System.Windows.Forms.Button()
+        Me.btnSubmitFNB = New System.Windows.Forms.Button()
+        Me.btnViewTransactions = New System.Windows.Forms.Button()
         Me.lblBank = New System.Windows.Forms.Label()
         Me.lblFormat = New System.Windows.Forms.Label()
         CType(Me.dgv, System.ComponentModel.ISupportInitialize).BeginInit()
@@ -107,6 +111,24 @@ Partial Class PaymentBatchForm
         Me.btnPost.Text = "Post"
         Me.btnPost.UseVisualStyleBackColor = True
         '
+        'btnSubmitFNB
+        Me.btnSubmitFNB.BackColor = System.Drawing.Color.FromArgb(CType(CType(0, Byte), Integer), CType(CType(122, Byte), Integer), CType(CType(204, Byte), Integer))
+        Me.btnSubmitFNB.ForeColor = System.Drawing.Color.White
+        Me.btnSubmitFNB.Location = New System.Drawing.Point(679, 9)
+        Me.btnSubmitFNB.Name = "btnSubmitFNB"
+        Me.btnSubmitFNB.Size = New System.Drawing.Size(100, 23)
+        Me.btnSubmitFNB.TabIndex = 8
+        Me.btnSubmitFNB.Text = "Submit to FNB API"
+        Me.btnSubmitFNB.UseVisualStyleBackColor = False
+        '
+        'btnViewTransactions
+        Me.btnViewTransactions.Location = New System.Drawing.Point(785, 9)
+        Me.btnViewTransactions.Name = "btnViewTransactions"
+        Me.btnViewTransactions.Size = New System.Drawing.Size(120, 23)
+        Me.btnViewTransactions.TabIndex = 9
+        Me.btnViewTransactions.Text = "View Transactions"
+        Me.btnViewTransactions.UseVisualStyleBackColor = True
+        '
         'dgv
         Me.dgv.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
             Or System.Windows.Forms.AnchorStyles.Left) _
@@ -120,8 +142,10 @@ Partial Class PaymentBatchForm
         'PaymentBatchForm
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(800, 450)
+        Me.ClientSize = New System.Drawing.Size(920, 450)
         Me.Controls.Add(Me.dgv)
+        Me.Controls.Add(Me.btnViewTransactions)
+        Me.Controls.Add(Me.btnSubmitFNB)
         Me.Controls.Add(Me.btnPost)
         Me.Controls.Add(Me.btnExport)
         Me.Controls.Add(Me.btnValidate)

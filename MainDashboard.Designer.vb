@@ -43,11 +43,20 @@ Partial Class MainDashboard
         AccountingToolStripMenuItem = New ToolStripMenuItem()
         ReportingToolStripMenuItem = New ToolStripMenuItem()
         ExitToolStripMenuItem = New ToolStripMenuItem()
+        DashboardsToolStripMenuItem = New ToolStripMenuItem()
+        RetailDashboardMenuItem = New ToolStripMenuItem()
+        StockroomDashboardMenuItem = New ToolStripMenuItem()
         pnlSidebar = New Panel()
         lblSidebarTitle = New Label()
         picLogo = New PictureBox()
+        btnRetailDashboard = New Button()
+        btnStockroomDashboard = New Button()
         pnlRightStats = New Panel()
         lblStatsTitle = New Label()
+        pnlBottomBar = New Panel()
+        btnRetailDash = New Button()
+        btnManufacturerDash = New Button()
+        btnStockroomDash = New Button()
         MenuStrip1.SuspendLayout()
         pnlSidebar.SuspendLayout()
         CType(picLogo, ComponentModel.ISupportInitialize).BeginInit()
@@ -56,7 +65,7 @@ Partial Class MainDashboard
         ' 
         ' MenuStrip1
         ' 
-        MenuStrip1.Items.AddRange(New ToolStripItem() {AdministratorToolStripMenuItem, StockroomToolStripMenuItem, ManufacturingToolStripMenuItem, RetailToolStripMenuItem, AccountingToolStripMenuItem, ReportingToolStripMenuItem, ExitToolStripMenuItem})
+        MenuStrip1.Items.AddRange(New ToolStripItem() {AdministratorToolStripMenuItem, StockroomToolStripMenuItem, ManufacturingToolStripMenuItem, RetailToolStripMenuItem, AccountingToolStripMenuItem, ReportingToolStripMenuItem, DashboardsToolStripMenuItem, ExitToolStripMenuItem})
         MenuStrip1.Location = New Point(0, 0)
         MenuStrip1.Name = "MenuStrip1"
         MenuStrip1.Padding = New Padding(7, 2, 0, 2)
@@ -180,9 +189,30 @@ Partial Class MainDashboard
         ExitToolStripMenuItem.Size = New Size(38, 20)
         ExitToolStripMenuItem.Text = "Exit"
         ' 
+        ' DashboardsToolStripMenuItem
+        ' 
+        DashboardsToolStripMenuItem.DropDownItems.AddRange(New ToolStripItem() {RetailDashboardMenuItem, StockroomDashboardMenuItem})
+        DashboardsToolStripMenuItem.Name = "DashboardsToolStripMenuItem"
+        DashboardsToolStripMenuItem.Size = New Size(85, 20)
+        DashboardsToolStripMenuItem.Text = "Dashboards"
+        ' 
+        ' RetailDashboardMenuItem
+        ' 
+        RetailDashboardMenuItem.Name = "RetailDashboardMenuItem"
+        RetailDashboardMenuItem.Size = New Size(200, 22)
+        RetailDashboardMenuItem.Text = "Retail Dashboard"
+        ' 
+        ' StockroomDashboardMenuItem
+        ' 
+        StockroomDashboardMenuItem.Name = "StockroomDashboardMenuItem"
+        StockroomDashboardMenuItem.Size = New Size(200, 22)
+        StockroomDashboardMenuItem.Text = "Stockroom Dashboard"
+        ' 
         ' pnlSidebar
         ' 
         pnlSidebar.BackColor = Color.FromArgb(CByte(183), CByte(58), CByte(46))
+        pnlSidebar.Controls.Add(btnStockroomDashboard)
+        pnlSidebar.Controls.Add(btnRetailDashboard)
         pnlSidebar.Controls.Add(lblSidebarTitle)
         pnlSidebar.Controls.Add(picLogo)
         pnlSidebar.Dock = DockStyle.Left
@@ -218,6 +248,34 @@ Partial Class MainDashboard
         picLogo.TabIndex = 0
         picLogo.TabStop = False
         ' 
+        ' btnRetailDashboard
+        ' 
+        btnRetailDashboard.BackColor = Color.FromArgb(CByte(255), CByte(215), CByte(0))
+        btnRetailDashboard.Dock = DockStyle.Top
+        btnRetailDashboard.FlatStyle = FlatStyle.Flat
+        btnRetailDashboard.Font = New Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point)
+        btnRetailDashboard.ForeColor = Color.Black
+        btnRetailDashboard.Location = New Point(12, 152)
+        btnRetailDashboard.Name = "btnRetailDashboard"
+        btnRetailDashboard.Size = New Size(196, 50)
+        btnRetailDashboard.TabIndex = 3
+        btnRetailDashboard.Text = "Retail Dashboard"
+        btnRetailDashboard.UseVisualStyleBackColor = False
+        ' 
+        ' btnStockroomDashboard
+        ' 
+        btnStockroomDashboard.BackColor = Color.FromArgb(CByte(100), CByte(149), CByte(237))
+        btnStockroomDashboard.Dock = DockStyle.Top
+        btnStockroomDashboard.FlatStyle = FlatStyle.Flat
+        btnStockroomDashboard.Font = New Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point)
+        btnStockroomDashboard.ForeColor = Color.White
+        btnStockroomDashboard.Location = New Point(12, 202)
+        btnStockroomDashboard.Name = "btnStockroomDashboard"
+        btnStockroomDashboard.Size = New Size(196, 50)
+        btnStockroomDashboard.TabIndex = 4
+        btnStockroomDashboard.Text = "Stockroom Dashboard"
+        btnStockroomDashboard.UseVisualStyleBackColor = False
+        ' 
         ' pnlRightStats
         ' 
         pnlRightStats.BackColor = Color.FromArgb(CByte(242), CByte(215), CByte(212))
@@ -240,12 +298,67 @@ Partial Class MainDashboard
         lblStatsTitle.TabIndex = 0
         lblStatsTitle.Text = "Key Stats (placeholder)"
         ' 
+        ' pnlBottomBar
+        ' 
+        pnlBottomBar.BackColor = Color.FromArgb(CByte(52), CByte(73), CByte(94))
+        pnlBottomBar.Controls.Add(btnStockroomDash)
+        pnlBottomBar.Controls.Add(btnManufacturerDash)
+        pnlBottomBar.Controls.Add(btnRetailDash)
+        pnlBottomBar.Dock = DockStyle.Bottom
+        pnlBottomBar.Location = New Point(220, 853)
+        pnlBottomBar.Name = "pnlBottomBar"
+        pnlBottomBar.Size = New Size(922, 70)
+        pnlBottomBar.TabIndex = 4
+        ' 
+        ' btnRetailDash
+        ' 
+        btnRetailDash.BackColor = Color.FromArgb(CByte(46), CByte(204), CByte(113))
+        btnRetailDash.Dock = DockStyle.Left
+        btnRetailDash.FlatStyle = FlatStyle.Flat
+        btnRetailDash.Font = New Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point)
+        btnRetailDash.ForeColor = Color.White
+        btnRetailDash.Location = New Point(0, 0)
+        btnRetailDash.Name = "btnRetailDash"
+        btnRetailDash.Size = New Size(300, 70)
+        btnRetailDash.TabIndex = 0
+        btnRetailDash.Text = "RETAIL DASHBOARD"
+        btnRetailDash.UseVisualStyleBackColor = False
+        ' 
+        ' btnManufacturerDash
+        ' 
+        btnManufacturerDash.BackColor = Color.FromArgb(CByte(241), CByte(196), CByte(15))
+        btnManufacturerDash.Dock = DockStyle.Left
+        btnManufacturerDash.FlatStyle = FlatStyle.Flat
+        btnManufacturerDash.Font = New Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point)
+        btnManufacturerDash.ForeColor = Color.Black
+        btnManufacturerDash.Location = New Point(300, 0)
+        btnManufacturerDash.Name = "btnManufacturerDash"
+        btnManufacturerDash.Size = New Size(300, 70)
+        btnManufacturerDash.TabIndex = 1
+        btnManufacturerDash.Text = "MANUFACTURER DASHBOARD"
+        btnManufacturerDash.UseVisualStyleBackColor = False
+        ' 
+        ' btnStockroomDash
+        ' 
+        btnStockroomDash.BackColor = Color.FromArgb(CByte(52), CByte(152), CByte(219))
+        btnStockroomDash.Dock = DockStyle.Left
+        btnStockroomDash.FlatStyle = FlatStyle.Flat
+        btnStockroomDash.Font = New Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point)
+        btnStockroomDash.ForeColor = Color.White
+        btnStockroomDash.Location = New Point(600, 0)
+        btnStockroomDash.Name = "btnStockroomDash"
+        btnStockroomDash.Size = New Size(300, 70)
+        btnStockroomDash.TabIndex = 2
+        btnStockroomDash.Text = "STOCKROOM DASHBOARD"
+        btnStockroomDash.UseVisualStyleBackColor = False
+        ' 
         ' MainDashboard
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
         BackColor = Color.WhiteSmoke
         ClientSize = New Size(1400, 923)
+        Controls.Add(pnlBottomBar)
         Controls.Add(pnlRightStats)
         Controls.Add(pnlSidebar)
         Controls.Add(MenuStrip1)
@@ -295,4 +408,13 @@ Partial Class MainDashboard
     Friend WithEvents lblSidebarTitle As Label
     Friend WithEvents pnlRightStats As Panel
     Friend WithEvents lblStatsTitle As Label
+    Friend WithEvents btnRetailDashboard As Button
+    Friend WithEvents btnStockroomDashboard As Button
+    Friend WithEvents DashboardsToolStripMenuItem As ToolStripMenuItem
+    Friend WithEvents RetailDashboardMenuItem As ToolStripMenuItem
+    Friend WithEvents StockroomDashboardMenuItem As ToolStripMenuItem
+    Friend WithEvents pnlBottomBar As Panel
+    Friend WithEvents btnRetailDash As Button
+    Friend WithEvents btnManufacturerDash As Button
+    Friend WithEvents btnStockroomDash As Button
 End Class

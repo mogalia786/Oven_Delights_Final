@@ -10,6 +10,7 @@ Public Class InvoiceCaptureForm
     Private ReadOnly accountingService As New AccountsPayableService()
     Private selectedSupplierId As Integer
     Private selectedPOId As Integer
+    Private isSaving As Boolean = False
 
     Private Sub InvoiceCaptureForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Try
@@ -25,6 +26,7 @@ Public Class InvoiceCaptureForm
             AddHandler cboPO.SelectedIndexChanged, AddressOf cboPO_SelectedIndexChanged
             AddHandler btnSave.Click, AddressOf btnSave_Click
             AddHandler btnCancel.Click, AddressOf btnCancel_Click
+            AddHandler btnApplyDiscount.Click, AddressOf btnApplyDiscount_Click
             AddHandler dgvLines.DataError, AddressOf dgvLines_DataError
 
         Catch ex As Exception
@@ -44,8 +46,9 @@ Public Class InvoiceCaptureForm
             For Each r As DataGridViewRow In dgvLines.Rows
                 If dgvLines.Columns.Contains("ReceiveNow") Then
                     Dim v = r.Cells("ReceiveNow").Value
-                    Dim d As Decimal
-                    If v Is Nothing OrElse Not Decimal.TryParse(Convert.ToString(v), d) Then r.Cells("ReceiveNow").Value = 0D
+                    If v Is Nothing OrElse IsDBNull(v) Then
+                        r.Cells("ReceiveNow").Value = 0D
+                    End If
                 End If
             Next
         Catch
@@ -72,6 +75,17 @@ Public Class InvoiceCaptureForm
             cboSupplier.DisplayMember = "CompanyName"
             cboSupplier.ValueMember = "SupplierID"
             cboSupplier.SelectedIndex = -1
+            
+            ' Setup autocomplete like PO form
+            If suppliers IsNot Nothing AndAlso suppliers.Rows.Count > 0 Then
+                Dim ac As New AutoCompleteStringCollection()
+                For Each r As DataRow In suppliers.Rows
+                    ac.Add(r("CompanyName").ToString())
+                Next
+                cboSupplier.AutoCompleteMode = AutoCompleteMode.SuggestAppend
+                cboSupplier.AutoCompleteSource = AutoCompleteSource.CustomSource
+                cboSupplier.AutoCompleteCustomSource = ac
+            End If
         Catch ex As Exception
             MessageBox.Show("Error loading suppliers: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
@@ -129,11 +143,24 @@ Public Class InvoiceCaptureForm
         Try
             If selectedPOId > 0 Then
                 Dim lines = stockroomService.GetPurchaseOrderLines(selectedPOId)
-                
+
                 ' Disable auto-column generation to prevent formatting errors
                 dgvLines.AutoGenerateColumns = True
                 dgvLines.DataSource = lines
-                
+
+                ' CRITICAL: Verify required columns exist for stock updates
+                Dim missingColumns As New List(Of String)
+                If Not dgvLines.Columns.Contains("MaterialID") Then missingColumns.Add("MaterialID")
+                If Not dgvLines.Columns.Contains("ProductName") Then missingColumns.Add("ProductName")
+                If Not dgvLines.Columns.Contains("ProductType") Then missingColumns.Add("ProductType")
+
+                If missingColumns.Count > 0 Then
+                    MessageBox.Show("CRITICAL ERROR: Missing required columns in PO lines grid!" & vbCrLf & vbCrLf &
+                                  "Missing: " & String.Join(", ", missingColumns) & vbCrLf & vbCrLf &
+                                  "Stock updates will FAIL! Contact system administrator.",
+                                  "Data Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End If
+
                 ' Set string format for any large numeric columns (like SKU/Barcode)
                 For Each col As DataGridViewColumn In dgvLines.Columns
                     If col.ValueType Is GetType(Long) OrElse col.ValueType Is GetType(Int64) Then
@@ -141,6 +168,13 @@ Public Class InvoiceCaptureForm
                         col.ValueType = GetType(String)
                     End If
                 Next
+                
+                ' Configure ReceiveNow column to accept decimals
+                If dgvLines.Columns.Contains("ReceiveNow") Then
+                    dgvLines.Columns("ReceiveNow").ValueType = GetType(Decimal)
+                    dgvLines.Columns("ReceiveNow").DefaultCellStyle.Format = "N2"
+                    dgvLines.Columns("ReceiveNow").DefaultCellStyle.NullValue = 0D
+                End If
 
                 ' Add dropdown for CreditReason column
                 If dgvLines.Columns.Contains("CreditReason") Then
@@ -331,19 +365,43 @@ Public Class InvoiceCaptureForm
     End Sub
 
     Private Sub btnSave_Click(sender As Object, e As EventArgs) Handles btnSave.Click
+        ' Prevent re-entry if already saving
+        If isSaving Then Return
+        isSaving = True
+        
+        ' Disable save button immediately to prevent double-click
+        btnSave.Enabled = False
+        
         Try
             If selectedSupplierId <= 0 Then
                 MessageBox.Show("Please select a supplier.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                btnSave.Enabled = True
+                isSaving = False
                 Return
             End If
 
             If selectedPOId <= 0 Then
                 MessageBox.Show("Please select a purchase order.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                btnSave.Enabled = True
+                isSaving = False
                 Return
             End If
 
             If String.IsNullOrWhiteSpace(txtDeliveryNote.Text) Then
-                MessageBox.Show("Please enter a delivery note number.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                MessageBox.Show("Please enter an Invoice Number.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                txtDeliveryNote.Focus()
+                btnSave.Enabled = True
+                isSaving = False
+                Return
+            End If
+            
+            ' Check for duplicate invoice number
+            If CheckDuplicateInvoiceNumber(txtDeliveryNote.Text.Trim(), selectedSupplierId) Then
+                MessageBox.Show($"Invoice Number '{txtDeliveryNote.Text.Trim()}' already exists for this supplier. Please enter a unique invoice number.", "Duplicate Invoice", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                txtDeliveryNote.Focus()
+                txtDeliveryNote.SelectAll()
+                btnSave.Enabled = True
+                isSaving = False
                 Return
             End If
 
@@ -363,38 +421,131 @@ Public Class InvoiceCaptureForm
                 Return
             End If
 
-            ' Calculate totals
-            Dim subTotal As Decimal = 0
+            ' Calculate totals - respecting IsVatable status
+            Dim subTotalVatable As Decimal = 0
+            Dim subTotalNonVatable As Decimal = 0
+            Dim vatTotal As Decimal = 0
+            
             For Each row As DataGridViewRow In dgvLines.Rows
                 If Not row.IsNewRow Then
                     Dim receiveNow = If(row.Cells("ReceiveNow").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("ReceiveNow").Value))
                     Dim unitCost = If(row.Cells("UnitCost").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("UnitCost").Value))
-                    subTotal += receiveNow * unitCost
+                    Dim lineTotalExclVAT As Decimal = receiveNow * unitCost
+                    
+                    ' Get ProductID to check IsVatable
+                    Dim productId As Integer = 0
+                    If row.Cells("ProductID").Value IsNot Nothing Then
+                        productId = Convert.ToInt32(row.Cells("ProductID").Value)
+                    End If
+                    
+                    ' Check if product is vatable
+                    Dim isVatable As Boolean = True
+                    If productId > 0 Then
+                        Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                            conn.Open()
+                            Using cmd As New SqlCommand("SELECT ISNULL(IsVatable, 1) FROM Demo_Retail_Product WHERE ProductID = @ProductID", conn)
+                                cmd.Parameters.AddWithValue("@ProductID", productId)
+                                Dim result = cmd.ExecuteScalar()
+                                If result IsNot Nothing Then isVatable = Convert.ToBoolean(result)
+                            End Using
+                        End Using
+                    End If
+                    
+                    If isVatable Then
+                        Dim lineVAT As Decimal = Math.Round(lineTotalExclVAT * 0.15D, 4)
+                        subTotalVatable += lineTotalExclVAT
+                        vatTotal += lineVAT
+                    Else
+                        subTotalNonVatable += lineTotalExclVAT
+                    End If
                 End If
             Next
-            Dim vatAmount As Decimal = subTotal * 0.15D
-            Dim totalAmount As Decimal = subTotal + vatAmount
+            
+            Dim subTotal As Decimal = subTotalVatable + subTotalNonVatable
+            
+            ' Calculate total BEFORE discount
+            Dim totalBeforeDiscount As Decimal = subTotal + vatTotal
+            
+            ' Apply discount to TOTAL (not subtotal, not VAT)
+            Dim discountAmount As Decimal = 0
+            Dim discountPercent As Decimal = 0
+            
+            ' Get discount amount from txtDiscountRand
+            If Decimal.TryParse(txtDiscountRand.Text, discountAmount) AndAlso discountAmount > 0 Then
+                ' Calculate percentage based on total before discount
+                If totalBeforeDiscount > 0 Then
+                    discountPercent = Math.Round((discountAmount / totalBeforeDiscount) * 100, 4)
+                End If
+            End If
+            
+            ' Final total = Total before discount - discount amount
+            Dim totalAmount As Decimal = totalBeforeDiscount - discountAmount
 
             ' Save GRV and update inventory
             Dim grvId = stockroomService.SaveGoodsReceivedVoucher(selectedSupplierId, selectedPOId, txtDeliveryNote.Text, dtpReceived.Value, dgvLines)
 
             ' Create Supplier Invoice record
-            CreateSupplierInvoice(selectedSupplierId, txtDeliveryNote.Text, dtpReceived.Value, subTotal, vatAmount, totalAmount, grvId)
+            CreateSupplierInvoice(selectedSupplierId, selectedPOId, txtDeliveryNote.Text, dtpReceived.Value, subTotal, vatTotal, totalAmount, grvId, discountAmount, discountPercent)
 
             ' Update inventory based on ProductType
+            Dim branchId As Integer = If(AppSession.CurrentUser IsNot Nothing AndAlso AppSession.CurrentUser.BranchID.HasValue, AppSession.CurrentUser.BranchID.Value, 0)
+
             For Each row As DataGridViewRow In dgvLines.Rows
                 If Not row.IsNewRow Then
                     Dim receiveNow = If(row.Cells("ReceiveNow").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("ReceiveNow").Value))
                     If receiveNow > 0 Then
-                        Dim productId = Convert.ToInt32(row.Cells("ProductID").Value)
-                        Dim productType = Convert.ToString(row.Cells("ProductType").Value)
+                        Dim productType = If(row.Cells("ProductType").Value, "").ToString().Trim()
+                        Dim unitCost = If(row.Cells("UnitCost").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("UnitCost").Value))
 
-                        If productType = "Raw Material" Then
-                            ' Update RawMaterials.CurrentStock
-                            stockroomService.UpdateRawMaterialStock(productId, receiveNow, "Received from PO " & cboPO.Text)
-                        ElseIf productType = "Product" Then
-                            ' Update Products stock or create new product entry
-                            stockroomService.UpdateProductStock(productId, receiveNow, "Received from PO " & cboPO.Text)
+                        ' Check if it's a raw material (includes ingredients and sub-recipes)
+                        If productType.Contains("Material") OrElse productType.Contains("Ingredient") OrElse productType.Contains("Recipe") Then
+                            ' Get MaterialID for raw materials - try all possible columns
+                            Dim materialId As Integer = 0
+                            If dgvLines.Columns.Contains("MaterialID") AndAlso row.Cells("MaterialID").Value IsNot Nothing AndAlso Not IsDBNull(row.Cells("MaterialID").Value) Then
+                                materialId = Convert.ToInt32(row.Cells("MaterialID").Value)
+                            ElseIf dgvLines.Columns.Contains("ProductID") AndAlso row.Cells("ProductID").Value IsNot Nothing AndAlso Not IsDBNull(row.Cells("ProductID").Value) Then
+                                materialId = Convert.ToInt32(row.Cells("ProductID").Value)
+                            ElseIf dgvLines.Columns.Contains("RawMaterialCode") AndAlso row.Cells("RawMaterialCode").Value IsNot Nothing Then
+                                ' Try to get MaterialID from RawMaterialCode
+                                Dim code = row.Cells("RawMaterialCode").Value.ToString()
+                                Using con As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                                    con.Open()
+                                    Using cmd As New SqlCommand("SELECT MaterialID FROM RawMaterials WHERE MaterialCode = @Code", con)
+                                        cmd.Parameters.AddWithValue("@Code", code)
+                                        Dim result = cmd.ExecuteScalar()
+                                        If result IsNot Nothing Then materialId = Convert.ToInt32(result)
+                                    End Using
+                                End Using
+                            End If
+
+                            If materialId > 0 Then
+                                stockroomService.UpdateRawMaterialStock(materialId, receiveNow, "Received from PO " & cboPO.Text)
+                                Dim productName = If(row.Cells("ProductName").Value, "").ToString().Trim()
+                                If Not String.IsNullOrEmpty(productName) Then UpdateLastPaidPriceByName(productName, unitCost)
+                            End If
+                        ElseIf productType.Contains("Product") OrElse productType = "External" Then
+                            ' Get ProductID for external products
+                            Dim productId As Integer = 0
+                            If dgvLines.Columns.Contains("ProductID") AndAlso row.Cells("ProductID").Value IsNot Nothing Then
+                                productId = Convert.ToInt32(row.Cells("ProductID").Value)
+                            End If
+
+                            If productId > 0 Then
+                                UpdateExternalProductInventory(productId, branchId, receiveNow, unitCost)
+                            End If
+                        Else
+                            ' Default to raw material if type is unclear - try MaterialID first, then ProductID
+                            Dim materialId As Integer = 0
+                            If dgvLines.Columns.Contains("MaterialID") AndAlso row.Cells("MaterialID").Value IsNot Nothing Then
+                                materialId = Convert.ToInt32(row.Cells("MaterialID").Value)
+                            ElseIf dgvLines.Columns.Contains("ProductID") AndAlso row.Cells("ProductID").Value IsNot Nothing Then
+                                materialId = Convert.ToInt32(row.Cells("ProductID").Value)
+                            End If
+
+                            If materialId > 0 Then
+                                stockroomService.UpdateRawMaterialStock(materialId, receiveNow, "Received from PO " & cboPO.Text)
+                                UpdateLastPaidPrice(materialId, unitCost, "RawMaterial")
+                            End If
                         End If
                     End If
                 End If
@@ -403,27 +554,162 @@ Public Class InvoiceCaptureForm
             ' Update PO status to captured/closed
             stockroomService.UpdatePurchaseOrderStatus(selectedPOId, "Captured")
 
-            MessageBox.Show("GRV saved successfully! Inventory updated.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            ' CRITICAL: Recalculate ALL sub-recipe and product costs after updating ingredient prices
+            Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                conn.Open()
+                Using cmdRecalc As New SqlCommand("sp_RecalculateAllCosts", conn)
+                    cmdRecalc.CommandType = CommandType.StoredProcedure
+                    cmdRecalc.ExecuteNonQuery()
+                End Using
+            End Using
+            
+            MessageBox.Show("STORED PROC RAN - sp_RecalculateAllCosts executed successfully!", "Stored Procedure", MessageBoxButtons.OK, MessageBoxIcon.Information)
 
-            ' Refresh PO dropdown to remove captured PO
-            LoadPurchaseOrders()
+            ' Enable print button - save button already disabled at start of method
+            btnPrint.Enabled = True
 
-            ' Clear the form
-            cboPO.SelectedIndex = -1
-            dgvLines.DataSource = Nothing
-            txtSubTotal.Text = "0.00"
-            txtVat.Text = "0.00"
-            txtTotal.Text = "0.00"
-
-            Me.Close()
+            MessageBox.Show("GRV saved successfully! Inventory updated. Sub-recipe and product costs recalculated. You can now print the invoice.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
 
         Catch ex As Exception
             MessageBox.Show("Error saving GRV: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            btnSave.Enabled = True  ' Re-enable save button on error
         End Try
     End Sub
 
     Private Sub btnCancel_Click(sender As Object, e As EventArgs) Handles btnCancel.Click
         Me.Close()
+    End Sub
+
+    Private Sub btnPrint_Click(sender As Object, e As EventArgs) Handles btnPrint.Click
+        Try
+            Dim printDoc As New System.Drawing.Printing.PrintDocument()
+            AddHandler printDoc.PrintPage, AddressOf PrintInvoice
+            
+            Dim printDialog As New PrintDialog()
+            printDialog.Document = printDoc
+            
+            If printDialog.ShowDialog() = DialogResult.OK Then
+                printDoc.Print()
+                MessageBox.Show("Invoice printed successfully!", "Print", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+        Catch ex As Exception
+            MessageBox.Show($"Print error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub PrintInvoice(sender As Object, e As System.Drawing.Printing.PrintPageEventArgs)
+        Try
+            Dim font As New Font("Arial", 10)
+            Dim fontBold As New Font("Arial", 10, FontStyle.Bold)
+            Dim fontTitle As New Font("Arial", 16, FontStyle.Bold)
+            Dim fontHeader As New Font("Arial", 12, FontStyle.Bold)
+            
+            Dim yPos As Single = 50
+            Dim leftMargin As Single = 50
+            Dim rightMargin As Single = e.PageBounds.Width - 50
+            
+            ' Company Header
+            e.Graphics.DrawString("OVEN DELIGHTS (PTY) LTD", fontTitle, Brushes.Black, leftMargin, yPos)
+            yPos += 30
+            e.Graphics.DrawString("GOODS RECEIVED VOUCHER / SUPPLIER INVOICE", fontHeader, Brushes.Black, leftMargin, yPos)
+            yPos += 40
+            
+            ' Supplier Information
+            e.Graphics.DrawString("Supplier:", fontBold, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString(cboSupplier.Text, font, Brushes.Black, leftMargin + 150, yPos)
+            yPos += 25
+            
+            e.Graphics.DrawString("Purchase Order:", fontBold, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString(cboPO.Text, font, Brushes.Black, leftMargin + 150, yPos)
+            yPos += 25
+            
+            e.Graphics.DrawString("Invoice Number:", fontBold, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString(txtDeliveryNote.Text, font, Brushes.Black, leftMargin + 150, yPos)
+            yPos += 25
+            
+            e.Graphics.DrawString("Date Received:", fontBold, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString(dtpReceived.Value.ToString("dd MMM yyyy"), font, Brushes.Black, leftMargin + 150, yPos)
+            yPos += 25
+            
+            e.Graphics.DrawString("Received By:", fontBold, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString(If(AppSession.CurrentUser?.Username, "System"), font, Brushes.Black, leftMargin + 150, yPos)
+            yPos += 40
+            
+            ' Line separator
+            e.Graphics.DrawLine(Pens.Black, leftMargin, yPos, rightMargin, yPos)
+            yPos += 10
+            
+            ' Column Headers
+            e.Graphics.DrawString("Product", fontBold, Brushes.Black, leftMargin, yPos)
+            e.Graphics.DrawString("Qty", fontBold, Brushes.Black, leftMargin + 350, yPos)
+            e.Graphics.DrawString("Unit Cost", fontBold, Brushes.Black, leftMargin + 420, yPos)
+            e.Graphics.DrawString("Total", fontBold, Brushes.Black, leftMargin + 520, yPos)
+            yPos += 25
+            
+            e.Graphics.DrawLine(Pens.Black, leftMargin, yPos, rightMargin, yPos)
+            yPos += 10
+            
+            ' Line Items
+            For Each row As DataGridViewRow In dgvLines.Rows
+                If Not row.IsNewRow Then
+                    Dim receiveNow = If(row.Cells("ReceiveNow").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("ReceiveNow").Value))
+                    If receiveNow > 0 Then
+                        Dim productName = If(row.Cells("ProductName").Value, "").ToString()
+                        Dim unitCost = If(row.Cells("UnitCost").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("UnitCost").Value))
+                        Dim lineTotal = receiveNow * unitCost
+                        
+                        If productName.Length > 40 Then productName = productName.Substring(0, 37) & "..."
+                        
+                        e.Graphics.DrawString(productName, font, Brushes.Black, leftMargin, yPos)
+                        e.Graphics.DrawString(receiveNow.ToString("N4"), font, Brushes.Black, leftMargin + 350, yPos)
+                        e.Graphics.DrawString("R " & unitCost.ToString("N4"), font, Brushes.Black, leftMargin + 420, yPos)
+                        e.Graphics.DrawString("R " & lineTotal.ToString("N4"), font, Brushes.Black, leftMargin + 520, yPos)
+                        yPos += 20
+                    End If
+                End If
+            Next
+            
+            yPos += 10
+            e.Graphics.DrawLine(Pens.Black, leftMargin, yPos, rightMargin, yPos)
+            yPos += 15
+            
+            ' Totals
+            e.Graphics.DrawString("Sub Total:", fontBold, Brushes.Black, leftMargin + 420, yPos)
+            e.Graphics.DrawString("R " & txtSubTotal.Text, font, Brushes.Black, leftMargin + 520, yPos)
+            yPos += 25
+            
+            e.Graphics.DrawString("VAT (15%):", fontBold, Brushes.Black, leftMargin + 420, yPos)
+            e.Graphics.DrawString("R " & txtVat.Text, font, Brushes.Black, leftMargin + 520, yPos)
+            yPos += 25
+            
+            If Decimal.TryParse(txtDiscountRand.Text, Nothing) AndAlso Convert.ToDecimal(txtDiscountRand.Text) > 0 Then
+                e.Graphics.DrawString("Discount:", fontBold, Brushes.Black, leftMargin + 420, yPos)
+                e.Graphics.DrawString("R " & txtDiscountRand.Text, font, Brushes.Black, leftMargin + 520, yPos)
+                yPos += 25
+            End If
+            
+            e.Graphics.DrawLine(Pens.Black, leftMargin + 420, yPos, rightMargin, yPos)
+            yPos += 10
+            
+            e.Graphics.DrawString("TOTAL:", fontBold, Brushes.Black, leftMargin + 420, yPos)
+            e.Graphics.DrawString("R " & txtTotal.Text, fontBold, Brushes.Black, leftMargin + 520, yPos)
+            yPos += 40
+            
+            ' Footer
+            e.Graphics.DrawLine(Pens.Black, leftMargin, yPos, rightMargin, yPos)
+            yPos += 20
+            
+            e.Graphics.DrawString("Authorized Signature: _______________________", font, Brushes.Black, leftMargin, yPos)
+            yPos += 30
+            
+            e.Graphics.DrawString("Date: _______________________", font, Brushes.Black, leftMargin, yPos)
+            yPos += 40
+            
+            e.Graphics.DrawString($"Printed: {DateTime.Now:dd MMM yyyy HH:mm}", New Font("Arial", 8), Brushes.Gray, leftMargin, yPos)
+            
+        Catch ex As Exception
+            MessageBox.Show($"Error generating invoice: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub ConfigureTotalsTextBoxes()
@@ -441,31 +727,116 @@ Public Class InvoiceCaptureForm
         AddHandler dgvLines.CellValueChanged, AddressOf CalculateTotals
         AddHandler dgvLines.RowsAdded, AddressOf CalculateTotals
         AddHandler dgvLines.RowsRemoved, AddressOf CalculateTotals
+        AddHandler txtDiscount.TextChanged, AddressOf txtDiscount_TextChanged
+        AddHandler txtDiscountRand.TextChanged, AddressOf txtDiscountRand_TextChanged
     End Sub
 
     Private Sub CalculateTotals(sender As Object, e As EventArgs)
         Try
-            Dim subTotal As Decimal = 0
+            ' PURCHASE ORDER PRICING: UnitCost is EXCLUDING VAT
+            ' Calculate totals respecting IsVatable status
+            ' Vatable items: Add 15% VAT to excl VAT price
+            ' Non-vatable items: No VAT added
+            
+            Dim subTotalVatable As Decimal = 0
+            Dim subTotalNonVatable As Decimal = 0
+            Dim vatTotal As Decimal = 0
+            
             For Each row As DataGridViewRow In dgvLines.Rows
                 If Not row.IsNewRow Then
                     Dim receiveNow = If(row.Cells("ReceiveNow").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("ReceiveNow").Value))
                     Dim unitCost = If(row.Cells("UnitCost").Value Is Nothing, 0D, Convert.ToDecimal(row.Cells("UnitCost").Value))
-                    subTotal += receiveNow * unitCost
+                    Dim lineTotalExclVAT As Decimal = receiveNow * unitCost
+                    
+                    ' Get ProductID to check IsVatable
+                    Dim productId As Integer = 0
+                    If row.Cells("ProductID").Value IsNot Nothing Then
+                        productId = Convert.ToInt32(row.Cells("ProductID").Value)
+                    End If
+                    
+                    ' Check if product is vatable
+                    Dim isVatable As Boolean = True
+                    If productId > 0 Then
+                        Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                            conn.Open()
+                            Using cmd As New SqlCommand("SELECT ISNULL(IsVatable, 1) FROM Demo_Retail_Product WHERE ProductID = @ProductID", conn)
+                                cmd.Parameters.AddWithValue("@ProductID", productId)
+                                Dim result = cmd.ExecuteScalar()
+                                If result IsNot Nothing Then isVatable = Convert.ToBoolean(result)
+                            End Using
+                        End Using
+                    End If
+                    
+                    If isVatable Then
+                        ' Price is excl VAT - calculate VAT amount
+                        Dim lineVAT As Decimal = Math.Round(lineTotalExclVAT * 0.15D, 4)
+                        subTotalVatable += lineTotalExclVAT
+                        vatTotal += lineVAT
+                    Else
+                        ' Price has no VAT
+                        subTotalNonVatable += lineTotalExclVAT
+                    End If
                 End If
             Next
+            
+            Dim subTotal As Decimal = subTotalVatable + subTotalNonVatable
+            
+            ' Calculate total BEFORE discount (SubTotal + VAT)
+            Dim totalBeforeDiscount As Decimal = subTotal + vatTotal
+            
+            ' Apply discount - check if Rand discount or Percentage discount is entered
+            Dim discountRand As Decimal = 0
+            Dim discountPercent As Decimal = 0
+            Dim finalTotal As Decimal = totalBeforeDiscount
+            
+            ' Priority: Rand discount takes precedence over percentage
+            If Decimal.TryParse(txtDiscountRand.Text, discountRand) AndAlso discountRand > 0 Then
+                ' Apply Rand discount to total (SubTotal + VAT)
+                finalTotal = totalBeforeDiscount - discountRand
+            ElseIf Decimal.TryParse(txtDiscount.Text, discountPercent) AndAlso discountPercent > 0 Then
+                ' Apply percentage discount to total (SubTotal + VAT)
+                Dim discountAmount As Decimal = Math.Round(totalBeforeDiscount * (discountPercent / 100), 4)
+                discountRand = discountAmount
+                finalTotal = totalBeforeDiscount - discountAmount
+                
+                ' Update txtDiscountRand to show calculated discount amount
+                RemoveHandler txtDiscountRand.TextChanged, AddressOf txtDiscountRand_TextChanged
+                txtDiscountRand.Text = discountRand.ToString("N4")
+                AddHandler txtDiscountRand.TextChanged, AddressOf txtDiscountRand_TextChanged
+            End If
 
-            Dim vatAmount As Decimal = subTotal * 0.15D ' 15% VAT
-            Dim total As Decimal = subTotal + vatAmount
-
-            txtSubTotal.Text = subTotal.ToString("F2")
-            txtVat.Text = vatAmount.ToString("F2")
-            txtTotal.Text = total.ToString("F2")
+            txtSubTotal.Text = subTotal.ToString("N4")
+            txtVat.Text = vatTotal.ToString("N4")
+            txtTotal.Text = finalTotal.ToString("N4")
         Catch ex As Exception
             ' Ignore calculation errors
         End Try
     End Sub
 
-    Private Sub CreateSupplierInvoice(supplierId As Integer, invoiceNumber As String, invoiceDate As DateTime, subTotal As Decimal, vatAmount As Decimal, totalAmount As Decimal, grvId As Integer)
+    Private Sub btnApplyDiscount_Click(sender As Object, e As EventArgs)
+        Try
+            Dim discountPercent As Decimal
+            If Not Decimal.TryParse(txtDiscount.Text, discountPercent) Then
+                MessageBox.Show("Please enter a valid discount percentage.", "Invalid Discount", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                txtDiscount.Focus()
+                Return
+            End If
+            
+            If discountPercent < 0 OrElse discountPercent > 100 Then
+                MessageBox.Show("Discount must be between 0% and 100%.", "Invalid Discount", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                txtDiscount.Focus()
+                Return
+            End If
+            
+            CalculateTotals(Nothing, EventArgs.Empty)
+            
+            MessageBox.Show($"Discount of {discountPercent}% applied successfully!\n\nNew Total: R {txtTotal.Text}", "Discount Applied", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Catch ex As Exception
+            MessageBox.Show($"Error applying discount: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    
+    Private Sub CreateSupplierInvoice(supplierId As Integer, purchaseOrderId As Integer, invoiceNumber As String, invoiceDate As DateTime, subTotal As Decimal, vatAmount As Decimal, totalAmount As Decimal, grvId As Integer, discountAmount As Decimal, discountPercent As Decimal)
         Try
             Using con As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
                 con.Open()
@@ -473,27 +844,141 @@ Public Class InvoiceCaptureForm
                     Try
                         ' Create supplier invoice header
                         Dim invoiceId As Integer
-                        Dim sql = "INSERT INTO SupplierInvoices (InvoiceNumber, SupplierID, BranchID, InvoiceDate, DueDate, SubTotal, VATAmount, TotalAmount, AmountPaid, AmountOutstanding, Status, GRVID, CreatedBy) " &
-                                 "OUTPUT INSERTED.InvoiceID VALUES (@InvNum, @SupID, @BranchID, @InvDate, @DueDate, @SubTotal, @VAT, @Total, 0, @Total, 'Unpaid', @GRVID, @UserID)"
+                        Dim sql = "INSERT INTO SupplierInvoices (InvoiceNumber, SupplierID, BranchID, PurchaseOrderID, InvoiceDate, DueDate, SubTotal, VATAmount, TotalAmount, AmountPaid, AmountOutstanding, Status, GRVID, DiscountAmount, DiscountPercent, CreatedBy) " &
+                                 "VALUES (@InvNum, @SupID, @BranchID, @POID, @InvDate, @DueDate, @SubTotal, @VAT, @Total, 0, @Total, 'Unpaid', @GRVID, @DiscountAmount, @DiscountPercent, @UserID); SELECT SCOPE_IDENTITY();"
                         Using cmd As New SqlCommand(sql, con, tx)
                             cmd.Parameters.AddWithValue("@InvNum", invoiceNumber)
                             cmd.Parameters.AddWithValue("@SupID", supplierId)
                             cmd.Parameters.AddWithValue("@BranchID", AppSession.CurrentBranchID)
+                            cmd.Parameters.AddWithValue("@POID", purchaseOrderId)
                             cmd.Parameters.AddWithValue("@InvDate", invoiceDate)
                             cmd.Parameters.AddWithValue("@DueDate", invoiceDate.AddDays(30))
                             cmd.Parameters.AddWithValue("@SubTotal", subTotal)
                             cmd.Parameters.AddWithValue("@VAT", vatAmount)
                             cmd.Parameters.AddWithValue("@Total", totalAmount)
                             cmd.Parameters.AddWithValue("@GRVID", grvId)
+                            cmd.Parameters.AddWithValue("@DiscountAmount", discountAmount)
+                            cmd.Parameters.AddWithValue("@DiscountPercent", discountPercent)
                             cmd.Parameters.AddWithValue("@UserID", AppSession.CurrentUserID)
                             invoiceId = Convert.ToInt32(cmd.ExecuteScalar())
                         End Using
+
+                        ' Insert invoice lines
+                        For Each row As DataGridViewRow In dgvLines.Rows
+                            If Not row.IsNewRow Then
+                                Dim receivedQty As Decimal = If(row.Cells("ReceiveNow").Value, 0D)
+                                If receivedQty > 0 Then
+                                    Dim itemId As Integer = If(row.Cells("ProductID").Value, 0)
+                                    If itemId > 0 Then
+                                        Dim productType As String = If(row.Cells("ProductType").Value, "").ToString()
+                                        Dim itemSource As String = If(productType.Contains("Product"), "PR", "RM")
+                                        Dim unitPrice As Decimal = If(row.Cells("UnitCost").Value, 0D)
+                                        Dim lineTotal As Decimal = receivedQty * unitPrice
+                                        
+                                        Dim lineSql = "INSERT INTO SupplierInvoiceLines (InvoiceID, ItemID, ItemSource, Description, Quantity, UnitPrice, LineTotal) " &
+                                                     "VALUES (@InvoiceID, @ItemID, @ItemSource, @Description, @Quantity, @UnitPrice, @LineTotal)"
+                                        Using lineCmd As New SqlCommand(lineSql, con, tx)
+                                            lineCmd.Parameters.AddWithValue("@InvoiceID", invoiceId)
+                                            lineCmd.Parameters.AddWithValue("@ItemID", itemId)
+                                            lineCmd.Parameters.AddWithValue("@ItemSource", itemSource)
+                                            lineCmd.Parameters.AddWithValue("@Description", If(row.Cells("ProductName").Value, ""))
+                                            lineCmd.Parameters.AddWithValue("@Quantity", receivedQty)
+                                            lineCmd.Parameters.AddWithValue("@UnitPrice", unitPrice)
+                                            lineCmd.Parameters.AddWithValue("@LineTotal", lineTotal)
+                                            lineCmd.ExecuteNonQuery()
+                                        End Using
+                                    End If
+                                End If
+                            End If
+                        Next
 
                         ' Create journal entries
                         CreatePurchaseJournalEntries(supplierId, invoiceNumber, subTotal, vatAmount, totalAmount, con, tx)
 
                         ' Create supplier ledger entry
                         CreateSupplierLedgerEntry(supplierId, invoiceId, invoiceNumber, totalAmount, con, tx)
+
+                        ' Also insert into AP_Invoices for FNB bulk payment system
+                        ' First get or create beneficiary from supplier
+                        Dim beneficiaryId As Integer = 0
+                        Dim getBeneficiarySql = "SELECT BeneficiaryID FROM AP_Beneficiaries WHERE BeneficiaryName = (SELECT CompanyName FROM Suppliers WHERE SupplierID = @SupplierID)"
+                        Using cmd As New SqlCommand(getBeneficiarySql, con, tx)
+                            cmd.Parameters.AddWithValue("@SupplierID", supplierId)
+                            Dim result = cmd.ExecuteScalar()
+                            If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                                beneficiaryId = Convert.ToInt32(result)
+                            End If
+                        End Using
+                        
+                        ' If beneficiary doesn't exist, create it from supplier
+                        If beneficiaryId = 0 Then
+                            Dim createBeneficiarySql = "INSERT INTO AP_Beneficiaries (BeneficiaryName, BankName, BranchCode, AccountNumber, AccountType, AccountHolderName, IsActive) " &
+                                                      "SELECT CompanyName, BankName, BranchCode, AccountNumber, 'Current', CompanyName, 1 FROM Suppliers WHERE SupplierID = @SupplierID; SELECT SCOPE_IDENTITY();"
+                            Using cmd As New SqlCommand(createBeneficiarySql, con, tx)
+                                cmd.Parameters.AddWithValue("@SupplierID", supplierId)
+                                Dim result = cmd.ExecuteScalar()
+                                If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                                    beneficiaryId = Convert.ToInt32(result)
+                                End If
+                            End Using
+                        End If
+                        
+                        ' Insert or update AP_Invoices if beneficiary exists
+                        If beneficiaryId > 0 Then
+                            Dim categoryId As Integer = 1 ' Default category
+                            Dim getCategorySql = "SELECT TOP 1 CategoryID FROM AP_Categories WHERE CategoryName = 'Supplier Invoice' OR CategoryName LIKE '%Supplier%'"
+                            Using cmd As New SqlCommand(getCategorySql, con, tx)
+                                Dim result = cmd.ExecuteScalar()
+                                If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                                    categoryId = Convert.ToInt32(result)
+                                End If
+                            End Using
+                            
+                            ' Check if invoice already exists for this beneficiary
+                            Dim existingInvoiceId As Integer = 0
+                            Dim checkSql = "SELECT InvoiceID FROM AP_Invoices WHERE InvoiceNumber = @InvNum AND BeneficiaryID = @BeneficiaryID"
+                            Using cmd As New SqlCommand(checkSql, con, tx)
+                                cmd.Parameters.AddWithValue("@InvNum", invoiceNumber)
+                                cmd.Parameters.AddWithValue("@BeneficiaryID", beneficiaryId)
+                                Dim result = cmd.ExecuteScalar()
+                                If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                                    existingInvoiceId = Convert.ToInt32(result)
+                                End If
+                            End Using
+                            
+                            If existingInvoiceId > 0 Then
+                                ' Update existing invoice - Amount should be final total after discount
+                                Dim updateAPSql = "UPDATE AP_Invoices SET Amount = @Amount, TaxAmount = @Tax, InvoiceDate = @InvDate, DueDate = @DueDate, " &
+                                                "Description = @Description, ModifiedBy = @UserID, ModifiedDate = GETDATE() " &
+                                                "WHERE InvoiceID = @InvoiceID"
+                                Using cmd As New SqlCommand(updateAPSql, con, tx)
+                                    cmd.Parameters.AddWithValue("@InvoiceID", existingInvoiceId)
+                                    cmd.Parameters.AddWithValue("@Amount", totalAmount)
+                                    cmd.Parameters.AddWithValue("@Tax", 0)
+                                    cmd.Parameters.AddWithValue("@InvDate", invoiceDate)
+                                    cmd.Parameters.AddWithValue("@DueDate", invoiceDate.AddDays(30))
+                                    cmd.Parameters.AddWithValue("@Description", $"Supplier Invoice from GRV (Subtotal: {subTotal:N2}, VAT: {vatAmount:N2}, Discount: {discountAmount:N2})")
+                                    cmd.Parameters.AddWithValue("@UserID", AppSession.CurrentUserID)
+                                    cmd.ExecuteNonQuery()
+                                End Using
+                            Else
+                                ' Insert new invoice - Amount should be final total after discount, TaxAmount = 0 (already included in Amount)
+                                Dim insertAPSql = "INSERT INTO AP_Invoices (InvoiceNumber, BeneficiaryID, CategoryID, InvoiceDate, DueDate, Amount, TaxAmount, Description, Status, CreatedBy, Reference) " &
+                                                "VALUES (@InvNum, @BeneficiaryID, @CategoryID, @InvDate, @DueDate, @Amount, @Tax, @Description, 'Pending', @UserID, @InvNum)"
+                                Using cmd As New SqlCommand(insertAPSql, con, tx)
+                                    cmd.Parameters.AddWithValue("@InvNum", invoiceNumber)
+                                    cmd.Parameters.AddWithValue("@BeneficiaryID", beneficiaryId)
+                                    cmd.Parameters.AddWithValue("@CategoryID", categoryId)
+                                    cmd.Parameters.AddWithValue("@InvDate", invoiceDate)
+                                    cmd.Parameters.AddWithValue("@DueDate", invoiceDate.AddDays(30))
+                                    cmd.Parameters.AddWithValue("@Amount", totalAmount)
+                                    cmd.Parameters.AddWithValue("@Tax", 0)
+                                    cmd.Parameters.AddWithValue("@Description", $"Supplier Invoice from GRV")
+                                    cmd.Parameters.AddWithValue("@UserID", AppSession.CurrentUserID)
+                                    cmd.ExecuteNonQuery()
+                                End Using
+                            End If
+                        End If
 
                         tx.Commit()
                     Catch
@@ -596,46 +1081,222 @@ Public Class InvoiceCaptureForm
             Return Convert.ToInt32(cmd.ExecuteScalar())
         End Using
     End Function
-    
+
     Private Sub CreateSupplierLedgerEntry(supplierId As Integer, invoiceId As Integer, reference As String, amount As Decimal, con As SqlConnection, tx As SqlTransaction)
         ' Create supplier ledger entry for the invoice
-        Dim sql = "INSERT INTO SupplierLedger (SupplierID, TransactionDate, TransactionType, Reference, Debit, Credit, Balance, Description, InvoiceID, CreatedBy, CreatedDate) " &
-                  "VALUES (@SupplierID, GETDATE(), 'Invoice', @Reference, @Amount, 0, @Amount, @Description, @InvoiceID, @UserID, GETDATE())"
+        ' Get supplier name and code
+        Dim supplierName As String = ""
+        Dim supplierCode As String = ""
+        Dim getSupplierSql = "SELECT CompanyName, SupplierCode FROM Suppliers WHERE SupplierID = @SupplierID"
+        Using cmd As New SqlCommand(getSupplierSql, con, tx)
+            cmd.Parameters.AddWithValue("@SupplierID", supplierId)
+            Using reader = cmd.ExecuteReader()
+                If reader.Read() Then
+                    supplierName = If(reader("CompanyName"), "").ToString()
+                    supplierCode = If(reader("SupplierCode"), "").ToString()
+                End If
+            End Using
+        End Using
         
+        Dim sql = "INSERT INTO SupplierLedger (SupplierID, SupplierName, SupplierCode, TransactionDate, TransactionType, ReferenceNumber, Description, DebitAmount, CreditAmount, RunningBalance, BranchID, CreatedBy, CreatedDate) " &
+                  "VALUES (@SupplierID, @SupplierName, @SupplierCode, GETDATE(), 'Invoice', @ReferenceNumber, @Description, @DebitAmount, 0, @RunningBalance, @BranchID, @UserID, GETDATE())"
+
         Using cmd As New SqlCommand(sql, con, tx)
             cmd.Parameters.AddWithValue("@SupplierID", supplierId)
-            cmd.Parameters.AddWithValue("@Reference", reference)
-            cmd.Parameters.AddWithValue("@Amount", amount)
+            cmd.Parameters.AddWithValue("@SupplierName", supplierName)
+            cmd.Parameters.AddWithValue("@SupplierCode", supplierCode)
+            cmd.Parameters.AddWithValue("@ReferenceNumber", reference)
             cmd.Parameters.AddWithValue("@Description", $"Purchase Invoice - {reference}")
-            cmd.Parameters.AddWithValue("@InvoiceID", invoiceId)
+            cmd.Parameters.AddWithValue("@DebitAmount", amount)
+            cmd.Parameters.AddWithValue("@RunningBalance", amount)
+            cmd.Parameters.AddWithValue("@BranchID", AppSession.CurrentBranchID)
             cmd.Parameters.AddWithValue("@UserID", AppSession.CurrentUserID)
             cmd.ExecuteNonQuery()
         End Using
-        
+
         ' Update running balance for this supplier
         UpdateSupplierBalance(supplierId, con, tx)
     End Sub
-    
+
     Private Sub UpdateSupplierBalance(supplierId As Integer, con As SqlConnection, tx As SqlTransaction)
         ' Recalculate running balance for all supplier ledger entries
         Dim sql = "WITH OrderedLedger AS ( " &
-                  "  SELECT LedgerID, Debit, Credit, " &
+                  "  SELECT LedgerID, DebitAmount, CreditAmount, " &
                   "  ROW_NUMBER() OVER (ORDER BY TransactionDate, LedgerID) AS RowNum " &
                   "  FROM SupplierLedger WHERE SupplierID = @SupplierID " &
                   "), " &
                   "RunningBalance AS ( " &
-                  "  SELECT LedgerID, Debit, Credit, " &
-                  "  SUM(Debit - Credit) OVER (ORDER BY RowNum) AS Balance " &
+                  "  SELECT LedgerID, DebitAmount, CreditAmount, " &
+                  "  SUM(DebitAmount - CreditAmount) OVER (ORDER BY RowNum) AS Balance " &
                   "  FROM OrderedLedger " &
                   ") " &
-                  "UPDATE sl SET sl.Balance = rb.Balance " &
+                  "UPDATE sl SET sl.RunningBalance = rb.Balance " &
                   "FROM SupplierLedger sl " &
                   "INNER JOIN RunningBalance rb ON sl.LedgerID = rb.LedgerID"
-        
+
         Using cmd As New SqlCommand(sql, con, tx)
             cmd.Parameters.AddWithValue("@SupplierID", supplierId)
             cmd.ExecuteNonQuery()
         End Using
     End Sub
 
+    Private Sub UpdateExternalProductInventory(productId As Integer, branchId As Integer, quantity As Decimal, unitCost As Decimal)
+        Using con As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+            con.Open()
+            Using tx = con.BeginTransaction()
+                Try
+                    ' Update CurrentStock, LastPaidPrice, and AverageCost in Demo_Retail_Product
+                    Dim updateStockSql = "UPDATE Demo_Retail_Product " &
+                                        "SET CurrentStock = ISNULL(CurrentStock, 0) + @Qty, " &
+                                        "    LastPaidPrice = @UnitCost, " &
+                                        "    AverageCost = @UnitCost " &
+                                        "WHERE ProductID = @ProductID AND BranchID = @BranchID"
+                    
+                    Using cmd As New SqlCommand(updateStockSql, con, tx)
+                        cmd.Parameters.AddWithValue("@ProductID", productId)
+                        cmd.Parameters.AddWithValue("@BranchID", branchId)
+                        cmd.Parameters.AddWithValue("@Qty", quantity)
+                        cmd.Parameters.AddWithValue("@UnitCost", unitCost)
+                        cmd.ExecuteNonQuery()
+                    End Using
+                    
+                    ' Update Demo_Retail_Price with cost price
+                    ' unitCost is ALREADY Excl VAT - save it as-is, no division needed
+                    
+                    Dim updatePriceSql = "IF EXISTS (SELECT 1 FROM Demo_Retail_Price WHERE ProductID = @ProductID AND BranchID = @BranchID) " &
+                                        "  UPDATE Demo_Retail_Price SET CostPrice = @CostExclVAT, CreatedAt = GETDATE() WHERE ProductID = @ProductID AND BranchID = @BranchID " &
+                                        "ELSE " &
+                                        "  INSERT INTO Demo_Retail_Price (ProductID, BranchID, CostPrice, EffectiveFrom, CreatedAt) VALUES (@ProductID, @BranchID, @CostExclVAT, GETDATE(), GETDATE())"
+                    
+                    Using cmd As New SqlCommand(updatePriceSql, con, tx)
+                        cmd.Parameters.AddWithValue("@ProductID", productId)
+                        cmd.Parameters.AddWithValue("@BranchID", branchId)
+                        cmd.Parameters.AddWithValue("@CostExclVAT", unitCost)
+                        cmd.ExecuteNonQuery()
+                    End Using
+                    
+                    tx.Commit()
+                Catch
+                    tx.Rollback()
+                    Throw
+                End Try
+            End Using
+        End Using
+    End Sub
+    
+    Private Sub UpdateLastPaidPrice(materialId As Integer, unitCost As Decimal, itemType As String)
+        ' IGNORE materialId - update by product name from grid instead
+    End Sub
+    
+    Private Sub UpdateLastPaidPriceByName(productName As String, unitCost As Decimal)
+        Try
+            Using con As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                con.Open()
+                
+                ' Update by MaterialName - more reliable than ID
+                Dim sql = "UPDATE RawMaterials SET LastPaidPrice = @UnitCost, LastPurchaseDate = GETDATE() WHERE MaterialName = @Name"
+                
+                Using cmd As New SqlCommand(sql, con)
+                    cmd.Parameters.AddWithValue("@UnitCost", unitCost)
+                    cmd.Parameters.AddWithValue("@Name", productName)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+        Catch ex As Exception
+            ' Silent
+        End Try
+    End Sub
+    
+    Private Function CheckDuplicateInvoiceNumber(invoiceNumber As String, supplierId As Integer) As Boolean
+        Try
+            Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
+                conn.Open()
+                
+                ' Check SupplierInvoices table
+                Dim sql As String = "SELECT COUNT(*) FROM SupplierInvoices WHERE InvoiceNumber = @InvoiceNumber AND SupplierID = @SupplierID"
+                Using cmd As New SqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@InvoiceNumber", invoiceNumber)
+                    cmd.Parameters.AddWithValue("@SupplierID", supplierId)
+                    Dim count As Integer = CInt(cmd.ExecuteScalar())
+                    If count > 0 Then Return True
+                End Using
+                
+                ' Also check GoodsReceivedNotes table (StockroomService checks this during save)
+                Dim sql2 As String = "SELECT COUNT(*) FROM GoodsReceivedNotes WHERE DeliveryNote = @InvoiceNumber AND SupplierID = @SupplierID"
+                Using cmd As New SqlCommand(sql2, conn)
+                    cmd.Parameters.AddWithValue("@InvoiceNumber", invoiceNumber)
+                    cmd.Parameters.AddWithValue("@SupplierID", supplierId)
+                    Dim count As Integer = CInt(cmd.ExecuteScalar())
+                    If count > 0 Then Return True
+                End Using
+                
+                Return False
+            End Using
+        Catch ex As Exception
+            MessageBox.Show($"Error checking duplicate invoice: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return False
+        End Try
+    End Function
+    
+    Private Sub txtDiscount_TextChanged(sender As Object, e As EventArgs)
+        ' When percentage changes, calculate and update Rand discount based on TOTAL (SubTotal + VAT)
+        Try
+            Dim discountPercent As Decimal = 0
+            If Decimal.TryParse(txtDiscount.Text, discountPercent) AndAlso discountPercent > 0 Then
+                ' Get current subtotal and VAT to calculate total before discount
+                Dim subTotal As Decimal = 0
+                Dim vatAmount As Decimal = 0
+                If Decimal.TryParse(txtSubTotal.Text.Replace(",", ""), subTotal) AndAlso Decimal.TryParse(txtVat.Text.Replace(",", ""), vatAmount) Then
+                    Dim totalBeforeDiscount As Decimal = subTotal + vatAmount
+                    Dim discountRand As Decimal = Math.Round(totalBeforeDiscount * (discountPercent / 100), 4)
+                    ' Update Rand discount textbox without triggering its event
+                    RemoveHandler txtDiscountRand.TextChanged, AddressOf txtDiscountRand_TextChanged
+                    txtDiscountRand.Text = discountRand.ToString("N4")
+                    AddHandler txtDiscountRand.TextChanged, AddressOf txtDiscountRand_TextChanged
+                End If
+            ElseIf String.IsNullOrWhiteSpace(txtDiscount.Text) OrElse discountPercent = 0 Then
+                ' Clear Rand discount if percentage is cleared
+                RemoveHandler txtDiscountRand.TextChanged, AddressOf txtDiscountRand_TextChanged
+                txtDiscountRand.Text = "0.0000"
+                AddHandler txtDiscountRand.TextChanged, AddressOf txtDiscountRand_TextChanged
+            End If
+            
+            ' Recalculate totals
+            CalculateTotals(Nothing, EventArgs.Empty)
+        Catch ex As Exception
+            ' Ignore errors during sync
+        End Try
+    End Sub
+    
+    Private Sub txtDiscountRand_TextChanged(sender As Object, e As EventArgs)
+        ' When Rand discount changes, calculate and update percentage based on TOTAL (SubTotal + VAT)
+        Try
+            Dim discountRand As Decimal = 0
+            If Decimal.TryParse(txtDiscountRand.Text, discountRand) AndAlso discountRand > 0 Then
+                ' Get current subtotal and VAT to calculate total before discount
+                Dim subTotal As Decimal = 0
+                Dim vatAmount As Decimal = 0
+                If Decimal.TryParse(txtSubTotal.Text.Replace(",", ""), subTotal) AndAlso Decimal.TryParse(txtVat.Text.Replace(",", ""), vatAmount) Then
+                    Dim totalBeforeDiscount As Decimal = subTotal + vatAmount
+                    If totalBeforeDiscount > 0 Then
+                        Dim discountPercent As Decimal = Math.Round((discountRand / totalBeforeDiscount) * 100, 4)
+                        ' Update percentage textbox without triggering its event
+                        RemoveHandler txtDiscount.TextChanged, AddressOf txtDiscount_TextChanged
+                        txtDiscount.Text = discountPercent.ToString("N4")
+                        AddHandler txtDiscount.TextChanged, AddressOf txtDiscount_TextChanged
+                    End If
+                End If
+            ElseIf String.IsNullOrWhiteSpace(txtDiscountRand.Text) OrElse discountRand = 0 Then
+                ' Clear percentage if Rand is cleared
+                RemoveHandler txtDiscount.TextChanged, AddressOf txtDiscount_TextChanged
+                txtDiscount.Text = "0.00"
+                AddHandler txtDiscount.TextChanged, AddressOf txtDiscount_TextChanged
+            End If
+            
+            ' Recalculate totals
+            CalculateTotals(Nothing, EventArgs.Empty)
+        Catch ex As Exception
+            ' Ignore errors during sync
+        End Try
+    End Sub
 End Class

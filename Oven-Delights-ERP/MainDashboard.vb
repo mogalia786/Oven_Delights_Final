@@ -3782,6 +3782,11 @@ Partial Class MainDashboard
         Dim importSuppliers As ToolStripMenuItem = EnsureSubMenu(utilities, "Import Suppliers from CSV")
         RemoveHandler importSuppliers.Click, AddressOf OpenImportSuppliers
         AddHandler importSuppliers.Click, AddressOf OpenImportSuppliers
+        
+        ' Add Test Order Form Printer submenu
+        Dim testPrinter As ToolStripMenuItem = EnsureSubMenu(utilities, "Test Order Form Printer")
+        RemoveHandler testPrinter.Click, AddressOf OpenTestOrderFormPrinter
+        AddHandler testPrinter.Click, AddressOf OpenTestOrderFormPrinter
     End Sub
     
     Private Sub OpenImportCategories(sender As Object, e As EventArgs)
@@ -3838,6 +3843,15 @@ Partial Class MainDashboard
             frm.WindowState = FormWindowState.Maximized
         Catch ex As Exception
             MessageBox.Show("Error opening Import Suppliers: " & ex.Message, "Utilities", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OpenTestOrderFormPrinter(sender As Object, e As EventArgs)
+        Try
+            Dim frm As New TestOrderFormPrintForm()
+            frm.ShowDialog(Me)
+        Catch ex As Exception
+            MessageBox.Show("Error opening Test Order Form Printer: " & ex.Message, "Utilities", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 

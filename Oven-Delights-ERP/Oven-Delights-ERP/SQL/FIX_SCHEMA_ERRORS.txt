@@ -1,0 +1,130 @@
+╔════════════════════════════════════════════════════════════════════╗
+║              FIXING STORED PROCEDURE SCHEMA ERRORS                 ║
+╚════════════════════════════════════════════════════════════════════╝
+
+PROBLEM:
+The stored procedures had column names that don't match your actual database schema.
+
+SOLUTION - 3 STEPS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STEP 1: Check Your Schema
+──────────────────────────────────────────────────────────────────────
+Run this file in SSMS to see your actual column names:
+  
+  📄 Check_Schema.sql
+
+This will show you the exact column names in your:
+  • Inventory table
+  • Products table  
+  • ManufacturingOrders table
+  • StockMovements table
+  • Transactions table
+  • TransactionDetails table
+  • PurchaseOrders table
+  • SupplierInvoices table
+
+STEP 2: Run Fixed Procedures
+──────────────────────────────────────────────────────────────────────
+I created a simplified version with common column names:
+
+  📄 FIXED_Report_StoredProcedures.sql
+
+IMPORTANT: 
+  1. Select "OvenDelightsERP" database in SSMS dropdown FIRST
+  2. Then run the script (don't use USE statement)
+
+This creates 8 core procedures that should work with most schemas.
+
+STEP 3: Customize Based on Your Schema
+──────────────────────────────────────────────────────────────────────
+After running Check_Schema.sql, you may need to adjust column names:
+
+Common Mismatches to Fix:
+┌─────────────────────────────────────────────────────────────────┐
+│ IF YOUR SCHEMA HAS:        │ CHANGE IN PROCEDURE:              │
+├────────────────────────────┼───────────────────────────────────┤
+│ Stock instead of           │ p.Stock instead of                │
+│   CurrentStock             │   p.CurrentStock                  │
+├────────────────────────────┼───────────────────────────────────┤
+│ MinStock instead of        │ p.MinStock instead of             │
+│   ReorderLevel             │   p.ReorderLevel                  │
+├────────────────────────────┼───────────────────────────────────┤
+│ MaxStock instead of        │ p.MaxStock instead of             │
+│   MaximumStock             │   p.MaximumStock                  │
+├────────────────────────────┼───────────────────────────────────┤
+│ Cost instead of UnitCost   │ p.Cost instead of p.UnitCost      │
+├────────────────────────────┼───────────────────────────────────┤
+│ OrderID instead of         │ mo.OrderID instead of             │
+│   ManufacturingOrderID     │   mo.ManufacturingOrderID         │
+├────────────────────────────┼───────────────────────────────────┤
+│ Qty instead of Quantity    │ mo.Qty instead of mo.Quantity     │
+└────────────────────────────┴───────────────────────────────────┘
+
+WHICH PROCEDURES NEED FIXING:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ WORKING (use TransactionDetails - usually standard):
+  • sp_Report_DailySales
+  • sp_Report_SalesByProduct
+  • sp_Report_BranchPerformance
+  • sp_Report_ProfitLoss
+
+⚠️ MAY NEED ADJUSTMENT (depend on your schema):
+  • sp_Report_StockLevels (Products/Inventory columns)
+  • sp_Report_ProductionSummary (ManufacturingOrders columns)
+  • sp_Report_APAging (SupplierInvoices columns)
+  • sp_Report_SupplierPerformance (PurchaseOrders columns)
+
+EXAMPLE FIX:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If Check_Schema.sql shows your Products table has "Stock" not "StockQuantity":
+
+BEFORE (in procedure):
+  ISNULL(p.StockQuantity, 0) AS CurrentStock
+
+AFTER (your fix):
+  ISNULL(p.Stock, 0) AS CurrentStock
+
+QUICK TEST:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After running FIXED_Report_StoredProcedures.sql, test in SSMS:
+
+  EXEC sp_Report_DailySales 
+    @StartDate = '2024-01-01',
+    @EndDate = '2024-12-31',
+    @BranchID = 0;
+
+If it returns data = ✅ Working!
+If it errors = Check column names in that table
+
+ALTERNATIVE - SKIP PROBLEMATIC REPORTS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+You can comment out reports that don't match your schema:
+
+In ReportingMenuSetup.vb, just comment out the problematic ones:
+
+  ' Dim stockLevels As New ToolStripMenuItem("Stock Levels")
+  ' AddHandler stockLevels.Click, Sub(s, e) OpenReport(dashboard, New StockLevelsReportForm())
+
+Focus on the reports that work with your TransactionDetails table first:
+  ✅ Daily Sales
+  ✅ Sales by Product
+  ✅ Branch Performance
+  ✅ Profit & Loss
+
+NEED HELP?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Run Check_Schema.sql
+2. Send me the output
+3. I'll create exact procedures for your schema
+
+OR
+
+Just use the 4 working reports (Sales/P&L) and add others later!
+
+═══════════════════════════════════════════════════════════════════════

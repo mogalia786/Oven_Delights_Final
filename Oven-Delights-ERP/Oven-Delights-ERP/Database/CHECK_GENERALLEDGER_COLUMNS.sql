@@ -1,0 +1,5 @@
+-- Check GeneralLedger columns to fix duplicate prevention
+SELECT COLUMN_NAME, DATA_TYPE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'GeneralLedger'
+ORDER BY ORDINAL_POSITION

@@ -2236,15 +2236,25 @@ Public Class StockroomService
                                 insertLineRaw.Parameters("@Cost").Value = cost
                                 insertLineRaw.ExecuteNonQuery()
                             Else
-                                ' Otherwise treat as Product if it exists
+                                ' Otherwise treat as Product if it exists in Products OR Demo_Retail_Product
                                 Dim isProd As Boolean = False
                                 Using cmdChk As New SqlCommand("SELECT TOP 1 1 FROM dbo.Products WHERE ProductID = @id", con, tx)
                                     cmdChk.Parameters.AddWithValue("@id", selId)
                                     Dim o = cmdChk.ExecuteScalar()
                                     isProd = (o IsNot Nothing AndAlso o IsNot DBNull.Value)
                                 End Using
+                                
                                 If Not isProd Then
-                                    Throw New ApplicationException($"Selected item ID {selId} not found in RawMaterials or Products. Please refresh the item list.")
+                                    ' Check Demo_Retail_Product table
+                                    Using cmdChk As New SqlCommand("SELECT TOP 1 1 FROM dbo.Demo_Retail_Product WHERE ProductID = @id", con, tx)
+                                        cmdChk.Parameters.AddWithValue("@id", selId)
+                                        Dim o = cmdChk.ExecuteScalar()
+                                        isProd = (o IsNot Nothing AndAlso o IsNot DBNull.Value)
+                                    End Using
+                                End If
+                                
+                                If Not isProd Then
+                                    Throw New ApplicationException($"Selected item ID {selId} not found in RawMaterials, Products, or Demo_Retail_Product. Please refresh the item list.")
                                 End If
                                 insertLineProd.Parameters("@POID").Value = poId
                                 insertLineProd.Parameters("@ProductID").Value = selId
@@ -3359,29 +3369,32 @@ Public Class StockroomService
     Public Function GetPurchaseOrderLines(poId As Integer) As DataTable
         Dim dt As New DataTable()
         Using conn As New SqlConnection(connectionString)
-            Dim sql = "SELECT pol.MaterialID AS ProductID, " &
+            Dim sql = "SELECT COALESCE(pol.MaterialID, pol.ProductID) AS ProductID, " &
                      "CASE " &
                      "  WHEN rm.MaterialID IS NOT NULL THEN rm.MaterialCode " &
                      "  WHEN p.ProductID IS NOT NULL THEN p.ProductCode " &
-                     "  ELSE CAST(pol.MaterialID AS NVARCHAR(20)) " &
+                     "  WHEN drp.ProductID IS NOT NULL THEN drp.Code " &
+                     "  ELSE COALESCE(CAST(pol.MaterialID AS NVARCHAR(20)), CAST(pol.ProductID AS NVARCHAR(20))) " &
                      "END AS ProductCode, " &
                      "CASE " &
                      "  WHEN rm.MaterialID IS NOT NULL THEN rm.MaterialName " &
                      "  WHEN p.ProductID IS NOT NULL THEN p.ProductName " &
-                     "  ELSE 'Material ID: ' + CAST(pol.MaterialID AS NVARCHAR(20)) " &
+                     "  WHEN drp.ProductID IS NOT NULL THEN drp.Name " &
+                     "  ELSE 'Unknown Item' " &
                      "END AS ProductName, " &
                      "pol.OrderedQuantity AS OrderQuantity, pol.ReceivedQuantity, pol.UnitCost, pol.LineTotal, " &
                      "0 AS ReceiveNow, 0 AS ReturnQty, 'No Credit Note' AS CreditReason, '' AS CreditComments, " &
                      "CASE " &
                      "  WHEN rm.MaterialID IS NOT NULL THEN 'Raw Material' " &
-                     "  WHEN p.ProductID IS NOT NULL THEN 'Product' " &
+                     "  WHEN p.ProductID IS NOT NULL OR drp.ProductID IS NOT NULL THEN 'Product' " &
                      "  ELSE 'Unknown Type' " &
                      "END AS ProductType, " &
                      "rm.MaterialCode AS RawMaterialCode, rm.MaterialName AS RawMaterialName, " &
                      "p.ProductCode AS ProductCodeDirect, p.ProductName AS ProductNameDirect " &
                      "FROM PurchaseOrderLines pol " &
                      "LEFT JOIN RawMaterials rm ON pol.MaterialID = rm.MaterialID " &
-                     "LEFT JOIN Products p ON pol.MaterialID = p.ProductID " &
+                     "LEFT JOIN Products p ON pol.ProductID = p.ProductID " &
+                     "LEFT JOIN Demo_Retail_Product drp ON pol.ProductID = drp.ProductID " &
                      "WHERE pol.PurchaseOrderID = @POID"
             Using cmd As New SqlCommand(sql, conn)
                 cmd.Parameters.AddWithValue("@POID", poId)

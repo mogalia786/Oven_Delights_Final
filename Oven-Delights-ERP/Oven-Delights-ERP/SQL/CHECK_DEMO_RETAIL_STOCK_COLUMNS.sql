@@ -1,0 +1,8 @@
+-- Check actual columns in Demo_Retail_Stock table
+SELECT 
+    COLUMN_NAME,
+    DATA_TYPE,
+    IS_NULLABLE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Demo_Retail_Stock'
+ORDER BY ORDINAL_POSITION;

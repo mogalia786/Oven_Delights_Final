@@ -179,7 +179,7 @@ Public Class UserAddEditForm
     Private Sub LoadUserData()
         Try
             Using conn As New SqlConnection(_connString)
-                Dim sql = "SELECT Username, Email, RoleID, BranchID, IsActive FROM Users WHERE UserID = @userId"
+                Dim sql = "SELECT Username, Email, Password, RoleID, BranchID, IsActive FROM Users WHERE UserID = @userId"
                 Using cmd As New SqlCommand(sql, conn)
                     cmd.Parameters.AddWithValue("@userId", _userId.Value)
                     conn.Open()
@@ -187,6 +187,7 @@ Public Class UserAddEditForm
                         If reader.Read() Then
                             txtUsername.Text = reader("Username").ToString()
                             txtEmail.Text = reader("Email").ToString()
+                            txtPassword.Text = reader("Password").ToString()
                             
                             If Not IsDBNull(reader("RoleID")) Then
                                 cboRole.SelectedValue = reader("RoleID")
@@ -269,7 +270,7 @@ Public Class UserAddEditForm
         Using cmd As New SqlCommand(sql, conn)
             cmd.Parameters.AddWithValue("@username", txtUsername.Text.Trim())
             cmd.Parameters.AddWithValue("@email", txtEmail.Text.Trim())
-            cmd.Parameters.AddWithValue("@password", HashPassword(txtPassword.Text))
+            cmd.Parameters.AddWithValue("@password", txtPassword.Text)
             cmd.Parameters.AddWithValue("@roleId", cboRole.SelectedValue)
             cmd.Parameters.AddWithValue("@branchId", If(cboBranch.SelectedValue Is DBNull.Value, DBNull.Value, cboBranch.SelectedValue))
             cmd.Parameters.AddWithValue("@isActive", chkIsActive.Checked)
@@ -286,7 +287,7 @@ Public Class UserAddEditForm
                  "BranchID = @branchId, IsActive = @isActive"
         
         If Not String.IsNullOrWhiteSpace(txtPassword.Text) Then
-            sql &= ", Password = @password"
+            sql &= ", Password = @password, PasswordLastChanged = GETDATE()"
         End If
         
         sql &= " WHERE UserID = @userId"
@@ -300,7 +301,7 @@ Public Class UserAddEditForm
             cmd.Parameters.AddWithValue("@userId", _userId.Value)
             
             If Not String.IsNullOrWhiteSpace(txtPassword.Text) Then
-                cmd.Parameters.AddWithValue("@password", HashPassword(txtPassword.Text))
+                cmd.Parameters.AddWithValue("@password", txtPassword.Text)
             End If
             
             cmd.ExecuteNonQuery()

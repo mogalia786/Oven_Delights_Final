@@ -75,7 +75,7 @@ Namespace Stockroom
                 pnlGrid.RowStyles.Add(New RowStyle(SizeType.Percent, 33.33F))
             Next
 
-            pnlGrid.Controls.Add(CreateTile("Reorders Due", "--", "Internal BOM picks"), 0, 0)
+            pnlGrid.Controls.Add(CreateActionTile("Fulfill Re-order from Baker", "Enter order number to fulfill", AddressOf OpenBOMFulfillment), 0, 0)
             pnlGrid.Controls.Add(CreateTile("POs Pending", "--", "External reorders"), 1, 0)
             pnlGrid.Controls.Add(CreateTile("Receipts Today", "--", "GRN count"), 2, 0)
             pnlGrid.Controls.Add(CreateTile("Issues to MFG", "--", "Components issued"), 0, 1)
@@ -158,6 +158,18 @@ Namespace Stockroom
                 End Using
             Catch ex As Exception
                 MessageBox.Show(Me, "Failed to open Inter-Branch Requests: " & ex.Message, "Stockroom Dashboard", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
+        End Sub
+
+        Private Sub OpenBOMFulfillment()
+            Try
+                Using f As New StockroomBOMFulfillmentForm()
+                    f.ShowDialog(Me)
+                End Using
+                ' Refresh after fulfillment
+                RefreshData()
+            Catch ex As Exception
+                MessageBox.Show(Me, "Failed to open BOM Fulfillment: " & ex.Message, "Stockroom Dashboard", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
         End Sub
 

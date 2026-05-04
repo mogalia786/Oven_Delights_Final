@@ -90,7 +90,7 @@ Namespace UI
             ' Supply Invoices section with explicit submenus as requested
             AddNavHeader("Supply Invoices")
             AddNavSubButton("Capture Invoice", "supply_invoices_capture")
-            AddNavSubButton("Edit Invoice", "supply_invoices_edit")
+            AddNavSubButton("View/Edit Invoice and PO", "supply_invoices_edit")
             AddNavButton("Accounts Payable", "ap")
             AddNavButton("Reports", "reports")
             AddHandler Me.Resize, Sub() Invalidate()

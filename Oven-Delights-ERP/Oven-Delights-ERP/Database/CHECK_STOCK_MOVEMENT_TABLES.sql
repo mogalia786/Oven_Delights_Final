@@ -1,0 +1,11 @@
+-- Check for stock movement or transfer tables
+SELECT TABLE_NAME 
+FROM INFORMATION_SCHEMA.TABLES 
+WHERE TABLE_NAME LIKE '%Stock%' OR TABLE_NAME LIKE '%Movement%' OR TABLE_NAME LIKE '%Transfer%'
+ORDER BY TABLE_NAME
+
+-- Check ReOrderBook tables (might track BOM requisitions)
+SELECT TABLE_NAME 
+FROM INFORMATION_SCHEMA.TABLES 
+WHERE TABLE_NAME LIKE '%ReOrder%' OR TABLE_NAME LIKE '%Requisition%'
+ORDER BY TABLE_NAME

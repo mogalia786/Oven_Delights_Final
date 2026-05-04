@@ -346,28 +346,32 @@ Public Class InternalOrdersForm
                         End If
                     End Using
                 End Using
-                ' Show readable item names for stockroom lines
+                ' Show readable item names for stockroom lines (all ingredients from RawMaterials)
+                ' Get branch from InternalOrderHeader
+                Dim branchId As Integer = AppSession.CurrentBranchID
+                Dim sqlBranch = "SELECT BranchID FROM dbo.InternalOrderHeader WHERE InternalOrderID = @id"
+                Using cmdBranch As New SqlCommand(sqlBranch, cn)
+                    cmdBranch.Parameters.AddWithValue("@id", id)
+                    Dim brResult = cmdBranch.ExecuteScalar()
+                    If brResult IsNot Nothing AndAlso Not IsDBNull(brResult) Then
+                        branchId = Convert.ToInt32(brResult)
+                    End If
+                End Using
+                
                 Dim sql As String = _
                     "SELECT iol.LineNumber, iol.ItemType, " & _
-                    "       COALESCE(CONCAT(rm.MaterialCode, ' - ', rm.MaterialName), p.ProductName, 'Component') AS Item, " & _
+                    "       CONCAT(rm.MaterialCode, ' - ', rm.MaterialName) AS Item, " & _
                     "       CAST(iol.Quantity AS decimal(18,4)) AS RequestedQty, iol.UoM, " & _
-                    "       CASE WHEN iol.ItemType = 'RawMaterial' THEN CAST(ISNULL(mov.QtyOnHand, 0) AS decimal(18,4)) ELSE NULL END AS AvailableQty, " & _
+                    "       CAST(ISNULL(ss.Quantity, 0) AS decimal(18,4)) AS AvailableQty, " & _
                     "       iol.RawMaterialID " & _
                     "FROM dbo.InternalOrderLines iol " & _
-                    "LEFT JOIN dbo.RawMaterials rm ON rm.MaterialID = iol.RawMaterialID " & _
-                    "LEFT JOIN dbo.Products p ON p.ProductID = iol.ProductID " & _
-                    "JOIN dbo.InternalOrderHeader ioh ON ioh.InternalOrderID = iol.InternalOrderID " & _
-                    "JOIN dbo.InventoryLocations loc ON loc.LocationID = ioh.FromLocationID " & _
-                    "OUTER APPLY ( " & _
-                    "    SELECT SUM(sm.QuantityIn - sm.QuantityOut) AS QtyOnHand " & _
-                    "    FROM dbo.StockMovements sm " & _
-                    "    WHERE sm.MaterialID = iol.RawMaterialID " & _
-                    "      AND (sm.InventoryArea = N'Stockroom' OR sm.InventoryArea IS NULL) " & _
-                    ") mov " & _
+                    "INNER JOIN dbo.RawMaterials rm ON rm.MaterialID = iol.RawMaterialID " & _
+                    "LEFT JOIN dbo.StockroomStock ss ON ss.ProductID = iol.RawMaterialID AND ss.BranchID = @branchId " & _
                     "WHERE iol.InternalOrderID = @id " & _
                     "ORDER BY iol.LineNumber"
                 Using cmd As New SqlCommand(sql, cn)
                     cmd.Parameters.AddWithValue("@id", id)
+                    cmd.Parameters.AddWithValue("@branchId", branchId)
                     Using da As New SqlDataAdapter(cmd)
                         Dim dt As New DataTable()
                         da.Fill(dt)
@@ -791,27 +795,32 @@ Public Class InternalOrdersForm
                         End If
                     End Using
                 End Using
+                ' Show readable item names for stockroom lines (all ingredients from RawMaterials)
+                ' Get branch from InternalOrderHeader
+                Dim branchId2 As Integer = AppSession.CurrentBranchID
+                Dim sqlBranch2 = "SELECT BranchID FROM dbo.InternalOrderHeader WHERE InternalOrderID = @id"
+                Using cmdBranch2 As New SqlCommand(sqlBranch2, cn)
+                    cmdBranch2.Parameters.AddWithValue("@id", ioId)
+                    Dim brResult2 = cmdBranch2.ExecuteScalar()
+                    If brResult2 IsNot Nothing AndAlso Not IsDBNull(brResult2) Then
+                        branchId2 = Convert.ToInt32(brResult2)
+                    End If
+                End Using
+                
                 Dim sql As String = _
                     "SELECT iol.LineNumber, iol.ItemType, " & _
-                    "       COALESCE(CONCAT(rm.MaterialCode, ' - ', rm.MaterialName), p.ProductName, 'Component') AS Item, " & _
+                    "       CONCAT(rm.MaterialCode, ' - ', rm.MaterialName) AS Item, " & _
                     "       CAST(iol.Quantity AS decimal(18,4)) AS RequestedQty, iol.UoM, " & _
-                    "       CASE WHEN iol.ItemType = 'RawMaterial' THEN CAST(ISNULL(mov.QtyOnHand, 0) AS decimal(18,4)) ELSE NULL END AS AvailableQty, " & _
+                    "       CAST(ISNULL(ss.Quantity, 0) AS decimal(18,4)) AS AvailableQty, " & _
                     "       iol.RawMaterialID " & _
                     "FROM dbo.InternalOrderLines iol " & _
-                    "LEFT JOIN dbo.RawMaterials rm ON rm.MaterialID = iol.RawMaterialID " & _
-                    "LEFT JOIN dbo.Products p ON p.ProductID = iol.ProductID " & _
-                    "JOIN dbo.InternalOrderHeader ioh ON ioh.InternalOrderID = iol.InternalOrderID " & _
-                    "JOIN dbo.InventoryLocations loc ON loc.LocationID = ioh.FromLocationID " & _
-                    "OUTER APPLY ( " & _
-                    "    SELECT SUM(sm.QuantityIn - sm.QuantityOut) AS QtyOnHand " & _
-                    "    FROM dbo.StockMovements sm " & _
-                    "    WHERE sm.MaterialID = iol.RawMaterialID " & _
-                    "      AND (sm.InventoryArea = N'Stockroom' OR sm.InventoryArea IS NULL) " & _
-                    ") mov " & _
+                    "INNER JOIN dbo.RawMaterials rm ON rm.MaterialID = iol.RawMaterialID " & _
+                    "LEFT JOIN dbo.StockroomStock ss ON ss.ProductID = iol.RawMaterialID AND ss.BranchID = @branchId " & _
                     "WHERE iol.InternalOrderID = @id " & _
                     "ORDER BY iol.LineNumber"
                 Using cmd As New SqlCommand(sql, cn)
                     cmd.Parameters.AddWithValue("@id", ioId)
+                    cmd.Parameters.AddWithValue("@branchId", branchId2)
                     Using da As New SqlDataAdapter(cmd)
                         Dim dt As New DataTable()
                         da.Fill(dt)

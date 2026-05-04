@@ -1,0 +1,47 @@
+-- Check current AP_Invoices table structure
+SELECT 
+    COLUMN_NAME,
+    DATA_TYPE,
+    IS_NULLABLE,
+    COLUMN_DEFAULT
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'AP_Invoices'
+ORDER BY ORDINAL_POSITION;
+
+-- Check if problematic columns exist
+SELECT 
+    CASE WHEN EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'AP_Invoices' AND COLUMN_NAME = 'Reference') THEN 'YES' ELSE 'NO' END AS HasReference,
+    CASE WHEN EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'AP_Invoices' AND COLUMN_NAME = 'Debit') THEN 'YES' ELSE 'NO' END AS HasDebit,
+    CASE WHEN EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'AP_Invoices' AND COLUMN_NAME = 'Credit') THEN 'YES' ELSE 'NO' END AS HasCredit,
+    CASE WHEN EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'AP_Invoices' AND COLUMN_NAME = 'Balance') THEN 'YES' ELSE 'NO' END AS HasBalance;
+
+-- Check for triggers on AP_Invoices
+SELECT 
+    t.name AS TriggerName,
+    OBJECT_NAME(t.parent_id) AS TableName,
+    t.is_disabled,
+    t.is_instead_of_trigger,
+    OBJECT_DEFINITION(t.object_id) AS TriggerDefinition
+FROM sys.triggers t
+WHERE OBJECT_NAME(t.parent_id) = 'AP_Invoices';
+
+-- If the columns Reference, Debit, Credit, Balance exist and shouldn't, drop them
+-- UNCOMMENT BELOW ONLY AFTER REVIEWING THE TABLE STRUCTURE ABOVE
+
+/*
+-- Backup data first
+SELECT * INTO AP_Invoices_BACKUP_20260305 FROM AP_Invoices;
+
+-- Drop problematic columns if they exist
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'AP_Invoices' AND COLUMN_NAME = 'Reference')
+    ALTER TABLE AP_Invoices DROP COLUMN Reference;
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'AP_Invoices' AND COLUMN_NAME = 'Debit')
+    ALTER TABLE AP_Invoices DROP COLUMN Debit;
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'AP_Invoices' AND COLUMN_NAME = 'Credit')
+    ALTER TABLE AP_Invoices DROP COLUMN Credit;
+
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'AP_Invoices' AND COLUMN_NAME = 'Balance')
+    ALTER TABLE AP_Invoices DROP COLUMN Balance;
+*/

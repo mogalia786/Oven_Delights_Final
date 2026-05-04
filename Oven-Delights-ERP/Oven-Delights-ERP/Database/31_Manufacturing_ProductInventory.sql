@@ -141,7 +141,8 @@ BEGIN
         RequiredQty   DECIMAL(18,4) NOT NULL
     );
 
-    /* Explode each product's active BOM and accumulate raw material requirements */
+    /* Explode each product's BOM using new consolidated stored procedure */
+    /* This properly expands sub-recipes and excludes them from the final list */
     DECLARE @pId INT, @qty DECIMAL(18,4);
     DECLARE cur CURSOR LOCAL FAST_FORWARD FOR
         SELECT ProductID, OutputQty FROM @Items;
@@ -149,22 +150,13 @@ BEGIN
     FETCH NEXT FROM cur INTO @pId, @qty;
     WHILE @@FETCH_STATUS = 0
     BEGIN
-        DECLARE @BOMID INT, @BatchYield DECIMAL(18,4);
-        SELECT TOP 1 @BOMID = H.BOMID, @BatchYield = H.BatchYieldQty
-        FROM dbo.BOMHeader H
-        WHERE H.ProductID = @pId AND H.IsActive = 1 AND (H.EffectiveTo IS NULL OR H.EffectiveTo >= CAST(GETDATE() AS DATE))
-        ORDER BY H.EffectiveFrom DESC, H.BOMID DESC;
-        IF @BOMID IS NULL THROW 50203, 'No active BOM found for one or more selected products.', 1;
-        IF @BatchYield IS NULL OR @BatchYield <= 0 THROW 50204, 'Invalid BOM batch yield.', 1;
-
-        DECLARE @Scale DECIMAL(18,8) = @qty / @BatchYield;
-
+        -- Use new consolidated BOM stored procedure
         INSERT INTO #Req(RawMaterialID, UoM, RequiredQty)
-        SELECT BI.RawMaterialID,
-               BI.UoM,
-               ROUND(BI.QuantityPerBatch * @Scale, 4) AS RequiredQty
-        FROM dbo.BOMItems BI
-        WHERE BI.BOMID = @BOMID AND BI.ComponentType = 'RawMaterial';
+        SELECT 
+            ComponentID,
+            UnitOfMeasure,
+            Quantity
+        FROM dbo.sp_GetConsolidatedProductBOM(@pId, @qty);
 
         FETCH NEXT FROM cur INTO @pId, @qty;
     END

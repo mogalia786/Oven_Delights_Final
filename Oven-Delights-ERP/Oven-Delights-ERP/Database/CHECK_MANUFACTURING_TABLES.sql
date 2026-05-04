@@ -1,0 +1,17 @@
+-- Check if Manufacturing_Inventory table exists
+SELECT 'Manufacturing_Inventory' AS TableName, COLUMN_NAME, DATA_TYPE, IS_NULLABLE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Manufacturing_Inventory'
+ORDER BY ORDINAL_POSITION
+
+-- Check if RawMaterials table exists
+SELECT 'RawMaterials' AS TableName, COLUMN_NAME, DATA_TYPE, IS_NULLABLE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'RawMaterials'
+ORDER BY ORDINAL_POSITION
+
+-- Check Stockroom_Stock table
+SELECT 'Stockroom_Stock' AS TableName, COLUMN_NAME, DATA_TYPE, IS_NULLABLE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Stockroom_Stock'
+ORDER BY ORDINAL_POSITION

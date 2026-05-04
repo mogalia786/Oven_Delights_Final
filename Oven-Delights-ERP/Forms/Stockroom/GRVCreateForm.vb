@@ -90,17 +90,17 @@ Public Class GRVCreateForm
         Using con As New SqlConnection(ConfigurationManager.ConnectionStrings("OvenDelightsERPConnectionString").ConnectionString)
             Dim sql As String = "
                 SELECT pol.POLineID, 
-                       COALESCE(rm.MaterialName, p.Name, sp.Name) AS ItemName,
-                       COALESCE(rm.MaterialCode, p.SKU, sp.Code) AS ItemCode,
+                       COALESCE(rm.MaterialName, p.ProductName, drp.Name) AS ItemName,
+                       COALESCE(rm.MaterialCode, p.ProductCode, drp.Code) AS ItemCode,
                        pol.OrderedQuantity, pol.UnitCost,
                        (pol.OrderedQuantity * pol.UnitCost) AS LineTotal,
                        CASE WHEN pol.MaterialID IS NOT NULL THEN 'Raw Material' ELSE 'Product' END AS ItemType
                 FROM PurchaseOrderLines pol
                 LEFT JOIN RawMaterials rm ON pol.MaterialID = rm.MaterialID
                 LEFT JOIN Products p ON pol.ProductID = p.ProductID
-                LEFT JOIN Stockroom_Product sp ON pol.ProductID = sp.ProductID
-                WHERE pol.PurchaseOrderID = @poId AND pol.IsActive = 1
-                ORDER BY pol.LineNumber"
+                LEFT JOIN Demo_Retail_Product drp ON pol.ProductID = drp.ProductID
+                WHERE pol.PurchaseOrderID = @poId
+                ORDER BY pol.POLineID"
             
             Using da As New SqlDataAdapter(sql, con)
                 da.SelectCommand.Parameters.AddWithValue("@poId", poId)

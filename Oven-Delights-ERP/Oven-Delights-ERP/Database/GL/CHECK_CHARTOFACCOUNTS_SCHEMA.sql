@@ -1,0 +1,12 @@
+-- Check actual ChartOfAccounts schema
+SELECT 
+    COLUMN_NAME,
+    DATA_TYPE,
+    IS_NULLABLE,
+    CHARACTER_MAXIMUM_LENGTH
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'ChartOfAccounts'
+ORDER BY ORDINAL_POSITION
+
+-- Show sample data
+SELECT TOP 10 * FROM ChartOfAccounts ORDER BY AccountCode

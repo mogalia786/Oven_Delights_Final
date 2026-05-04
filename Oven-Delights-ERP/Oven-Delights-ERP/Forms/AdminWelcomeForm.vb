@@ -46,6 +46,22 @@ Public Class AdminWelcomeForm
         miCashBook.DropDownItems.Add(miMainCashBook)
         miCashBook.DropDownItems.Add(miPettyCash)
         
+        ' Accounts Payable submenu
+        Dim miAccountsPayable As New ToolStripMenuItem("Accounts Payable")
+        Dim miBankStatement As New ToolStripMenuItem("Bank Statement Viewer")
+        AddHandler miBankStatement.Click, AddressOf OnOpenBankStatement
+        Dim miAdhocInvoice As New ToolStripMenuItem("Adhoc Invoice Capture")
+        AddHandler miAdhocInvoice.Click, AddressOf OnOpenAdhocInvoice
+        Dim miBeneficiaries As New ToolStripMenuItem("Beneficiary Management")
+        AddHandler miBeneficiaries.Click, AddressOf OnOpenBeneficiaries
+        Dim miAPPayments As New ToolStripMenuItem("Process Payments")
+        AddHandler miAPPayments.Click, AddressOf OnOpenAPPayments
+        miAccountsPayable.DropDownItems.Add(miBankStatement)
+        miAccountsPayable.DropDownItems.Add(miAdhocInvoice)
+        miAccountsPayable.DropDownItems.Add(miBeneficiaries)
+        miAccountsPayable.DropDownItems.Add(New ToolStripSeparator())
+        miAccountsPayable.DropDownItems.Add(miAPPayments)
+        
         ' Other accounting items
         Dim miPayroll As New ToolStripMenuItem("Payroll Journal")
         AddHandler miPayroll.Click, AddressOf OnOpenPayrollJournal
@@ -60,6 +76,8 @@ Public Class AdminWelcomeForm
         mAccounting.DropDownItems.Add(miGL)
         mAccounting.DropDownItems.Add(New ToolStripSeparator())
         mAccounting.DropDownItems.Add(miCashBook)
+        mAccounting.DropDownItems.Add(New ToolStripSeparator())
+        mAccounting.DropDownItems.Add(miAccountsPayable)
         mAccounting.DropDownItems.Add(New ToolStripSeparator())
         mAccounting.DropDownItems.Add(miPayroll)
         mAccounting.DropDownItems.Add(New ToolStripSeparator())
@@ -171,6 +189,34 @@ Public Class AdminWelcomeForm
 
     Private Sub OnOpenPettyCash(sender As Object, e As EventArgs)
         Using f As New Accounting.PettyCashForm()
+            f.StartPosition = FormStartPosition.CenterParent
+            f.ShowDialog(Me)
+        End Using
+    End Sub
+
+    Private Sub OnOpenBankStatement(sender As Object, e As EventArgs)
+        Using f As New Accounting.BankStatementViewerForm()
+            f.StartPosition = FormStartPosition.CenterParent
+            f.ShowDialog(Me)
+        End Using
+    End Sub
+
+    Private Sub OnOpenAdhocInvoice(sender As Object, e As EventArgs)
+        Using f As New Accounting.AdhocInvoiceCaptureForm()
+            f.StartPosition = FormStartPosition.CenterParent
+            f.ShowDialog(Me)
+        End Using
+    End Sub
+
+    Private Sub OnOpenBeneficiaries(sender As Object, e As EventArgs)
+        Using f As New Accounting.BeneficiaryManagementForm()
+            f.StartPosition = FormStartPosition.CenterParent
+            f.ShowDialog(Me)
+        End Using
+    End Sub
+
+    Private Sub OnOpenAPPayments(sender As Object, e As EventArgs)
+        Using f As New Accounting.APPaymentProcessingForm()
             f.StartPosition = FormStartPosition.CenterParent
             f.ShowDialog(Me)
         End Using

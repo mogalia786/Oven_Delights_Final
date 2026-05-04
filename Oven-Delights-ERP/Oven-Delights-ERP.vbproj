@@ -18,7 +18,7 @@
 
   <!-- Stop implicit include of MainDashboard.resx and OLD files -->
   <PropertyGroup>
-    <DefaultItemExcludes>$(DefaultItemExcludes);MainDashboard.resx;*_OLD.*</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);MainDashboard.resx;*_OLD.*;AuditLogViewer.*;BranchManagementForm.*;BranchAddEditForm.*;UserManagementForm.*;UserProfileForm.*;LoginForm.*;DashboardForm.*;NewSystemSettingsForm.*</DefaultItemExcludes>
   </PropertyGroup>
 
 

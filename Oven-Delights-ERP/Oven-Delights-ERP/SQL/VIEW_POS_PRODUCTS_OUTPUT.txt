@@ -1,0 +1,4 @@
+Msg 15009, Level 16, State 1, Server MOGALIAHP, Procedure sp_helptext, Line 54
+The object 'vw_POS_Products' does not exist in database 'OvenDelightsERP' or is invalid for this operation.
+Msg 208, Level 16, State 1, Server MOGALIAHP, Line 5
+Invalid object name 'vw_POS_Products'.

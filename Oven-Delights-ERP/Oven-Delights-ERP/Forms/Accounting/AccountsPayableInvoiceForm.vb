@@ -239,46 +239,53 @@ Public Class AccountsPayableInvoiceForm
                 conn.Open()
                 Using trans As SqlTransaction = conn.BeginTransaction()
                     Try
+                        Dim supplierId As Integer = CInt(DirectCast(cmbSupplier.SelectedItem, ComboBoxItem).Value)
+                        Dim amount As Decimal = Convert.ToDecimal(txtAmount.Text)
+                        Dim expenseAccountCode As String = DirectCast(cmbGLAccount.SelectedItem, ComboBoxItem).Value.ToString()
+                        Dim newInvoiceId As Integer = 0
+                        
+                        ' Save invoice to AdhocInvoices table
                         Dim sql As String
-                        Dim cmd As SqlCommand
-
                         If isEditMode Then
-                            sql = "UPDATE APInvoices SET InvoiceNumber = @InvoiceNumber, SupplierID = @SupplierID, " &
-                                  "GLAccountCode = @GLAccountCode, InvoiceDate = @InvoiceDate, DueDate = @DueDate, " &
+                            sql = "UPDATE AdhocInvoices SET InvoiceNumber = @InvoiceNumber, SupplierID = @SupplierID, " &
+                                  "ExpenseAccountCode = @ExpenseAccountCode, InvoiceDate = @InvoiceDate, DueDate = @DueDate, " &
                                   "Amount = @Amount, Description = @Description, IsPaid = @IsPaid, PaidDate = @PaidDate, " &
                                   "ModifiedBy = @ModifiedBy, ModifiedDate = @ModifiedDate WHERE InvoiceID = @InvoiceID"
                         Else
-                            sql = "INSERT INTO APInvoices (InvoiceNumber, SupplierID, GLAccountCode, InvoiceDate, DueDate, " &
+                            sql = "INSERT INTO AdhocInvoices (InvoiceNumber, SupplierID, ExpenseAccountCode, InvoiceDate, DueDate, " &
                                   "Amount, Description, IsPaid, PaidDate, CreatedBy, CreatedDate) " &
-                                  "VALUES (@InvoiceNumber, @SupplierID, @GLAccountCode, @InvoiceDate, @DueDate, " &
+                                  "OUTPUT INSERTED.InvoiceID " &
+                                  "VALUES (@InvoiceNumber, @SupplierID, @ExpenseAccountCode, @InvoiceDate, @DueDate, " &
                                   "@Amount, @Description, @IsPaid, @PaidDate, @CreatedBy, @CreatedDate)"
                         End If
 
-                        cmd = New SqlCommand(sql, conn, trans)
-                        
-                        cmd.Parameters.AddWithValue("@InvoiceNumber", txtInvoiceNumber.Text.Trim())
-                        cmd.Parameters.AddWithValue("@SupplierID", DirectCast(cmbSupplier.SelectedItem, ComboBoxItem).Value)
-                        cmd.Parameters.AddWithValue("@GLAccountCode", DirectCast(cmbGLAccount.SelectedItem, ComboBoxItem).Value)
-                        cmd.Parameters.AddWithValue("@InvoiceDate", dtpInvoiceDate.Value.Date)
-                        cmd.Parameters.AddWithValue("@DueDate", dtpDueDate.Value.Date)
-                        cmd.Parameters.AddWithValue("@Amount", Convert.ToDecimal(txtAmount.Text))
-                        cmd.Parameters.AddWithValue("@Description", txtDescription.Text.Trim())
-                        cmd.Parameters.AddWithValue("@IsPaid", chkPaid.Checked)
-                        cmd.Parameters.AddWithValue("@PaidDate", If(chkPaid.Checked, dtpPaidDate.Value.Date, DBNull.Value))
+                        Using cmd As New SqlCommand(sql, conn, trans)
+                            cmd.Parameters.AddWithValue("@InvoiceNumber", txtInvoiceNumber.Text.Trim())
+                            cmd.Parameters.AddWithValue("@SupplierID", supplierId)
+                            cmd.Parameters.AddWithValue("@ExpenseAccountCode", expenseAccountCode)
+                            cmd.Parameters.AddWithValue("@InvoiceDate", dtpInvoiceDate.Value.Date)
+                            cmd.Parameters.AddWithValue("@DueDate", dtpDueDate.Value.Date)
+                            cmd.Parameters.AddWithValue("@Amount", amount)
+                            cmd.Parameters.AddWithValue("@Description", txtDescription.Text.Trim())
+                            cmd.Parameters.AddWithValue("@IsPaid", chkPaid.Checked)
+                            cmd.Parameters.AddWithValue("@PaidDate", If(chkPaid.Checked, dtpPaidDate.Value.Date, DBNull.Value))
 
-                        If isEditMode Then
-                            cmd.Parameters.AddWithValue("@InvoiceID", invoiceId)
-                            cmd.Parameters.AddWithValue("@ModifiedBy", currentUser.UserID)
-                            cmd.Parameters.AddWithValue("@ModifiedDate", DateTime.Now)
-                        Else
-                            cmd.Parameters.AddWithValue("@CreatedBy", currentUser.UserID)
-                            cmd.Parameters.AddWithValue("@CreatedDate", DateTime.Now)
-                        End If
+                            If isEditMode Then
+                                cmd.Parameters.AddWithValue("@InvoiceID", invoiceId)
+                                cmd.Parameters.AddWithValue("@ModifiedBy", currentUser.UserID)
+                                cmd.Parameters.AddWithValue("@ModifiedDate", DateTime.Now)
+                                cmd.ExecuteNonQuery()
+                                newInvoiceId = invoiceId
+                            Else
+                                cmd.Parameters.AddWithValue("@CreatedBy", currentUser.UserID)
+                                cmd.Parameters.AddWithValue("@CreatedDate", DateTime.Now)
+                                newInvoiceId = CInt(cmd.ExecuteScalar())
+                            End If
+                        End Using
 
-                        cmd.ExecuteNonQuery()
                         trans.Commit()
 
-                        MessageBox.Show($"Invoice {If(isEditMode, "updated", "created")} successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                        MessageBox.Show($"Invoice {If(isEditMode, "updated", "created")} successfully!" & vbCrLf & "Invoice will be posted to ledger when payment appears on bank statement.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
                         Me.DialogResult = DialogResult.OK
                         Me.Close()
 

@@ -18,8 +18,16 @@
 
   <!-- Stop implicit include of MainDashboard.resx and OLD files -->
   <PropertyGroup>
-    <DefaultItemExcludes>$(DefaultItemExcludes);MainDashboard.resx;*_OLD.*</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);*.resx;*.vb;*_OLD.*;Oven-Delights-ERP\**;_POS_Prototypes_ARCHIVE\**</DefaultItemExcludes>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
   </PropertyGroup>
+  
+  <!-- Explicitly include only Forms folder files -->
+  <ItemGroup>
+    <Compile Include="Forms\**\*.vb" />
+    <EmbeddedResource Include="Forms\**\*.resx" />
+  </ItemGroup>
 
 
 

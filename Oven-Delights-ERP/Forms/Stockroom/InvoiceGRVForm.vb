@@ -364,29 +364,18 @@ Public Class InvoiceGRVForm
     End Sub
 
     Private Sub UpdateSupplierLedger(conn As SqlConnection, trans As SqlTransaction, invoiceId As Integer)
-        Try
-            ' Create supplier ledger entry
-            Dim cmd As New SqlCommand("INSERT INTO Stockroom_SupplierLedger (SupplierID, InvoiceID, TransactionType, Amount, TransactionDate, Description, Balance) VALUES (@SupplierID, @InvoiceID, @TransactionType, @Amount, @TransactionDate, @Description, @Balance)", conn, trans)
-            
-            cmd.Parameters.AddWithValue("@SupplierID", selectedSupplierId)
-            cmd.Parameters.AddWithValue("@InvoiceID", invoiceId)
-            cmd.Parameters.AddWithValue("@TransactionType", "Invoice")
-            cmd.Parameters.AddWithValue("@Amount", Convert.ToDecimal(txtTotal.Text))
-            cmd.Parameters.AddWithValue("@TransactionDate", dtpReceived.Value)
-            cmd.Parameters.AddWithValue("@Description", $"GRV Invoice - {txtDeliveryNote.Text}")
-            cmd.Parameters.AddWithValue("@Balance", Convert.ToDecimal(txtTotal.Text))
-            
-            cmd.ExecuteNonQuery()
-            
-            ' Update supplier balance
-            Dim balCmd As New SqlCommand("UPDATE Suppliers SET Balance = ISNULL(Balance, 0) + @Amount WHERE SupplierID = @SupplierID", conn, trans)
-            balCmd.Parameters.AddWithValue("@Amount", Convert.ToDecimal(txtTotal.Text))
-            balCmd.Parameters.AddWithValue("@SupplierID", selectedSupplierId)
-            balCmd.ExecuteNonQuery()
-        Catch ex As Exception
-            ' Log error but don't fail transaction
-            System.Diagnostics.Debug.WriteLine($"Supplier ledger update error: {ex.Message}")
-        End Try
+        ' Post to supplier ledger using helper for correct debit/credit logic
+        Dim totalAmount As Decimal = Convert.ToDecimal(txtTotal.Text)
+        Dim reference As String = $"GRV-{DateTime.Now:yyyyMMdd}-{selectedPOId}"
+        Dim description As String = $"Purchase Invoice - GRV {txtDeliveryNote.Text}"
+        
+        LedgerPostingHelper.PostToLedger(conn, trans, "SUPPLIER", selectedSupplierId, "Invoice", totalAmount, dtpReceived.Value, reference, description)
+        
+        ' Update supplier balance (credit increases balance)
+        Dim balCmd As New SqlCommand("UPDATE Suppliers SET Balance = ISNULL(Balance, 0) + @Amount WHERE SupplierID = @SupplierID", conn, trans)
+        balCmd.Parameters.AddWithValue("@Amount", totalAmount)
+        balCmd.Parameters.AddWithValue("@SupplierID", selectedSupplierId)
+        balCmd.ExecuteNonQuery()
     End Sub
 
     Private Sub ClearForm()

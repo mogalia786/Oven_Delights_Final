@@ -109,7 +109,7 @@ Public Class InventoryReportForm
             If String.IsNullOrWhiteSpace(_connString) Then Return
             Using conn As New SqlConnection(_connString)
                 conn.Open()
-                Dim sql As String = "SELECT DISTINCT ISNULL(c.CategoryName, 'General') AS Category FROM Products p LEFT JOIN ProductCategories c ON p.CategoryID = c.CategoryID WHERE p.IsActive = 1 ORDER BY Category"
+                Dim sql As String = "SELECT DISTINCT ISNULL(Category, 'General') AS Category FROM Demo_Retail_Product WHERE IsActive = 1 ORDER BY Category"
                 Using da As New SqlDataAdapter(sql, conn)
                     Dim dt As New DataTable()
                     da.Fill(dt)
@@ -138,28 +138,31 @@ Public Class InventoryReportForm
     Private Sub LoadReport()
         Try
             Using conn As New SqlConnection(_connString)
-                ' Comprehensive inventory report with fallbacks
-                Dim sql As String = "IF OBJECT_ID('dbo.v_Retail_InventoryReport','V') IS NOT NULL " & _
-                                    "SELECT ProductID, SKU, ProductName, Category, QtyOnHand, UnitPrice, TotalValue, ReorderPoint, Location, BranchName FROM dbo.v_Retail_InventoryReport " & _
-                                    "WHERE (@bid IS NULL OR BranchID = @bid) AND (@cat = 'All Categories' OR Category = @cat) ORDER BY ProductName " & _
-                                    "ELSE IF OBJECT_ID('dbo.Retail_Product','U') IS NOT NULL " & _
-                                    "SELECT p.ProductID, p.SKU, p.Name AS ProductName, ISNULL(p.Category, 'General') AS Category, " & _
-                                    "ISNULL(s.QtyOnHand, 0) AS QtyOnHand, ISNULL(p.UnitPrice, 0) AS UnitPrice, " & _
-                                    "(ISNULL(s.QtyOnHand, 0) * ISNULL(p.UnitPrice, 0)) AS TotalValue, " & _
-                                    "ISNULL(s.ReorderPoint, 0) AS ReorderPoint, ISNULL(s.Location, '') AS Location, " & _
-                                    "ISNULL(b.BranchName, 'Main') AS BranchName " & _
-                                    "FROM dbo.Retail_Product p " & _
-                                    "LEFT JOIN dbo.Retail_Stock s ON s.ProductID = p.ProductID AND ((@bid IS NULL AND s.BranchID IS NULL) OR s.BranchID = @bid) " & _
-                                    "LEFT JOIN dbo.Branches b ON b.BranchID = s.BranchID " & _
-                                    "WHERE (@cat = 'All Categories' OR ISNULL(p.Category, 'General') = @cat) ORDER BY p.Name " & _
-                                    "ELSE SELECT CAST(NULL AS INT) AS ProductID, CAST('' AS NVARCHAR(50)) AS SKU, CAST('No inventory data available' AS NVARCHAR(200)) AS ProductName, " & _
-                                    "CAST('N/A' AS NVARCHAR(100)) AS Category, CAST(0 AS DECIMAL(18,2)) AS QtyOnHand, CAST(0 AS DECIMAL(18,2)) AS UnitPrice, " & _
-                                    "CAST(0 AS DECIMAL(18,2)) AS TotalValue, CAST(0 AS DECIMAL(18,2)) AS ReorderPoint, CAST('' AS NVARCHAR(100)) AS Location, " & _
-                                    "CAST('N/A' AS NVARCHAR(100)) AS BranchName WHERE 1=0;"
+                ' Query Demo_Retail_Product table (where invoice capture updates stock)
+                Dim sql As String = "SELECT p.ProductID, ISNULL(p.SKU, p.Code) AS SKU, p.Name AS ProductName, " & _
+                                    "ISNULL(p.Category, 'General') AS Category, " & _
+                                    "ISNULL(p.CurrentStock, 0) AS QtyOnHand, " & _
+                                    "ISNULL(pr.CostPrice, 0) AS UnitPrice, " & _
+                                    "(ISNULL(p.CurrentStock, 0) * ISNULL(pr.CostPrice, 0)) AS TotalValue, " & _
+                                    "0 AS ReorderPoint, " & _
+                                    "'' AS Location, " & _
+                                    "ISNULL(b.BranchName, 'Unknown') AS BranchName, " & _
+                                    "p.BranchID AS ActualBranchID " & _
+                                    "FROM dbo.Demo_Retail_Product p " & _
+                                    "LEFT JOIN dbo.Demo_Retail_Price pr ON pr.ProductID = p.ProductID AND pr.BranchID = p.BranchID " & _
+                                    "LEFT JOIN dbo.Branches b ON b.BranchID = p.BranchID " & _
+                                    "WHERE p.IsActive = 1 " & _
+                                    "AND (@bid IS NULL OR p.BranchID = @bid) " & _
+                                    "AND (@cat = 'All Categories' OR ISNULL(p.Category, 'General') = @cat) " & _
+                                    "ORDER BY p.Name, p.BranchID"
                 
                 Using da As New SqlDataAdapter(sql, conn)
                     Dim bid As Object = GetBranchParam()
                     Dim cat As String = If(cboCategory.SelectedValue?.ToString(), "All Categories")
+                    
+                    ' DEBUG: Show what BranchID is being used
+                    MessageBox.Show($"DEBUG: _sessionBranchId={_sessionBranchId}, _isSuperAdmin={_isSuperAdmin}, BranchParam={If(TypeOf bid Is DBNull, "NULL", bid.ToString())}", "Branch Debug", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    
                     da.SelectCommand.Parameters.AddWithValue("@bid", bid)
                     da.SelectCommand.Parameters.AddWithValue("@cat", cat)
                     Dim dt As New DataTable()

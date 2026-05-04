@@ -1,0 +1,22 @@
+-- Check actual schema of all tables we need
+
+-- Demo_Retail_Stock schema
+SELECT 'Demo_Retail_Stock' AS TableName, 
+       COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Demo_Retail_Stock'
+ORDER BY ORDINAL_POSITION;
+
+-- Demo_Retail_Variant schema
+SELECT 'Demo_Retail_Variant' AS TableName,
+       COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Demo_Retail_Variant'
+ORDER BY ORDINAL_POSITION;
+
+-- Demo_Retail_Price schema (to verify)
+SELECT 'Demo_Retail_Price' AS TableName,
+       COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Demo_Retail_Price'
+ORDER BY ORDINAL_POSITION;

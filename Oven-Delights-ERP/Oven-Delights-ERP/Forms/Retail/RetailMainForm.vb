@@ -56,21 +56,18 @@ Namespace Retail
             AddHandler miIntList.Click, AddressOf OpenInternalProducts
             Dim miIntReorder = New ToolStripMenuItem("Reorder (Create BOM Bundle)")
             AddHandler miIntReorder.Click, AddressOf OpenInternalProducts ' same screen, action inside
-            Dim miIntLabels = New ToolStripMenuItem("Labels/Barcodes")
-            AddHandler miIntLabels.Click, AddressOf OpenProductLabels
-            internalProducts.DropDownItems.AddRange(New ToolStripItem() {miIntList, miIntReorder, miIntLabels})
+            internalProducts.DropDownItems.AddRange(New ToolStripItem() {miIntList, miIntReorder})
 
             Dim externalProducts = New ToolStripMenuItem("External Products (Purchased)")
             Dim miExtList = New ToolStripMenuItem("List & Search")
             AddHandler miExtList.Click, AddressOf OpenExternalProducts
             Dim miExtPrices = New ToolStripMenuItem("Price Lists")
             AddHandler miExtPrices.Click, AddressOf OpenExternalPriceLists
-            Dim miExtLabels = New ToolStripMenuItem("Labels/Barcodes")
-            AddHandler miExtLabels.Click, AddressOf OpenProductLabels
-            externalProducts.DropDownItems.AddRange(New ToolStripItem() {miExtList, miExtPrices, miExtLabels})
+            externalProducts.DropDownItems.AddRange(New ToolStripItem() {miExtList, miExtPrices})
 
             Dim catTaxes = New ToolStripMenuItem("Categories & Taxes")
             AddHandler catTaxes.Click, AddressOf OpenCategoriesTaxes
+            
             products.DropDownItems.AddRange(New ToolStripItem() {internalProducts, externalProducts, New ToolStripSeparator(), catTaxes})
 
             ' Inventory
@@ -85,19 +82,23 @@ Namespace Retail
             AddHandler miReorderPts.Click, AddressOf OpenReorderPoints
             inv.DropDownItems.AddRange(New ToolStripItem() {miOnHand, miAdjust, miSerial, miReorderPts})
 
-            ' Transfers
+            ' Transfers - Complete IBT Workflow
             Dim transfers = New ToolStripMenuItem("Transfers (IBT)")
-            Dim miTO = New ToolStripMenuItem("Transfer Orders")
-            Dim miTOCreate = New ToolStripMenuItem("Create")
-            AddHandler miTOCreate.Click, AddressOf OpenTransferCreate
-            Dim miTODispatch = New ToolStripMenuItem("Dispatch")
-            AddHandler miTODispatch.Click, AddressOf OpenTransferDispatch
-            Dim miTOReceive = New ToolStripMenuItem("Receive")
-            AddHandler miTOReceive.Click, AddressOf OpenTransferReceive
-            miTO.DropDownItems.AddRange(New ToolStripItem() {miTOCreate, miTODispatch, miTOReceive})
+            Dim miRequestProducts = New ToolStripMenuItem("Request Products")
+            AddHandler miRequestProducts.Click, AddressOf OpenRequestProducts
+            Dim miPendingRequests = New ToolStripMenuItem("Pending Requests")
+            AddHandler miPendingRequests.Click, AddressOf OpenPendingRequests
+            Dim miCreateDelivery = New ToolStripMenuItem("Create Delivery")
+            AddHandler miCreateDelivery.Click, AddressOf OpenCreateDelivery
             Dim miInTransit = New ToolStripMenuItem("In-Transit")
-            AddHandler miInTransit.Click, AddressOf OpenTransferInTransit
-            transfers.DropDownItems.AddRange(New ToolStripItem() {miTO, miInTransit})
+            AddHandler miInTransit.Click, AddressOf OpenInTransit
+            Dim miReceiveDelivery = New ToolStripMenuItem("Receive")
+            AddHandler miReceiveDelivery.Click, AddressOf OpenReceiveDelivery
+            Dim miDelivered = New ToolStripMenuItem("Delivered Items")
+            AddHandler miDelivered.Click, AddressOf OpenDeliveredItems
+            Dim miLedger = New ToolStripMenuItem("Inter-Branch Ledger")
+            AddHandler miLedger.Click, AddressOf OpenInterBranchLedger
+            transfers.DropDownItems.AddRange(New ToolStripItem() {miRequestProducts, miPendingRequests, miCreateDelivery, miInTransit, miReceiveDelivery, miDelivered, miLedger})
 
             ' Purchasing
             Dim purchasing = New ToolStripMenuItem("Purchasing")
@@ -123,6 +124,10 @@ Namespace Retail
             AddHandler miComplete.Click, AddressOf OpenManufacturingComplete
             mfg.DropDownItems.AddRange(New ToolStripItem() {miDashboard, miComplete})
 
+            ' Print Barcode Labels (standalone top-level menu)
+            Dim printBarcodes = New ToolStripMenuItem("Print Barcode Labels")
+            AddHandler printBarcodes.Click, AddressOf OpenBarcodeLabelPrint
+            
             ' Daily Order Book (Retail)
             Dim daily = New ToolStripMenuItem("Daily Order Book")
             AddHandler daily.Click, AddressOf OpenDailyOrderBook
@@ -153,7 +158,7 @@ Namespace Retail
             AddHandler miRoles.Click, AddressOf OpenRolesAccess
             settings.DropDownItems.AddRange(New ToolStripItem() {miBarcodes, miGL, miSerialLot, miRoles})
 
-            menu.Items.AddRange(New ToolStripItem() {pos, products, inv, transfers, purchasing, mfg, daily, reports, settings})
+            menu.Items.AddRange(New ToolStripItem() {pos, products, inv, transfers, purchasing, mfg, printBarcodes, daily, reports, settings})
         End Sub
 
         Private Sub OpenInternalProducts(sender As Object, e As EventArgs)
@@ -203,6 +208,21 @@ Namespace Retail
         End Sub
 
         ' Product Methods
+        Private Sub OpenBarcodeLabelPrint(sender As Object, e As EventArgs)
+            Try
+                MessageBox.Show(Me, "Opening Barcode Label Print form...", "Debug", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                
+                Dim frm As New BarcodeLabelPrintForm()
+                
+                MessageBox.Show(Me, "Form created successfully. Showing dialog...", "Debug", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                
+                frm.StartPosition = FormStartPosition.CenterParent
+                frm.ShowDialog(Me)
+            Catch ex As Exception
+                MessageBox.Show(Me, "Error opening Barcode Label Print: " & ex.Message & vbCrLf & vbCrLf & "Stack Trace: " & ex.StackTrace, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
+        End Sub
+        
         Private Sub OpenProductLabels(sender As Object, e As EventArgs)
             MessageBox.Show(Me, "Product Labels/Barcodes functionality coming soon.", "Retail", MessageBoxButtons.OK, MessageBoxIcon.Information)
         End Sub
@@ -238,27 +258,53 @@ Namespace Retail
             MessageBox.Show(Me, "Reorder Points management coming soon.", "Retail", MessageBoxButtons.OK, MessageBoxIcon.Information)
         End Sub
 
-        ' Transfer Methods
-        Private Sub OpenTransferCreate(sender As Object, e As EventArgs)
-            MessageBox.Show(Me, "Transfer Order creation coming soon.", "Retail", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        ' IBT Workflow Methods
+        Private Sub OpenRequestProducts(sender As Object, e As EventArgs)
+            ' Branch A requests products from Branch B
+            Dim form As New Forms.IBT.InternalPurchaseOrderForm()
+            form.ShowDialog(Me)
         End Sub
 
-        Private Sub OpenTransferDispatch(sender As Object, e As EventArgs)
-            MessageBox.Show(Me, "Transfer Dispatch functionality coming soon.", "Retail", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Private Sub OpenPendingRequests(sender As Object, e As EventArgs)
+            ' Branch B views and approves/rejects requests from Branch A
+            Dim form As New Forms.IBT.PendingRequestsForm()
+            form.ShowDialog(Me)
         End Sub
 
-        Private Sub OpenTransferReceive(sender As Object, e As EventArgs)
-            MessageBox.Show(Me, "Transfer Receive functionality coming soon.", "Retail", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Private Sub OpenCreateDelivery(sender As Object, e As EventArgs)
+            ' Branch B creates delivery note from approved PO (opens via Pending Requests)
+            Dim form As New Forms.IBT.PendingRequestsForm()
+            form.ShowDialog(Me)
         End Sub
 
-        Private Sub OpenTransferInTransit(sender As Object, e As EventArgs)
-            MessageBox.Show(Me, "In-Transit Transfers view coming soon.", "Retail", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Private Sub OpenInTransit(sender As Object, e As EventArgs)
+            ' View deliveries in transit to current branch
+            Dim form As New Forms.IBT.InTransitDeliveriesForm()
+            form.ShowDialog(Me)
+        End Sub
+
+        Private Sub OpenReceiveDelivery(sender As Object, e As EventArgs)
+            ' Branch A receives delivery (opens via In Transit)
+            Dim form As New Forms.IBT.InTransitDeliveriesForm()
+            form.ShowDialog(Me)
+        End Sub
+
+        Private Sub OpenDeliveredItems(sender As Object, e As EventArgs)
+            ' View delivered items history
+            Dim form As New Forms.IBT.DeliveredItemsForm()
+            form.ShowDialog(Me)
+        End Sub
+
+        Private Sub OpenInterBranchLedger(sender As Object, e As EventArgs)
+            ' View inter-branch debtor/creditor balances
+            Dim form As New Forms.IBT.InterBranchLedgerForm()
+            form.ShowDialog(Me)
         End Sub
 
         ' Purchasing Methods
         Private Sub OpenPurchaseOrderNew(sender As Object, e As EventArgs)
             Try
-                Dim frm As New PurchaseOrderForm()
+                Dim frm As New PurchaseOrderFormNew()
                 frm.StartPosition = FormStartPosition.CenterParent
                 frm.ShowDialog(Me)
             Catch ex As Exception

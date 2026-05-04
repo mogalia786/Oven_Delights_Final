@@ -1,0 +1,21 @@
+-- Check all stock-related table schemas
+SELECT 'Demo_Retail_Product' AS TableName, COLUMN_NAME, DATA_TYPE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Demo_Retail_Product'
+ORDER BY ORDINAL_POSITION;
+
+SELECT 'RetailStock' AS TableName, COLUMN_NAME, DATA_TYPE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'RetailStock'
+ORDER BY ORDINAL_POSITION;
+
+SELECT 'Retail_Stock' AS TableName, COLUMN_NAME, DATA_TYPE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'Retail_Stock'
+ORDER BY ORDINAL_POSITION;
+
+-- Check recent RetailStock entries
+SELECT TOP 5 * FROM dbo.RetailStock ORDER BY RetailStockID DESC;
+
+-- Check recent Retail_Stock entries
+SELECT TOP 5 * FROM dbo.Retail_Stock ORDER BY StockID DESC;

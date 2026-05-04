@@ -25,6 +25,59 @@ Partial Class DashboardForm
 #End If
         InitializeWebView() ' keep but hidden to avoid HTML charts
         SetupAutoRefresh()
+        SetupDashboardButtons()
+    End Sub
+    
+    Private Sub SetupDashboardButtons()
+        AddHandler btnRetailDashboard.Click, AddressOf OpenRetailDashboard
+        AddHandler btnManufacturerDashboard.Click, AddressOf OpenManufacturerDashboard
+        AddHandler btnStockroomDashboard.Click, AddressOf OpenStockroomDashboard
+    End Sub
+    
+    Private Sub OpenRetailDashboard(sender As Object, e As EventArgs)
+        Try
+            Dim mainForm As MainDashboard = TryCast(Me.MdiParent, MainDashboard)
+            If mainForm IsNot Nothing Then
+                For Each child As Form In mainForm.MdiChildren
+                    If TypeOf child Is Retail.RetailManagerDashboardForm Then
+                        child.Activate()
+                        child.WindowState = FormWindowState.Maximized
+                        Return
+                    End If
+                Next
+                Dim frm As New Retail.RetailManagerDashboardForm()
+                frm.MdiParent = mainForm
+                frm.Show()
+                frm.WindowState = FormWindowState.Maximized
+            End If
+        Catch ex As Exception
+            MessageBox.Show("Error opening Retail Dashboard: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    
+    Private Sub OpenManufacturerDashboard(sender As Object, e As EventArgs)
+        MessageBox.Show("Manufacturer Dashboard - Coming Soon!", "Manufacturing", MessageBoxButtons.OK, MessageBoxIcon.Information)
+    End Sub
+    
+    Private Sub OpenStockroomDashboard(sender As Object, e As EventArgs)
+        Try
+            Dim mainForm As MainDashboard = TryCast(Me.MdiParent, MainDashboard)
+            If mainForm IsNot Nothing Then
+                For Each child As Form In mainForm.MdiChildren
+                    If TypeOf child Is Stockroom.StockroomDashboardForm Then
+                        child.Activate()
+                        child.WindowState = FormWindowState.Maximized
+                        Return
+                    End If
+                Next
+                Dim frm As New Stockroom.StockroomDashboardForm()
+                frm.MdiParent = mainForm
+                frm.Show()
+                frm.WindowState = FormWindowState.Maximized
+            End If
+        Catch ex As Exception
+            MessageBox.Show("Error opening Stockroom Dashboard: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
 #If HAS_CHART Then

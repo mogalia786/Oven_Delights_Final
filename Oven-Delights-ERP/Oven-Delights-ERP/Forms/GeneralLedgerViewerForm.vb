@@ -230,13 +230,22 @@ Public Class GeneralLedgerViewerForm
 
             ' Role-based branch scoping controls
             Try
-                If Not IsSuperAdmin() Then
+                Dim isSuperAdminFlag As Boolean = IsSuperAdmin()
+                Dim userBranchId As Integer = 0
+                If AppSession.CurrentUser IsNot Nothing Then
+                    If AppSession.CurrentUser.BranchID.HasValue Then
+                        userBranchId = AppSession.CurrentUser.BranchID.Value
+                    End If
+                End If
+                
+                ' Lock branch dropdown for non-super admins
+                BranchHelper.LockBranchDropdown(cboBranch, isSuperAdminFlag, userBranchId)
+                
+                If Not isSuperAdminFlag Then
                     chkAllBranches.Checked = False
                     chkAllBranches.Enabled = False
-                    cboBranch.Enabled = False
                 Else
                     chkAllBranches.Enabled = True
-                    cboBranch.Enabled = True
                 End If
             Catch
             End Try

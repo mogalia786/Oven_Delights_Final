@@ -56,6 +56,16 @@ Public Partial Class ProductUpsertForm
             btnUpload.BringToFront()
         Catch
         End Try
+        
+        ' Add Barcode TextChanged handler to auto-fill SKU
+        AddHandler txtBarcode.TextChanged, AddressOf OnBarcodeChanged
+    End Sub
+    
+    Private Sub OnBarcodeChanged(sender As Object, e As EventArgs)
+        ' Auto-set SKU = Barcode when barcode is entered
+        If Not String.IsNullOrWhiteSpace(txtBarcode.Text) Then
+            txtSKU.Text = txtBarcode.Text.Trim()
+        End If
     End Sub
 
     Private Sub LoadBranches()
@@ -106,9 +116,13 @@ Public Partial Class ProductUpsertForm
     End Sub
 
     Private Sub btnSave_Click(sender As Object, e As EventArgs) Handles btnSave.Click
-        If String.IsNullOrWhiteSpace(txtSKU.Text) OrElse String.IsNullOrWhiteSpace(txtName.Text) Then
-            MessageBox.Show("SKU and Name are required.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        If String.IsNullOrWhiteSpace(txtBarcode.Text) OrElse String.IsNullOrWhiteSpace(txtName.Text) Then
+            MessageBox.Show("Barcode and Name are required.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return
+        End If
+        ' Auto-set SKU = Barcode if not already set
+        If String.IsNullOrWhiteSpace(txtSKU.Text) Then
+            txtSKU.Text = txtBarcode.Text.Trim()
         End If
         Try
             Using conn As New Microsoft.Data.SqlClient.SqlConnection(_connString)
@@ -155,17 +169,22 @@ Public Partial Class ProductUpsertForm
     End Sub
 
     Private Function EnsureProduct(conn As Microsoft.Data.SqlClient.SqlConnection, tx As Microsoft.Data.SqlClient.SqlTransaction) As Integer
-        ' Try find by SKU; else insert - Use Products table with CategoryID/SubcategoryID
-        Using cmdFind As New Microsoft.Data.SqlClient.SqlCommand("SELECT ProductID FROM dbo.Products WHERE SKU=@sku OR ProductCode=@sku", conn, tx)
-            cmdFind.Parameters.AddWithValue("@sku", txtSKU.Text.Trim())
+        ' Try find by Barcode or SKU; else insert - Use Products table with CategoryID/SubcategoryID
+        Dim barcode As String = txtBarcode.Text.Trim()
+        Dim sku As String = txtSKU.Text.Trim()
+        Using cmdFind As New Microsoft.Data.SqlClient.SqlCommand("SELECT ProductID FROM dbo.Products WHERE Barcode=@barcode OR SKU=@sku OR ProductCode=@sku", conn, tx)
+            cmdFind.Parameters.AddWithValue("@barcode", barcode)
+            cmdFind.Parameters.AddWithValue("@sku", sku)
             Dim o = cmdFind.ExecuteScalar()
             If o IsNot Nothing AndAlso o IsNot DBNull.Value Then
                 Dim pid = CInt(o)
                 ' Get CategoryID and SubcategoryID from selector
                 Dim catId As Integer = categorySelector.SelectedCategoryID
                 Dim subId As Integer? = categorySelector.SelectedSubcategoryID
-                Using cmdUpd As New Microsoft.Data.SqlClient.SqlCommand("UPDATE dbo.Products SET ProductName=@n, CategoryID=@cid, SubcategoryID=@sid WHERE ProductID=@id", conn, tx)
+                Using cmdUpd As New Microsoft.Data.SqlClient.SqlCommand("UPDATE dbo.Products SET ProductName=@n, Barcode=@barcode, SKU=@sku, CategoryID=@cid, SubcategoryID=@sid WHERE ProductID=@id", conn, tx)
                     cmdUpd.Parameters.AddWithValue("@n", txtName.Text.Trim())
+                    cmdUpd.Parameters.AddWithValue("@barcode", barcode)
+                    cmdUpd.Parameters.AddWithValue("@sku", sku)
                     cmdUpd.Parameters.AddWithValue("@cid", catId)
                     cmdUpd.Parameters.AddWithValue("@sid", If(subId.HasValue, CType(subId.Value, Object), DBNull.Value))
                     cmdUpd.Parameters.AddWithValue("@id", pid)
@@ -176,8 +195,9 @@ Public Partial Class ProductUpsertForm
         End Using
         Dim catId2 As Integer = categorySelector.SelectedCategoryID
         Dim subId2 As Integer? = categorySelector.SelectedSubcategoryID
-        Using cmdIns As New Microsoft.Data.SqlClient.SqlCommand("INSERT INTO dbo.Products(SKU, ProductCode, ProductName, CategoryID, SubcategoryID, ItemType, BaseUoM, IsActive) VALUES(@sku,@sku,@n,@cid,@sid,'External','ea',1); SELECT CAST(SCOPE_IDENTITY() AS INT);", conn, tx)
-            cmdIns.Parameters.AddWithValue("@sku", txtSKU.Text.Trim())
+        Using cmdIns As New Microsoft.Data.SqlClient.SqlCommand("INSERT INTO dbo.Products(Barcode, SKU, ProductCode, ProductName, CategoryID, SubcategoryID, ItemType, BaseUoM, IsActive) VALUES(@barcode,@sku,@sku,@n,@cid,@sid,'External','ea',1); SELECT CAST(SCOPE_IDENTITY() AS INT);", conn, tx)
+            cmdIns.Parameters.AddWithValue("@barcode", barcode)
+            cmdIns.Parameters.AddWithValue("@sku", sku)
             cmdIns.Parameters.AddWithValue("@n", txtName.Text.Trim())
             cmdIns.Parameters.AddWithValue("@cid", catId2)
             cmdIns.Parameters.AddWithValue("@sid", If(subId2.HasValue, CType(subId2.Value, Object), DBNull.Value))
