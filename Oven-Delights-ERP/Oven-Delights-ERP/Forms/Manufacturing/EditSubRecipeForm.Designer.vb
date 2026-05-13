@@ -35,7 +35,6 @@ Partial Class EditSubRecipeForm
         Me.txtBatchQty = New System.Windows.Forms.TextBox()
         Me.Label6 = New System.Windows.Forms.Label()
         Me.pnlFooter = New System.Windows.Forms.Panel()
-        Me.lblAdhocCost = New System.Windows.Forms.Label()
         Me.lblBatchCost = New System.Windows.Forms.Label()
         Me.lblTotalCost = New System.Windows.Forms.Label()
         Me.btnClose = New System.Windows.Forms.Button()
@@ -244,8 +243,7 @@ Partial Class EditSubRecipeForm
         '
         'pnlFooter
         '
-        Me.pnlFooter.BackColor = System.Drawing.Color.FromArgb(CType(CType(236, Byte), Integer), CType(CType(240, Byte), Integer), CType(CType(241, Byte), Integer))
-        Me.pnlFooter.Controls.Add(Me.lblAdhocCost)
+        Me.pnlFooter.BackColor = System.Drawing.Color.White
         Me.pnlFooter.Controls.Add(Me.lblBatchCost)
         Me.pnlFooter.Controls.Add(Me.lblTotalCost)
         Me.pnlFooter.Controls.Add(Me.btnClose)
@@ -276,16 +274,6 @@ Partial Class EditSubRecipeForm
         Me.lblBatchCost.Size = New System.Drawing.Size(350, 20)
         Me.lblBatchCost.TabIndex = 1
         Me.lblBatchCost.Text = "BATCH (1 units): Excl VAT: R0.00 | Incl VAT: R0.00"
-        '
-        'lblAdhocCost
-        '
-        Me.lblAdhocCost.AutoSize = True
-        Me.lblAdhocCost.Font = New System.Drawing.Font("Segoe UI", 11.0!, System.Drawing.FontStyle.Bold)
-        Me.lblAdhocCost.Location = New System.Drawing.Point(20, 65)
-        Me.lblAdhocCost.Name = "lblAdhocCost"
-        Me.lblAdhocCost.Size = New System.Drawing.Size(400, 20)
-        Me.lblAdhocCost.TabIndex = 2
-        Me.lblAdhocCost.Text = "WITH ADHOC (+15%): Excl VAT: R0.00 | Incl VAT: R0.00"
         '
         'btnSave
         '
@@ -362,7 +350,6 @@ Partial Class EditSubRecipeForm
     Friend WithEvents grpMethod As GroupBox
     Friend WithEvents txtMethod As TextBox
     Friend WithEvents pnlFooter As Panel
-    Friend WithEvents lblAdhocCost As Label
     Friend WithEvents lblBatchCost As Label
     Friend WithEvents lblTotalCost As Label
     Friend WithEvents btnClose As Button

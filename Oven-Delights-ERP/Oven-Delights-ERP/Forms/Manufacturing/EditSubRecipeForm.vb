@@ -235,9 +235,6 @@ Public Class EditSubRecipeForm
 
         lblBatchCost.Text = $"BATCH ({batchQty} units): Excl VAT: {totalCost:C2} | VAT (15%): {vat:C2} | Incl VAT: {totalWithVAT:C2}"
         lblBatchCost.ForeColor = Color.FromArgb(52, 152, 219)
-
-        lblAdhocCost.Text = $"WITH ADHOC (+15%): Excl VAT: {adhocCost:C2} | VAT (15%): {adhocVAT:C2} | Incl VAT: {adhocWithVAT:C2}"
-        lblAdhocCost.ForeColor = Color.FromArgb(230, 126, 34)
     End Sub
 
     Private Sub btnSave_Click(sender As Object, e As EventArgs) Handles btnSave.Click

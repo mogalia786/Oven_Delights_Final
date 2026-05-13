@@ -135,7 +135,7 @@ Partial Class LoginForm
         Me.lblVersion.Name = "lblVersion"
         Me.lblVersion.Size = New System.Drawing.Size(70, 15)
         Me.lblVersion.TabIndex = 9
-        Me.lblVersion.Text = "Version 3.0.0"
+        Me.lblVersion.Text = "Version 6.0.0.0"
         '
         ' Add controls to pnlCard
         Me.pnlCard.Controls.Add(Me.lblLogo)

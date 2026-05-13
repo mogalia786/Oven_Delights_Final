@@ -316,30 +316,21 @@ Namespace Manufacturing
             End Try
         End Sub
 
+        Private _printLineIndex As Integer = 0
+        Private _printLines() As String
+        Private _printProductName As String
+        Private _printFirstPage As Boolean = True
+
         Private Sub PrintRecipe(productId As Integer, productName As String)
             Try
                 Dim recipeText As String = GetRecipeText(productId, productName)
+                _printLines = recipeText.Split(New String() {Environment.NewLine}, StringSplitOptions.None)
+                _printProductName = productName
+                _printLineIndex = 0
+                _printFirstPage = True
 
                 Dim printDoc As New PrintDocument()
-                AddHandler printDoc.PrintPage, Sub(sender, e)
-                                                   Dim font As New Font("Arial", 10)
-                                                   Dim headerFont As New Font("Arial", 14, FontStyle.Bold)
-                                                   Dim y As Single = 50
-
-                                                   ' Print header
-                                                   e.Graphics.DrawString($"Recipe: {productName}", headerFont, Brushes.Black, 50, y)
-                                                   y += 40
-                                                   e.Graphics.DrawString(New String("-"c, 80), font, Brushes.Black, 50, y)
-                                                   y += 30
-
-                                                   ' Print recipe text
-                                                   Dim lines() As String = recipeText.Split(New String() {Environment.NewLine}, StringSplitOptions.None)
-                                                   For Each line In lines
-                                                       If y > e.PageBounds.Height - 100 Then Exit For
-                                                       e.Graphics.DrawString(line, font, Brushes.Black, 50, y)
-                                                       y += 20
-                                                   Next
-                                               End Sub
+                AddHandler printDoc.PrintPage, AddressOf PrintRecipePage
 
                 Dim printDialog As New PrintDialog() With {.Document = printDoc}
                 If printDialog.ShowDialog() = DialogResult.OK Then
@@ -349,6 +340,35 @@ Namespace Manufacturing
             Catch ex As Exception
                 MessageBox.Show($"Error printing recipe: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
+        End Sub
+
+        Private Sub PrintRecipePage(sender As Object, e As PrintPageEventArgs)
+            Dim font As New Font("Arial", 10)
+            Dim headerFont As New Font("Arial", 14, FontStyle.Bold)
+            Dim y As Single = 50
+            Dim pageHeight As Single = e.PageBounds.Height - 100
+
+            ' Print header on first page only
+            If _printFirstPage Then
+                e.Graphics.DrawString($"Recipe: {_printProductName}", headerFont, Brushes.Black, 50, y)
+                y += 40
+                e.Graphics.DrawString(New String("-"c, 80), font, Brushes.Black, 50, y)
+                y += 30
+                _printFirstPage = False
+            End If
+
+            ' Print recipe text
+            While _printLineIndex < _printLines.Length
+                If y > pageHeight Then
+                    e.HasMorePages = True
+                    Return
+                End If
+                e.Graphics.DrawString(_printLines(_printLineIndex), font, Brushes.Black, 50, y)
+                y += 20
+                _printLineIndex += 1
+            End While
+
+            e.HasMorePages = False
         End Sub
 
         Private Function GetRecipeText(productId As Integer, productName As String) As String

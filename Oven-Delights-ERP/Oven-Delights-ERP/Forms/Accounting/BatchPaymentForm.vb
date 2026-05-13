@@ -8,6 +8,7 @@ Public Class BatchPaymentForm
     Private selectedInvoices As New List(Of Integer)
     Private WithEvents _printDocument As New PrintDocument()
     Private _printData As DataTable
+    Private _currentPrintRow As Integer = 0
     Private tabControl As TabControl
     Private txtTestResults As TextBox
     Private txtResponseLog As TextBox
@@ -577,6 +578,9 @@ Public Class BatchPaymentForm
                 Return
             End If
             
+            ' Reset print row counter
+            _currentPrintRow = 0
+            
             ' Load batch data for printing
             LoadBatchDataForPrint()
             
@@ -749,9 +753,16 @@ Public Class BatchPaymentForm
             
             ' Invoice lines
             Dim totalPayment As Decimal = 0
-            For Each row As DataRow In _printData.Rows
-                If yPos > e.PageBounds.Height - 200 Then Exit For
+            Dim pageHeight As Integer = e.PageBounds.Height - 200
+            Dim hasMoreRows As Boolean = False
+            
+            While _currentPrintRow < _printData.Rows.Count
+                If yPos > pageHeight Then
+                    hasMoreRows = True
+                    Exit While
+                End If
                 
+                Dim row As DataRow = _printData.Rows(_currentPrintRow)
                 Dim invoiceNum As String = If(row("InvoiceNumber") IsNot DBNull.Value, row("InvoiceNumber").ToString(), "")
                 Dim supplierName As String = If(row("SupplierName") IsNot DBNull.Value, row("SupplierName").ToString(), "")
                 Dim amountPaid As Decimal = If(row("AmountPaid") IsNot DBNull.Value, Convert.ToDecimal(row("AmountPaid")), 0)
@@ -763,33 +774,37 @@ Public Class BatchPaymentForm
                 
                 totalPayment += amountPaid
                 yPos += 25
-            Next
+                _currentPrintRow += 1
+            End While
             
-            yPos += 10
-            g.DrawLine(Pens.Black, leftMargin, yPos, rightMargin, yPos)
-            yPos += 20
+            ' Only print totals and signatures if all rows are printed
+            If Not hasMoreRows Then
+                yPos += 10
+                g.DrawLine(Pens.Black, leftMargin, yPos, rightMargin, yPos)
+                yPos += 20
+                
+                ' Total
+                g.DrawString("TOTAL PAYMENT:", boldFont, Brushes.Black, leftMargin + 350, yPos)
+                g.DrawString($"R {totalPayment:N2}", boldFont, Brushes.Black, leftMargin + 480, yPos)
+                yPos += 50
+                
+                ' Payment Date line
+                g.DrawString("Payment Date: .................................................", boldFont, Brushes.Black, leftMargin, yPos)
+                yPos += 50
+                
+                ' Signature lines
+                g.DrawLine(Pens.Black, leftMargin, yPos, leftMargin + 250, yPos)
+                g.DrawLine(Pens.Black, leftMargin + 350, yPos, leftMargin + 600, yPos)
+                yPos += 20
+                g.DrawString("Prepared By", normalFont, Brushes.Black, leftMargin, yPos)
+                g.DrawString("Authorized By (Administrator)", normalFont, Brushes.Black, leftMargin + 350, yPos)
+                yPos += 30
+                
+                ' Footer
+                g.DrawString($"Printed: {DateTime.Now:dd MMM yyyy HH:mm}", New Font("Segoe UI", 8), Brushes.Gray, leftMargin, yPos)
+            End If
             
-            ' Total
-            g.DrawString("TOTAL PAYMENT:", boldFont, Brushes.Black, leftMargin + 350, yPos)
-            g.DrawString($"R {totalPayment:N2}", boldFont, Brushes.Black, leftMargin + 480, yPos)
-            yPos += 50
-            
-            ' Payment Date line
-            g.DrawString("Payment Date: .................................................", boldFont, Brushes.Black, leftMargin, yPos)
-            yPos += 50
-            
-            ' Signature lines
-            g.DrawLine(Pens.Black, leftMargin, yPos, leftMargin + 250, yPos)
-            g.DrawLine(Pens.Black, leftMargin + 350, yPos, leftMargin + 600, yPos)
-            yPos += 20
-            g.DrawString("Prepared By", normalFont, Brushes.Black, leftMargin, yPos)
-            g.DrawString("Authorized By (Administrator)", normalFont, Brushes.Black, leftMargin + 350, yPos)
-            yPos += 30
-            
-            ' Footer
-            g.DrawString($"Printed: {DateTime.Now:dd MMM yyyy HH:mm}", New Font("Segoe UI", 8), Brushes.Gray, leftMargin, yPos)
-            
-            e.HasMorePages = False
+            e.HasMorePages = hasMoreRows
             
         Catch ex As Exception
             MessageBox.Show($"Error during print: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)

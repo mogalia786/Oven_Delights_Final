@@ -79,12 +79,13 @@ Public Class CreateSubRecipeForm
         dt.Columns.Add("Name", GetType(String))
 
         Using conn As New SqlConnection(_connectionString)
+            ' ALWAYS use Branch 6 (master) ProductIDs for sub-recipes - recipes are universal
             Dim query As String = "
-                SELECT MIN(ProductID) AS ProductID, Name
+                SELECT ProductID, Name
                 FROM Demo_Retail_Product
                 WHERE IsActive = 1
+                  AND BranchID = 6
                   AND (Category LIKE '%sub%recipe%' OR Category LIKE '%subrecipe%')
-                GROUP BY Name
                 ORDER BY Name"
 
             Using cmd As New SqlCommand(query, conn)
@@ -317,16 +318,10 @@ Public Class CreateSubRecipeForm
         Dim batchVAT As Decimal = total * vatRate
         Dim batchInclVAT As Decimal = total + batchVAT
 
-        ' Line 1: Single Unit Cost (Green)
-        lblTotalCost.Text = $"1 UNIT: Excl VAT: {costPerUnit.ToString("C2")} | VAT (15%): {unitVAT.ToString("C2")} | Incl VAT: {unitInclVAT.ToString("C2")}"
-        lblTotalCost.Font = New Font("Segoe UI", 12, FontStyle.Bold)
+        ' Single line: Show both unit and batch cost (no adhoc charges)
+        lblTotalCost.Text = $"1 UNIT: Excl VAT: {costPerUnit.ToString("C2")} | VAT (15%): {unitVAT.ToString("C2")} | Incl VAT: {unitInclVAT.ToString("C2")} || BATCH ({batchQty} units): Excl VAT: {total.ToString("C2")} | VAT (15%): {batchVAT.ToString("C2")} | Incl VAT: {batchInclVAT.ToString("C2")}"
+        lblTotalCost.Font = New Font("Segoe UI", 11, FontStyle.Bold)
         lblTotalCost.ForeColor = Color.FromArgb(39, 174, 96) ' Green
-        
-        ' Line 2: Full Batch Cost (Blue)
-        lblAdhocCost.Text = $"BATCH ({batchQty} units): Excl VAT: {total.ToString("C2")} | VAT (15%): {batchVAT.ToString("C2")} | Incl VAT: {batchInclVAT.ToString("C2")}"
-        lblAdhocCost.Font = New Font("Segoe UI", 12, FontStyle.Bold)
-        lblAdhocCost.ForeColor = Color.FromArgb(41, 128, 185) ' Blue
-        lblAdhocCost.Visible = True
     End Sub
 
     Private Sub btnSave_Click(sender As Object, e As EventArgs) Handles btnSave.Click
@@ -429,7 +424,14 @@ Public Class CreateSubRecipeForm
         PrintSubRecipe()
     End Sub
 
+    Private _printIngredientIndex As Integer = 0
+    Private _printMethodLineIndex As Integer = 0
+    Private _printSection As Integer = 0
+
     Private Sub PrintSubRecipe()
+        _printIngredientIndex = 0
+        _printMethodLineIndex = 0
+        _printSection = 0
         Dim printDoc As New Printing.PrintDocument()
         AddHandler printDoc.PrintPage, AddressOf PrintPage
         printDoc.Print()
@@ -439,51 +441,94 @@ Public Class CreateSubRecipeForm
         Dim font As New Font("Courier New", 10)
         Dim boldFont As New Font("Courier New", 12, FontStyle.Bold)
         Dim y As Integer = 50
+        Dim pageHeight As Integer = e.PageBounds.Height - 100
+        Dim startNewPage As Boolean = False
 
-        e.Graphics.DrawString("═══════════════════════════════════════════════════════════", boldFont, Brushes.Black, 50, y)
-        y += 30
-        e.Graphics.DrawString("OVEN DELIGHTS - SUB-RECIPE PRODUCTION SHEET", boldFont, Brushes.Black, 100, y)
-        y += 30
-        e.Graphics.DrawString("═══════════════════════════════════════════════════════════", boldFont, Brushes.Black, 50, y)
-        y += 40
+        ' Print header on first page only
+        If _printSection = 0 Then
+            e.Graphics.DrawString("═══════════════════════════════════════════════════════════", boldFont, Brushes.Black, 50, y)
+            y += 30
+            e.Graphics.DrawString("OVEN DELIGHTS - SUB-RECIPE PRODUCTION SHEET", boldFont, Brushes.Black, 100, y)
+            y += 30
+            e.Graphics.DrawString("═══════════════════════════════════════════════════════════", boldFont, Brushes.Black, 50, y)
+            y += 40
 
-        Dim subRecipeName As String = cboSubRecipe.Text
-        e.Graphics.DrawString($"Sub-Recipe: {subRecipeName}", boldFont, Brushes.Black, 50, y)
-        y += 30
-        e.Graphics.DrawString($"Batch Qty: {txtBatchQty.Text}", font, Brushes.Black, 50, y)
-        y += 25
-        e.Graphics.DrawString($"Date: {DateTime.Now:dd MMM yyyy}", font, Brushes.Black, 50, y)
-        y += 40
-
-        e.Graphics.DrawString("INGREDIENTS:", boldFont, Brushes.Black, 50, y)
-        y += 30
-
-        For Each row As DataGridViewRow In dgvIngredients.Rows
-            Dim ingredientName As String = row.Cells("IngredientName").Value.ToString().PadRight(30)
-            Dim quantity As String = $"{row.Cells("Quantity").Value} {row.Cells("UnitOfMeasure").Value}".PadRight(15)
-            Dim cost As String = CDec(row.Cells("TotalCost").Value).ToString("C2")
-
-            e.Graphics.DrawString($"{ingredientName} {quantity} {cost}", font, Brushes.Black, 50, y)
+            Dim subRecipeName As String = cboSubRecipe.Text
+            e.Graphics.DrawString($"Sub-Recipe: {subRecipeName}", boldFont, Brushes.Black, 50, y)
+            y += 30
+            e.Graphics.DrawString($"Batch Qty: {txtBatchQty.Text}", font, Brushes.Black, 50, y)
             y += 25
-        Next
+            e.Graphics.DrawString($"Date: {DateTime.Now:dd MMM yyyy}", font, Brushes.Black, 50, y)
+            y += 40
 
-        y += 20
-        e.Graphics.DrawString($"TOTAL COST: {lblTotalCost.Text.Replace("Total Cost Per Sub-Recipe: ", "")}", boldFont, Brushes.Black, 50, y)
-        y += 40
+            e.Graphics.DrawString("INGREDIENTS:", boldFont, Brushes.Black, 50, y)
+            y += 30
+            _printSection = 1
+        End If
 
-        e.Graphics.DrawString("METHOD:", boldFont, Brushes.Black, 50, y)
-        y += 30
+        ' Print ingredients
+        If _printSection = 1 Then
+            While _printIngredientIndex < dgvIngredients.Rows.Count
+                If y > pageHeight Then
+                    startNewPage = True
+                    Exit While
+                End If
+                Dim row As DataGridViewRow = dgvIngredients.Rows(_printIngredientIndex)
+                Dim ingredientName As String = row.Cells("IngredientName").Value.ToString().PadRight(30)
+                Dim quantity As String = $"{row.Cells("Quantity").Value} {row.Cells("UnitOfMeasure").Value}".PadRight(15)
+                Dim cost As String = CDec(row.Cells("TotalCost").Value).ToString("C2")
 
-        Dim methodLines = txtMethod.Text.Split(New String() {Environment.NewLine}, StringSplitOptions.None)
-        For Each line In methodLines
-            e.Graphics.DrawString(line, font, Brushes.Black, 50, y)
-            y += 25
-        Next
+                e.Graphics.DrawString($"{ingredientName} {quantity} {cost}", font, Brushes.Black, 50, y)
+                y += 25
+                _printIngredientIndex += 1
+            End While
 
-        y += 40
-        e.Graphics.DrawString("Baker: ________________  Date: ________  Time: ______", font, Brushes.Black, 50, y)
-        y += 30
-        e.Graphics.DrawString("Checked By: ________________", font, Brushes.Black, 50, y)
+            If Not startNewPage Then
+                y += 20
+                If y > pageHeight Then
+                    startNewPage = True
+                Else
+                    e.Graphics.DrawString($"TOTAL COST: {lblTotalCost.Text.Replace("Total Cost Per Sub-Recipe: ", "")}", boldFont, Brushes.Black, 50, y)
+                    y += 40
+                    If y > pageHeight Then
+                        startNewPage = True
+                    Else
+                        e.Graphics.DrawString("METHOD:", boldFont, Brushes.Black, 50, y)
+                        y += 30
+                        _printSection = 2
+                    End If
+                End If
+            End If
+        End If
+
+        ' Print method
+        If _printSection = 2 And Not startNewPage Then
+            Dim methodLines = txtMethod.Text.Split(New String() {Environment.NewLine}, StringSplitOptions.None)
+            While _printMethodLineIndex < methodLines.Length
+                If y > pageHeight Then
+                    startNewPage = True
+                    Exit While
+                End If
+                e.Graphics.DrawString(methodLines(_printMethodLineIndex), font, Brushes.Black, 50, y)
+                y += 25
+                _printMethodLineIndex += 1
+            End While
+
+            If Not startNewPage Then
+                y += 40
+                If y + 55 > pageHeight Then
+                    startNewPage = True
+                Else
+                    e.Graphics.DrawString("Baker: ________________  Date: ________  Time: ______", font, Brushes.Black, 50, y)
+                    y += 30
+                    e.Graphics.DrawString("Checked By: ________________", font, Brushes.Black, 50, y)
+                    _printSection = 3
+                End If
+            End If
+        End If
+
+        ' Set HasMorePages if we need to continue printing
+        e.HasMorePages = startNewPage Or _printSection < 3
     End Sub
 
     Private Sub btnClear_Click(sender As Object, e As EventArgs) Handles btnClear.Click
@@ -495,9 +540,7 @@ Public Class CreateSubRecipeForm
         txtMethod.Clear()
         txtBatchQty.Text = "1"
         dgvIngredients.Rows.Clear()
-        lblTotalCost.Text = "1 UNIT: Excl VAT: R0.00 | VAT (15%): R0.00 | Incl VAT: R0.00"
-        lblAdhocCost.Text = "BATCH (1 units): Excl VAT: R0.00 | VAT (15%): R0.00 | Incl VAT: R0.00"
-        lblAdhocCost.Visible = True
+        lblTotalCost.Text = "1 UNIT: Excl VAT: R0.00 | VAT (15%): R0.00 | Incl VAT: R0.00 || BATCH (1 units): Excl VAT: R0.00 | VAT (15%): R0.00 | Incl VAT: R0.00"
         _selectedSubRecipeID = 0
     End Sub
 

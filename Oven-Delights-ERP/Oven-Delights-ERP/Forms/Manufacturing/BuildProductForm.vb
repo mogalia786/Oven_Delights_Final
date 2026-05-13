@@ -1174,6 +1174,11 @@ Namespace Manufacturing
             Next
         End Sub
 
+        Private _buildPrintLineIndex As Integer = 0
+        Private _buildPrintLines() As String
+        Private _buildPrintProductName As String
+        Private _buildPrintFirstPage As Boolean = True
+
         Private Sub OnPrint(sender As Object, e As EventArgs)
             If _selectedProductId = 0 Then
                 MessageBox.Show("Please select a product first.", "Print Recipe", MessageBoxButtons.OK, MessageBoxIcon.Warning)
@@ -1183,32 +1188,13 @@ Namespace Manufacturing
             Try
                 Dim productName As String = cmbProduct.Text
                 Dim recipeText As String = GetRecipeTextForPrint(_selectedProductId, productName)
+                _buildPrintLines = recipeText.Split(New String() {Environment.NewLine}, StringSplitOptions.None)
+                _buildPrintProductName = productName
+                _buildPrintLineIndex = 0
+                _buildPrintFirstPage = True
                 
                 Dim printDoc As New PrintDocument()
-                AddHandler printDoc.PrintPage, Sub(s, ev)
-                    Dim font As New Font("Arial", 10)
-                    Dim headerFont As New Font("Arial", 16, FontStyle.Bold)
-                    Dim subHeaderFont As New Font("Arial", 12, FontStyle.Bold)
-                    Dim y As Single = 80
-                    
-                    ' Print company header
-                    ev.Graphics.DrawString("OVEN DELIGHTS", headerFont, New SolidBrush(ColorDark), 50, 30)
-                    ev.Graphics.DrawString("Product Recipe", subHeaderFont, Brushes.Gray, 50, 55)
-                    
-                    ' Print product name
-                    ev.Graphics.DrawString($"Product: {productName}", New Font("Arial", 12, FontStyle.Bold), Brushes.Black, 50, y)
-                    y += 30
-                    ev.Graphics.DrawString(New String("-"c, 100), font, Brushes.Black, 50, y)
-                    y += 30
-                    
-                    ' Print recipe text
-                    Dim lines() As String = recipeText.Split(New String() {Environment.NewLine}, StringSplitOptions.None)
-                    For Each line In lines
-                        If y > ev.PageBounds.Height - 100 Then Exit For
-                        ev.Graphics.DrawString(line, font, Brushes.Black, 50, y)
-                        y += 22
-                    Next
-                End Sub
+                AddHandler printDoc.PrintPage, AddressOf BuildProductPrintPage
                 
                 Dim printDialog As New PrintDialog() With {.Document = printDoc}
                 If printDialog.ShowDialog() = DialogResult.OK Then
@@ -1218,6 +1204,40 @@ Namespace Manufacturing
             Catch ex As Exception
                 MessageBox.Show($"Error printing recipe: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
+        End Sub
+
+        Private Sub BuildProductPrintPage(sender As Object, ev As PrintPageEventArgs)
+            Dim font As New Font("Arial", 10)
+            Dim headerFont As New Font("Arial", 16, FontStyle.Bold)
+            Dim subHeaderFont As New Font("Arial", 12, FontStyle.Bold)
+            Dim y As Single = 80
+            Dim pageHeight As Single = ev.PageBounds.Height - 100
+            
+            ' Print company header on first page only
+            If _buildPrintFirstPage Then
+                ev.Graphics.DrawString("OVEN DELIGHTS", headerFont, New SolidBrush(ColorDark), 50, 30)
+                ev.Graphics.DrawString("Product Recipe", subHeaderFont, Brushes.Gray, 50, 55)
+                
+                ' Print product name
+                ev.Graphics.DrawString($"Product: {_buildPrintProductName}", New Font("Arial", 12, FontStyle.Bold), Brushes.Black, 50, y)
+                y += 30
+                ev.Graphics.DrawString(New String("-"c, 100), font, Brushes.Black, 50, y)
+                y += 30
+                _buildPrintFirstPage = False
+            End If
+            
+            ' Print recipe text
+            While _buildPrintLineIndex < _buildPrintLines.Length
+                If y > pageHeight Then
+                    ev.HasMorePages = True
+                    Return
+                End If
+                ev.Graphics.DrawString(_buildPrintLines(_buildPrintLineIndex), font, Brushes.Black, 50, y)
+                y += 22
+                _buildPrintLineIndex += 1
+            End While
+
+            ev.HasMorePages = False
         End Sub
 
         Private Function GetRecipeTextForPrint(productId As Integer, productName As String) As String

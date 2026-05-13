@@ -1,8 +1,8 @@
 -- =============================================
 -- Stored Procedure: sp_GetCakeCuttingList
 -- Purpose: Generate cutting list for cake manufacturing
--- Groups cake orders by Size, Layer, Shape, and Cream Type for a specific ReadyDate
--- Ordered by ReadyTime (pickup time)
+-- UPDATED: Now reads from ManufacturingInstructions field with structured data
+-- Format: Layer: [Single/Double/Triple] | Cream: [Buttercream/Freshcream] | Flavour: [detected] | Shape: [detected] | Special: [text]
 -- =============================================
 
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[sp_GetCakeCuttingList]') AND type in (N'P', N'PC'))
@@ -16,12 +16,8 @@ AS
 BEGIN
     SET NOCOUNT ON;
     
-    -- Parse product names to extract Size, Layer, Shape, Cream Type
-    -- Size: Extract first number found in product name
-    -- Layer: "DL" if Double found, else blank (single layer)
-    -- Shape: Extract shape keywords, default to Square
-    -- Cream: Fresh Cream or Butter Cream
-    -- Special Request: Pull from SpecialInstructions field
+    -- Helper function to extract value from ManufacturingInstructions
+    -- Format: "Layer: Single | Cream: Buttercream | Flavour: Double Vanilla | Shape: Bible | Special: Bible  Double vanilla"
     
     -- Combine orders from both POS_UserDefinedOrders and POS_CustomOrders
     SELECT 
@@ -216,13 +212,13 @@ BEGIN
     
     UNION ALL
     
-    -- Also include orders from POS_CustomOrders (legacy/other POS orders)
+    -- POS_CustomOrders - NOW READS FROM ManufacturingInstructions field
     SELECT 
         b.BranchName AS CollectionPoint,
         o.BranchID,
         o.ReadyTime,
         
-        -- Extract Size
+        -- Extract Size from product name
         CASE 
             WHEN i.ProductName LIKE '%10%' THEN '10'
             WHEN i.ProductName LIKE '%12%' THEN '12'
@@ -235,15 +231,26 @@ BEGIN
             ELSE ''
         END AS Size,
         
-        -- Extract Layer
+        -- Extract Layer from ManufacturingInstructions (Format: "Layer: Single | Cream: ...")
         CASE 
+            WHEN o.ManufacturingInstructions LIKE '%Layer: Triple%' THEN 'Triple'
+            WHEN o.ManufacturingInstructions LIKE '%Layer: Double%' THEN 'Double'
+            WHEN o.ManufacturingInstructions LIKE '%Layer: Single%' THEN 'Single'
+            -- Fallback to old logic if ManufacturingInstructions is empty
             WHEN o.SpecialInstructions LIKE '%Triple%' OR o.SpecialInstructions LIKE '%triple%' THEN 'Triple'
             WHEN i.ProductName LIKE '%Triple%' OR i.ProductName LIKE '%TL%' THEN 'Triple'
             ELSE 'Double'
         END AS Layer,
         
-        -- Extract Shape from SpecialInstructions (for POS_CustomOrders)
+        -- Extract Shape from ManufacturingInstructions (Format: "... | Shape: Bible | ...")
         CASE 
+            WHEN o.ManufacturingInstructions LIKE '%Shape: Bible%' THEN 'Bible'
+            WHEN o.ManufacturingInstructions LIKE '%Shape: Heart%' THEN 'Heart'
+            WHEN o.ManufacturingInstructions LIKE '%Shape: Figure%' THEN 'Figure'
+            WHEN o.ManufacturingInstructions LIKE '%Shape: Round%' THEN 'Round'
+            WHEN o.ManufacturingInstructions LIKE '%Shape: Rectangle%' THEN 'Rectangle'
+            WHEN o.ManufacturingInstructions LIKE '%Shape: Square%' THEN 'Square'
+            -- Fallback to old logic if ManufacturingInstructions is empty
             WHEN o.SpecialInstructions LIKE '%Heart Shape%' OR o.SpecialInstructions LIKE '%Heart shape%' OR o.SpecialInstructions LIKE '%heart shape%' THEN 'Heart'
             WHEN o.SpecialInstructions LIKE '%Bible%' OR o.SpecialInstructions LIKE '%bible%' THEN 'Bible'
             WHEN o.SpecialInstructions LIKE '%Figure%' OR o.SpecialInstructions LIKE '%figure%' THEN 'Figure'
@@ -256,21 +263,42 @@ BEGIN
             ELSE 'Square'
         END AS Shape,
         
-        -- Extract Cream Type
+        -- Extract Cream Type from ManufacturingInstructions (Format: "... | Cream: Buttercream | ...")
         CASE 
+            WHEN o.ManufacturingInstructions LIKE '%Cream: Buttercream%' THEN 'Buttercream'
+            WHEN o.ManufacturingInstructions LIKE '%Cream: Freshcream%' THEN 'Fresh Cream'
+            WHEN o.ManufacturingInstructions LIKE '%Cream: Fresh Cream%' THEN 'Fresh Cream'
+            -- Fallback to product name
             WHEN i.ProductName LIKE '%Fresh Cream%' OR i.ProductName LIKE '%Fresh-Cream%' OR i.ProductName LIKE '%FreshCream%' THEN 'Fresh Cream'
             WHEN i.ProductName LIKE '%Butter Cream%' OR i.ProductName LIKE '%Buttercream%' OR i.ProductName LIKE '%Butter-Cream%' THEN 'Buttercream'
             ELSE 'Buttercream'
         END AS CakeCream,
         
-        -- Special Request: Show flavours only
+        -- Extract Special Request from ManufacturingInstructions (Format: "... | Special: EGGLESS, Bible  Double vanilla")
+        -- EGGLESS is a dietary restriction and MUST ALWAYS appear if present in name or special requests
         CASE 
+            WHEN o.ManufacturingInstructions LIKE '%Special:%' THEN 
+                LTRIM(RTRIM(SUBSTRING(
+                    o.ManufacturingInstructions, 
+                    CHARINDEX('Special:', o.ManufacturingInstructions) + 8, 
+                    LEN(o.ManufacturingInstructions)
+                )))
+            -- Fallback: Check for EGGLESS first (dietary restriction - highest priority)
+            WHEN i.ProductName LIKE '%Eggless%' OR i.ProductName LIKE '%EGGLESS%' OR 
+                 o.SpecialInstructions LIKE '%Eggless%' OR o.SpecialInstructions LIKE '%EGGLESS%' THEN 
+                CASE 
+                    -- If SpecialInstructions has other text besides shape keywords, combine with EGGLESS
+                    WHEN o.SpecialInstructions IS NOT NULL AND LEN(LTRIM(RTRIM(o.SpecialInstructions))) > 0 AND
+                         o.SpecialInstructions NOT LIKE '%Heart Shape%' AND o.SpecialInstructions NOT LIKE '%Bible%' AND
+                         o.SpecialInstructions <> 'Figure' THEN 'EGGLESS, ' + LTRIM(RTRIM(o.SpecialInstructions))
+                    ELSE 'EGGLESS'
+                END
+            -- Other special requests (not shape keywords)
             WHEN o.SpecialInstructions LIKE '%Heart Shape%' OR o.SpecialInstructions LIKE '%Heart shape%' OR o.SpecialInstructions LIKE '%heart shape%' THEN ''
             WHEN o.SpecialInstructions LIKE '%Bible%' OR o.SpecialInstructions LIKE '%bible%' THEN ''
             WHEN o.SpecialInstructions = 'Figure' OR o.SpecialInstructions = 'figure' THEN ''
             WHEN o.SpecialInstructions IS NOT NULL AND LEN(LTRIM(RTRIM(o.SpecialInstructions))) > 0 
                 THEN LTRIM(RTRIM(o.SpecialInstructions))
-            WHEN i.ProductName LIKE '%Eggless%' OR i.ProductName LIKE '%EGGLESS%' THEN 'EGGLESS'
             WHEN i.ProductName LIKE '%Vanilla%' OR i.ProductName LIKE '%VANILLA%' OR i.ProductName LIKE '%DBL VANILLA%' THEN 'DBL VANILLA'
             WHEN i.ProductName LIKE '%Chocolate%' OR i.ProductName LIKE '%CHOCOLATE%' THEN 'CHOCOLATE'
             WHEN i.ProductName LIKE '%Strawberry%' OR i.ProductName LIKE '%STRAWBERRY%' THEN 'STRAWBERRY'
@@ -294,6 +322,8 @@ BEGIN
         b.BranchName,
         o.BranchID,
         o.ReadyTime,
+        o.ManufacturingInstructions,
+        o.SpecialInstructions,
         CASE 
             WHEN i.ProductName LIKE '%10%' THEN '10'
             WHEN i.ProductName LIKE '%12%' THEN '12'
@@ -305,40 +335,7 @@ BEGIN
             WHEN i.ProductName LIKE '%24%' THEN '24'
             ELSE ''
         END,
-        CASE 
-            WHEN o.SpecialInstructions LIKE '%Triple%' OR o.SpecialInstructions LIKE '%triple%' THEN 'Triple'
-            WHEN i.ProductName LIKE '%Triple%' OR i.ProductName LIKE '%TL%' THEN 'Triple'
-            ELSE 'Double'
-        END,
-        CASE 
-            WHEN o.SpecialInstructions LIKE '%Heart Shape%' OR o.SpecialInstructions LIKE '%Heart shape%' OR o.SpecialInstructions LIKE '%heart shape%' THEN 'Heart'
-            WHEN o.SpecialInstructions LIKE '%Bible%' OR o.SpecialInstructions LIKE '%bible%' THEN 'Bible'
-            WHEN o.SpecialInstructions LIKE '%Figure%' OR o.SpecialInstructions LIKE '%figure%' THEN 'Figure'
-            WHEN o.SpecialInstructions LIKE '%Doll cake%' OR o.SpecialInstructions LIKE '%doll cake%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Round cake%' OR o.SpecialInstructions LIKE '%round cake%' THEN 'Round'
-            WHEN i.ProductName LIKE '%Round%' OR i.ProductName LIKE '%round%' THEN 'Round'
-            WHEN i.ProductName LIKE '%Heart%' THEN 'Heart'
-            WHEN i.ProductName LIKE '%Rectangle%' THEN 'Rectangle'
-            WHEN i.ProductName LIKE '%Oval%' THEN 'Oval'
-            ELSE 'Square'
-        END,
-        CASE 
-            WHEN i.ProductName LIKE '%Fresh Cream%' OR i.ProductName LIKE '%Fresh-Cream%' OR i.ProductName LIKE '%FreshCream%' THEN 'Fresh Cream'
-            WHEN i.ProductName LIKE '%Butter Cream%' OR i.ProductName LIKE '%Buttercream%' OR i.ProductName LIKE '%Butter-Cream%' THEN 'Buttercream'
-            ELSE 'Buttercream'
-        END,
-        CASE 
-            WHEN o.SpecialInstructions LIKE '%Heart Shape%' OR o.SpecialInstructions LIKE '%Heart shape%' OR o.SpecialInstructions LIKE '%heart shape%' THEN ''
-            WHEN o.SpecialInstructions LIKE '%Bible%' OR o.SpecialInstructions LIKE '%bible%' THEN ''
-            WHEN o.SpecialInstructions = 'Figure' OR o.SpecialInstructions = 'figure' THEN ''
-            WHEN o.SpecialInstructions IS NOT NULL AND LEN(LTRIM(RTRIM(o.SpecialInstructions))) > 0 
-                THEN LTRIM(RTRIM(o.SpecialInstructions))
-            WHEN i.ProductName LIKE '%Eggless%' OR i.ProductName LIKE '%EGGLESS%' THEN 'EGGLESS'
-            WHEN i.ProductName LIKE '%Vanilla%' OR i.ProductName LIKE '%VANILLA%' OR i.ProductName LIKE '%DBL VANILLA%' THEN 'DBL VANILLA'
-            WHEN i.ProductName LIKE '%Chocolate%' OR i.ProductName LIKE '%CHOCOLATE%' THEN 'CHOCOLATE'
-            WHEN i.ProductName LIKE '%Strawberry%' OR i.ProductName LIKE '%STRAWBERRY%' THEN 'STRAWBERRY'
-            ELSE ''
-        END
+        i.ProductName
     
     ORDER BY 
         ReadyTime ASC,
@@ -350,5 +347,5 @@ BEGIN
 END
 GO
 
-PRINT 'sp_GetCakeCuttingList created successfully';
+PRINT 'sp_GetCakeCuttingList created successfully with ManufacturingInstructions parsing';
 GO

@@ -10,6 +10,8 @@ Public Class BatchPriceUpdateForm
     Private cmbCategory As ComboBox
     Private dgvProducts As DataGridView
     Private lblInfo As Label
+    Private _currentPrintRow As Integer = 0
+    Private _printFirstPage As Boolean = True
     
     Public Sub New(branchID As Integer, branchName As String)
         Me.currentBranchID = branchID
@@ -518,6 +520,9 @@ Public Class BatchPriceUpdateForm
                 Return
             End If
             
+            _currentPrintRow = 0
+            _printFirstPage = True
+            
             Dim printDialog As New PrintDialog()
             Dim printDocument As New Printing.PrintDocument()
             
@@ -540,19 +545,25 @@ Public Class BatchPriceUpdateForm
         Dim brush As New SolidBrush(Color.Black)
         
         Dim yPos As Single = e.MarginBounds.Top
+        Dim pageHeight As Single = e.MarginBounds.Bottom - 50
         
-        e.Graphics.DrawString("Price Management Report", headerFont, brush, e.MarginBounds.Left, yPos)
-        yPos += 30
+        ' Print header on first page only
+        If _printFirstPage Then
+            e.Graphics.DrawString("Price Management Report", headerFont, brush, e.MarginBounds.Left, yPos)
+            yPos += 30
+            
+            e.Graphics.DrawString($"Branch: {branchName}", font, brush, e.MarginBounds.Left, yPos)
+            yPos += 20
+            
+            e.Graphics.DrawString($"Category: {If(cmbCategory.SelectedItem IsNot Nothing, cmbCategory.SelectedItem.CategoryName, "All")}", font, brush, e.MarginBounds.Left, yPos)
+            yPos += 20
+            
+            e.Graphics.DrawString($"Date: {DateTime.Now:yyyy-MM-dd HH:mm:ss}", font, brush, e.MarginBounds.Left, yPos)
+            yPos += 40
+            _printFirstPage = False
+        End If
         
-        e.Graphics.DrawString($"Branch: {branchName}", font, brush, e.MarginBounds.Left, yPos)
-        yPos += 20
-        
-        e.Graphics.DrawString($"Category: {If(cmbCategory.SelectedItem IsNot Nothing, cmbCategory.SelectedItem.CategoryName, "All")}", font, brush, e.MarginBounds.Left, yPos)
-        yPos += 20
-        
-        e.Graphics.DrawString($"Date: {DateTime.Now:yyyy-MM-dd HH:mm:ss}", font, brush, e.MarginBounds.Left, yPos)
-        yPos += 40
-        
+        ' Column headers
         Dim xPos As Single = e.MarginBounds.Left
         For Each col As DataGridViewColumn In dgvProducts.Columns
             If col.Visible Then
@@ -563,8 +574,16 @@ Public Class BatchPriceUpdateForm
         
         yPos += 25
         
-        For Each row As DataGridViewRow In dgvProducts.Rows
-            If Not row.IsNewRow AndAlso yPos < e.MarginBounds.Bottom - 50 Then
+        ' Print rows with pagination
+        Dim hasMoreRows As Boolean = False
+        While _currentPrintRow < dgvProducts.Rows.Count
+            Dim row As DataGridViewRow = dgvProducts.Rows(_currentPrintRow)
+            If Not row.IsNewRow Then
+                If yPos >= pageHeight Then
+                    hasMoreRows = True
+                    Exit While
+                End If
+                
                 xPos = e.MarginBounds.Left
                 For Each col As DataGridViewColumn In dgvProducts.Columns
                     If col.Visible Then
@@ -575,9 +594,10 @@ Public Class BatchPriceUpdateForm
                 Next
                 yPos += 20
             End If
-        Next
+            _currentPrintRow += 1
+        End While
         
-        e.HasMorePages = False
+        e.HasMorePages = hasMoreRows
     End Sub
     
     Private Sub BtnDelete_Click(sender As Object, e As EventArgs)

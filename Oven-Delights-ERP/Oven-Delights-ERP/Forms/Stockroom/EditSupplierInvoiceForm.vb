@@ -15,6 +15,7 @@ Public Class EditSupplierInvoiceForm
     Private printFont As Font
     Private printY As Integer = 0
     Private printPageNumber As Integer = 0
+    Private currentPrintLineRow As Integer = 0
     
     Public Sub New()
         InitializeComponent()
@@ -515,6 +516,7 @@ Public Class EditSupplierInvoiceForm
         Try
             printFont = New Font("Arial", 10)
             printPageNumber = 0
+            currentPrintLineRow = 0
             
             Dim preview As New PrintPreviewDialog With {
                 .Document = printDocument,
@@ -576,10 +578,20 @@ Public Class EditSupplierInvoiceForm
         e.Graphics.DrawLine(Pens.Black, 50, printY, 750, printY)
         printY += 10
         
-        ' Line items
+        ' Line items with pagination
         Dim dgvLines = DirectCast(Me.Controls.Find("dgvLines", True)(0), DataGridView)
-        For Each row As DataGridViewRow In dgvLines.Rows
+        Dim maxY As Integer = 1000
+        Dim hasMoreItems As Boolean = False
+        
+        While currentPrintLineRow < dgvLines.Rows.Count
+            Dim row As DataGridViewRow = dgvLines.Rows(currentPrintLineRow)
             If Not row.IsNewRow Then
+                ' Check if we have space for this line
+                If printY + 20 > maxY Then
+                    hasMoreItems = True
+                    Exit While
+                End If
+                
                 Dim itemSource As String = If(row.Cells("ItemSource").Value, "").ToString()
                 Dim description As String = If(row.Cells("Description").Value, "").ToString()
                 e.Graphics.DrawString(itemSource, normalFont, Brushes.Black, 50, printY)
@@ -589,51 +601,54 @@ Public Class EditSupplierInvoiceForm
                 e.Graphics.DrawString(Convert.ToDecimal(row.Cells("LineTotal").Value).ToString("N4"), normalFont, Brushes.Black, 650, printY)
                 printY += 20
             End If
-        Next
+            currentPrintLineRow += 1
+        End While
         
-        printY += 10
-        e.Graphics.DrawLine(Pens.Black, 50, printY, 750, printY)
-        printY += 20
-        
-        ' Totals
-        Dim txtSubTotal = DirectCast(Me.Controls.Find("txtSubTotal", True)(0), TextBox)
-        Dim txtDiscount = DirectCast(Me.Controls.Find("txtDiscount", True)(0), TextBox)
-        Dim txtVAT = DirectCast(Me.Controls.Find("txtVAT", True)(0), TextBox)
-        Dim txtTotal = DirectCast(Me.Controls.Find("txtTotal", True)(0), TextBox)
-        Dim txtAmountPaid = DirectCast(Me.Controls.Find("txtAmountPaid", True)(0), TextBox)
-        Dim txtOutstanding = DirectCast(Me.Controls.Find("txtOutstanding", True)(0), TextBox)
-        
-        e.Graphics.DrawString("Sub Total:", normalFont, Brushes.Black, 550, printY)
-        e.Graphics.DrawString($"R {txtSubTotal.Text}", normalFont, Brushes.Black, 650, printY)
-        printY += 25
-        
-        e.Graphics.DrawString("VAT:", normalFont, Brushes.Black, 550, printY)
-        e.Graphics.DrawString($"R {txtVAT.Text}", normalFont, Brushes.Black, 650, printY)
-        printY += 25
-        
-        If Not txtDiscount.Text.StartsWith("R 0.0000") Then
-            e.Graphics.DrawString("Discount:", normalFont, Brushes.Black, 550, printY)
-            e.Graphics.DrawString(txtDiscount.Text, normalFont, Brushes.Black, 650, printY)
+        ' Only print totals if all lines are printed
+        If Not hasMoreItems Then
+            printY += 10
+            e.Graphics.DrawLine(Pens.Black, 50, printY, 750, printY)
+            printY += 20
+            
+            ' Totals
+            Dim txtSubTotal = DirectCast(Me.Controls.Find("txtSubTotal", True)(0), TextBox)
+            Dim txtDiscount = DirectCast(Me.Controls.Find("txtDiscount", True)(0), TextBox)
+            Dim txtVAT = DirectCast(Me.Controls.Find("txtVAT", True)(0), TextBox)
+            Dim txtTotal = DirectCast(Me.Controls.Find("txtTotal", True)(0), TextBox)
+            Dim txtAmountPaid = DirectCast(Me.Controls.Find("txtAmountPaid", True)(0), TextBox)
+            Dim txtOutstanding = DirectCast(Me.Controls.Find("txtOutstanding", True)(0), TextBox)
+            
+            e.Graphics.DrawString("Sub Total:", normalFont, Brushes.Black, 550, printY)
+            e.Graphics.DrawString($"R {txtSubTotal.Text}", normalFont, Brushes.Black, 650, printY)
             printY += 25
+            
+            e.Graphics.DrawString("VAT:", normalFont, Brushes.Black, 550, printY)
+            e.Graphics.DrawString($"R {txtVAT.Text}", normalFont, Brushes.Black, 650, printY)
+            printY += 25
+            
+            If Not txtDiscount.Text.StartsWith("R 0.0000") Then
+                e.Graphics.DrawString("Discount:", normalFont, Brushes.Black, 550, printY)
+                e.Graphics.DrawString(txtDiscount.Text, normalFont, Brushes.Black, 650, printY)
+                printY += 25
+            End If
+            
+            e.Graphics.DrawString("Total:", headerFont, Brushes.Black, 550, printY)
+            e.Graphics.DrawString($"R {txtTotal.Text}", headerFont, Brushes.Black, 650, printY)
+            printY += 30
+            
+            e.Graphics.DrawString("Amount Paid:", normalFont, Brushes.Black, 550, printY)
+            e.Graphics.DrawString($"R {txtAmountPaid.Text}", normalFont, Brushes.Black, 650, printY)
+            printY += 25
+            
+            e.Graphics.DrawString("Outstanding:", headerFont, Brushes.Black, 550, printY)
+            e.Graphics.DrawString($"R {txtOutstanding.Text}", normalFont, Brushes.Black, 650, printY)
+            printY += 40
+            
+            ' Footer
+            e.Graphics.DrawString($"Printed: {DateTime.Now:dd MMM yyyy HH:mm}", smallFont, Brushes.Gray, 50, printY)
         End If
         
-        e.Graphics.DrawString("Total:", headerFont, Brushes.Black, 550, printY)
-        e.Graphics.DrawString($"R {txtTotal.Text}", headerFont, Brushes.Black, 650, printY)
-        printY += 30
-        
-        e.Graphics.DrawString("Amount Paid:", normalFont, Brushes.Black, 550, printY)
-        e.Graphics.DrawString($"R {txtAmountPaid.Text}", normalFont, Brushes.Black, 650, printY)
-        printY += 25
-        
-        e.Graphics.DrawString("Outstanding:", headerFont, Brushes.Black, 550, printY)
-        e.Graphics.DrawString($"R {txtOutstanding.Text}", New Font("Arial", 10, FontStyle.Bold), Brushes.Red, 650, printY)
-        
-        ' Footer
-        printY = 1050
-        e.Graphics.DrawString($"Printed: {DateTime.Now:dd MMM yyyy HH:mm}", smallFont, Brushes.Gray, 50, printY)
-        e.Graphics.DrawString($"Page {printPageNumber}", smallFont, Brushes.Gray, 700, printY)
-        
-        e.HasMorePages = False
+        e.HasMorePages = hasMoreItems
     End Sub
     
     Private Sub dgvLines_CellValidating(sender As Object, e As DataGridViewCellValidatingEventArgs)

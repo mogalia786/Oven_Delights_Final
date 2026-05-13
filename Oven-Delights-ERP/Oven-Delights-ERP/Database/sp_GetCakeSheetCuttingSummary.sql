@@ -40,39 +40,22 @@ BEGIN
             ELSE 'Double' -- Always default to Double
         END AS Layer,
         
-        -- Extract Shape: Check SpecialRequest for special cake types that override shape
+        -- Extract Shape: SHAPES ONLY - Heart, Bible, Figure, Round, Square, Rectangle, Oval
+        -- Flavours (Blackforest, Red velvet, etc.) are NOT shapes
         CASE 
-            -- Special cake types that override shape to 'Special'
-            WHEN o.SpecialInstructions LIKE '%Doll cake%' OR o.SpecialInstructions LIKE '%doll cake%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Figure%' OR o.SpecialInstructions LIKE '%figure%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Figure on base%' OR o.SpecialInstructions LIKE '%figure on base%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Eggless Figure%' OR o.SpecialInstructions LIKE '%eggless figure%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Eggless Figure on base%' OR o.SpecialInstructions LIKE '%eggless figure on base%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%1mx 500%' OR o.SpecialInstructions LIKE '%1mx500%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%1mx 500 eggless%' OR o.SpecialInstructions LIKE '%1mx500 eggless%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Bar one%' OR o.SpecialInstructions LIKE '%bar one%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Ferrero%' OR o.SpecialInstructions LIKE '%ferrero%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Milky bar%' OR o.SpecialInstructions LIKE '%milky bar%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Blackforest%' OR o.SpecialInstructions LIKE '%blackforest%' OR o.SpecialInstructions LIKE '%Black forest%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Red velvet%' OR o.SpecialInstructions LIKE '%red velvet%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Carrot cake%' OR o.SpecialInstructions LIKE '%carrot cake%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Soccerfield%' OR o.SpecialInstructions LIKE '%soccerfield%' OR o.SpecialInstructions LIKE '%Soccer field%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Mould%' OR o.SpecialInstructions LIKE '%mould%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Novelty%' OR o.SpecialInstructions LIKE '%novelty%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Tiered sponge%' OR o.SpecialInstructions LIKE '%tiered sponge%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Tiered fruit%' OR o.SpecialInstructions LIKE '%tiered fruit%' THEN 'Special'
-            -- Regular shape overrides from SpecialInstructions
-            WHEN o.SpecialInstructions LIKE '%Heart shape%' OR o.SpecialInstructions LIKE '%heart shape%' OR o.SpecialInstructions LIKE '%Heart%' OR o.SpecialInstructions LIKE '%heart%' THEN 'Heart'
+            -- Shape overrides from SpecialInstructions dropdown (highest priority - exact shape keywords only)
+            WHEN o.SpecialInstructions LIKE '%Heart Shape%' OR o.SpecialInstructions LIKE '%Heart shape%' OR o.SpecialInstructions LIKE '%heart shape%' THEN 'Heart'
             WHEN o.SpecialInstructions LIKE '%Bible%' OR o.SpecialInstructions LIKE '%bible%' THEN 'Bible'
+            WHEN o.SpecialInstructions = 'Figure' OR o.SpecialInstructions = 'figure' THEN 'Figure'
             WHEN o.SpecialInstructions LIKE '%Round cake%' OR o.SpecialInstructions LIKE '%round cake%' THEN 'Round'
-            -- Check product name for shape keywords
-            WHEN i.ProductName LIKE '%Figure%' THEN 'Figure'
+            -- Check product name for shape keywords (MUST check before defaulting to Square)
+            WHEN i.ProductName LIKE '%Figure%' OR i.ProductName LIKE '%figure%' THEN 'Figure'
             WHEN i.ProductName LIKE '%Round%' OR i.ProductName LIKE '%round%' THEN 'Round'
             WHEN i.ProductName LIKE '%Heart%' THEN 'Heart'
             WHEN i.ProductName LIKE '%Rectangle%' THEN 'Rectangle'
             WHEN i.ProductName LIKE '%Oval%' THEN 'Oval'
             WHEN i.ProductName LIKE '%Bible%' THEN 'Bible'
-            ELSE 'Square' -- Default shape
+            ELSE 'Square' -- Default shape for cutting sponge layers
         END AS Shape,
         
         -- Extract Cream Type
@@ -81,6 +64,44 @@ BEGIN
             WHEN i.ProductName LIKE '%Butter Cream%' OR i.ProductName LIKE '%Buttercream%' OR i.ProductName LIKE '%Butter-Cream%' THEN 'Butter Cream'
             ELSE 'Unknown'
         END AS CakeCream,
+        
+        -- Special Request: Show FLAVOURS only (not shapes)
+        CASE 
+            -- If SpecialInstructions is a shape keyword, check product name for flavour instead
+            WHEN o.SpecialInstructions LIKE '%Heart Shape%' OR o.SpecialInstructions LIKE '%Heart shape%' OR o.SpecialInstructions LIKE '%heart shape%' THEN 
+                CASE 
+                    WHEN i.ProductName LIKE '%Eggless%' OR i.ProductName LIKE '%EGGLESS%' THEN 'EGGLESS'
+                    WHEN i.ProductName LIKE '%Vanilla%' OR i.ProductName LIKE '%VANILLA%' OR i.ProductName LIKE '%DBL VANILLA%' THEN 'DBL VANILLA'
+                    WHEN i.ProductName LIKE '%Chocolate%' OR i.ProductName LIKE '%CHOCOLATE%' THEN 'CHOCOLATE'
+                    WHEN i.ProductName LIKE '%Strawberry%' OR i.ProductName LIKE '%STRAWBERRY%' THEN 'STRAWBERRY'
+                    ELSE ''
+                END
+            WHEN o.SpecialInstructions LIKE '%Bible%' OR o.SpecialInstructions LIKE '%bible%' THEN 
+                CASE 
+                    WHEN i.ProductName LIKE '%Eggless%' OR i.ProductName LIKE '%EGGLESS%' THEN 'EGGLESS'
+                    WHEN i.ProductName LIKE '%Vanilla%' OR i.ProductName LIKE '%VANILLA%' OR i.ProductName LIKE '%DBL VANILLA%' THEN 'DBL VANILLA'
+                    WHEN i.ProductName LIKE '%Chocolate%' OR i.ProductName LIKE '%CHOCOLATE%' THEN 'CHOCOLATE'
+                    WHEN i.ProductName LIKE '%Strawberry%' OR i.ProductName LIKE '%STRAWBERRY%' THEN 'STRAWBERRY'
+                    ELSE ''
+                END
+            WHEN o.SpecialInstructions = 'Figure' OR o.SpecialInstructions = 'figure' THEN 
+                CASE 
+                    WHEN i.ProductName LIKE '%Eggless%' OR i.ProductName LIKE '%EGGLESS%' THEN 'EGGLESS'
+                    WHEN i.ProductName LIKE '%Vanilla%' OR i.ProductName LIKE '%VANILLA%' OR i.ProductName LIKE '%DBL VANILLA%' THEN 'DBL VANILLA'
+                    WHEN i.ProductName LIKE '%Chocolate%' OR i.ProductName LIKE '%CHOCOLATE%' THEN 'CHOCOLATE'
+                    WHEN i.ProductName LIKE '%Strawberry%' OR i.ProductName LIKE '%STRAWBERRY%' THEN 'STRAWBERRY'
+                    ELSE ''
+                END
+            -- Show actual flavour/special requirements from SpecialInstructions
+            WHEN o.SpecialInstructions IS NOT NULL AND LEN(LTRIM(RTRIM(o.SpecialInstructions))) > 0 
+                THEN LTRIM(RTRIM(o.SpecialInstructions))
+            -- Fallback to product name for flavour
+            WHEN i.ProductName LIKE '%Eggless%' OR i.ProductName LIKE '%EGGLESS%' THEN 'EGGLESS'
+            WHEN i.ProductName LIKE '%Vanilla%' OR i.ProductName LIKE '%VANILLA%' OR i.ProductName LIKE '%DBL VANILLA%' THEN 'DBL VANILLA'
+            WHEN i.ProductName LIKE '%Chocolate%' OR i.ProductName LIKE '%CHOCOLATE%' THEN 'CHOCOLATE'
+            WHEN i.ProductName LIKE '%Strawberry%' OR i.ProductName LIKE '%STRAWBERRY%' THEN 'STRAWBERRY'
+            ELSE ''
+        END AS SpecialRequest,
         
         -- Total quantity across all branches
         SUM(i.Quantity) AS Total,
@@ -119,33 +140,13 @@ BEGIN
             WHEN i.ProductName LIKE '%Triple%' OR i.ProductName LIKE '%TL%' THEN 'Triple'
             ELSE 'Double'
         END,
-        -- Shape
+        -- Shape (must match SELECT clause)
         CASE 
-            -- Special cake types that override shape to 'Special'
-            WHEN o.SpecialInstructions LIKE '%Doll cake%' OR o.SpecialInstructions LIKE '%doll cake%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Figure%' OR o.SpecialInstructions LIKE '%figure%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Figure on base%' OR o.SpecialInstructions LIKE '%figure on base%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Eggless Figure%' OR o.SpecialInstructions LIKE '%eggless figure%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Eggless Figure on base%' OR o.SpecialInstructions LIKE '%eggless figure on base%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%1mx 500%' OR o.SpecialInstructions LIKE '%1mx500%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%1mx 500 eggless%' OR o.SpecialInstructions LIKE '%1mx500 eggless%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Bar one%' OR o.SpecialInstructions LIKE '%bar one%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Ferrero%' OR o.SpecialInstructions LIKE '%ferrero%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Milky bar%' OR o.SpecialInstructions LIKE '%milky bar%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Blackforest%' OR o.SpecialInstructions LIKE '%blackforest%' OR o.SpecialInstructions LIKE '%Black forest%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Red velvet%' OR o.SpecialInstructions LIKE '%red velvet%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Carrot cake%' OR o.SpecialInstructions LIKE '%carrot cake%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Soccerfield%' OR o.SpecialInstructions LIKE '%soccerfield%' OR o.SpecialInstructions LIKE '%Soccer field%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Mould%' OR o.SpecialInstructions LIKE '%mould%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Novelty%' OR o.SpecialInstructions LIKE '%novelty%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Tiered sponge%' OR o.SpecialInstructions LIKE '%tiered sponge%' THEN 'Special'
-            WHEN o.SpecialInstructions LIKE '%Tiered fruit%' OR o.SpecialInstructions LIKE '%tiered fruit%' THEN 'Special'
-            -- Regular shape overrides from SpecialInstructions
-            WHEN o.SpecialInstructions LIKE '%Heart shape%' OR o.SpecialInstructions LIKE '%heart shape%' OR o.SpecialInstructions LIKE '%Heart%' OR o.SpecialInstructions LIKE '%heart%' THEN 'Heart'
+            WHEN o.SpecialInstructions LIKE '%Heart Shape%' OR o.SpecialInstructions LIKE '%Heart shape%' OR o.SpecialInstructions LIKE '%heart shape%' THEN 'Heart'
             WHEN o.SpecialInstructions LIKE '%Bible%' OR o.SpecialInstructions LIKE '%bible%' THEN 'Bible'
+            WHEN o.SpecialInstructions = 'Figure' OR o.SpecialInstructions = 'figure' THEN 'Figure'
             WHEN o.SpecialInstructions LIKE '%Round cake%' OR o.SpecialInstructions LIKE '%round cake%' THEN 'Round'
-            -- Check product name for shape keywords
-            WHEN i.ProductName LIKE '%Figure%' THEN 'Figure'
+            WHEN i.ProductName LIKE '%Figure%' OR i.ProductName LIKE '%figure%' THEN 'Figure'
             WHEN i.ProductName LIKE '%Round%' OR i.ProductName LIKE '%round%' THEN 'Round'
             WHEN i.ProductName LIKE '%Heart%' THEN 'Heart'
             WHEN i.ProductName LIKE '%Rectangle%' THEN 'Rectangle'
@@ -159,13 +160,48 @@ BEGIN
             WHEN i.ProductName LIKE '%Fresh Cream%' OR i.ProductName LIKE '%Fresh-Cream%' OR i.ProductName LIKE '%FreshCream%' THEN 'Fresh Cream'
             WHEN i.ProductName LIKE '%Butter Cream%' OR i.ProductName LIKE '%Buttercream%' OR i.ProductName LIKE '%Butter-Cream%' THEN 'Butter Cream'
             ELSE 'Unknown'
+        END,
+        -- Special Request (must match SELECT clause exactly)
+        CASE 
+            WHEN o.SpecialInstructions LIKE '%Heart Shape%' OR o.SpecialInstructions LIKE '%Heart shape%' OR o.SpecialInstructions LIKE '%heart shape%' THEN 
+                CASE 
+                    WHEN i.ProductName LIKE '%Eggless%' OR i.ProductName LIKE '%EGGLESS%' THEN 'EGGLESS'
+                    WHEN i.ProductName LIKE '%Vanilla%' OR i.ProductName LIKE '%VANILLA%' OR i.ProductName LIKE '%DBL VANILLA%' THEN 'DBL VANILLA'
+                    WHEN i.ProductName LIKE '%Chocolate%' OR i.ProductName LIKE '%CHOCOLATE%' THEN 'CHOCOLATE'
+                    WHEN i.ProductName LIKE '%Strawberry%' OR i.ProductName LIKE '%STRAWBERRY%' THEN 'STRAWBERRY'
+                    ELSE ''
+                END
+            WHEN o.SpecialInstructions LIKE '%Bible%' OR o.SpecialInstructions LIKE '%bible%' THEN 
+                CASE 
+                    WHEN i.ProductName LIKE '%Eggless%' OR i.ProductName LIKE '%EGGLESS%' THEN 'EGGLESS'
+                    WHEN i.ProductName LIKE '%Vanilla%' OR i.ProductName LIKE '%VANILLA%' OR i.ProductName LIKE '%DBL VANILLA%' THEN 'DBL VANILLA'
+                    WHEN i.ProductName LIKE '%Chocolate%' OR i.ProductName LIKE '%CHOCOLATE%' THEN 'CHOCOLATE'
+                    WHEN i.ProductName LIKE '%Strawberry%' OR i.ProductName LIKE '%STRAWBERRY%' THEN 'STRAWBERRY'
+                    ELSE ''
+                END
+            WHEN o.SpecialInstructions = 'Figure' OR o.SpecialInstructions = 'figure' THEN 
+                CASE 
+                    WHEN i.ProductName LIKE '%Eggless%' OR i.ProductName LIKE '%EGGLESS%' THEN 'EGGLESS'
+                    WHEN i.ProductName LIKE '%Vanilla%' OR i.ProductName LIKE '%VANILLA%' OR i.ProductName LIKE '%DBL VANILLA%' THEN 'DBL VANILLA'
+                    WHEN i.ProductName LIKE '%Chocolate%' OR i.ProductName LIKE '%CHOCOLATE%' THEN 'CHOCOLATE'
+                    WHEN i.ProductName LIKE '%Strawberry%' OR i.ProductName LIKE '%STRAWBERRY%' THEN 'STRAWBERRY'
+                    ELSE ''
+                END
+            WHEN o.SpecialInstructions IS NOT NULL AND LEN(LTRIM(RTRIM(o.SpecialInstructions))) > 0 
+                THEN LTRIM(RTRIM(o.SpecialInstructions))
+            WHEN i.ProductName LIKE '%Eggless%' OR i.ProductName LIKE '%EGGLESS%' THEN 'EGGLESS'
+            WHEN i.ProductName LIKE '%Vanilla%' OR i.ProductName LIKE '%VANILLA%' OR i.ProductName LIKE '%DBL VANILLA%' THEN 'DBL VANILLA'
+            WHEN i.ProductName LIKE '%Chocolate%' OR i.ProductName LIKE '%CHOCOLATE%' THEN 'CHOCOLATE'
+            WHEN i.ProductName LIKE '%Strawberry%' OR i.ProductName LIKE '%STRAWBERRY%' THEN 'STRAWBERRY'
+            ELSE ''
         END
     
     ORDER BY 
         Size,
         Layer,
         Shape,
-        CakeCream;
+        CakeCream,
+        SpecialRequest;
 END
 GO
 
